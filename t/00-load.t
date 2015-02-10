@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::More;
 
-plan tests => 6;
+plan tests => 7;
 
 BEGIN {
     use_ok( 'Seq' ) || print "Bail out!\n";
@@ -13,6 +13,7 @@ BEGIN {
     use_ok( 'Seq::Serialize' ) || print "Bail out!\n";
     use_ok( 'Seq::Store' ) || print "Bail out!\n";
     use_ok( 'Seq::Config' ) || print "Bail out!\n";
+    use_ok( 'Seq::Config::Init') || print "Bail out!\n";
 }
 
 diag( "Testing Seq $Seq::VERSION, Perl $], $^X" );
