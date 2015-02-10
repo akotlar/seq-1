@@ -166,9 +166,6 @@ Please report any bugs or feature requests to C<bug-seq at rt.cpan.org>, or thro
 the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
-
-
-
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
