@@ -1,0 +1,33 @@
+---
+hg38:
+  genome_name: hg38
+  genome_description: 'human hg38 chr22 for testing'
+  chr_names:
+     - chr22
+  seq_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/
+  seq_files:
+     - chr22.fa.gz
+  seq_proc_init: ~
+  gene_track_name: knownGene
+  gene_track_statement: 'SELECT * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = "chr22"'
+  gene_track_annotation_names:
+    - mRNA
+    - spID
+    - spDisplayID
+    - geneSymbol
+    - refseq
+    - protAcc
+    - description
+    - rfamAcc
+  snp_track_name: snp141
+  snp_track_statement: 'SELECT $fields FROM hg38.snp141 where hg38.snp141.chrom = "chr22"'
+  phastCons_dir: ~
+  phastCons_files: ~
+  phastCons_proc_init: ~
+  phastCons_proc_chr: ~
+  phastCons_proc_clean_dir: ~
+  phyloP_dir: ~
+  phyloP_files: ~
+  phyloP_proc_init: ~
+  phyloP_proc_chr: ~
+  phyloP_proc_clean_dir: ~
