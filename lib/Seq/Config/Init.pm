@@ -2,6 +2,7 @@ package Seq::Config::Init;
 
 use 5.10.0;
 use DBI;
+use Carp;
 use IO::Compress::Gzip qw($GzipError);
 use Moose;
 use namespace::autoclean;
@@ -25,7 +26,9 @@ our $VERSION = '0.01';
 has dsn =>  ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
 has host => ( is => 'ro', isa => 'Str', required => 1, default => "genome-mysql.cse.ucsc.edu" );
 has user => ( is => 'ro', isa => 'Str', required => 1, default => "genome");
-has config => (is => 'ro', isa => 'Seq::Config', handles => [ 'get_gene_name', 'get_snp_name' ],);
+has config => (is => 'ro', isa => 'Seq::Config',
+  handles => [ 'genome_name', 'gene_track_name', 'gene_track_statement',
+               'snp_track_name',  'snp_track_statement', ],);
 has password  => ( is => 'ro', isa => 'Str', );
 has port => ( is => 'ro', isa => 'Int', );
 has socket => ( is => 'ro', isa => 'Str', );
@@ -57,6 +60,18 @@ sub time_stamp {
     eval(localtime->mon() + 1), localtime->mday());
 }
 
+sub dbh {
+  my $self = shift;
+  my $dsn = $self->dsn;
+  $dsn .= ":" . $self->genome_name;
+  $dsn .= ";host=" . $self->host if $self->host;
+  $dsn .= ";port=" . $self->port if $self->port;
+  $dsn .= ";mysql_socket=" . $self->port_num if $self->socket;
+  $dsn .= ";mysql_read_default_group=client";
+  my %conn_attrs = (RaiseError => 1, PrintError => 0, AutoCommit => 0);
+  return DBI->connect($dsn, $self->user, $self->password, \%conn_attrs);
+}
+
 =head2 function
 
 =cut
@@ -72,18 +87,12 @@ sub get_sql_data {
   # get data
   my $track_statement = $self->$statement_meth;
 
-  # define connection
-  my $dsn = $self->dsn;
-  $dsn .= ";host=" . $self->host if $self->host;
-  $dsn .= ";port=" . $self->port if $self->port;
-  $dsn .= ";mysql_socket=" . $self->port_num if $self->socket;
-  $dsn .= ";mysql_read_default_group=client";
-  my %conn_attrs = (RaiseError => 1, PrintError => 0, AutoCommit => 0);
-  my $dbh = DBI->connect($dsn, $self->user_name, $self->password, \%conn_attrs);
+  # get connection handle
+  my $dbh = $self->dbh;
 
   # prepare and execute mysql command
   my $sth = $dbh->prepare($track_statement) or die $dbh->errstr;
-  my $rc  = $sth->execute()                 or die $dbh->errstr;
+  my $rc  = $sth->execute() or die $dbh->errstr;
 
   # retrieve data
   my @sql_data;
@@ -127,8 +136,8 @@ sub write_sql_data {
   confess "unknown method: $sql_data_meth" unless $self->meta->get_method($sql_data_meth);
 
   # get data
-  my $track_name      = $self->$track_meth;
-  my @sql_data = $self->$sql_data_meth;
+  my $track_name = $self->$track_meth;
+  my @sql_data   = $self->$sql_data_meth;
 
   map { say $fh join("\t", @$_); } @sql_data;
 }
