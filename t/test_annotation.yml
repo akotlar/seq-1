@@ -7,7 +7,7 @@ hg38:
   seq_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/
   seq_files:
      - chr22.fa.gz
-  seq_proc_init: ~
+  seq_proc_chr: ~
   gene_track_name: knownGene
   gene_track_statement: 'SELECT * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = "chr22"'
   gene_track_annotation_names:
