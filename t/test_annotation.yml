@@ -1,15 +1,62 @@
----
 hg38:
+  genome_description: human
   genome_name: hg38
-  genome_description: 'human hg38 chr22 for testing'
   chr_names:
+     - chr1
+     - chr2
+     - chr3
+     - chr4
+     - chr5
+     - chr6
+     - chr7
+     - chr8
+     - chr9
+     - chr10
+     - chr11
+     - chr12
+     - chr13
+     - chr14
+     - chr15
+     - chr16
+     - chr17
+     - chr18
+     - chr19
+     - chr20
+     - chr21
      - chr22
+     - chrM
+     - chrX
+     - chrY
   seq_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/
   seq_files:
+     - chr1.fa.gz
+     - chr2.fa.gz
+     - chr3.fa.gz
+     - chr4.fa.gz
+     - chr5.fa.gz
+     - chr6.fa.gz
+     - chr7.fa.gz
+     - chr8.fa.gz
+     - chr9.fa.gz
+     - chr10.fa.gz
+     - chr11.fa.gz
+     - chr12.fa.gz
+     - chr13.fa.gz
+     - chr14.fa.gz
+     - chr15.fa.gz
+     - chr16.fa.gz
+     - chr17.fa.gz
+     - chr18.fa.gz
+     - chr19.fa.gz
+     - chr20.fa.gz
+     - chr21.fa.gz
      - chr22.fa.gz
+     - chrM.fa.gz
+     - chrX.fa.gz
+     - chrY.fa.gz
   seq_proc_chr: ~
   gene_track_name: knownGene
-  gene_track_statement: 'SELECT * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = "chr22"'
+  gene_track_statement: 'SELECT * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name'
   gene_track_annotation_names:
     - mRNA
     - spID
@@ -20,14 +67,85 @@ hg38:
     - description
     - rfamAcc
   snp_track_name: snp141
-  snp_track_statement: 'SELECT $fields FROM hg38.snp141 where hg38.snp141.chrom = "chr22"'
-  phastCons_dir: ~
-  phastCons_files: ~
-  phastCons_proc_init: ~
-  phastCons_proc_chr: ~
-  phastCons_proc_clean_dir: ~
-  phyloP_dir: ~
-  phyloP_files: ~
-  phyloP_proc_init: ~
-  phyloP_proc_chr: ~
-  phyloP_proc_clean_dir: ~
+  snp_track_statement: 'SELECT $fields FROM hg38.snp141'
+  phastCons_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phastCons7way/
+  phastCons_files:
+    - hg38.phastCons7way.wigFix.gz
+  phastCons_proc_init:
+    - 'split_wigFix.py *.wigFix.gz'
+  phastCons_proc_chr :
+    - 'create_cons.py $chr $dir'
+    - 'cat *.$dir >> $dir.txt'
+    - 'rm *.$dir'
+    - 'rm $chr'
+  phastCons_proc_clean_dir:
+    - 'rm chr*'
+    - 'rm *.gz'
+    - 'gzip *.txt'
+  phyloP_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP7way/
+  phyloP_files:
+    - hg38.phyloP7way.wigFix.gz
+  phyloP_proc_init:
+    - 'split_wigFix.py *.wigFix.gz'
+  phyloP_proc_chr:
+    - 'create_cons.py $chr $dir'
+    - 'cat *.$dir >> $dir.txt'
+    - 'rm *.$dir'
+    - 'rm $chr'
+  phyloP_proc_clean_dir:
+    - 'rm chr*'
+    - 'rm *.gz'
+    - 'gzip *.txt'
+dm6:
+  genome_description: 'D. melanogaster'
+  genome_name: dm6
+  chr_names:
+    - chr2L
+    - chr2R
+    - chr3L
+    - chr3R
+    - chr4
+    - chrM
+    - chrX
+    - chrY
+  seq_dir: hgdownload.cse.ucsc.edu/goldenPath/dm6/bigZips/
+  seq_files:
+     - dm6.fa.gz
+  seq_proc_chr:
+     - 'extract.py $chr dm6.fa.gz'
+     - 'gzip $chr.fa'
+  gene_track_name: refGene
+  gene_track_statement: 'SELECT * FROM dm6.refGene'
+  gene_track_annotation_names:
+    - name
+    - name2
+  snp_track_name: ~
+  snp_track_statement: ~
+  phastCons_dir: hgdownload.cse.ucsc.edu/goldenPath/dm6/phastCons27way/
+  phastCons_files:
+    - dm6.27way.phastCons.wigFix.gz
+  phastCons_proc_init:
+    - 'split_wigFix.py *.wigFix.gz'
+  phastCons_proc_chr:
+    - 'create_cons.py $chr $dir'
+    - 'cat *.$dir >> $dir.txt'
+    - 'rm *.$dir'
+    - 'rm $chr'
+  phastCons_proc_clean_dir:
+    - 'rm chr*'
+    - 'rm *.gz'
+    - 'gzip *.txt'
+  phyloP_dir: hgdownload.cse.ucsc.edu/goldenPath/dm6/phyloP27way/
+  phyloP_files:
+    - dm6.phyloP27way.wigFix.gz
+  phyloP_proc_init:
+    - 'split_wigFix.py *.wigFix.gz'
+  phyloP_proc_chr:
+    - 'create_cons.py $chr $dir'
+    - 'cat *.$dir >> $dir.txt'
+    - 'rm *.$dir'
+    - 'rm $chr'
+  phyloP_proc_clean_dir:
+    - 'rm chr*'
+    - 'rm *.gz'
+    - 'gzip *.txt'

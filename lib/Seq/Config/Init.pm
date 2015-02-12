@@ -10,6 +10,7 @@ use Scalar::Util qw(openhandle);
 use strict;
 use Time::localtime;
 use warnings;
+use YAML::XS qw(Dump);
 
 =head1 NAME
 
@@ -27,8 +28,14 @@ has dsn =>  ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
 has host => ( is => 'ro', isa => 'Str', required => 1, default => "genome-mysql.cse.ucsc.edu" );
 has user => ( is => 'ro', isa => 'Str', required => 1, default => "genome");
 has config => (is => 'ro', isa => 'Seq::Config',
-  handles => [ 'genome_name', 'gene_track_name', 'gene_track_statement',
-               'snp_track_name',  'snp_track_statement', ],);
+  handles => [ 'chr_names', 'seq_dir', 'seq_files', 'seq_proc_chr',
+               'phastCons_dir', 'phastCons_files', 'phastCons_proc_init',
+               'phastCons_proc_chr', 'phastCons_proc_clean_dir',
+               'phyloP_dir', 'phyloP_files', 'phyloP_proc_init',
+               'phyloP_proc_chr', 'phyloP_proc_clean_dir',
+               'genome_name', 'genome_description', 'gene_track_name',
+               'gene_track_statement', 'snp_track_name',  'snp_track_statement',
+             ],);
 has password  => ( is => 'ro', isa => 'Str', );
 has port => ( is => 'ro', isa => 'Int', );
 has socket => ( is => 'ro', isa => 'Str', );
@@ -135,24 +142,20 @@ sub write_sql_data {
   map { say $fh join("\t", @$_); } @sql_data;
 }
 
-=head2 fetch_files
+=head2 say_fetch_files_script
 
 =cut
 
-sub fetch_files {
+sub say_fetch_files_script {
 
-  my( $self, $type, $location ) = @_;
+  my( $self, $type ) = @_;
 
   # get rsync cmd and opts
-  my $rsync_cmd = $self->_get_sys_prog('rsync');
   my $rsync_opts = $self->_get_rsync_opts;
 
   # check required parameters are passed
-  confess "write_sql_data expects a type of data (e.g., seq) and directory" unless $self
+  confess "write_sql_data expects a type of data (e.g., seq)" unless $self
     and $type
-    and $location
-    and -d $location
-    and $rsync_cmd
     and $rsync_opts;
 
   # method check
@@ -160,38 +163,24 @@ sub fetch_files {
   my $file_list = "$type\_files";
   confess "unknown method; $file_dir" unless $self->meta->get_method($file_dir);
   confess "unknown method: $file_list" unless $self->meta->get_method($file_list);
-
   my $remote_dir = $self->$file_dir;
-  my @files = $self->$file_list;
-  my $out_file_name = "$location/fetch_file\_$type.sh";
-  open my $out_fh, '>', $out_file_name;
-  map { say $out_fh "$rsync_cmd $rsync_opts rsync://$remote_dir/$_ ."; } @files;
-  close $out_fh;
-
-  system( "chmod +x $out_file_name; sync; ./$out_file_name;" ) if $self->act;
+  my $file_aref = $self->$file_list;
+  my $command = "rsync $rsync_opts rsync://$remote_dir";
+  my $script = join("\n", "#!/bin/bash", map { "$command/$_ ."; } @$file_aref);
+  return $script;
 }
 
-=head2 process_files
+=head2 say_process_files_script
 
 =cut
 
-sub process_files {
-  my ( $self, $type, $location ) = @_;
+sub say_process_files_script {
+  my ( $self, $type ) = @_;
 
   # check required parameters are passed
-  confess "write_sql_data expects a type of data (e.g., seq) and directory" unless $self
-    and $type
-    and $location
-    and -d $location;
   confess "expected type to be seq, phyloP, or phastCons" unless $type eq "seq"
     or $type eq "phyloP"
     or $type eq "phastCons";
-
-  my $cwd = Cwd();
-  my $python_cmd = $self->_get_sys_prog('python');
-  my $create_cons_prog  = "$python_cmd $cwd/create_cons.py";
-  my $split_wigFix_prog = "$python_cmd $cwd/split_wigFix.py";
-  my $extract_prog      = "$python_cmd $cwd/extract.py";
 
   my @cmds;
   foreach my $step (qw( proc_init proc_chr proc_dir_clean ))
@@ -200,55 +189,23 @@ sub process_files {
     next unless $self->meta->get_method($method);
     if ($step eq "proc_chr") # these cmds are looped over the files
     {
-      my @chrs = $self->chr_names;
-      my $this_cmd = join("\n", $self->$method);
-      foreach my $chr (@chrs)
+      my $chrs_aref = $self->chr_names;
+      foreach my $chr (@$chrs_aref)
       {
-        $this_cmd =~ s/\$dir/$type/;
-        $this_cmd =~ s/\$chr/$chr/;
-
+        my $this_cmd = join("\n", @{ $self->$method });
+        $this_cmd =~ s/\$dir/$type/g;
+        $this_cmd =~ s/\$chr/$chr/g;
         push @cmds, $this_cmd;
       }
     }
     else
     {
-      my $this_cmd = join("\n", $self->$method);
+      my $this_cmd = join("\n", @{ $self->$method });
       push @cmds, $this_cmd;
     }
   }
-  my $final_cmds = join("\n", @cmds);
-  # substitute proper commands for placeholder commands
-  $final_cmds =~ s/create_cons\.py/$create_cons_prog/;
-  $final_cmds =~ s/extract\.py/$extract_prog/;
-  $final_cmds =~ s/split_wigFix\.py/$split_wigFix_prog/;
-
-  my $out_file_name = "$location/process_$type.sh";
-  open my $out_fh, '>', $out_file_name;
-  say $out_fh $final_cmds;
-  close $out_fh;
-
-  system( "chmod +x $out_file_name; sync; ./$out_file_name;" ) if $self->act;
-
-}
-
-=head2 _get_sys_prog
-
-=cut
-
-sub _get_sys_prog
-{
-  my ( $self, $prog ) = shift;
-  confess "get_sys_prog expects program to be passed" unless $self and $prog;
-  my $prog_loc = qx/which $prog/;
-  chomp $prog_loc;
-  if ($prog_loc =~ m/$prog/)
-  {
-    return $prog_loc;
-  }
-  else
-  {
-    croak "could not find $prog on your system. ensure it is installed and in your path.";
-  }
+  my $script = (@cmds) ? join("\n", "#!/bin/bash", @cmds) : undef;
+  return $script;
 }
 
 =head2 _get_rsync_opts
@@ -299,7 +256,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Serialize
+    perldoc Seq::Config::Init
 
 
 You can also look for information at:

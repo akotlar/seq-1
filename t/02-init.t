@@ -3,11 +3,17 @@ use 5.10.0;
 use strict;
 use warnings;
 use Test::More;
+use Cwd;
 use YAML::XS qw(Dump LoadFile);
 use DBD::Mock;
 use Test::Exception;
 
-plan tests => 36;
+plan tests => 46;
+
+BEGIN 
+{
+  chdir("./t");
+}
 
 # test the package's attributes and type constraints
 my $package = "Seq::Config::Init";
@@ -47,7 +53,7 @@ for my $attr_name (qw( port act verbose ))
 #
 
 # set test yaml config file
-my $config_file = "./t/test_annotation.yml";
+my $config_file = "test_annotation.yml";
 
 # load the config file
 my $config_href = LoadFile($config_file) || die "cannot load $config_file: $!\n";
@@ -76,7 +82,7 @@ my $hg38_config_obj = Seq::Config->new($hg38_config_href);
   is( $init_hg38->genome_name, "hg38", "handles genome_name() works.");
   is( $init_hg38->gene_track_name, "knownGene", "handles gene_track_name() works.");
   is( $init_hg38->snp_track_name, "snp141", "handles snp_track_name() works.");
-  my $exp_statement = qq{SELECT * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = "chr22"};
+  my $exp_statement = qq{SELECT * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name};
   is( $init_hg38->gene_track_statement, $exp_statement, "handles gene_track_statement() works.");
   $exp_statement = q{SELECT $fields FROM hg38.snp141 where hg38.snp141.chrom = "chr22"};
   like( $init_hg38->snp_track_statement, qr/snp141/, "handles snp_track_statement() works.");
@@ -126,7 +132,7 @@ TODO: {
   my $init_hg38 = Seq::Config::Init->new( { dsn => 'dbi:SQLite:dbname=test', host => '', user => '', config => $local_hg38_config_obj, });
   my $exp_data = [ [ 1, 'GRN', 55 ], [ 2, 'Titan', 222, ], ];
   my @obs_data = $init_hg38->get_sql_data('snp');
-  is_deeply( \@obs_data, $exp_data);
+  is_deeply( \@obs_data, $exp_data, 'fetched sql data');
 }
 
 # write fetched sql data
@@ -148,28 +154,84 @@ TODO: {
     my @data = split("\t", $_);
     push @obs_data, \@data;
   }
-  is_deeply( \@obs_data, $exp_data);
+  is_deeply( \@obs_data, $exp_data, 'wrote sql data');
 }
 
-TODO: {
-  local $TODO = 'test fetch_files()';
-
+# say scripts to download data
+for my $type (qw(seq phastCons phyloP))
+{
+  # setup expected data
+  my $dir       = $hg38_config_href->{"$type\_dir"};
+  my $file_aref = $hg38_config_href->{"$type\_files"};
+  my $command = "rsync -naz rsync://$dir";
+  my $exp_script = join("\n", "#!/bin/bash", map { "$command/$_ ." } @$file_aref);
+  my $local_hg38_config_obj = Seq::Config->new($hg38_config_href);
+  my $init_hg38 = Seq::Config::Init->new( { config => $local_hg38_config_obj, });
+  my $obs_script = $init_hg38->say_fetch_files_script( $type );
+  is ($obs_script, $exp_script, "write script for $type data");
 }
 
-TODO: {
-  local $TODO = 'test process_files()';
+# say scripts for processing downloaded data
+for my $type (qw(seq phastCons phyloP))
+{
+  # choose dm6 b/c it needs scripts to process genome
+  my $dm6_config_href //= $config_href->{dm6};
 
+  # move the following to the init script itself (i.e., not the method)
+  my $cwd = cwd();
+  my $create_cons_prog  = "python $cwd/create_cons.py";
+  my $split_wigFix_prog = "python $cwd/split_wigFix.py";
+  my $extract_prog      = "python $cwd/extract.py";
+  #$exp_script =~ s/create_cons\.py/$create_cons_prog/g;
+  #$exp_script =~ s/extract\.py/$extract_prog/g;
+  #$exp_script =~ s/split_wigFix\.py/$split_wigFix_prog/g;
+
+  # setup expected data
+  my @cmds;
+  foreach my $step ( qw(proc_init proc_chr proc_dir_clean) )
+  {
+    my $key = "$type\_$step";
+    next unless exists $dm6_config_href->{$key};
+    if ($step eq "proc_chr")
+    {
+      foreach my $chr (@{$dm6_config_href->{chr_names}})
+      {
+        my $this_cmd = join("\n", @{$dm6_config_href->{$key}});
+        $this_cmd =~ s/\$dir/$type/g;
+        $this_cmd =~ s/\$chr/$chr/g;
+        push @cmds, $this_cmd;
+      }
+    }
+    else
+    {
+      my $this_cmd = join("\n", @{$dm6_config_href->{$key}});
+      push @cmds, $this_cmd;
+    }
+  }
+  my $exp_script = (@cmds) ? join("\n", "#!/bin/bash", @cmds) : undef;
+  my $local_dm6_config_obj = Seq::Config->new($dm6_config_href);
+  my $init_dm6 = Seq::Config::Init->new( { config => $local_dm6_config_obj, });
+  my $obs_script = $init_dm6->say_process_files_script( $type );
+  is( $obs_script, $exp_script, "say $type processing script" );
 }
 
-TODO: {
-  local $TODO = 'test _get_sys_prog()';
-
+{
+  my %rsync_opts;
+  $rsync_opts{1}{1} = "-avzP";
+  $rsync_opts{1}{0} = "-az";
+  $rsync_opts{0}{1} = "-navzP";
+  $rsync_opts{0}{0} = "-naz";
+  my $local_hg38_config_obj = Seq::Config->new($hg38_config_href);
+  foreach my $act (sort keys %rsync_opts)
+  {
+    foreach my $verbose (sort keys %{ $rsync_opts{$act} })
+    {
+      my $init_hg38 = Seq::Config::Init->new( { act => $act, verbose => $verbose, config => $local_hg38_config_obj, });
+      is ($init_hg38->_get_rsync_opts(), $rsync_opts{$act}{$verbose}, 'ok _get_rsync_opts');
+    }
+  }
 }
 
-TODO: {
-  local $TODO = 'test _get_rsync_opts()';
-
-}
 
 
 __END__

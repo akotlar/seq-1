@@ -98,7 +98,7 @@ has seq_files => (
   traits => ['Array'],
   required => 1,
 );
-has seq_proc_init => (
+has seq_proc_chr => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
@@ -128,7 +128,7 @@ sub BUILDARGS {
     for my $attr_name (qw( chr_names gene_track_annotation_names
       phastCons_proc_clean_dir phastCons_files phastCons_proc_chr
       phastCons_proc_init phyloP_proc_clean_dir phyloP_files
-      phyloP_proc_chr phyloP_proc_init seq_files seq_proc_init ))
+      phyloP_proc_chr phyloP_proc_init seq_files seq_proc_chr ))
     {
       $new_hash{$attr_name} //= $href->{$attr_name} || [];
     }
