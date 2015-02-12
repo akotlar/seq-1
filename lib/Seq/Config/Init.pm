@@ -3,7 +3,6 @@ package Seq::Config::Init;
 use 5.10.0;
 use DBI;
 use Carp;
-use IO::Compress::Gzip qw($GzipError);
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw(openhandle);
@@ -41,17 +40,12 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Serialize;
+    use Seq::Serialize;``
 
     my $foo = Seq::Config::Inite->new();
     ...
 
-=head1 EXPORT
-
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
-
-=head2 function
+=head2 time_stamp
 
 =cut
 
@@ -59,6 +53,10 @@ sub time_stamp {
   return sprintf("%d-%02d-%02d", eval(localtime->year() + 1900),
     eval(localtime->mon() + 1), localtime->mday());
 }
+
+=head2 dbh
+
+=cut
 
 sub dbh {
   my $self = shift;
@@ -72,7 +70,7 @@ sub dbh {
   return DBI->connect($dsn, $self->user, $self->password, \%conn_attrs);
 }
 
-=head2 function
+=head2 get_sql_data
 
 =cut
 
@@ -113,10 +111,11 @@ sub get_sql_data {
                         } @row;
     push @sql_data, \@row;
   }
+  $dbh->disconnect;
   return @sql_data;
 }
 
-=head2 function
+=head2 write_sql_data
 
 =cut
 
@@ -129,15 +128,8 @@ sub write_sql_data {
     and $fh
     and openhandle($fh);
 
-  # method check
-  my $track_meth    = "$type\_track_name";
-  my $sql_data_meth = "get_sql_data_$type";
-  confess "unknown method: $track_meth" unless $self->meta->get_method($track_meth);
-  confess "unknown method: $sql_data_meth" unless $self->meta->get_method($sql_data_meth);
-
   # get data
-  my $track_name = $self->$track_meth;
-  my @sql_data   = $self->$sql_data_meth;
+  my @sql_data   = $self->get_sql_data($type);
 
   map { say $fh join("\t", @$_); } @sql_data;
 }

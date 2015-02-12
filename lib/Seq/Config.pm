@@ -53,51 +53,43 @@ has phastCons_proc_clean_dir => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has phastCons_dir => (is => 'ro', isa => 'Str', required => 1,);
 has phastCons_files => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has phastCons_proc_chr => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has phastCons_proc_init => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has phyloP_proc_clean_dir => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has phyloP_dir => (is => 'ro', isa => 'Str', required => 1,);
 has phyloP_files => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has phyloP_proc_chr => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has phyloP_proc_init => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has seq_dir => (is => 'ro', isa => 'Str', required => 1,);
 has seq_files => (
@@ -110,7 +102,6 @@ has seq_proc_init => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  default => sub{ [] },
 );
 has snp_track_name => (is => 'ro', isa => 'Str', required => 1,);
 has snp_track_statement => (is => 'rw', isa => 'Str', required => 1,);
