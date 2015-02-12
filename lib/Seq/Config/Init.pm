@@ -3,6 +3,7 @@ package Seq::Config::Init;
 use 5.10.0;
 use DBI;
 use Carp;
+use Cwd;
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw(openhandle);
@@ -123,7 +124,7 @@ sub write_sql_data {
   my ( $self, $type, $fh ) = @_;
 
   # check required parameters are passed
-  confess "write_sql_data expects an Int obj, type, and fh" unless $self
+  confess "write_sql_data expects a type and fh" unless $self
     and $type
     and $fh
     and openhandle($fh);
@@ -132,6 +133,156 @@ sub write_sql_data {
   my @sql_data   = $self->get_sql_data($type);
 
   map { say $fh join("\t", @$_); } @sql_data;
+}
+
+=head2 fetch_files
+
+=cut
+
+sub fetch_files {
+
+  my( $self, $type, $location ) = @_;
+
+  # get rsync cmd and opts
+  my $rsync_cmd = $self->_get_sys_prog('rsync');
+  my $rsync_opts = $self->_get_rsync_opts;
+
+  # check required parameters are passed
+  confess "write_sql_data expects a type of data (e.g., seq) and directory" unless $self
+    and $type
+    and $location
+    and -d $location
+    and $rsync_cmd
+    and $rsync_opts;
+
+  # method check
+  my $file_dir = "$type\_dir";
+  my $file_list = "$type\_files";
+  confess "unknown method; $file_dir" unless $self->meta->get_method($file_dir);
+  confess "unknown method: $file_list" unless $self->meta->get_method($file_list);
+
+  my $remote_dir = $self->$file_dir;
+  my @files = $self->$file_list;
+  my $out_file_name = "$location/fetch_file\_$type.sh";
+  open my $out_fh, '>', $out_file_name;
+  map { say $out_fh "$rsync_cmd $rsync_opts rsync://$remote_dir/$_ ."; } @files;
+  close $out_fh;
+
+  system( "chmod +x $out_file_name; sync; ./$out_file_name;" ) if $self->act;
+}
+
+=head2 process_files
+
+=cut
+
+sub process_files {
+  my ( $self, $type, $location ) = @_;
+
+  # check required parameters are passed
+  confess "write_sql_data expects a type of data (e.g., seq) and directory" unless $self
+    and $type
+    and $location
+    and -d $location;
+  confess "expected type to be seq, phyloP, or phastCons" unless $type eq "seq"
+    or $type eq "phyloP"
+    or $type eq "phastCons";
+
+  my $cwd = Cwd();
+  my $python_cmd = $self->_get_sys_prog('python');
+  my $create_cons_prog  = "$python_cmd $cwd/create_cons.py";
+  my $split_wigFix_prog = "$python_cmd $cwd/split_wigFix.py";
+  my $extract_prog      = "$python_cmd $cwd/extract.py";
+
+  my @cmds;
+  foreach my $step (qw( proc_init proc_chr proc_dir_clean ))
+  {
+    my $method = "$type\_$step";
+    next unless $self->meta->get_method($method);
+    if ($step eq "proc_chr") # these cmds are looped over the files
+    {
+      my @chrs = $self->chr_names;
+      my $this_cmd = join("\n", $self->$method);
+      foreach my $chr (@chrs)
+      {
+        $this_cmd =~ s/\$dir/$type/;
+        $this_cmd =~ s/\$chr/$chr/;
+
+        push @cmds, $this_cmd;
+      }
+    }
+    else
+    {
+      my $this_cmd = join("\n", $self->$method);
+      push @cmds, $this_cmd;
+    }
+  }
+  my $final_cmds = join("\n", @cmds);
+  # substitute proper commands for placeholder commands
+  $final_cmds =~ s/create_cons\.py/$create_cons_prog/;
+  $final_cmds =~ s/extract\.py/$extract_prog/;
+  $final_cmds =~ s/split_wigFix\.py/$split_wigFix_prog/;
+
+  my $out_file_name = "$location/process_$type.sh";
+  open my $out_fh, '>', $out_file_name;
+  say $out_fh $final_cmds;
+  close $out_fh;
+
+  system( "chmod +x $out_file_name; sync; ./$out_file_name;" ) if $self->act;
+
+}
+
+=head2 _get_sys_prog
+
+=cut
+
+sub _get_sys_prog
+{
+  my ( $self, $prog ) = shift;
+  confess "get_sys_prog expects program to be passed" unless $self and $prog;
+  my $prog_loc = qx/which $prog/;
+  chomp $prog_loc;
+  if ($prog_loc =~ m/$prog/)
+  {
+    return $prog_loc;
+  }
+  else
+  {
+    croak "could not find $prog on your system. ensure it is installed and in your path.";
+  }
+}
+
+=head2 _get_rsync_opts
+
+=cut
+
+sub _get_rsync_opts {
+  my $self = shift;
+  my $act = $self->act;
+  my $verbose = $self->verbose;
+  my $opt = "";
+  if ($act)
+  {
+    if ($verbose)
+    {
+      $opt = "-avzP";
+    }
+    else
+    {
+      $opt = "-az";
+    }
+  }
+  else
+  {
+    if ($verbose)
+    {
+      $opt = "-navzP";
+    }
+    else
+    {
+      $opt = "-naz";
+    }
+  }
+  return $opt;
 }
 
 =head1 AUTHOR

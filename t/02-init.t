@@ -151,6 +151,26 @@ TODO: {
   is_deeply( \@obs_data, $exp_data);
 }
 
+TODO: {
+  local $TODO = 'test fetch_files()';
+
+}
+
+TODO: {
+  local $TODO = 'test process_files()';
+
+}
+
+TODO: {
+  local $TODO = 'test _get_sys_prog()';
+
+}
+
+TODO: {
+  local $TODO = 'test _get_rsync_opts()';
+
+}
+
 
 __END__
 BEGIN TRANSACTION;
