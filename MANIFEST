@@ -3,8 +3,9 @@ lib/Seq.pm
 lib/Seq/Annotate.pm
 lib/Seq/Config.pm
 lib/Seq/Serialize.pm
-lib/Seq/Store.pm
-lib/Seq/Utils.pm
+lib/Seq/Genome.pm
+lib/Seq/Genome/Transcript.pm
+lib/Seq/Genome/Variant.pm
 Makefile.PL
 MANIFEST			This list of files
 README
