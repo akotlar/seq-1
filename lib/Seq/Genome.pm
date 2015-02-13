@@ -1,4 +1,4 @@
-package Seq::Utils;
+package Seq::Genome;
 
 use 5.10.0;
 use strict;
@@ -6,7 +6,7 @@ use warnings;
 
 =head1 NAME
 
-Seq::Utils - The great new Seq::Utils!
+Seq::Genome - The great new Seq::Genome!
 
 =head1 VERSION
 
@@ -23,9 +23,9 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Utils;
+    use Seq::Genome;
 
-    my $foo = Seq::Utils->new();
+    my $foo = Seq::Genome->new();
     ...
 
 =head1 EXPORT
@@ -66,7 +66,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Utils
+    perldoc Seq::Genome
 
 
 You can also look for information at:
@@ -115,4 +115,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-1; # End of Seq::Utils
+1; # End of Seq::Genome

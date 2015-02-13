@@ -8,7 +8,6 @@ use Moose;
 use namespace::autoclean;
 use Scalar::Util qw(openhandle);
 use strict;
-use Time::localtime;
 use warnings;
 use YAML::XS qw(Dump);
 
@@ -53,15 +52,6 @@ Perhaps a little code snippet.
     my $foo = Seq::Config::Inite->new();
     ...
 
-=head2 time_stamp
-
-=cut
-
-sub time_stamp {
-  return sprintf("%d-%02d-%02d", eval(localtime->year() + 1900),
-    eval(localtime->mon() + 1), localtime->mday());
-}
-
 =head2 dbh
 
 =cut
@@ -78,11 +68,11 @@ sub dbh {
   return DBI->connect($dsn, $self->user, $self->password, \%conn_attrs);
 }
 
-=head2 get_sql_data
+=head2 get_sql_aref
 
 =cut
 
-sub get_sql_data {
+sub get_sql_aref {
 
   my ( $self, $type ) = @_;
 
@@ -120,7 +110,7 @@ sub get_sql_data {
     push @sql_data, \@row;
   }
   $dbh->disconnect;
-  return @sql_data;
+  return \@sql_data;
 }
 
 =head2 write_sql_data
@@ -137,9 +127,9 @@ sub write_sql_data {
     and openhandle($fh);
 
   # get data
-  my @sql_data   = $self->get_sql_data($type);
+  my $sql_data   = $self->get_sql_aref($type);
 
-  map { say $fh join("\t", @$_); } @sql_data;
+  map { say $fh join("\t", @$_); } @$sql_data;
 }
 
 =head2 say_fetch_files_script

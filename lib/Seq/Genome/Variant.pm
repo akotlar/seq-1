@@ -1,16 +1,12 @@
-package Seq::Serialize;
+package Seq::Genome::Variant;
 
 use 5.10.0;
 use strict;
 use warnings;
-use Cpanel::JSON::XS;
-use Moose::Role;
-
-requires qw( serializable_attributes );
 
 =head1 NAME
 
-Seq::Serialize - The great new Seq::Serialize!
+Seq::Genome::Variant - The great new Seq::Genome::Variant!
 
 =head1 VERSION
 
@@ -18,7 +14,7 @@ Version 0.01
 
 =cut
 
-our $VERSION = 'v0.01';
+our $VERSION = '0.01';
 
 
 =head1 SYNOPSIS
@@ -27,21 +23,30 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Serialize;
+    use Seq::Genome::Variant;
 
-    my $foo = Seq::Serialize->new();
+    my $foo = Seq::Genome::Variant->new();
     ...
+
+=head1 EXPORT
+
+A list of functions that can be exported.  You can delete this section
+if you don't export anything, such as for a purely object-oriented module.
+
+=head1 SUBROUTINES/METHODS
 
 =head2 function1
 
 =cut
 
-sub as_href
-{
-  my $self = shift;
-  my @attributes = map {$_->name} $self->meta->get_all_attributes;
-  my %obj = map { $_ => $self->{$_} } @attributes;
-  return \%obj;
+sub function1 {
+}
+
+=head2 function2
+
+=cut
+
+sub function2 {
 }
 
 =head1 AUTHOR
@@ -61,7 +66,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Serialize
+    perldoc Seq::Genome::Variant
 
 
 You can also look for information at:
@@ -110,4 +115,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-1; # End of Seq::Serialize
+1; # End of Seq::Genome::Variant

@@ -1,4 +1,4 @@
-package Seq::Store;
+package Seq::Genome::Transcript;
 
 use 5.10.0;
 use strict;
@@ -6,7 +6,7 @@ use warnings;
 
 =head1 NAME
 
-Seq::Store - The great new Seq::Store!
+Seq::Genome::Transcript - The great new Seq::Genome::Transcript!
 
 =head1 VERSION
 
@@ -23,9 +23,9 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Store;
+    use Seq::Genome::Transcript;
 
-    my $foo = Seq::Store->new();
+    my $foo = Seq::Genome::Transcript->new();
     ...
 
 =head1 EXPORT
@@ -66,7 +66,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Store
+    perldoc Seq::Genome::Transcript
 
 
 You can also look for information at:
@@ -115,4 +115,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-1; # End of Seq::Store
+1; # End of Seq::Genome::Transcript

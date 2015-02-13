@@ -89,7 +89,7 @@ my $hg38_config_obj = Seq::Config->new($hg38_config_href);
 
   # test good connection succeedes
   lives_ok { $init_hg38->dbh } 'dbh() succeeds if connection works.';
-  lives_ok { $init_hg38->get_sql_data('snp') } 'get_sql_data() succeeds if connection works.';
+  lives_ok { $init_hg38->get_sql_aref('snp') } 'get_sql_aref() succeeds if connection works.';
 }
 
 # test failure to connect throws error
@@ -98,7 +98,7 @@ my $hg38_config_obj = Seq::Config->new($hg38_config_href);
   $drh->{mock_connect_fail} = 1;
   my $init_hg38 = Seq::Config::Init->new( { dsn => 'dbi:Mock', config => $hg38_config_obj, });
   throws_ok { $init_hg38->dbh } qr/Could not connect/, 'dbh() fails if Db connection fails.';
-  throws_ok { $init_hg38->get_sql_data('snp') } qr/Could not connect/, 'get_sql_data() fails if Db connection fails.';
+  throws_ok { $init_hg38->get_sql_aref('snp') } qr/Could not connect/, 'get_sql_aref() fails if Db connection fails.';
 }
 
 # test loss of Db connection throws error
@@ -110,7 +110,7 @@ TODO: {
   my $sth = eval{  $init_hg38->dbh()->prepare('Select foo FROM bar') };
   $init_hg38->dbh()->{mock_can_connect} = 0;
   throws_ok { $sth->execute(); } qr/Could not connect/, 'basic dbh error thrown';
-  throws_ok { $init_hg38->get_sql_data('snp') } qr/Could not connect/, 'get_sql_data() fails if Db connection fails';
+  throws_ok { $init_hg38->get_sql_aref('snp') } qr/Could not connect/, 'get_sql_aref() fails if Db connection fails';
 }
 
 # setup data for reading sql db tests
@@ -131,8 +131,8 @@ TODO: {
   my $local_hg38_config_obj = Seq::Config->new($local_hg38_config_href);
   my $init_hg38 = Seq::Config::Init->new( { dsn => 'dbi:SQLite:dbname=test', host => '', user => '', config => $local_hg38_config_obj, });
   my $exp_data = [ [ 1, 'GRN', 55 ], [ 2, 'Titan', 222, ], ];
-  my @obs_data = $init_hg38->get_sql_data('snp');
-  is_deeply( \@obs_data, $exp_data, 'fetched sql data');
+  my $obs_data = $init_hg38->get_sql_aref('snp');
+  is_deeply( $obs_data, $exp_data, 'fetched sql data');
 }
 
 # write fetched sql data
@@ -184,7 +184,11 @@ for my $type (qw(seq phastCons phyloP))
   my $extract_prog      = "python $cwd/extract.py";
   #$exp_script =~ s/create_cons\.py/$create_cons_prog/g;
   #$exp_script =~ s/extract\.py/$extract_prog/g;
-  #$exp_script =~ s/split_wigFix\.py/$split_wigFix_prog/g;
+  #$exp_script =~ s/split_wigFix\.py/$split_wigFix_prog/g
+  #sub time_stamp {
+  #return sprintf("%d-%02d-%02d", eval(localtime->year() + 1900),
+  #  eval(localtime->mon() + 1), localtime->mday());
+  #};
 
   # setup expected data
   my @cmds;
