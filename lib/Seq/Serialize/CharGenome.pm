@@ -3,7 +3,7 @@ package Seq::Serialize::CharGenome;
 use 5.10.0;
 use strict;
 use warnings;
-use Cpanel::JSON::XS;
+use Carp;
 use Moose::Role;
 
 requires qw( substr_char_genome );
@@ -62,7 +62,7 @@ sub insert_score {
   my $seq_len = $self->length;
 
   confess "insert_score expects inserted value to be between 0 and 1"
-    unless ($val >= 0 and $val <= 1);
+    unless ($score >= 0 and $score <= 1);
 
   confess "insert_score expects pos value between 1 and $seq_len"
     unless ($pos >= 0 and $pos <= 1);
@@ -161,5 +161,6 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 
 =cut
+no Moose::Role;
 
 1; # End of Seq::Serialize::CharGenome

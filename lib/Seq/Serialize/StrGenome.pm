@@ -3,7 +3,7 @@ package Seq::Serialize::StrGenome;
 use 5.10.0;
 use strict;
 use warnings;
-use Cpanel::JSON::XS;
+use Carp;
 use Moose::Role;
 
 requires qw( substr_str_genome );
@@ -46,11 +46,11 @@ sub push_str {
 
 =cut
 
-sub get_char {
+sub get_str {
   my $self = shift;
   my ($pos) = @_;
   confess "get_value expects a position number"
-    unless $pos >= 1 and $pos < length ${ $str->str_seq };
+    unless $pos >= 1 and $pos < length ${ $self->str_seq };
 
   return substr( ${$self->str_seq}, ($pos - 1), 1);
 }
@@ -120,5 +120,6 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 
 =cut
+no Moose::Role;
 
 1; # End of Seq::Serialize::StrGenome

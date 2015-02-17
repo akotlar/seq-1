@@ -2,11 +2,12 @@ package Seq::Build::GenomeSizedTrack;
 
 use 5.10.0;
 use Carp;
+use Moose;
 use namespace::autoclean;
 use strict;
 use warnings;
 
-with 'Seq::Seralize::CharGenome', 'Seq::Seralize::StrGenome',
+with 'Seq::Serialize::CharGenome', 'Seq::Serialize::StrGenome';
 
 =head1 NAME
 
@@ -45,7 +46,7 @@ has name => (
 #   used to decode the score
 has char2score => (
   is => 'ro',
-  isa => 'CodeRef'
+  isa => 'CodeRef',
 );
 
 # holds a subroutine that converts scores to a char for the track, which is
