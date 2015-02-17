@@ -10,13 +10,13 @@ use Test::Exception;
 
 plan tests => 46;
 
-BEGIN 
+BEGIN
 {
   chdir("./t");
 }
 
 # test the package's attributes and type constraints
-my $package = "Seq::Config::Init";
+my $package = "Seq::Build::Fetch";
 
 # load package
 use_ok($package) || die "$package cannot be loaded";
@@ -72,7 +72,7 @@ my $hg38_config_obj = Seq::Config->new($hg38_config_href);
 {
   # setup mock DBI driver
   my $drh = DBI->install_driver( 'Mock' );
-  my $init_hg38 = Seq::Config::Init->new( { dsn => 'dbi:Mock', config => $hg38_config_obj, });
+  my $init_hg38 = Seq::Build::Fetch->new( { dsn => 'dbi:Mock', config => $hg38_config_obj, });
 
   # check dbh method returns DBI::db obj
   can_ok( $init_hg38, 'dbh' );
@@ -96,7 +96,7 @@ my $hg38_config_obj = Seq::Config->new($hg38_config_href);
 {
   my $drh = DBI->install_driver( 'Mock' );
   $drh->{mock_connect_fail} = 1;
-  my $init_hg38 = Seq::Config::Init->new( { dsn => 'dbi:Mock', config => $hg38_config_obj, });
+  my $init_hg38 = Seq::Build::Fetch->new( { dsn => 'dbi:Mock', config => $hg38_config_obj, });
   throws_ok { $init_hg38->dbh } qr/Could not connect/, 'dbh() fails if Db connection fails.';
   throws_ok { $init_hg38->get_sql_aref('snp') } qr/Could not connect/, 'get_sql_aref() fails if Db connection fails.';
 }
@@ -106,7 +106,7 @@ TODO: {
   local $TODO = 'do not understand why these continue to fail (i.e., succeed)';
   my $drh = DBI->install_driver( 'Mock' );
   $drh->{mock_connect_fail} = 0;
-  my $init_hg38 = Seq::Config::Init->new( { dsn => 'dbi:Mock', config => $hg38_config_obj, });
+  my $init_hg38 = Seq::Build::Fetch->new( { dsn => 'dbi:Mock', config => $hg38_config_obj, });
   my $sth = eval{  $init_hg38->dbh()->prepare('Select foo FROM bar') };
   $init_hg38->dbh()->{mock_can_connect} = 0;
   throws_ok { $sth->execute(); } qr/Could not connect/, 'basic dbh error thrown';
@@ -129,7 +129,7 @@ TODO: {
   my $local_hg38_config_href = $hg38_config_href;
   $local_hg38_config_href->{snp_track_statement} = 'SELECT id, name, feature FROM test';
   my $local_hg38_config_obj = Seq::Config->new($local_hg38_config_href);
-  my $init_hg38 = Seq::Config::Init->new( { dsn => 'dbi:SQLite:dbname=test', host => '', user => '', config => $local_hg38_config_obj, });
+  my $init_hg38 = Seq::Build::Fetch->new( { dsn => 'dbi:SQLite:dbname=test', host => '', user => '', config => $local_hg38_config_obj, });
   my $exp_data = [ [ 1, 'GRN', 55 ], [ 2, 'Titan', 222, ], ];
   my $obs_data = $init_hg38->get_sql_aref('snp');
   is_deeply( $obs_data, $exp_data, 'fetched sql data');
@@ -141,12 +141,12 @@ TODO: {
   my $local_hg38_config_href = $hg38_config_href;
   $local_hg38_config_href->{snp_track_statement} = 'SELECT id, name, feature FROM test';
   my $local_hg38_config_obj = Seq::Config->new($local_hg38_config_href);
-  my $init_hg38 = Seq::Config::Init->new( { dsn => 'dbi:SQLite:dbname=test', host => '', user => '', config => $local_hg38_config_obj, });
+  my $init_hg38 = Seq::Build::Fetch->new( { dsn => 'dbi:SQLite:dbname=test', host => '', user => '', config => $local_hg38_config_obj, });
   my $exp_data = [ [ 1, 'GRN', 55 ], [ 2, 'Titan', 222, ], ];
   open my $out_fh, ">", "test.txt";
   $init_hg38->write_sql_data('snp', $out_fh);
   close $out_fh;
-  my @obs_data; 
+  my @obs_data;
   open my $in_fh, "<", "test.txt";
   while(<$in_fh>)
   {
@@ -166,7 +166,7 @@ for my $type (qw(seq phastCons phyloP))
   my $command = "rsync -naz rsync://$dir";
   my $exp_script = join("\n", "#!/bin/bash", map { "$command/$_ ." } @$file_aref);
   my $local_hg38_config_obj = Seq::Config->new($hg38_config_href);
-  my $init_hg38 = Seq::Config::Init->new( { config => $local_hg38_config_obj, });
+  my $init_hg38 = Seq::Build::Fetch->new( { config => $local_hg38_config_obj, });
   my $obs_script = $init_hg38->say_fetch_files_script( $type );
   is ($obs_script, $exp_script, "write script for $type data");
 }
@@ -214,7 +214,7 @@ for my $type (qw(seq phastCons phyloP))
   }
   my $exp_script = (@cmds) ? join("\n", "#!/bin/bash", @cmds) : undef;
   my $local_dm6_config_obj = Seq::Config->new($dm6_config_href);
-  my $init_dm6 = Seq::Config::Init->new( { config => $local_dm6_config_obj, });
+  my $init_dm6 = Seq::Build::Fetch->new( { config => $local_dm6_config_obj, });
   my $obs_script = $init_dm6->say_process_files_script( $type );
   is( $obs_script, $exp_script, "say $type processing script" );
 }
@@ -230,7 +230,7 @@ for my $type (qw(seq phastCons phyloP))
   {
     foreach my $verbose (sort keys %{ $rsync_opts{$act} })
     {
-      my $init_hg38 = Seq::Config::Init->new( { act => $act, verbose => $verbose, config => $local_hg38_config_obj, });
+      my $init_hg38 = Seq::Build::Fetch->new( { act => $act, verbose => $verbose, config => $local_hg38_config_obj, });
       is ($init_hg38->_get_rsync_opts(), $rsync_opts{$act}{$verbose}, 'ok _get_rsync_opts');
     }
   }

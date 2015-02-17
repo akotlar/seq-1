@@ -5,7 +5,7 @@ use warnings;
 use Test::More;
 use YAML::XS qw(LoadFile);
 
-plan tests => 57;
+plan tests => 81;
 
 #
 # let the tests begin
@@ -33,7 +33,7 @@ for my $attr_name (qw( gene_track_name gene_track_statement genome_name genome_d
 # check type constraints for attributes that should have ArrayRef[Str] values
 for my $attr_name (qw( chr_names gene_track_annotation_names phastCons_proc_clean_dir
   phastCons_files phastCons_proc_chr phastCons_proc_init phyloP_proc_clean_dir phyloP_files
-  phyloP_proc_chr phyloP_proc_init seq_files seq_proc_init ))
+  phyloP_proc_chr phyloP_proc_init seq_files seq_proc_chr ))
 {
   my $attr = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint");
@@ -58,7 +58,7 @@ my $entry //= $config_href->{$genome} || die "cannot find $genome in $config_fil
 my $genome_config = Seq::Config->new($entry);
 
 # snp_track_statement - subs in \$fields
-my $ok_statement_1 = qq{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141 where hg38.snp141.chrom = "chr22"};
+my $ok_statement_1 = qq{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141};
 is( $genome_config->snp_track_statement, $ok_statement_1, "snp_track_statement() substitutes expected values for \$fields" );
 
 # snp_track_statement - doesn't sub in \$fields
@@ -74,7 +74,7 @@ is( $genome_config->snp_track_statement, $ok_statement_2,"snp_track_statement() 
 my $expected_name = "hg38";
 is( $genome_config->genome_name, $expected_name, "genome_name() gave expected $expected_name");
 
-my $expected_description = "human hg38 chr22 for testing";
+my $expected_description = "human";
 is( $genome_config->genome_description, $expected_description, "genome_description() gave expected $expected_description");
 
 #
@@ -83,7 +83,7 @@ is( $genome_config->genome_description, $expected_description, "genome_descripti
 
 # check chr_names()
 my @chrs      = @{ $genome_config->chr_names };
-my @test_chrs = ("chr22");
+my @test_chrs = map { "chr$_" } (1..22, 'M', 'X', 'Y');
 for (my $i=0; $i<@chrs; $i++)
 {
   is( $chrs[$i], $test_chrs[$i], "chr_names() gave expected $test_chrs[$i]" );
