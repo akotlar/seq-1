@@ -19,6 +19,7 @@ Version 0.01
 
 =cut
 
+
 our $VERSION = '0.01';
 
 # char_seq stores a string of chars
@@ -34,6 +35,7 @@ has char_seq => (
 has str_seq => (
   is => 'rw',
   writer => undef,
+  builder => '_build_str_seq',
   isa => 'ScalarRef[Str]',
 );
 
@@ -77,12 +79,18 @@ score-like information (e.g., conservation scores).
 
 sub _build_char_seq {
   my $self = shift;
-  my $char_seq;
+  my $char_seq = "";
   for ( my $pos = 0; $pos < $self->length; $pos++ )
   {
     $char_seq .= pack('C', 0);
   }
   return \$char_seq;
+}
+
+sub _build_str_seq {
+  my $self = shift;
+  my $str_seq = "";
+  return \$str_seq;
 }
 
 sub substr_char_genome {

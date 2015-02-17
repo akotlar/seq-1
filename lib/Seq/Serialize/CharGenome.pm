@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use Carp;
 use Moose::Role;
+use YAML::XS qw(Dump);
 
 requires qw( substr_char_genome );
 
@@ -34,17 +35,17 @@ their associated sequences of chars.
 
 sub insert_char {
   my $self = shift;
-  my ($char, $pos) = @_;
+  my ($pos, $char) = @_;
   my $seq_len = $self->length;
 
   confess "insert_char expects insert value and absolute position"
-    unless $char and $pos;
+    unless defined $char and defined $pos;
 
   confess "insert_char expects insert value between 0 and 255"
     unless ($char >= 0 and $char <= 255);
 
-  confess "insert_char expects pos value between 1 and $seq_len"
-    unless ($pos >= 1 and $pos <= $seq_len);
+  confess "insert_char expects pos value between 0 and $seq_len, got $pos"
+    unless ($pos >= 0 and $pos <= $seq_len);
 
   # inserted character is a byproduct of a successful substr event
   my $inserted_char = substr( ${ $self->char_seq }, $pos, 1, pack( 'C', $char));
@@ -58,17 +59,14 @@ sub insert_char {
 
 sub insert_score {
   my $self = shift;
-  my ($score, $pos) = @_;
+  my ($pos, $score) = @_;
   my $seq_len = $self->length;
 
-  confess "insert_score expects inserted value to be between 0 and 1"
-    unless ($score >= 0 and $score <= 1);
+  confess "insert_score expects pos value between 0 and $seq_len, got $pos"
+    unless ($pos >= 0 and $pos <= $seq_len);
 
-  confess "insert_score expects pos value between 1 and $seq_len"
-    unless ($pos >= 0 and $pos <= 1);
-
-  my $char_score    = $self->score2char( $score );
-  my $inserted_char = $self->insert_char( $char_score, $pos );
+  my $char_score    = $self->score2char->( $score );
+  my $inserted_char = $self->insert_char( $pos, $char_score );
   return $inserted_char;
 }
 
@@ -79,10 +77,12 @@ sub insert_score {
 sub get_char {
   my $self = shift;
   my ($pos) = @_;
-  confess "get_value expects a position number"
-    unless $pos >= 1 and $pos < $self->length;
+  my $seq_len = $self->length;
+  confess "get_value() expects a position between 0 and end of the seq, which is $seq_len for the current string."
+    unless $pos >= 0 and $pos <= $seq_len;
 
-  return unpack ('C', substr( ${$self->char_seq}, ($pos - 1), 1));
+  # position here is not adjusted for the Zero versus 1 index issue
+  return unpack ('C', substr( ${$self->char_seq}, $pos, 1));
 }
 
 =head2 get_score

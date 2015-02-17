@@ -36,10 +36,7 @@ sub push_str {
   my $self = shift;
   my ( $str ) = @_;
 
-  confess "insert_str expects str to be of length 1"
-    unless length $str == 1;
-
-   return eval { ${ $self->str_seq } .= $str; }
+  return eval { ${ $self->str_seq } .= $str; };
 }
 
 =head2 get_char
@@ -50,9 +47,21 @@ sub get_str {
   my $self = shift;
   my ($pos) = @_;
   confess "get_value expects a position number"
-    unless $pos >= 1 and $pos < length ${ $self->str_seq };
+    unless $pos >= 0 and $pos < length ${ $self->str_seq };
 
-  return substr( ${$self->str_seq}, ($pos - 1), 1);
+  return substr( ${$self->str_seq}, $pos, 1);
+}
+
+=head2 _say_str
+
+This method is for testing purposes. Could break things if you have a really
+long string in memory since it will return a copy of that string.
+
+=cut
+
+sub say_str {
+  my $self = shift;
+  return ${ $self->str_seq };
 }
 
 =head1 AUTHOR
