@@ -1,4 +1,4 @@
-package Seq::Config::Init;
+package Seq::Build::Fetch;
 
 use 5.10.0;
 use DBI;
@@ -13,7 +13,7 @@ use YAML::XS qw(Dump);
 
 =head1 NAME
 
-Seq::Serialize - The great new Seq::Config::Init!
+Seq::Serialize - The great new Seq::Build::Fetch!
 
 =head1 VERSION
 
@@ -49,7 +49,7 @@ Perhaps a little code snippet.
 
     use Seq::Serialize;``
 
-    my $foo = Seq::Config::Inite->new();
+    my $foo = Seq::Build::Fetche->new();
     ...
 
 =head2 dbh
@@ -246,7 +246,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Config::Init
+    perldoc Seq::Build::Fetch
 
 
 You can also look for information at:
@@ -296,4 +296,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 __PACKAGE__->meta->make_immutable;
 
-1; # End of Seq::Config::Init
+1; # End of Seq::Build::Fetch

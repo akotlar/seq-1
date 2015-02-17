@@ -1,4 +1,4 @@
-package Seq::Genome::Transcript;
+package Seq::Build::SnpTrack;
 
 use 5.10.0;
 use strict;
@@ -6,7 +6,7 @@ use warnings;
 
 =head1 NAME
 
-Seq::Genome::Transcript - The great new Seq::Genome::Transcript!
+Seq::Build::SnpTrack - The great new Seq::Build::SnpTrack!
 
 =head1 VERSION
 
@@ -23,9 +23,9 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Genome::Transcript;
+    use Seq::Build::SnpTrack;
 
-    my $foo = Seq::Genome::Transcript->new();
+    my $foo = Seq::Build::SnpTrack->new();
     ...
 
 =head1 EXPORT
@@ -66,7 +66,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Genome::Transcript
+    perldoc Seq::Build::SnpTrack
 
 
 You can also look for information at:
@@ -115,4 +115,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-1; # End of Seq::Genome::Transcript
+1; # End of Seq::Build::SnpTrack
