@@ -1,12 +1,16 @@
-package Seq::Genome::Gene;
+package Seq::Serialize::StrGenome;
 
 use 5.10.0;
 use strict;
 use warnings;
+use Cpanel::JSON::XS;
+use Moose::Role;
+
+requires qw( substr_str_genome );
 
 =head1 NAME
 
-Seq::Genome::Gene - The great new Seq::Genome::Gene!
+Seq::Serialize::StrGenome - The great new Seq::Serialize::StrGenome!
 
 =head1 VERSION
 
@@ -14,39 +18,41 @@ Version 0.01
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = 'v0.01';
 
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
+Moose Role for dealing with building Genomes and the associated sequences of
+strings.
 
-Perhaps a little code snippet.
+=head1 Methods
 
-    use Seq::Genome::Gene;
-
-    my $foo = Seq::Genome::Gene->new();
-    ...
-
-=head1 EXPORT
-
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
-
-=head1 SUBROUTINES/METHODS
-
-=head2 function1
+=head2 insert_char
 
 =cut
 
-sub function1 {
+sub push_str {
+  my $self = shift;
+  my ( $str ) = @_;
+
+  confess "insert_str expects str to be of length 1"
+    unless length $str == 1;
+
+   return eval { ${ $self->str_seq } .= $str; }
 }
 
-=head2 function2
+=head2 get_char
 
 =cut
 
-sub function2 {
+sub get_char {
+  my $self = shift;
+  my ($pos) = @_;
+  confess "get_value expects a position number"
+    unless $pos >= 1 and $pos < length ${ $str->str_seq };
+
+  return substr( ${$self->str_seq}, ($pos - 1), 1);
 }
 
 =head1 AUTHOR
@@ -66,7 +72,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Genome::Gene
+    perldoc Seq::Serialize::StrGenome
 
 
 You can also look for information at:
@@ -115,4 +121,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-1; # End of Seq::Genome::Gene
+1; # End of Seq::Serialize::StrGenome
