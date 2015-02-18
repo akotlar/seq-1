@@ -1,4 +1,4 @@
-package Seq::Serialize;
+package Seq::AbsPosition;
 
 use 5.10.0;
 use strict;
@@ -6,11 +6,11 @@ use warnings;
 use Cpanel::JSON::XS;
 use Moose::Role;
 
-requires qw( serializable_attributes );
+requires qw( );
 
 =head1 NAME
 
-Seq::Serialize - The great new Seq::Serialize!
+Seq::AbsPosition - The great new Seq::AbsPosition!
 
 =head1 VERSION
 
@@ -27,23 +27,27 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Serialize;
+    use Seq::AbsPosition;
 
-    my $foo = Seq::Serialize->new();
+    my $foo = Seq::AbsPosition->new();
     ...
 
-=head2 function1
+
+=head2 abs_position_chr_pos
 
 =cut
 
-sub as_href
-{
-  my $self = shift;
-  my @attributes = @$self->seralizable_attributes;
-  my %obj = map { $_ => $self->{$_} } @attributes;
-  return \%obj;
+sub abs_position_chr_pos{
+
 }
 
+=head2 chr_pos_2_abs_position
+
+=cut
+
+sub chr_pos_2_abs_position{
+
+}
 =head1 AUTHOR
 
 Thomas Wingo, C<< <thomas.wingo at emory.edu> >>
@@ -61,7 +65,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Serialize
+    perldoc Seq::AbsPosition
 
 
 You can also look for information at:
@@ -110,4 +114,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-1; # End of Seq::Serialize
+1; # End of Seq::AbsPosition
