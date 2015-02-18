@@ -46,7 +46,8 @@ for my $attr_name (qw( char_seq str_seq ))
 {
   my $attr = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint");
-  is( $attr->type_constraint->name, 'ScalarRef[Str]', "$attr_name type is ScalarRef[Str]" );
+  is( $attr->type_constraint->name, 'ScalarRef[Str]',
+    "$attr_name type is ScalarRef[Str]" );
 }
 
 # check type constraints for attributes that should have Int values
@@ -57,31 +58,36 @@ for my $attr_name (qw( char2score score2char ))
   is( $attr->type_constraint->name, 'CodeRef', "$attr_name type is CodeRef" );
 }
 
-my $genome_track = Seq::Build::GenomeSizedTrack->new( { new => 'test' } );
-isa_ok($genome_track, 'Seq::Build::GenomeSizedTrack');
+# check that name is required
+my $generic_genome_track = Seq::Build::GenomeSizedTrack->new( name => 'test' );
+ok ( $generic_genome_track, 'Seq::Build::GenomeSizedTrack');
 
 
 # test charGenome stuff
 {
-  my @test_scores = ( '-0.5', '0', '0.5');
+  my @test_scores;
+  for (my $i = -60; $i < 61; $i++)
+  {
+    push @test_scores, $i / 2;
+  }
   my $track_name = 'test';
   my (@obs_scores, @exp_scores);
-  my $score2char_phyloP = sub { my ( $score ) = @_; 
+  my $score2char_phyloP = sub { my ( $score ) = @_;
                                 int( $score * ( 127 / 30 ) ) + 128
                               };
-  my $char2score_phyloP = sub { my ( $char ) = @_; 
-      ( $char && $char > 0 ) 
-      ? sprintf("%0.3f", eval(($_[0] - 128) / (127 / 30))) 
+  my $char2score_phyloP = sub { my ( $char ) = @_;
+      ( $char && $char > 0 )
+      ? sprintf("%0.3f", eval(($_[0] - 128) / (127 / 30)))
       : undef
   };
-  my $char_genome_track = Seq::Build::GenomeSizedTrack->new( { 
-        name => $track_name, 
-        length => $#test_scores, 
+  my $char_genome_track = Seq::Build::GenomeSizedTrack->new( {
+        name => $track_name,
+        length => $#test_scores,
         char2score => $char2score_phyloP,
-        score2char => $score2char_phyloP
-      } 
+        score2char => $score2char_phyloP,
+      }
   );
-  isa_ok($char_genome_track, 'Seq::Build::GenomeSizedTrack', 
+  isa_ok($char_genome_track, 'Seq::Build::GenomeSizedTrack',
     'Seq::Build::GenomeSizedTrack created');
   is($char_genome_track->name, $track_name, 'name set correctly');
 
@@ -92,9 +98,10 @@ isa_ok($genome_track, 'Seq::Build::GenomeSizedTrack');
     push @obs_scores, $char_genome_track->get_score($i);
     push @exp_scores, undef;
   }
-  is_deeply(\@obs_scores, \@exp_scores, "sequence initalized with length, $#test_scores");
+  is_deeply(\@obs_scores, \@exp_scores,
+    "sequence initalized with length, $#test_scores");
 
-  # insert test scores into seq and check values were inserted correctly 
+  # insert test scores into seq and check values were inserted correctly
   TODO: {
     local $TODO = 'retreive scores';
     for my $i (0..$#test_scores)
@@ -105,7 +112,7 @@ isa_ok($genome_track, 'Seq::Build::GenomeSizedTrack');
     for my $i (0..$#test_scores)
     {
       push @obs_scores, $char_genome_track->get_score($i);
-      push @exp_scores, $test_scores[$i];
+      push @exp_scores, sprintf("%0.3f", $test_scores[$i]);
     }
     is_deeply(\@obs_scores, \@exp_scores, 'scores retrieved from seq');
   }
@@ -114,8 +121,8 @@ isa_ok($genome_track, 'Seq::Build::GenomeSizedTrack');
 # make a genome string with single bases
 {
   my $track_name = 'Test';
-  my $str_genome_track = Seq::Build::GenomeSizedTrack->new( { 
-        name => $track_name, 
+  my $str_genome_track = Seq::Build::GenomeSizedTrack->new( {
+        name => $track_name,
       }
   );
   my @test_bases = qw( A C T G );
@@ -130,8 +137,8 @@ isa_ok($genome_track, 'Seq::Build::GenomeSizedTrack');
 # make a genome string with large strings of bases
 {
   my $track_name = 'Test';
-  my $str_genome_track = Seq::Build::GenomeSizedTrack->new( { 
-        name => $track_name, 
+  my $str_genome_track = Seq::Build::GenomeSizedTrack->new( {
+        name => $track_name,
       }
   );
 
@@ -165,4 +172,3 @@ isa_ok($genome_track, 'Seq::Build::GenomeSizedTrack');
   }
   is_deeply(\@obs_bases, \@exp_bases, 'substring out correct base');
 }
-
