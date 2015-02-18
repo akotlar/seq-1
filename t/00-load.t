@@ -10,8 +10,8 @@ BEGIN {
     use_ok( 'Seq' ) || print "Bail out!\n";
     use_ok( 'Seq::Annotate' ) || print "Bail out!\n";
     use_ok( 'Seq::Build::Fetch') || print "Bail out!\n";
-    use_ok( 'Seq::Build::GenomeTrack') || print "Bail out!\n";
-    use_ok( 'Seq::Build::SnpTrack') || print "Bail out!\n";
+    use_ok( 'Seq::Build::GenomeSizedTrack') || print "Bail out!\n";
+    use_ok( 'Seq::Build::SparseTrack') || print "Bail out!\n";
     use_ok( 'Seq::Config' ) || print "Bail out!\n";
     use_ok( 'Seq::Gene' ) || print "Bail out!\n";
     use_ok( 'Seq::Genome') || print "Bail out!\n";
