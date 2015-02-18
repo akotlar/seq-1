@@ -5,7 +5,7 @@ use warnings;
 use Test::More;
 use YAML::XS qw(LoadFile);
 
-plan tests => 81;
+plan tests => 50;
 
 #
 # let the tests begin
@@ -82,17 +82,11 @@ is( $genome_config->genome_description, $expected_description, "genome_descripti
 #
 
 # check chr_names()
-my @chrs      = @{ $genome_config->chr_names };
-my @test_chrs = map { "chr$_" } (1..22, 'M', 'X', 'Y');
-for (my $i=0; $i<@chrs; $i++)
-{
-  is( $chrs[$i], $test_chrs[$i], "chr_names() gave expected $test_chrs[$i]" );
-}
+my @obs_chrs = @{ $genome_config->chr_names };
+my @exp_chrs = map { "chr$_" } (1..22, 'M', 'X', 'Y');
+is_deeply( \@obs_chrs, \@exp_chrs, "chr_names() gave expected chrs" );
 
 # check gene_track_annotation_names()
-my @names      = @{ $genome_config->gene_track_annotation_names };
-my @test_names = qw( mRNA spID spDisplayID geneSymbol refseq protAcc description rfamAcc );
-for (my $i=0; $i<@names; $i++)
-{
-  is( $names[$i], $test_names[$i], "gene_track_annotation_names() gave expected $test_names[$i]." );
-}
+my @obs_names = @{ $genome_config->gene_track_annotation_names };
+my @exp_names = qw( mRNA spID spDisplayID geneSymbol refseq protAcc description rfamAcc );
+is_deeply(\@obs_names, \@exp_names, 'gene_track_annotation_names() works');
