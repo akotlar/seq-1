@@ -1,12 +1,17 @@
-package Seq::Build::SnpTrack;
+package Seq::Serialize::Sparse;
 
 use 5.10.0;
 use strict;
 use warnings;
+use Carp;
+use Moose::Role;
+use YAML::XS qw( Dump );
+
+requires qw( serialize_sparse_attrs );
 
 =head1 NAME
 
-Seq::Build::SnpTrack - The great new Seq::Build::SnpTrack!
+Seq::Serialize::Sparse - The great new Seq::Serialize::Sparse!
 
 =head1 VERSION
 
@@ -23,9 +28,9 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Build::SnpTrack;
+    use Seq::Serialize::Sparse;
 
-    my $foo = Seq::Build::SnpTrack->new();
+    my $foo = Seq::Serialize::Sparse->new();
     ...
 
 =head1 EXPORT
@@ -39,7 +44,11 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-sub function1 {
+sub as_href {
+  my $self = shift;
+  my @attributes = $self->serialize_sparse_attrs;
+  my %href = map { $_ => $self->{$_} } @attributes;
+  return \%href;
 }
 
 =head2 function2
@@ -66,7 +75,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Build::SnpTrack
+    perldoc Seq::Serialize::Sparse
 
 
 You can also look for information at:
@@ -115,4 +124,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-1; # End of Seq::Build::SnpTrack
+1; # End of Seq::Serialize::Sparse

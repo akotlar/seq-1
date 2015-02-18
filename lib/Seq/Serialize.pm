@@ -39,7 +39,7 @@ Perhaps a little code snippet.
 sub as_href
 {
   my $self = shift;
-  my @attributes = map {$_->name} $self->meta->get_all_attributes;
+  my @attributes = @$self->seralizable_attributes;
   my %obj = map { $_ => $self->{$_} } @attributes;
   return \%obj;
 }
