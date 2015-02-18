@@ -22,6 +22,17 @@ Version 0.01
 
 our $VERSION = '0.01';
 
+has name => (
+  is => 'ro',
+  isa => 'Str',
+  required => 1,
+);
+
+has length => (
+  is => 'ro',
+  isa => 'Int',
+);
+
 # char_seq stores a string of chars
 has char_seq => (
   is => 'rw',
@@ -39,11 +50,6 @@ has str_seq => (
   isa => 'ScalarRef[Str]',
 );
 
-has name => (
-  is => 'ro',
-  isa => 'Str',
-);
-
 # holds a subroutine that converts chars to a score for the track, which is
 #   used to decode the score
 has char2score => (
@@ -53,14 +59,10 @@ has char2score => (
 
 # holds a subroutine that converts scores to a char for the track, which is
 #   used to encode the scores
+
 has score2char => (
   is => 'ro',
   isa => 'CodeRef',
-);
-
-has length => (
-  is => 'ro',
-  isa => 'Int',
 );
 
 =head1 SYNOPSIS
