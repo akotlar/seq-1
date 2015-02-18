@@ -3,10 +3,7 @@ use 5.10.0;
 use strict;
 use warnings;
 use Test::More;
-use Cwd;
-use YAML::XS qw(Dump LoadFile);
-use DBD::Mock;
-use Test::Exception;
+use Scalar::Util qw( blessed );
 
 plan tests => 22;
 
@@ -14,6 +11,7 @@ BEGIN
 {
   chdir("./t");
 }
+ 
 
 # test the package's attributes and type constraints
 my $package = "Seq::Build::GenomeSizedTrack";
@@ -58,9 +56,12 @@ for my $attr_name (qw( char2score score2char ))
   is( $attr->type_constraint->name, 'CodeRef', "$attr_name type is CodeRef" );
 }
 
-# check that name is required
-my $generic_genome_track = Seq::Build::GenomeSizedTrack->new( name => 'test' );
-ok ( $generic_genome_track, 'Seq::Build::GenomeSizedTrack');
+# check obj creation
+my $generic_genome_track = Seq::Build::GenomeSizedTrack->new( { name => 'test' } );
+ok ( ( $generic_genome_track 
+      && (blessed $generic_genome_track || !ref $generic_genome_track)
+      && $generic_genome_track->isa($package) )
+    , "$package obj created");
 
 
 # test charGenome stuff
@@ -87,9 +88,8 @@ ok ( $generic_genome_track, 'Seq::Build::GenomeSizedTrack');
         score2char => $score2char_phyloP,
       }
   );
-  isa_ok($char_genome_track, 'Seq::Build::GenomeSizedTrack',
-    'Seq::Build::GenomeSizedTrack created');
-  is($char_genome_track->name, $track_name, 'name set correctly');
+  isa_ok($char_genome_track, $package, "$package obj created with phyloP constructors");
+  is($char_genome_track->name, $track_name, "$package name set correctly");
 
 
   # check the build script initialized zeros for the specified length
