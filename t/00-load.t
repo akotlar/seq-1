@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::More;
 
-plan tests => 8;
+plan tests => 10;
 
 BEGIN {
     use_ok( 'Seq' ) || print "Bail out!\n";

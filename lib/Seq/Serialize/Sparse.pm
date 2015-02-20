@@ -1,8 +1,6 @@
 package Seq::Serialize::Sparse;
 
 use 5.10.0;
-use strict;
-use warnings;
 use Carp;
 use Moose::Role;
 use YAML::XS qw( Dump );

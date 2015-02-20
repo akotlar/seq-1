@@ -7,8 +7,6 @@ use Cwd;
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw(openhandle);
-use strict;
-use warnings;
 use YAML::XS qw(Dump);
 
 =head1 NAME

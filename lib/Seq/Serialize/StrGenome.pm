@@ -1,8 +1,6 @@
 package Seq::Serialize::StrGenome;
 
 use 5.10.0;
-use strict;
-use warnings;
 use Carp;
 use Moose::Role;
 
