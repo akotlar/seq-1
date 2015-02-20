@@ -3,6 +3,7 @@ package Seq::Config::Build;
 use 5.10.0;
 use strict;
 use warnings;
+
 use Moose;
 
 =head1 NAME
@@ -15,17 +16,18 @@ Version 0.01
 
 =cut
 
-use constant FWD_5P_UTR     => 0;
-use constant FWD_CODING     => 1;
-use constant FWD_3P_UTR     => 2;
-use constant FWD_FLANK_EXON => 3;
-use constant FWD_NC_RNA     => 4;
-use constant REV_5P_UTR     => 5;
-use constant REV_CODING     => 6;
-use constant REV_3P_UTR     => 7;
-use constant REV_FLANK_EXON => 8;
-use constant REV_NC_RNA     => 9;
-use constant BATCH_INSERT   => 900;
+#
+# use this to hold an array of SnpTrack & AnnotationTrack
+# loop through the array to determine if one of those tracks
+# have data a particular point.
+#
+
+# attribute / method list
+# 1. get abs position from chr / pos
+# 2. get chr / pos from abs position
+# 3. array of genome-sized tracks
+# 4. array of sparse tracks 
+
 my $splice_site_length = 6;
 
 my %idx_codes;

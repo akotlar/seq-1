@@ -1,17 +1,9 @@
 package Seq::Build::SparseTrack;
 
 use 5.10.0;
-use Carp;
 use Moose;
-use Moose::Util::TypeConstraints;
 use namespace::autoclean;
-use YAML::XS qw( Dump );
-use strict;
-use warnings;
-
 with 'Seq::Serialize::Sparse';
-
-enum 'SparseTrackType' => [qw( snpLike exonLike geneLike )];
 
 =head1 NAME
 
@@ -28,20 +20,18 @@ our $VERSION = '0.01';
 # %sites - stores a list of all sites ever passed to the object as keys
 my %sites;
 
-has type => (
-  is => 'ro',
-  isa => 'SparseTrackType',
-  required => 1,
-);
-
-has chr_pos => (
+has abs_pos => (
   is => 'rw',
-  isa => 'Str',
+  isa => 'Int',
+  clearer => 'clear_abs_pos',
+  predicate => 'has_abs_pos',
 );
 
 has features => (
   is => 'rw',
   isa => 'HashRef',
+  clearer => 'clear_features',
+  predicate => 'has_features',
 );
 
 =head1 SYNOPSIS
@@ -69,7 +59,7 @@ are left with the other 4 to store other information. We have choose to store:
 
 sub save_site_and_seralize {
   my $self = shift;
-  $sites{$self->chr_pos} = 1;
+  $sites{$self->abs_pos} = 1;
   return $self->as_href;
 };
 
@@ -77,27 +67,29 @@ sub save_site_and_seralize {
 
 =cut
 
-sub clear {
+sub clear_all {
   my $self = shift;
-  $self->chr_pos( '' );
-  $self->features( {} );
+  my @attributes = map {$_->name} $self->meta->get_all_attributes;
+  for my $attrib (@attributes)
+  {
+    my $clear_method = "clear\_$attrib";
+    $self->$clear_method;
+  }
 }
 
-=head2 _seralize_sparse
+=head2 have_annotated_site
 
 =cut
 
-sub serialize_sparse_attrs {
-  return qw( chr_pos features );
-}
-
-=head2 annotated_site
-
-=cut
 sub have_annotated_site {
   my $self = shift;
   my $site = shift;
   return exists($sites{$site});
+}
+
+sub serialize_sparse_attrs {
+  my $self = shift;
+  return $self->meta->get_attribute_list;
 }
 
 =head1 AUTHOR
@@ -165,5 +157,7 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 
 =cut
+
+__PACKAGE__->meta->make_immutable;
 
 1; # End of Seq::Build::SparseTrack

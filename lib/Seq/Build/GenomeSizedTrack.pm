@@ -4,8 +4,6 @@ use 5.10.0;
 use Carp;
 use Moose;
 use namespace::autoclean;
-use strict;
-use warnings;
 
 with 'Seq::Serialize::CharGenome', 'Seq::Serialize::StrGenome';
 

@@ -6,7 +6,7 @@ use Scalar::Util qw( blessed );
 use Test::More;
 use YAML::XS qw( Dump );
 
-plan tests => 21;
+plan tests => 20;
 
 BEGIN
 {
@@ -25,59 +25,49 @@ ok ($package->can('meta'), "$package has a meta() method")
 
 # check package attributes
 {
-  # check type attribute
-  my $attr = $package->meta->get_attribute('type');
-  ok( $attr->has_type_constraint, "$package attribute 'type' has a type constraint");
-  is( $attr->type_constraint->name, 'SparseTrackType', 
-    "$package attribute 'type' is a 'SparseTrackType'");
-
-  # check chr_pos attribute
-  $attr = $package->meta->get_attribute('chr_pos');
-  ok( $attr->has_type_constraint, "$package attribute 'chr_pos' has a type constraint");
-  is( $attr->type_constraint->name, 'Str', "$package attribute 'chr_pos' is a 'Str'");
-  
-  # check features attribute
-  $attr = $package->meta->get_attribute('features');
-  ok( $attr->has_type_constraint, "$package attribute 'features' has a type constraint");
-  is( $attr->type_constraint->name, 'HashRef', "$package attribute 'features' is a 'HashRef'");
+  # check abs_pos attribute
+  my $attr = $package->meta->get_attribute('abs_pos');
+  ok( $attr->has_type_constraint, "$package attribute 'abs_pos' has a type constraint");
+  is( $attr->type_constraint->name, 'Int', "$package attribute 'abs_pos' is a 'Int'");
 }
 
 # store data
 {
-  my $dbsnp = Seq::Build::SparseTrack->new( { type => 'snpLike', } );
-  ok( ( $dbsnp && (blessed $dbsnp || !ref $dbsnp) 
+  my $dbsnp = Seq::Build::SparseTrack->new( );
+  ok( ( $dbsnp && (blessed $dbsnp || !ref $dbsnp)
       && $dbsnp->isa($package) ), "$package obj created");
 
   my @exp_history = ( );
   my $data = [
-    { chr_pos => "chr1:100",
-      features => { 
-        maf => 0.1,
-        alleles => 'A,C',
-      }
+    { abs_pos => 100,
+      features => {
+        thing1 => 'good',
+        thing2 => 'sublime',
+      },
     },
-    { chr_pos => "chr2:200",
-      features => { 
-        maf => 0.2,
-        alleles => 'A,G',
-      }
+    { abs_pos => 200,
+      features => {
+        talks => 'sometimes',
+      },
     },
-    { chr_pos => "chr3:300",
-      features => { 
-        maf => 0.3,
-        alleles => 'A,T',
-      }
+    { abs_pos => 300,
+      features => {
+        good_driver => 'very',
+      },
     },
   ];
 
   for my $entry (@$data)
   {
-    $dbsnp->chr_pos( $entry->{chr_pos} );
+    is( '', $dbsnp->have_annotated_site( $entry->{abs_pos} ), 'history correctly does not find abs_pos');
+    $dbsnp->abs_pos( $entry->{abs_pos} );
     $dbsnp->features( $entry->{features} );
     is_deeply( $dbsnp->save_site_and_seralize, $entry, 'seralized entry');
-    $dbsnp->clear;
-    is( $dbsnp->chr_pos, '', 'cleared chr_pos' );
-    is_deeply( $dbsnp->features, {}, 'cleared features' );
-    is( 1, $dbsnp->have_annotated_site( $entry->{chr_pos} ), 'history works');
+    $dbsnp->clear_all;
+    is( $dbsnp->has_abs_pos, '', 'cleared attrib abs_pos');
+    is( $dbsnp->abs_pos, undef, 'cleared abs_pos' );
+    is( 1, $dbsnp->have_annotated_site( $entry->{abs_pos} ), 'history correcly finds abs_pos');
   }
 }
+
+__END__
