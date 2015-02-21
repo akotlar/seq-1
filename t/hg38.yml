@@ -1,4 +1,4 @@
-# hg38 annotated with UCSC knownGene, snp141, phastCons and phyloP
+--- # hg38 annotated with UCSC knownGene, snp141, phastCons and phyloP
 genome_description: human
 genome_name: hg38
 genome_chrs:
@@ -31,7 +31,8 @@ genome_chrs:
 # annotation tracks
 sparse_tracks:
   - type: gene
-    local_file: ./hg38/raw/gene/knownGene.txt.gz
+    local_dir: ./hg38/raw/gene
+    local_file: knownGene.txt.gz
     name: knownGene
     sql_statement: 'SELECT * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name'
     entry_names:
@@ -44,7 +45,8 @@ sparse_tracks:
       - description
       - rfamAcc
   - type: snp
-    local_file: ./hg38/raw/snp/snp141.txt.gz
+    local_dir: ./hg38/raw/snp/
+    local_file: snp141.txt.gz
     name: snp141
     statement: 'SELECT $fields FROM hg38.snp141'
     entry_names:

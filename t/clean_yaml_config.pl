@@ -4,7 +4,7 @@ use YAML::XS qw(Dump LoadFile);
 use Getopt::Long;
 use Pod::Usage;
 use Time::localtime;
-use Snpfile::Tools;
+use Scalar::Util qw( reftype );
 
 # variables
 my ( $config_file, $help, $print_clean_file );
@@ -29,7 +29,19 @@ say "=" x 80;
 
 for my $i (keys %$config_href)
 {
-  print Dump($i);
+  my $type //= reftype $config_href->{$i};
+  if ($type)
+  {
+    if ($type eq "ARRAY")
+    {
+      say join(" ", $i, scalar @{ $config_href->{$i}});
+      print Dump($config_href->{$i});
+    }
+  }
+  else
+  {
+    say $i;
+  }
 }
 
 
@@ -40,7 +52,7 @@ unless ($print_clean_file)
     open my $out_fh, ">", $out_file;
     print $out_fh Dump($config_href);
     close $out_fh;
-} 
+}
 __END__
 
 =head1 NAME
