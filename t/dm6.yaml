@@ -10,6 +10,8 @@ chr_names:
   - chrM
   - chrX
   - chrY
+genome_raw_dir: ./dm6/raw
+genome_index_dir: ./dm6/index
 sparse_tracks:
   - type: gene
     local_dir: ./hg38/raw/gene/
@@ -20,7 +22,8 @@ sparse_tracks:
       - name
       - name2
 genome_sized_tracks:
-  - name: genome
+  - name: dm6
+    type: genome
     local_dir: ./dm6/raw/seq
     local_files:
       - chr2L.fa.gz
@@ -39,6 +42,7 @@ genome_sized_tracks:
        - 'gzip $chr.fa'
 
   - name: phastCons
+    type: score
     local_dir: ./dm6/raw/phastCons
     local_files:
       - dm6.txt.gz
@@ -57,6 +61,7 @@ genome_sized_tracks:
       - 'rm *.gz'
       - 'gzip *.txt'
   - name: phyloP
+    type: score
     local_dir: ./dm6/raw/phyloP
     local_files:
       - dm6.txt.gz
