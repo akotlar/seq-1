@@ -1,10 +1,9 @@
 package Seq::Config::Build;
 
 use 5.10.0;
-use strict;
-use warnings;
-
 use Moose;
+use namespace::autoclean;
+use Seq::Config;
 
 =head1 NAME
 
@@ -26,7 +25,7 @@ Version 0.01
 # 1. get abs position from chr / pos
 # 2. get chr / pos from abs position
 # 3. array of genome-sized tracks
-# 4. array of sparse tracks 
+# 4. array of sparse tracks
 
 my $splice_site_length = 6;
 
@@ -56,19 +55,6 @@ my %idx_codes;
         }
       }
     }
-  }
-}
-
-my %bin_codes;
-$bin_codes{typedef}{idx}       = "C C C";
-$bin_codes{typedef}{phastCons} = "C";
-$bin_codes{typedef}{phyloP}    = "C";
-
-foreach my $kind ( keys %bin_codes )
-{
-  foreach my $type ( keys %{ $bin_codes{$kind} } )
-  {
-    $bin_codes{'length'}{$type} = length( pack( $bin_codes{$kind}{$type}, () ) );
   }
 }
 

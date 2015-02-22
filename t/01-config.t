@@ -41,52 +41,44 @@ for my $attr_name (qw( chr_names gene_track_annotation_names phastCons_proc_clea
 }
 
 #
-# test the package with the test data
+# test data 
 #
 
-# set test yaml config file
-my $config_file = "./t/test_annotation.yml";
+# hg38 test object
+my $hg38_config = Seq::Config->new_with_config( configfile => "./t/hg38.yml" );
 
-# load the config file
-my $config_href = LoadFile($config_file) || die "cannot load $config_file: $!\n";
+# snp_track_statement - subs in $fields
+{
+  my $ok_statement = qq{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141};
+  is( $hg38_config->snp_track_statement, $ok_statement, "snp_track_statement() substitutes expected values for \$fields" );
+}
 
-# choose a genome entry to test
-my $genome = "hg38";
-my $entry //= $config_href->{$genome} || die "cannot find $genome in $config_file\n";
-
-# make a test object
-my $genome_config = Seq::Config->new($entry);
-
-# snp_track_statement - subs in \$fields
-my $ok_statement_1 = qq{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141};
-is( $genome_config->snp_track_statement, $ok_statement_1, "snp_track_statement() substitutes expected values for \$fields" );
-
-# snp_track_statement - doesn't sub in \$fields
-my $ok_statement_2 = qq{SELECT chrom, chromStart, chromEnd, name, alleleFreqs FROM hg38.snp141 where hg38.snp141.chrom = "chr22"};
-my $new_entry = $entry;
-$new_entry->{snp_track_statement} = $ok_statement_2;
-$genome_config = Seq::Config->new($new_entry);
-is( $genome_config->snp_track_statement, $ok_statement_2,"snp_track_statement() returns expected value" );
-
-#
 # check Str data is working - two contexts genome_name() and genome_description()
-#
-my $expected_name = "hg38";
-is( $genome_config->genome_name, $expected_name, "genome_name() gave expected $expected_name");
+{
+  my $expected_name = "hg38";
+  is( $hg38_config->genome_name, $expected_name, "genome_name() gave expected $expected_name");
+  my $expected_description = "human";
+  is( $hg38_config->genome_description, $expected_description, "genome_description() gave expected $expected_description");
+}
 
-my $expected_description = "human";
-is( $genome_config->genome_description, $expected_description, "genome_description() gave expected $expected_description");
+{
+  # check chr_names()
+  my @obs_chrs = @{ $hg38_config->chr_names };
+  my @exp_chrs = map { "chr$_" } (1..22, 'M', 'X', 'Y');
+  is_deeply( \@obs_chrs, \@exp_chrs, "chr_names() gave expected chrs" );
 
-#
-# check ArrayRefs are working - two contexts chr_names() and gene_track_annotation_names()
-#
+  # check gene_track_annotation_names()
+  my @obs_names = @{ $hg38_config->gene_track_annotation_names };
+  my @exp_names = qw( mRNA spID spDisplayID geneSymbol refseq protAcc description rfamAcc );
+  is_deeply(\@obs_names, \@exp_names, 'gene_track_annotation_names() works');
+}
 
-# check chr_names()
-my @obs_chrs = @{ $genome_config->chr_names };
-my @exp_chrs = map { "chr$_" } (1..22, 'M', 'X', 'Y');
-is_deeply( \@obs_chrs, \@exp_chrs, "chr_names() gave expected chrs" );
+# dm6 test object
+my $dm6_config = Seq::Config->new_with_config( configfile => "./t/dm6.yaml" );
 
-# check gene_track_annotation_names()
-my @obs_names = @{ $genome_config->gene_track_annotation_names };
-my @exp_names = qw( mRNA spID spDisplayID geneSymbol refseq protAcc description rfamAcc );
-is_deeply(\@obs_names, \@exp_names, 'gene_track_annotation_names() works');
+# test snp track is empty
+{
+  my $ok_statement = '';
+  is ( $dm6_config->snp_track_name, $ok_statement, "no snps for dm6");
+}
+

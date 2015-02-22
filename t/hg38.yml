@@ -1,6 +1,6 @@
 --- # hg38 annotated with UCSC knownGene, snp141, phastCons and phyloP
-genome_description: human
 genome_name: hg38
+genome_description: human
 genome_chrs:
   - chr1
   - chr2
@@ -27,9 +27,11 @@ genome_chrs:
   - chrM
   - chrX
   - chrY
+genome_raw_dir: ./hg38/raw
+genome_index_dir: ./hg38/index
 
 # annotation tracks
-sparse_tracks:
+annotation_tracks:
   - type: gene
     local_dir: ./hg38/raw/gene
     local_file: knownGene.txt.gz
@@ -48,11 +50,12 @@ sparse_tracks:
     local_dir: ./hg38/raw/snp/
     local_file: snp141.txt.gz
     name: snp141
-    statement: 'SELECT $fields FROM hg38.snp141'
+    sql_statement: 'SELECT $fields FROM hg38.snp141'
     entry_names:
       - name
 genome_sized_tracks:
-  - name: genome
+  - name: hg38
+    type: genome
     local_dir: ./hg38/raw/seq/
     local_files:
        - chr1.fa.gz
@@ -108,6 +111,7 @@ genome_sized_tracks:
        - chrX.fa.gz
        - chrY.fa.gz
   - name: phastCons
+    type: score
     local_dir: ./hg38/raw/phastCons
     local_files:
       - hg38.txt.gz
@@ -118,14 +122,13 @@ genome_sized_tracks:
       - 'split_wigFix.py *.wigFix.gz'
     proc_chrs_cmds:
       - 'create_cons.py $chr $dir'
-      - 'cat *.$dir >> $dir.txt'
-      - 'rm *.$dir'
+      - 'cat $chr.$dir >> $dir.txt'
+      - 'rm $chr.$dir'
       - 'rm $chr'
     proc_clean_cmds:
-      - 'rm chr*'
-      - 'rm *.gz'
-      - 'gzip *.txt'
+      - 'gzip phastCons.txt'
   - name: phyloP
+    type: score
     local_dir: ./hg38/raw/phyloP
     local_files:
       - hg38.txt.gz
@@ -136,10 +139,8 @@ genome_sized_tracks:
       - 'split_wigFix.py *.wigFix.gz'
     proc_chrs_cmds:
       - 'create_cons.py $chr $dir'
-      - 'cat *.$dir >> $dir.txt'
-      - 'rm *.$dir'
+      - 'cat $chr.$dir >> $dir.txt'
+      - 'rm $chr.$dir'
       - 'rm $chr'
     proc_clean_cmds:
-      - 'rm chr*'
-      - 'rm *.gz'
-      - 'gzip *.txt'
+      - 'gzip phyloP.txt'

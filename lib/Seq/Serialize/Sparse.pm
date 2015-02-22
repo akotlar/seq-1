@@ -42,23 +42,6 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-#
-# TODO: need a sub for each sparse track type
-#
-# snp record:
-# $record = { abs_pos => $index_site,
-#             snp_id  => $snp_id,
-#             maf     => $min_allele_freq,
-#             alleles => \@alleles
-# };
-#
-# exon record:
-# my $data = { abs_pos         => $pos,
-#              annotation_type => $gan_type,
-#              codon_code      => $codon_seq_pos_code,
-#              codon_num       => $codon_num,
-#              error           => $transcript_error
-# };
 sub as_href {
   my $self = shift;
   my @attributes = $self->serialize_sparse_attrs;

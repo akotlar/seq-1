@@ -1,12 +1,10 @@
 package Seq::Config;
 
 use 5.10.0;
-use Exporter;
 use Moose;
 use namespace::autoclean;
-use Scalar::Util qw(reftype);
-use strict;
-use warnings;
+use Seq::Build::Config::AnnotationTrack;
+use Seq::Build::Config::GenomeSizedTracks;
 
 =head1 NAME
 
@@ -33,119 +31,30 @@ Perhaps a little code snippet.
 
 =cut
 
-has chr_names => (
+has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
+has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
+has genome_chr => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
   required => 1,
 );
-has gene_track_annotation_names => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-  required => 1,
-);
-has gene_track_name => ( is => 'ro', isa => 'Str', required => 1, );
-has gene_track_statement => (is => 'ro', isa => 'Str', required => 1,);
-has genome_name => (is => 'ro', isa => 'Str', required => 1,);
-has genome_description => (is => 'ro', isa => 'Str', required => 1,);
-has phastCons_proc_clean_dir => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has phastCons_dir => (is => 'ro', isa => 'Str', required => 1,);
-has phastCons_files => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has phastCons_proc_chr => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has phastCons_proc_init => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has phyloP_proc_clean_dir => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has phyloP_dir => (is => 'ro', isa => 'Str', required => 1,);
-has phyloP_files => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has phyloP_proc_chr => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has phyloP_proc_init => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has seq_dir => (is => 'ro', isa => 'Str', required => 1,);
-has seq_files => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-  required => 1,
-);
-has seq_proc_chr => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has snp_track_name => (is => 'ro', isa => 'Str', required => 1,);
-has snp_track_statement => (is => 'rw', isa => 'Str', required => 1,);
 
-sub BUILDARGS {
-  my $class = shift;
-  my $href = $_[0];
-  if (scalar @_ > 1 || reftype($href) ne "HASH")
-  {
-    confess "Error creating new Seq::Config, expected hash";
-  }
-  else
-  {
-    my %new_hash;
-    # set undefined attributes to "" for Str requiring attributes
-    for my $attr_name (qw( gene_track_name gene_track_statement genome_name
-      genome_description phastCons_dir phyloP_dir seq_dir snp_track_name
-      snp_track_statement))
-    {
-      $new_hash{$attr_name} //= $href->{$attr_name} || "";
-    }
+has genome_sequence => (
+  is => 'ro',
+  isa => 'Seq::Build::Config::GenomeSizedTracks'
+);
 
-    # set undefined attributes as [] for ArrayRef requiring attributes
-    for my $attr_name (qw( chr_names gene_track_annotation_names
-      phastCons_proc_clean_dir phastCons_files phastCons_proc_chr
-      phastCons_proc_init phyloP_proc_clean_dir phyloP_files
-      phyloP_proc_chr phyloP_proc_init seq_files seq_proc_chr ))
-    {
-      $new_hash{$attr_name} //= $href->{$attr_name} || [];
-    }
-    return $class->SUPER::BUILDARGS(\%new_hash);
-  }
-}
+has genome_sized_tracks => (
+  is => 'ro',
+  isa => 'ArrayRef[Seq::Build::Config::GenomeSizedTracks]'
+);
 
-around 'snp_track_statement' => sub {
-  my $orig = shift;
-  my $self = shift;
-  my @snp_table_fields     = qw( chrom chromStart chromEnd name
-                                 alleleFreqCount alleles alleleFreqs
-                               );
-  my $snp_table_fields_str = join(", ", @snp_table_fields);
-  (my $statement = $self->$orig(@_)) =~ s/\$fields/$snp_table_fields_str/;
-  return $statement;
-};
+has sparse_tracks => (
+  is => 'ro',
+  isa => 'ArrayRef[Seq::Build::Config::AnnotationTrack]',
+);
+
 
 =head1 AUTHOR
 

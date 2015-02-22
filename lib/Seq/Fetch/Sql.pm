@@ -1,17 +1,20 @@
-package Seq::Build::Fetch;
+package Seq::Fetch::Sql;
 
 use 5.10.0;
-use DBI;
 use Carp;
 use Cwd;
+use DBI;
+use File::Path qw(make_path);
+use File::Spec;
+use IO::Compress::Gzip qw($GzipError);
 use Moose;
 use namespace::autoclean;
-use Scalar::Util qw(openhandle);
-use YAML::XS qw(Dump);
+use Time::localtime;
+extends 'Seq::Config::AnnotationTrack';
 
 =head1 NAME
 
-Seq::Serialize - The great new Seq::Build::Fetch!
+Seq::Serialize - The great new Seq::Fetch::Sql!
 
 =head1 VERSION
 
@@ -20,24 +23,21 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
+my $now_timestamp = sprintf( "%d-%02d-%02d",
+                             eval( localtime->year() + 1900 ),
+                             eval( localtime->mon() + 1 ),
+                             localtime->mday() );
 
+has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
 has dsn =>  ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
 has host => ( is => 'ro', isa => 'Str', required => 1, default => "genome-mysql.cse.ucsc.edu" );
 has user => ( is => 'ro', isa => 'Str', required => 1, default => "genome");
-has config => (is => 'ro', isa => 'Seq::Config',
-  handles => [ 'chr_names', 'seq_dir', 'seq_files', 'seq_proc_chr',
-               'phastCons_dir', 'phastCons_files', 'phastCons_proc_init',
-               'phastCons_proc_chr', 'phastCons_proc_clean_dir',
-               'phyloP_dir', 'phyloP_files', 'phyloP_proc_init',
-               'phyloP_proc_chr', 'phyloP_proc_clean_dir',
-               'genome_name', 'genome_description', 'gene_track_name',
-               'gene_track_statement', 'snp_track_name',  'snp_track_statement',
-             ],);
 has password  => ( is => 'ro', isa => 'Str', );
 has port => ( is => 'ro', isa => 'Int', );
 has socket => ( is => 'ro', isa => 'Str', );
 has act => (is => 'ro', isa => 'Int' );
 has verbose => (is => 'ro', isa => 'Int' );
+
 
 =head1 SYNOPSIS
 
@@ -47,7 +47,7 @@ Perhaps a little code snippet.
 
     use Seq::Serialize;``
 
-    my $foo = Seq::Build::Fetche->new();
+    my $foo = Seq::Fetch::Sqle->new();
     ...
 
 =head2 dbh
@@ -72,21 +72,17 @@ sub dbh {
 
 sub get_sql_aref {
 
-  my ( $self, $type ) = @_;
-
-  # method check
-  my $statement_meth = "$type\_track_statement";
-  confess "unknown method: $statement_meth" unless $self->meta->get_method($statement_meth);
+  my $self = shift;
 
   # get data
-  my $track_statement = $self->$statement_meth;
+  my $track_statement = $self->sql_statement;
 
   # get connection handle
   my $dbh = $self->dbh;
 
   # prepare and execute mysql command
   my $sth = $dbh->prepare($track_statement) or die $dbh->errstr;
-  my $rc  = $sth->execute() or die $dbh->errstr;
+  my $rc  = $sth->execute or die $dbh->errstr;
 
   # retrieve data
   my @sql_data;
@@ -116,119 +112,43 @@ sub get_sql_aref {
 =cut
 
 sub write_sql_data {
-  my ( $self, $type, $fh ) = @_;
-
-  # check required parameters are passed
-  confess "write_sql_data expects a type and fh" unless $self
-    and $type
-    and $fh
-    and openhandle($fh);
-
-  # get data
-  my $sql_data   = $self->get_sql_aref($type);
-
-  map { say $fh join("\t", @$_); } @$sql_data;
-}
-
-=head2 say_fetch_files_script
-
-=cut
-
-sub say_fetch_files_script {
-
-  my( $self, $type ) = @_;
-
-  # get rsync cmd and opts
-  my $rsync_opts = $self->_get_rsync_opts;
-
-  # check required parameters are passed
-  confess "write_sql_data expects a type of data (e.g., seq)" unless $self
-    and $type
-    and $rsync_opts;
-
-  # method check
-  my $file_dir = "$type\_dir";
-  my $file_list = "$type\_files";
-  confess "unknown method; $file_dir" unless $self->meta->get_method($file_dir);
-  confess "unknown method: $file_list" unless $self->meta->get_method($file_list);
-  my $remote_dir = $self->$file_dir;
-  my $file_aref = $self->$file_list;
-  my $command = "rsync $rsync_opts rsync://$remote_dir";
-  my $script = join("\n", "#!/bin/bash", map { "$command/$_ ."; } @$file_aref);
-  return $script;
-}
-
-=head2 say_process_files_script
-
-=cut
-
-sub say_process_files_script {
-  my ( $self, $type ) = @_;
-
-  # check required parameters are passed
-  confess "expected type to be seq, phyloP, or phastCons" unless $type eq "seq"
-    or $type eq "phyloP"
-    or $type eq "phastCons";
-
-  my @cmds;
-  foreach my $step (qw( proc_init proc_chr proc_dir_clean ))
-  {
-    my $method = "$type\_$step";
-    next unless $self->meta->get_method($method);
-    if ($step eq "proc_chr") # these cmds are looped over the files
-    {
-      my $chrs_aref = $self->chr_names;
-      foreach my $chr (@$chrs_aref)
-      {
-        my $this_cmd = join("\n", @{ $self->$method });
-        $this_cmd =~ s/\$dir/$type/g;
-        $this_cmd =~ s/\$chr/$chr/g;
-        push @cmds, $this_cmd;
-      }
-    }
-    else
-    {
-      my $this_cmd = join("\n", @{ $self->$method });
-      push @cmds, $this_cmd;
-    }
-  }
-  my $script = (@cmds) ? join("\n", "#!/bin/bash", @cmds) : undef;
-  return $script;
-}
-
-=head2 _get_rsync_opts
-
-=cut
-
-sub _get_rsync_opts {
   my $self = shift;
-  my $act = $self->act;
-  my $verbose = $self->verbose;
-  my $opt = "";
-  if ($act)
+
+  # set directories
+  my $dir = File::Spec->canonpath( $self->local_dir );
+  my $cwd = cwd();
+
+  # set file names
+  my $file_with_time    = $now_timestamp . "." . $self->local_file;
+  my $target_file      = File::Spec->catfile( $dir, $file_with_time );
+  my $symlink_original = File::Spec->catfile ( ($cwd, $dir), $file_with_time );
+  my $symlink_target   = File::Spec->catfile ( ($cwd, $dir), $self->local_file );
+
+  # make target dir
+  make_path($dir);
+
+  my $out_fh;
+  if ($target_file =~ m/\.gz\z/)
   {
-    if ($verbose)
-    {
-      $opt = "-avzP";
-    }
-    else
-    {
-      $opt = "-az";
-    }
+    $out_fh = new IO::Compress::Gzip $target_file
+      or croak "gzip failed: $GzipError\n";
   }
   else
   {
-    if ($verbose)
-    {
-      $opt = "-navzP";
-    }
-    else
-    {
-      $opt = "-naz";
-    }
+    open $out_fh, '>', $target_file or croak "unable to open $target_file: $!";
   }
-  return $opt;
+
+  # get data
+  my $sql_data = $self->get_sql_aref;
+
+  # write data
+  map { say $out_fh join("\t", @$_); } @$sql_data;
+
+  # link files and return success
+  return symlink $symlink_original, $symlink_target;
 }
+
+
 
 =head1 AUTHOR
 
@@ -244,7 +164,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Build::Fetch
+    perldoc Seq::Fetch::Sql
 
 
 You can also look for information at:
@@ -294,4 +214,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 __PACKAGE__->meta->make_immutable;
 
-1; # End of Seq::Build::Fetch
+1; # End of Seq::Fetch::Sql
