@@ -1,4 +1,14 @@
---- # hg38 annotated with UCSC knownGene, snp141, phastCons and phyloP
+# hg38 annotated with UCSC knownGene, snp141, phastCons and phyloP
+#
+# special commands:
+#  _add_file    => >>
+#  _asterisk    => *
+#  _chr         => specific chr (e.g., chr1..chrY)
+#  _dir         => type
+#  _gene_fields => $gene_fields_str
+#  _snp_fields  => $snp_fields_str
+#
+--- 
 genome_name: hg38
 genome_description: human
 genome_chrs:
@@ -30,13 +40,13 @@ genome_chrs:
 genome_raw_dir: ./hg38/raw
 genome_index_dir: ./hg38/index
 
-# annotation tracks
-annotation_tracks:
+# sparse tracks
+sparse_tracks:
   - type: gene
     local_dir: ./hg38/raw/gene
     local_file: knownGene.txt.gz
     name: knownGene
-    sql_statement: 'SELECT * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name'
+    sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
     entry_names:
       - mRNA
       - spID
@@ -50,7 +60,7 @@ annotation_tracks:
     local_dir: ./hg38/raw/snp/
     local_file: snp141.txt.gz
     name: snp141
-    sql_statement: 'SELECT $fields FROM hg38.snp141'
+    sql_statement: SELECT _snp_fields FROM hg38.snp141
     entry_names:
       - name
 genome_sized_tracks:
@@ -119,14 +129,14 @@ genome_sized_tracks:
     remote_files:
       - hg38.phastCons7way.wigFix.gz
     proc_init_cmds:
-      - 'split_wigFix.py *.wigFix.gz'
+      - split_wigFix.py _asterisk.wigFix.gz
     proc_chrs_cmds:
-      - 'create_cons.py $chr $dir'
-      - 'cat $chr.$dir >> $dir.txt'
-      - 'rm $chr.$dir'
-      - 'rm $chr'
+      - create_cons.py _chr _dir
+      - cat _chr._dir _add_file _dir.txt
+      - rm _chr._dir
+      - rm _chr
     proc_clean_cmds:
-      - 'gzip phastCons.txt'
+      - gzip phastCons.txt
   - name: phyloP
     type: score
     local_dir: ./hg38/raw/phyloP
@@ -136,11 +146,11 @@ genome_sized_tracks:
     remote_files:
       - hg38.phyloP7way.wigFix.gz
     proc_init_cmds:
-      - 'split_wigFix.py *.wigFix.gz'
+      - split_wigFix.py _asterisk.wigFix.gz
     proc_chrs_cmds:
-      - 'create_cons.py $chr $dir'
-      - 'cat $chr.$dir >> $dir.txt'
-      - 'rm $chr.$dir'
-      - 'rm $chr'
+      - create_cons.py _chr _dir
+      - cat _chr._dir _add_file _dir.txt
+      - rm _chr._dir
+      - rm _chr
     proc_clean_cmds:
-      - 'gzip phyloP.txt'
+      - gzip phyloP.txt

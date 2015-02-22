@@ -20,3 +20,4 @@ nytprof.out
 # test files
 test.txt
 test:hg38
+/t/*.sh

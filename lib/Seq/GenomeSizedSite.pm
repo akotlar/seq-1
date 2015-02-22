@@ -1,14 +1,12 @@
-package Seq::Build::SnpTrack;
+package Seq::GenomeSizedSite;
 
 use 5.10.0;
-use Moose;
-use namespace::autoclean;
-extends 'Seq::Build::SparseTrack';
-with 'Seq::Serialize::Sparse';
+use strict;
+use warnings;
 
 =head1 NAME
 
-Seq::Build::SnpTrack - The great new Seq::Build::SnpTrack!
+Seq::GenomeSizedSite - The great new Seq::GenomeSizedSite!
 
 =head1 VERSION
 
@@ -16,31 +14,8 @@ Version 0.01
 
 =cut
 
-# TODO: change to SiteSnp or something
-
 our $VERSION = '0.01';
 
-has snp_id => (
-  is => 'rw',
-  isa => 'Str',
-  required => 1,
-  clearer => 'clear_snp_id',
-  predicate => 'has_snp_id',
-);
-
-has maf => (
-  is => 'rw',
-  isa => 'Str',
-  clearer => 'clear_maf',
-  predicate => 'has_maf',
-);
-
-has alleles => (
-  is => 'rw',
-  isa => 'ArrayRef',
-  clearer => 'clear_alleles',
-  predicate => 'has_alleles',
-);
 
 =head1 SYNOPSIS
 
@@ -48,9 +23,9 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Build::SnpTrack;
+    use Seq::GenomeSizedSite;
 
-    my $foo = Seq::Build::SnpTrack->new();
+    my $foo = Seq::GenomeSizedSite->new();
     ...
 
 =head1 EXPORT
@@ -64,8 +39,14 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-sub serialize_sparse_attrs {
-  return qw(abs_pos snp_id alleles);
+sub function1 {
+}
+
+=head2 function2
+
+=cut
+
+sub function2 {
 }
 
 =head1 AUTHOR
@@ -74,8 +55,8 @@ Thomas Wingo, C<< <thomas.wingo at emory.edu> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-seq-build-snptrack at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq-Build-SnpTrack>.  I will be notified, and then you'll
+Please report any bugs or feature requests to C<bug-seq-sparsesite at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq-SparseSite>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
 
@@ -85,7 +66,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Build::SnpTrack
+    perldoc Seq::GenomeSizedSite
 
 
 You can also look for information at:
@@ -94,19 +75,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker (report bugs here)
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Seq-Build-SnpTrack>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Seq-SparseSite>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/Seq-Build-SnpTrack>
+L<http://annocpan.org/dist/Seq-SparseSite>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/Seq-Build-SnpTrack>
+L<http://cpanratings.perl.org/d/Seq-SparseSite>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Seq-Build-SnpTrack/>
+L<http://search.cpan.org/dist/Seq-SparseSite/>
 
 =back
 
@@ -134,6 +115,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-__PACKAGE__->meta->make_immutable;
-
-1; # End of Seq::Build::SnpTrack
+1; # End of Seq::GenomeSizedSite

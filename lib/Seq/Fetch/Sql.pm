@@ -10,7 +10,7 @@ use IO::Compress::Gzip qw($GzipError);
 use Moose;
 use namespace::autoclean;
 use Time::localtime;
-extends 'Seq::Config::AnnotationTrack';
+extends 'Seq::Config::SparseTrack';
 
 =head1 NAME
 

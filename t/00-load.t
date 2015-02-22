@@ -8,8 +8,9 @@ plan tests => 10;
 
 BEGIN {
     use_ok( 'Seq' ) || print "Bail out!\n";
+    use_ok( 'Seq::ConfigFromFile' ) || print "Bail out!\n";
     use_ok( 'Seq::Config::GenomeSizedTrack' ) || print "Bail out!\n";
-    use_ok( 'Seq::Config::AnnotationTrack' ) || print "Bail out!\n";
+    use_ok( 'Seq::Config::SparseTrack' ) || print "Bail out!\n";
     use_ok( 'Seq::Fetch' ) || print "Bail out!\n";
     use_ok( 'Seq::Fetch::Files' ) || print "Bail out!\n";
     use_ok( 'Seq::Fetch::Sql' ) || print "Bail out!\n";

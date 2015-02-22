@@ -8,7 +8,7 @@ use Test::More;
 use YAML::XS qw( LoadFile Dump );
 use DDP;
 
-plan tests => 10;
+plan tests => 6;
 
 
 chdir ("./t");
@@ -33,7 +33,7 @@ my $hg38_config_file = "hg38.yml";
 my $hg38_config_href = LoadFile( $hg38_config_file ) 
   || die "cannot load $hg38_config_file $!\n";
 
-for my $track ( @{ $hg38_config_href->{annotation_tracks} } )
+for my $track ( @{ $hg38_config_href->{sparse_tracks} } )
 {
   $track->{dsn}  = 'dbi:SQLite:dbname=test';
   $track->{host} = '';
@@ -49,9 +49,14 @@ for my $track ( @{ $hg38_config_href->{genome_sized_tracks} } )
 
 my $fetch_hg38 = Seq::Fetch->new( $hg38_config_href );
 
-isa_ok( $fetch_hg38, 'Seq::Fetch' );
 
-$fetch_hg38->fetch_annotation_tracks;
+isa_ok( $fetch_hg38, 'Seq::Fetch', 'Seq::Fetch made with a hash reference' );
+
+my $fetch_hg38_2 = Seq::Fetch->new_with_config( configfile => $hg38_config_file, );
+
+isa_ok( $fetch_hg38_2, 'Seq::Fetch', 'Seq::Fetch made with a configfile' );
+
+$fetch_hg38->fetch_sparse_tracks;
 
 open my $fh, '>', "test_hg38_fetch_files.sh" || die "cannot open test_hg38_fetch_files.sh: $!\n";
 say $fh "#!/bin/sh";

@@ -122,4 +122,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-1; # End of Seq::Serialize::Sparse
+no Moose::Role; 1; # End of Seq::Serialize::Sparse

@@ -4,7 +4,7 @@ use 5.10.0;
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw( reftype openhandle );
-use DDP;
+with 'Seq::ConfigFromFile';
 
 =head1 NAME
 
@@ -36,15 +36,15 @@ has genome_sized_tracks => (
   isa => 'ArrayRef[Seq::Fetch::Files]',
   required => 1,
 );
-has annotation_tracks => (
+has sparse_tracks => (
   is => 'ro',
   isa => 'ArrayRef[Seq::Fetch::Sql]',
 );
 
-sub fetch_annotation_tracks {
+sub fetch_sparse_tracks {
   my $self = shift;
-  my $annotation_tracks_aref = $self->annotation_tracks;
-  for my $track (@$annotation_tracks_aref)
+  my $sparse_tracks_aref = $self->sparse_tracks;
+  for my $track (@$sparse_tracks_aref)
   {
     $track->write_sql_data;
   }
@@ -81,16 +81,16 @@ sub BUILDARGS {
   my $href = $_[0];
   if (scalar @_ > 1 || reftype($href) ne "HASH")
   {
-    confess "Error: Seq::Fetch Expected hash or hash reference";
+    confess "Error: Seq::Fetch Expected hash reference";
   }
   else
   {
     my %new_hash;
-    for my $annotation_track ( @{ $href->{annotation_tracks} } )
+    for my $sparse_track ( @{ $href->{sparse_tracks} } )
     {
-      $annotation_track->{genome_name} = $href->{genome_name};
-      push @{ $new_hash{annotation_tracks} },
-        Seq::Fetch::Sql->new( $annotation_track );
+      $sparse_track->{genome_name} = $href->{genome_name};
+      push @{ $new_hash{sparse_tracks} },
+        Seq::Fetch::Sql->new( $sparse_track );
     }
     for my $genome_track ( @{ $href->{genome_sized_tracks} } )
     {

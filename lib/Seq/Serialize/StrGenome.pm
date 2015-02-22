@@ -127,6 +127,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 
 =cut
-no Moose::Role;
-
-1; # End of Seq::Serialize::StrGenome
+no Moose::Role; 1; # End of Seq::Serialize::StrGenome

@@ -1,14 +1,12 @@
-package Seq::Config;
+package Seq::SparseSite;
 
 use 5.10.0;
-use Moose;
-use namespace::autoclean;
-use Seq::Build::Config::AnnotationTrack;
-use Seq::Build::Config::GenomeSizedTracks;
+use strict;
+use warnings;
 
 =head1 NAME
 
-Seq::Config - The great new Seq::Config!
+Seq::SparseSite - The great new Seq::SparseSite!
 
 =head1 VERSION
 
@@ -18,43 +16,38 @@ Version 0.01
 
 our $VERSION = '0.01';
 
+
 =head1 SYNOPSIS
 
-Set, get, and check configuration.
+Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Config;
+    use Seq::SparseSite;
 
-    my $foo = Seq::Config->new();
+    my $foo = Seq::SparseSite->new();
     ...
+
+=head1 EXPORT
+
+A list of functions that can be exported.  You can delete this section
+if you don't export anything, such as for a purely object-oriented module.
+
+=head1 SUBROUTINES/METHODS
+
+=head2 function1
 
 =cut
 
-has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_chr => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-  required => 1,
-);
+sub function1 {
+}
 
-has genome_sequence => (
-  is => 'ro',
-  isa => 'Seq::Build::Config::GenomeSizedTracks'
-);
+=head2 function2
 
-has genome_sized_tracks => (
-  is => 'ro',
-  isa => 'ArrayRef[Seq::Build::Config::GenomeSizedTracks]'
-);
+=cut
 
-has sparse_tracks => (
-  is => 'ro',
-  isa => 'ArrayRef[Seq::Build::Config::AnnotationTrack]',
-);
-
+sub function2 {
+}
 
 =head1 AUTHOR
 
@@ -62,15 +55,18 @@ Thomas Wingo, C<< <thomas.wingo at emory.edu> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-seq at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq>.  I will be notified, and then you'll
+Please report any bugs or feature requests to C<bug-seq-sparsesite at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq-SparseSite>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
+
+
+
 
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Config
+    perldoc Seq::SparseSite
 
 
 You can also look for information at:
@@ -79,19 +75,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker (report bugs here)
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Seq>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Seq-SparseSite>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/Seq>
+L<http://annocpan.org/dist/Seq-SparseSite>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/Seq>
+L<http://cpanratings.perl.org/d/Seq-SparseSite>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Seq/>
+L<http://search.cpan.org/dist/Seq-SparseSite/>
 
 =back
 
@@ -119,6 +115,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-__PACKAGE__->meta->make_immutable;
-
- 1; # End of Seq::Config
+1; # End of Seq::SparseSite

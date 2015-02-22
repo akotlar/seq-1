@@ -93,9 +93,17 @@ sub say_process_files_script {
       my $chrs_aref = $self->genome_chrs;
       foreach my $chr (@$chrs_aref)
       {
+        my %cmd_subs = (
+          _add_file    => '>>',
+          _asterisk    => '*',
+          _chr         => $chr,
+          _dir         => $name,
+        );
         my $this_cmd = join("\n", @{ $self->$method });
-        $this_cmd =~ s/\$dir/$name/g;
-        $this_cmd =~ s/\$chr/$chr/g;
+        for my $sub (keys %cmd_subs)
+        {
+          $this_cmd =~ s/$sub/$cmd_subs{$sub}/g;
+        }
         push @cmds, $this_cmd;
       }
       push @cmds, "cd -";
