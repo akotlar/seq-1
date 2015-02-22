@@ -18,6 +18,10 @@ Version 0.01
 
 =cut
 
+# TODO: change this to 'Build::SiteAnnotation' or something
+# AnnotationTrack should probably be what we use for extending the
+# Config::AnnotationTrack
+
 our $VERSION = '0.01';
 
 enum AnnotationType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
