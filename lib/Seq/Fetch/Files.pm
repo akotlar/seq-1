@@ -8,8 +8,6 @@ use Moose;
 use namespace::autoclean;
 extends 'Seq::Config::GenomeSizedTrack';
 
-use DDP;
-
 =head1 NAME
 
 Seq::Fetch::Files - The great new Seq::Fetch::Files!

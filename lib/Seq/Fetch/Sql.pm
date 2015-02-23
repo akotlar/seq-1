@@ -6,11 +6,12 @@ use Cwd;
 use DBI;
 use File::Path qw(make_path);
 use File::Spec;
-use IO::Compress::Gzip qw($GzipError);
 use Moose;
 use namespace::autoclean;
 use Time::localtime;
+
 extends 'Seq::Config::SparseTrack';
+with 'Seq::IO';
 
 =head1 NAME
 
@@ -127,16 +128,7 @@ sub write_sql_data {
   # make target dir
   make_path($dir);
 
-  my $out_fh;
-  if ($target_file =~ m/\.gz\z/)
-  {
-    $out_fh = new IO::Compress::Gzip $target_file
-      or croak "gzip failed: $GzipError\n";
-  }
-  else
-  {
-    open $out_fh, '>', $target_file or croak "unable to open $target_file: $!";
-  }
+  my $out_fh = $self->get_write_fh( $target_file );
 
   # get data
   my $sql_data = $self->get_sql_aref;

@@ -1,9 +1,10 @@
 package Seq::Build::SparseTrack;
 
 use 5.10.0;
+use Carp qw( croak );
 use Moose;
 use namespace::autoclean;
-with 'Seq::Serialize::Sparse';
+extends 'Seq::Config::SparseTrack';
 
 =head1 NAME
 
@@ -16,23 +17,7 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-
-# %sites - stores a list of all sites ever passed to the object as keys
-my %sites;
-
-has abs_pos => (
-  is => 'rw',
-  isa => 'Int',
-  clearer => 'clear_abs_pos',
-  predicate => 'has_abs_pos',
-);
-
-has features => (
-  is => 'rw',
-  isa => 'HashRef',
-  clearer => 'clear_features',
-  predicate => 'has_features',
-);
+my @snp_attribs = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs );
 
 =head1 SYNOPSIS
 
@@ -57,39 +42,86 @@ are left with the other 4 to store other information. We have choose to store:
 
 =cut
 
-sub save_site_and_seralize {
+sub build_db {
   my $self = shift;
-  $sites{$self->abs_pos} = 1;
-  return $self->as_href;
-};
-
-=head2 _clear_self
-
-=cut
-
-sub clear_all {
-  my $self = shift;
-  my @attributes = map {$_->name} $self->meta->get_all_attributes;
-  for my $attrib (@attributes)
+  if ($self->type eq "snp")
   {
-    my $clear_method = "clear\_$attrib";
-    $self->$clear_method;
+    $self->build_snp_db( );
+  }
+  else
+  {
+    $self->build_gene_db( );
   }
 }
 
-=head2 have_annotated_site
-
-=cut
-
-sub have_annotated_site {
+sub build_snp_db {
   my $self = shift;
-  my $site = shift;
-  return exists($sites{$site});
+
+  my @snp_sites;
+  my $snp_site = Seq::SnpSite->new( save => 'disk', );
+
+  my %header;
+  my $fh = $self->get_fh;
+  while(<$fh>)
+  {
+    chomp $_;
+    my @fields = split(/\t/, $_);
+    if ($. == 1)
+    {
+      map { $header{$fields[$_]} = $_ } (0..$#fields);
+      next;
+    }
+    my %data = map { $_ => $fields[ $header{$_} ] } @snp_attribs;
+    my ( $allele_freq_count, @alleles, @allele_freqs, $min_allele_freq );
+
+    if ( $data{alleleFreqCount} )
+    {
+      @alleles      = split( /,/, $data{alleles} );
+      @allele_freqs = split( /,/, $data{alleleFreqs} );
+      my @s_allele_freqs = sort { $b <=> $a } @allele_freqs;
+      $min_allele_freq = sprintf( "%0.6f", eval( 1 - $s_allele_freqs[0] ) );
+    }
+
+    if ( $data{name} =~ m/^rs(\d+)/ )
+    {
+      foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} )
+      {
+        my $abs_pos = Seq::Build->get_abs( $data{chrom}, $pos );
+        my $record  = { abs_pos => $abs_pos,
+                        snp_id  => $data{name},
+                      };
+        if ($min_allele_freq)
+        {
+          $record->{maf}     = $min_allele_freq;
+          $record->{alleles} = \@alleles;
+        }
+        push @snp_sites, $abs_pos;
+        $snp_site->write_snp;
+        $snp_site->clear_all;
+      }
+    }
+  }
+  return \@snp_sites;
 }
 
-sub serialize_sparse_attrs {
+sub build_gene_db {
   my $self = shift;
-  return $self->meta->get_attribute_list;
+
+  my $gene_site = Seq::GeneSite->new( save => 'disk' );
+  my %header;
+  my $fh = $self->get_fh;
+  while (<$fh>)
+  {
+    chomp $_;
+    my @fields = split(/\t/, $_);
+    if ($.==1)
+    {
+      map { $header{$fields[$_]} = $_ } (0..$#fields);
+      next;
+    }
+    my %data = map { $_ => $fields[ $header{$_} ] } @gene_attribs;
+
+  }
 }
 
 =head1 AUTHOR

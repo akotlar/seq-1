@@ -33,6 +33,14 @@ strings.
 sub push_str {
   my $self = shift;
   my ( $str ) = @_;
+  if ( $str =~ m/(\A[ATCGNatcgn]+)\Z/)
+  {
+    $str = $1;
+  }
+  else
+  {
+    croak "Error adding string; non-base character found in line: $str\n";
+  }
 
   return eval { ${ $self->str_seq } .= $str; };
 }

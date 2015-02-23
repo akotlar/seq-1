@@ -30,7 +30,6 @@ has genome_chrs => (
 # for now, `genome_raw_dir` is really not needed since the other tracks
 #   specify a directory and file to use for each feature
 has genome_raw_dir => ( is => 'ro', isa => 'Str', required => 1 );
-has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1 );
 has genome_sized_tracks => (
   is => 'ro',
   isa => 'ArrayRef[Seq::Fetch::Files]',
@@ -89,17 +88,19 @@ sub BUILDARGS {
     for my $sparse_track ( @{ $href->{sparse_tracks} } )
     {
       $sparse_track->{genome_name} = $href->{genome_name};
+      $sparse_track->{genome_index_dir} = $href->{genome_index_dir};
       push @{ $new_hash{sparse_tracks} },
         Seq::Fetch::Sql->new( $sparse_track );
     }
     for my $genome_track ( @{ $href->{genome_sized_tracks} } )
     {
       $genome_track->{genome_chrs} = $href->{genome_chrs};
+      $genome_track->{genome_index_dir} = $href->{genome_index_dir};
       push @{ $new_hash{genome_sized_tracks} },
         Seq::Fetch::Files->new( $genome_track );
     }
   for my $attrib (qw( genome_name genome_description genome_chrs
-      genome_raw_dir genome_index_dir ))
+      genome_raw_dir ))
     {
       $new_hash{$attrib} //= $href->{$attrib} || "";
     }

@@ -3,8 +3,6 @@ package Seq::Serialize::Sparse;
 use 5.10.0;
 use Carp;
 use Moose::Role;
-use YAML::XS qw( Dump );
-
 requires qw( serialize_sparse_attrs );
 
 =head1 NAME
@@ -44,7 +42,8 @@ if you don't export anything, such as for a purely object-oriented module.
 
 sub as_href {
   my $self = shift;
-  my @attributes = $self->serialize_sparse_attrs;
+  my @attributes = @_;
+  #my @attributes = $self->serialize_sparse_attrs;
   my %href = map { $_ => $self->{$_} } @attributes;
   return \%href;
 }

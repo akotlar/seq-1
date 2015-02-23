@@ -1,14 +1,14 @@
-package Seq::Build::SnpTrack;
+package Seq::SnpSite;
 
 use 5.10.0;
 use Moose;
 use namespace::autoclean;
-extends 'Seq::Build::SparseTrack';
-with 'Seq::Serialize::Sparse';
+use Cpanel::JSON::XS;
+use Scalar::Util qw( reftype );
 
 =head1 NAME
 
-Seq::Build::SnpTrack - The great new Seq::Build::SnpTrack!
+Seq::SnpSite - The great new Seq::SnpSite!
 
 =head1 VERSION
 
@@ -16,9 +16,22 @@ Version 0.01
 
 =cut
 
-# TODO: change to SiteSnp or something
-
 our $VERSION = '0.01';
+my $json = Cpanel::JSON::XS->new();
+
+has fh => (
+  is => 'ro',
+  isa => 'FileHandle',
+  required => 1,
+);
+
+has abs_pos => (
+  is => 'rw',
+  isa => 'Int',
+  required => 1,
+  clearer => 'clear_abs_pos',
+  predicate => 'has_abs_pos',
+);
 
 has snp_id => (
   is => 'rw',
@@ -48,24 +61,29 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Build::SnpTrack;
+    use Seq::SnpSite;
 
-    my $foo = Seq::Build::SnpTrack->new();
+    my $foo = Seq::SnpSite->new();
     ...
 
-=head1 EXPORT
+=head1 METHODS
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
-
-=head1 SUBROUTINES/METHODS
-
-=head2 function1
+=head2 save
 
 =cut
 
-sub serialize_sparse_attrs {
-  return qw(abs_pos snp_id alleles);
+sub write_snp {
+  my $self = shift;
+  my $fh   = $self->fh;
+  print $fh $json->encode($self->as_href);
+}
+
+=head2 seralize_sparse_attribs 
+
+=cut
+
+sub seralize_sparse_attribs {
+  return (qw( abs_pos snp_id maf alleles ));
 }
 
 =head1 AUTHOR
@@ -74,8 +92,8 @@ Thomas Wingo, C<< <thomas.wingo at emory.edu> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-seq-build-snptrack at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq-Build-SnpTrack>.  I will be notified, and then you'll
+Please report any bugs or feature requests to C<bug-seq-snpsite at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq-SnpSite>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
 
@@ -85,7 +103,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Build::SnpTrack
+    perldoc Seq::SnpSite
 
 
 You can also look for information at:
@@ -94,19 +112,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker (report bugs here)
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Seq-Build-SnpTrack>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Seq-SnpSite>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/Seq-Build-SnpTrack>
+L<http://annocpan.org/dist/Seq-SnpSite>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/Seq-Build-SnpTrack>
+L<http://cpanratings.perl.org/d/Seq-SnpSite>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Seq-Build-SnpTrack/>
+L<http://search.cpan.org/dist/Seq-SnpSite/>
 
 =back
 
@@ -136,4 +154,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 __PACKAGE__->meta->make_immutable;
 
-1; # End of Seq::Build::SnpTrack
+1; # End of Seq::SnpSite

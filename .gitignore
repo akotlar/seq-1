@@ -21,3 +21,4 @@ nytprof.out
 test.txt
 test:hg38
 /t/*.sh
+/sandbox/

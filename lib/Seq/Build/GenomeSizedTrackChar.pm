@@ -1,15 +1,17 @@
-package Seq::Build::GenomeSizedTrack;
+package Seq::Build::GenomeSizedTrackChar;
 
 use 5.10.0;
 use Carp;
+use File::Path;
+use File::Spec;
 use Moose;
 use namespace::autoclean;
-
-with 'Seq::Serialize::CharGenome', 'Seq::Serialize::StrGenome';
+extends 'Seq::Config::GenomeSizedTrackChar';
+with 'Seq::Serialize::CharGenome',  'Seq::IO';
 
 =head1 NAME
 
-Seq::Build::GenomeSizedTrack - The great new Seq::Build::GenomeSizedTrack!
+Seq::Build::GenomeSizedTrackChar - The great new Seq::Build::GenomeSizedTrackChar!
 
 =head1 VERSION
 
@@ -17,10 +19,9 @@ Version 0.01
 
 =cut
 
-
 our $VERSION = '0.01';
 
-has name => (
+has genome_index_dir => (
   is => 'ro',
   isa => 'Str',
   required => 1,
@@ -38,14 +39,8 @@ has char_seq => (
   writer => undef,
   builder => '_build_char_seq',
   isa => 'ScalarRef[Str]',
-);
-
-# str_seq stores a string in a single scalar
-has str_seq => (
-  is => 'rw',
-  writer => undef,
-  builder => '_build_str_seq',
-  isa => 'ScalarRef[Str]',
+  clearer => 'clear_char_seq',
+  predicate => 'has_char_seq',
 );
 
 # holds a subroutine that converts chars to a score for the track, which is
@@ -87,19 +82,21 @@ sub _build_char_seq {
   return \$char_seq;
 }
 
-sub _build_str_seq {
-  my $self = shift;
-  my $str_seq = "";
-  return \$str_seq;
+
+sub write_char_seq {
+  my $self        = shift;
+  my $file        = $self->type . ".idx";
+  my $index_dir   = File::Spec->cannonpath( $self->genome_index_dir );
+  my $target_file = File::Spec->catfile( $index_dir, $file );
+  my $fh          = $self->get_write_bin_fh( $target_file );
+  print $fh ${ $self->char_seq };
+  close $fh;
 }
 
 sub substr_char_genome {
   $_[0]->char_seq;
 }
 
-sub substr_str_genome {
-  $_[0]->str->seq;
-}
 
 =head1 AUTHOR
 
@@ -118,7 +115,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Build::GenomeSizedTrack
+    perldoc Seq::Build::GenomeSizedTrackChar
 
 
 You can also look for information at:
@@ -169,4 +166,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 __PACKAGE__->meta->make_immutable;
 
-1; # End of Seq::Build::GenomeSizedTrack
+1; # End of Seq::Build::GenomeSizedTrackChar

@@ -1,16 +1,12 @@
-package Seq::Build::AnnotationTrack;
+package Seq::GeneSite;
 
 use 5.10.0;
 use Moose;
-use Moose::Util::TypeConstraints;
 use namespace::autoclean;
-
-extends 'Seq::Build::SparseTrack';
-with 'Seq::Serialize::Sparse';
 
 =head1 NAME
 
-Seq::Build::AnnotationTrack - The great new Seq::Build::AnnotationTrack!
+Seq::GeneSite - The great new Seq::GeneSite!
 
 =head1 VERSION
 
@@ -18,14 +14,19 @@ Version 0.01
 
 =cut
 
-# TODO: change this to 'Build::SiteAnnotation' or something
-# AnnotationTrack should probably be what we use for extending the
-# Config::AnnotationTrack
-
 our $VERSION = '0.01';
 
-enum AnnotationType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
-                         'Splice Donor', 'Splice Acceptor' ];
+enum GeneAnnotationTyoe => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
+                             'Splice Donor', 'Splice Acceptor' ];
+enum StrandType         => [ '+', '-' ];
+
+has abs_pos => (
+  is => 'rw',
+  isa => 'Int',
+  required => 1,
+  clearer => 'clear_abs_pos',
+  predicate => 'has_abs_pos',
+)
 
 has name => (
   is => 'rw',
@@ -36,7 +37,7 @@ has name => (
 
 has annotation_type => (
   is => 'rw',
-  isa => 'AnnotationType',
+  isa => 'GeneAnnotationType',
   clearer => 'clear_annotation_type',
   predicate => 'has_annotation_type',
 );
@@ -85,9 +86,9 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Build::AnnotationTrack;
+    use Seq::GeneSite;
 
-    my $foo = Seq::Build::AnnotationTrack->new();
+    my $foo = Seq::GeneSite->new();
     ...
 
 =head1 EXPORT
@@ -101,9 +102,14 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-sub serialize_sparse_attrs {
-  return qw( annotation_type strand codn codon_site_pos aa_residue_pos
-    error_code );
+sub function1 {
+}
+
+=head2 function2
+
+=cut
+
+sub function2 {
 }
 
 =head1 AUTHOR
@@ -112,8 +118,8 @@ Thomas Wingo, C<< <thomas.wingo at emory.edu> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-seq-build-snptrack at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq-Build-SnpTrack>.  I will be notified, and then you'll
+Please report any bugs or feature requests to C<bug-seq-GeneSite at rt.cpan.org>, or through
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Seq-GeneSite>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
 
@@ -123,7 +129,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Build::AnnotationTrack
+    perldoc Seq::GeneSite
 
 
 You can also look for information at:
@@ -132,19 +138,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker (report bugs here)
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Seq-Build-SnpTrack>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Seq-GeneSite>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/Seq-Build-SnpTrack>
+L<http://annocpan.org/dist/Seq-GeneSite>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/Seq-Build-SnpTrack>
+L<http://cpanratings.perl.org/d/Seq-GeneSite>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/Seq-Build-SnpTrack/>
+L<http://search.cpan.org/dist/Seq-GeneSite/>
 
 =back
 
@@ -174,4 +180,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 __PACKAGE__->meta->make_immutable;
 
-1; # End of Seq::Build::AnnotationTrack
+1; # End of Seq::GeneSite
