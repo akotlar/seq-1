@@ -1,6 +1,7 @@
 package Seq::Config::GenomeSizedTrack;
 
 use 5.10.0;
+use Carp qw( confess );
 use Moose;
 use Moose::Util::TypeConstraints;
 use namespace::autoclean;
@@ -19,6 +20,40 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
+my (%idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp);
+{
+  my @bases      = qw( A C G T N );
+  my @annotation = qw( 0 1 );
+  my @in_exon    = qw( 0 1 );
+  my @in_gene    = qw( 0 1 );
+  my @in_snp     = qw( 0 1 );
+  my @char       = ( 0 .. 255 );
+  my $i          = 0;
+
+  foreach my $base (@bases)
+  {
+    foreach my $gan (@annotation)
+    {
+      foreach my $gene (@in_gene)
+      {
+        foreach my $exon (@in_exon)
+        {
+          foreach my $snp (@in_snp)
+          {
+            my $code = $char[$i];
+            $i++;
+            $idx_codes{$base}{$gan}{$gene}{$exon}{$snp} = $code;
+            $idx_base{$code}    = $base;
+            $idx_in_gan{$code}  = $base if $gan;
+            $idx_in_gene{$code} = $base if $gene;
+            $idx_in_exon{$code} = $base if $exon;
+            $idx_in_snp{$code}  = $base if $snp;
+          }
+        }
+      }
+    }
+  }
+}
 
 has genome_chrs => (
   is => 'ro',
@@ -28,19 +63,17 @@ has genome_chrs => (
 );
 has name => ( is => 'ro', isa => 'Str', required => 1, );
 has type => ( is => 'ro', isa => 'GenomeSizedTrackType', required => 1, );
-has local_dir => ( is => 'ro', isa => 'Str', required => 1, );
+has local_dir => ( is => 'ro', isa => 'Str', );
 has local_files => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  required => 1,
 );
-has remote_dir => ( is => 'ro', isa => 'Str', required => 1, );
+has remote_dir => ( is => 'ro', isa => 'Str' );
 has remote_files => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
-  required => 1,
 );
 has proc_init_cmds => (
   is => 'ro',
@@ -80,16 +113,50 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-sub function1 {
+sub get_idx_code {
+  my $self = shift;
+  my ($base, $in_gan, $in_gene, $in_exon, $in_snp) = @_;
+
+  confess "get_idx_code() expects base, in_gan, in_gene, in_exon, and in_snp"
+    unless $base and $in_gan and $in_gene and $in_exon and $in_snp;
+
+  my $code //= $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp} || undef;
+  return $code;
 }
 
 =head2 function2
 
 =cut
 
-sub function2 {
+sub get_idx_base {
+  shift;
+  my $base //= $idx_base{$_} || undef;
+  return $base;
 }
 
+sub get_idx_in_gan {
+  shift;
+  my $code //= $idx_in_gan{$_} || undef;
+  return $code;
+}
+
+sub get_idx_in_gene {
+  shift;
+  my $code //= $idx_in_gene{$_} || undef;
+  return $code;
+}
+
+sub get_idx_in_exon {
+  shift;
+  my $code //= $idx_in_exon{$_} || undef;
+  return $code;
+}
+
+sub get_idx_in_snp {
+  shift;
+  my $code //= $idx_in_snp{$_} || undef;
+  return $code;
+}
 =head1 AUTHOR
 
 Thomas Wingo, C<< <thomas.wingo at emory.edu> >>

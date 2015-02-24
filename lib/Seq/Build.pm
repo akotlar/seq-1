@@ -35,14 +35,14 @@ has genome_chrs => (
 #   specify a directory and file to use for each feature
 has genome_raw_dir => ( is => 'ro', isa => 'Str', required => 1 );
 has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1 );
-has genome_track => (
+has genome_str_track => (
   is => 'ro',
-  isa => 'Seq::GenomeSizedTrack',
+  isa => 'Seq::GenomeSizedTrackStr',
   required => 1,
 );
 has genome_sized_tracks => (
   is => 'ro',
-  isa => 'ArrayRef[Seq::GenomeSizedTrack]',
+  isa => 'ArrayRef[Seq::GenomeSizedTrackChar]',
   required => 1,
 );
 has snp_tracks => (
@@ -53,12 +53,6 @@ has gene_tracks => (
   is => 'ro',
   isa => 'ArrayRef[Seq::Build::GeneTrack]',
 )
-
-# attribute / method list
-# 1. get abs position from chr / pos
-# 2. get chr / pos from abs position
-# 3. array of genome-sized tracks
-# 4. array of sparse tracks
 
 =head1 SYNOPSIS
 
@@ -77,7 +71,7 @@ Perhaps a little code snippet.
 
 =cut
 
-sub run_all_build {
+sub build_index {
   my $self = shift;
   $self->build_str_genome;
 
@@ -91,7 +85,7 @@ sub run_all_build {
   }
 
   # build gene tracks
-  my (%flank_exon_sites, %exon_sites, $trans_coord_href);
+  my (%flank_exon_sites, %exon_sites, $tx_start_href);
   my $gene_tracks_aref = $self->gene_tracks;
   for my $gene_track ( @$gene_tracks_aref )
   {
@@ -102,21 +96,36 @@ sub run_all_build {
   }
 
   # make another genomesized track to deal with the in/outside of genes
-  
+  # and ultimately write over those 0's and 1's to store the genome assembly
+  # idx codes...
+  my $assembly = Seq::Build::GenomeSizedTrackChar->new(
+    { length => "$chr_len{genome}", $self->genome_index_dir,
+      name => $self->genome_name,
+      type => 'genome',
+      genome_chrs => $self->genome_chrs,
+    }
+  );
 
-  # use gene, snp tracks to build genome codes
+  # set genic/intergenic regions
+  $assembly->set_gene_regions( $tx_start_href );
 
+  # use gene, snp tracks, and genic/intergenic regions to build coded genome
+  $assembly->build_idx( $self->genome_str_track, \%exon_sites, \%flank_exon_sites, \%snp_sites );
+  $assembly->write_char_seq;
+  $assembly->clear_char_seq;
 
+  # set and write scores for conservation tracks / i.e., the other GenomeSized
+  # Tracks
   $self->build_genome_sized_tracks;
-
+  $self->write_genome_sized_tracks;
 }
 
 sub build_str_genome {
   my $self = shift;
-  my $genome_track = $self->genome_track;
-  my $local_dir        = File::Spec->canonpath( $genome_track->local_dir );
-  my $local_files_aref = $genome_track->loacl_files;
-  my $genome_chrs_aref = $genome_track->genome_chrs;
+  my $genome_str_track     = $self->genome_str_track;
+  my $local_dir        = File::Spec->canonpath( $genome_str_track->local_dir );
+  my $local_files_aref = $genome_str_track->loacl_files;
+  my $genome_chrs_aref = $genome_str_track->genome_chrs;
   my $abs_pos = 0;
 
   for my $i (0 .. $#local_files_aref)
@@ -136,7 +145,7 @@ sub build_str_genome {
       chomp $line;
       $line =~ s/\s+//g;
       next if ( $line =~ m/\A>/ );
-      $genome_track->push_str( $line );
+      $genome_str_track->push_str( $line );
       $abs_pos += length $line;
     }
   }
@@ -205,22 +214,22 @@ sub BUILDARGS {
         croak "unrecognized sparse track type $sparse_track->{type}\n";
       }
     }
-    for my $genome_track ( @{ $href->{genome_sized_tracks} } )
+    for my $genome_str_track ( @{ $href->{genome_sized_tracks} } )
     {
-      $genome_track->{genome_chrs} = $href->{genome_chrs};
-      if ($genome_track->{type} eq "genome")
+      $genome_str_track->{genome_chrs} = $href->{genome_chrs};
+      if ($genome_str_track->{type} eq "genome")
       {
-        $hash{genome_track} = Seq::Build::GenomeSizedTrackStr->new( $genome_track );
+        $hash{genome_str_track} = Seq::Build::GenomeSizedTrackStr->new( $genome_str_track );
       }
-      elsif ( $genome_track->{type} eq "phastCons"
-              or $genome_track->{type} eq "phyloP" )
+      elsif ( $genome_str_track->{type} eq "phastCons"
+              or $genome_str_track->{type} eq "phyloP" )
       {
         push @{ $hash{genome_sized_tracks} },
-          Seq::Build::GenomeSizedTrackChar->new( $genome_track );
+          Seq::Build::GenomeSizedTrackChar->new( $genome_str_track );
       }
       else
       {
-        croak "unrecognized genome track type $genome_track->{type}\n"
+        croak "unrecognized genome track type $genome_str_track->{type}\n"
       }
     }
     for my $attrib (qw( genome_name genome_description genome_chrs

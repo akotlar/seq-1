@@ -1,14 +1,14 @@
-package Seq::Build::SparseTrack;
+package Seq::Build::GeneTrack;
 
 use 5.10.0;
 use Carp qw( croak );
 use Moose;
 use namespace::autoclean;
-extends 'Seq::Config::SparseTrack';
+extends 'Seq::GeneTrack';
 
 =head1 NAME
 
-Seq::Build::SparseTrack - The great new Seq::Build::SparseTrack!
+Seq::Build::GeneTrack - The great new Seq::Build::GeneTrack!
 
 =head1 VERSION
 
@@ -17,7 +17,6 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-my @snp_attribs = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs );
 
 =head1 SYNOPSIS
 
@@ -41,68 +40,6 @@ are left with the other 4 to store other information. We have choose to store:
 =head2 save_site_and_seralize
 
 =cut
-
-sub build_db {
-  my $self = shift;
-  if ($self->type eq "snp")
-  {
-    $self->build_snp_db( );
-  }
-  else
-  {
-    $self->build_gene_db( );
-  }
-}
-
-sub build_snp_db {
-  my $self = shift;
-
-  my @snp_sites;
-  my $snp_site = Seq::SnpSite->new( save => 'disk', );
-
-  my %header;
-  my $fh = $self->get_fh;
-  while(<$fh>)
-  {
-    chomp $_;
-    my @fields = split(/\t/, $_);
-    if ($. == 1)
-    {
-      map { $header{$fields[$_]} = $_ } (0..$#fields);
-      next;
-    }
-    my %data = map { $_ => $fields[ $header{$_} ] } @snp_attribs;
-    my ( $allele_freq_count, @alleles, @allele_freqs, $min_allele_freq );
-
-    if ( $data{alleleFreqCount} )
-    {
-      @alleles      = split( /,/, $data{alleles} );
-      @allele_freqs = split( /,/, $data{alleleFreqs} );
-      my @s_allele_freqs = sort { $b <=> $a } @allele_freqs;
-      $min_allele_freq = sprintf( "%0.6f", eval( 1 - $s_allele_freqs[0] ) );
-    }
-
-    if ( $data{name} =~ m/^rs(\d+)/ )
-    {
-      foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} )
-      {
-        my $abs_pos = Seq::Build->get_abs( $data{chrom}, $pos );
-        my $record  = { abs_pos => $abs_pos,
-                        snp_id  => $data{name},
-                      };
-        if ($min_allele_freq)
-        {
-          $record->{maf}     = $min_allele_freq;
-          $record->{alleles} = \@alleles;
-        }
-        push @snp_sites, $abs_pos;
-        $snp_site->write_snp;
-        $snp_site->clear_all;
-      }
-    }
-  }
-  return \@snp_sites;
-}
 
 sub build_gene_db {
   my $self = shift;
@@ -141,7 +78,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Build::SparseTrack
+    perldoc Seq::Build::GeneTrack
 
 
 You can also look for information at:
@@ -192,4 +129,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 __PACKAGE__->meta->make_immutable;
 
-1; # End of Seq::Build::SparseTrack
+1; # End of Seq::Build::GeneTrack

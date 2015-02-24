@@ -75,6 +75,14 @@ around 'sql_statement' => sub {
   return $new_stmt;
 };
 
+sub snp_fields_aref {
+  return \@snp_table_fields;
+}
+
+sub gene_fields_aref {
+  return \@gene_table_fields;
+}
+
 =head1 AUTHOR
 
 Thomas Wingo, C<< <thomas.wingo at emory.edu> >>
