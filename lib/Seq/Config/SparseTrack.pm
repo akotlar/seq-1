@@ -26,12 +26,16 @@ my @gene_table_fields = qw( chrom strand txStart txEnd cdsStart cdsEnd
                             exonCount exonStarts exonEnds  proteinID
                             alignID );
 
-has local_dir => ( is => 'ro', isa => 'Str', required => 1, );
-has local_file => ( is => 'ro', isa => 'Str', required => 1, );
+# track information
 has name => ( is => 'ro', isa => 'Str', required => 1, );
 has type => ( is => 'ro', isa => 'SparseTrackType', required => 1, );
 has sql_statement => ( is => 'rw', isa => 'Str', );
 has entry_names => ( is => 'ro', isa => 'ArrayRef[Str]', required => 1, );
+
+# file information
+has local_dir => ( is => 'ro', isa => 'Str', required => 1, );
+has local_file => ( is => 'ro', isa => 'Str', required => 1, );
+
 
 =head1 SYNOPSIS
 

@@ -55,14 +55,25 @@ my (%idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp)
   }
 }
 
+# 
+# basic genome characteristics
+#
+has name => ( is => 'ro', isa => 'Str', required => 1, );
+has type => ( is => 'ro', isa => 'GenomeSizedTrackType', required => 1, );
 has genome_chrs => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
   required => 1,
 );
-has name => ( is => 'ro', isa => 'Str', required => 1, );
-has type => ( is => 'ro', isa => 'GenomeSizedTrackType', required => 1, );
+
+#
+# directory and file information
+#
+has genome_index_dir => (
+  is => 'ro',
+  isa => 'Str',
+);
 has local_dir => ( is => 'ro', isa => 'Str', );
 has local_files => (
   is => 'ro',
@@ -75,6 +86,10 @@ has remote_files => (
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
 );
+
+# 
+# for processing scripts
+#
 has proc_init_cmds => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
@@ -102,14 +117,9 @@ Perhaps a little code snippet.
     my $foo = Config::GenomeSizedTrack->new();
     ...
 
-=head1 EXPORT
+=head1 METHODS
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
-
-=head1 SUBROUTINES/METHODS
-
-=head2 function1
+=head2 get_idx_code
 
 =cut
 
@@ -118,43 +128,43 @@ sub get_idx_code {
   my ($base, $in_gan, $in_gene, $in_exon, $in_snp) = @_;
 
   confess "get_idx_code() expects base, in_gan, in_gene, in_exon, and in_snp"
-    unless $base and $in_gan and $in_gene and $in_exon and $in_snp;
+    unless $base =~ m/[ACGTN]/
+      and defined $in_gan 
+      and defined $in_gene 
+      and defined $in_exon 
+      and defined $in_snp;
 
-  my $code //= $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp} || undef;
+  my $code //= $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
   return $code;
 }
 
-=head2 function2
-
-=cut
-
 sub get_idx_base {
   shift;
-  my $base //= $idx_base{$_} || undef;
+  my $base //= $idx_base{$_};
   return $base;
 }
 
 sub get_idx_in_gan {
   shift;
-  my $code //= $idx_in_gan{$_} || undef;
+  my $code //= $idx_in_gan{$_};
   return $code;
 }
 
 sub get_idx_in_gene {
   shift;
-  my $code //= $idx_in_gene{$_} || undef;
+  my $code //= $idx_in_gene{$_};
   return $code;
 }
 
 sub get_idx_in_exon {
   shift;
-  my $code //= $idx_in_exon{$_} || undef;
+  my $code //= $idx_in_exon{$_};
   return $code;
 }
 
 sub get_idx_in_snp {
   shift;
-  my $code //= $idx_in_snp{$_} || undef;
+  my $code //= $idx_in_snp{$_};
   return $code;
 }
 =head1 AUTHOR
