@@ -7,6 +7,7 @@ use File::Spec;
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw( reftype );
+use YAML::XS;
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Serialize::CharGenome', 'Seq::IO';
 
@@ -30,7 +31,6 @@ has length => (
 has chr_len => (
   is => 'rw',
   isa => 'HashRef[Str]',
-  required => 1,
   traits => ['Hash'],
   handles => {
     exists_chr_len => 'exists',
@@ -100,6 +100,7 @@ sub get_abs_pos {
 }
 
 sub write_char_seq {
+  # write idx file
   my $self        = shift;
   my $file        = join(".", $self->name, $self->type, 'idx');
   my $index_dir   = File::Spec->cannonpath( $self->genome_index_dir );
@@ -107,12 +108,23 @@ sub write_char_seq {
   my $fh          = $self->get_write_bin_fh( $target_file );
   print { $fh } ${ $self->char_seq };
   close $fh;
+
+  # write char_len file for genome
+  if ($self->type eq "genome")
+  {
+    $file        = join(".", $self->name, $self->type, 'chr_len');
+    $index_dir   = File::Spec->cannonpath( $self->genome_index_dir );
+    $target_file = File::Spec->catfile( $index_dir, $file );
+    $fh          = $self->get_write_bin_fh( $target_file );
+    print { $fh } Dump( $self->chr_len );
+  }
 }
 
 sub build_idx {
   my ($self, $genome_str, $exon_href, $flank_exon_href, $snp_href) = @_;
 
-  confess "build_idx() expected a genome string object " unless $genome_str;
+  # TODO: check for genome_str ...
+  
   confess "build_idx() expected a 3 hashes - exon, flanking exon, and snp sites"
     unless reftype( $exon_href ) eq "HASH"
       and reftype( $flank_exon_href ) eq "HASH"

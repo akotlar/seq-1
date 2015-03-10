@@ -3,6 +3,7 @@ package Seq::Serialize::SparseTrack;
 use 5.10.0;
 use Carp;
 use Moose::Role;
+use DDP;
 
 =head1 NAME
 
@@ -41,9 +42,17 @@ if you don't export anything, such as for a purely object-oriented module.
 
 sub as_href {
   my $self = shift;
-  my @attributes = @{ $self->meta->get_attributes };
-  my %href = map { $_ => $self->{$_} } @attributes;
-  return \%href;
+  #my %href = map { $_ => $self->{$_} } @attributes;
+  my %hash;
+  for my $attr ( $self->meta->get_all_attributes )
+  {
+    my $name = $attr->name;
+    if (defined $self->$name)
+    {
+      $hash{$name} = $self->$name;
+    }
+  }
+  return \%hash;
 }
 
 =head2 function2

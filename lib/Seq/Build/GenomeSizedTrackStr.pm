@@ -49,9 +49,9 @@ Returns an absolute position for a given chr and position.
 
 sub get_abs_pos {
   my ($self, $chr, $pos ) = @_;
-  confess "expected chromosome and position" unless defined $chr 
-    and defined $pos;
-  my $abs_pos //= $chr_lens{$chr} + $pos;
+  confess "expected chromosome and position" unless defined $chr and defined $pos;
+  confess "expected position to be >= 1" unless $pos >= 1;
+  my $abs_pos //= $chr_lens{$chr} + $pos - 1;
   return $abs_pos;
 }
 
@@ -85,7 +85,7 @@ sub build_genome {
       next if ( $line =~ m/\A>/ );
       if ( $line =~ m/(\A[ATCGNatcgn]+)\Z/)
       {
-        $self->add_seq( $1 );
+        $self->add_seq( uc $1 );
       }
       else
       {

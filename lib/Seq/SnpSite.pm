@@ -20,7 +20,7 @@ Version 0.01
 our $VERSION = '0.01';
 
 has abs_pos => (
-  is => 'rw',
+  is => 'ro',
   isa => 'Int',
   required => 1,
   clearer => 'clear_abs_pos',
@@ -28,25 +28,39 @@ has abs_pos => (
 );
 
 has snp_id => (
-  is => 'rw',
+  is => 'ro',
   isa => 'Str',
   required => 1,
   clearer => 'clear_snp_id',
   predicate => 'has_snp_id',
 );
 
-has maf => (
-  is => 'rw',
-  isa => 'Str',
-  clearer => 'clear_maf',
-  predicate => 'has_maf',
-);
+# put these in features
+# has maf => (
+#   is => 'ro',
+#   isa => 'Str',
+#   clearer => 'clear_maf',
+#   predicate => 'has_maf',
+# );
+#
+# has alleles => (
+#   is => 'rw',
+#   isa => 'ArrayRef',
+#   clearer => 'clear_alleles',
+#   predicate => 'has_alleles',
+# );
 
-has alleles => (
+has feature => (
   is => 'rw',
-  isa => 'ArrayRef',
-  clearer => 'clear_alleles',
-  predicate => 'has_alleles',
+  isa => 'HashRef',
+  clearer => 'clear_feature',
+  predicate => 'has_feature',
+  traits => ['Hash'],
+  handles => {
+    set_feature => 'set',
+    get_feature => 'get',
+    all_features => 'elements',
+  },
 );
 
 =head1 SYNOPSIS
