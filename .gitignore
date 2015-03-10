@@ -18,7 +18,7 @@ nytprof.out
 /_eumm/
 
 # test files
-test.txt
-test:hg38
-/t/*.sh
+tmp*
+test*
 /sandbox/
+/t/*.sh
