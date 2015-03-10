@@ -1,4 +1,4 @@
-package Seq::Build::GenomeSizedTrackChar;
+package Seq::Build::GenomeSizedTrackStr;
 
 use 5.10.0;
 use Carp;
@@ -6,12 +6,12 @@ use File::Path;
 use File::Spec;
 use Moose;
 use namespace::autoclean;
-extends 'Seq::Config::GenomeSizedTrackChar';
-with 'Seq::Serialize::StrGenome', 'Seq::IO';
+extends 'Seq::Config::GenomeSizedTrack';
+with 'Seq::IO';
 
 =head1 NAME
 
-Seq::Build::GenomeSizedTrackChar - The great new Seq::Build::GenomeSizedTrackChar!
+Seq::Build::GenomeSizedTrackStr - The great new Seq::BuildGenomeSizedTrackStr!
 
 =head1 VERSION
 
@@ -19,47 +19,86 @@ Version 0.01
 
 =cut
 
-has genome_index_dir => (
-  is => 'ro',
-  isa => 'Str',
-  required => 1,
-);
-
-has length => (
-  is => 'ro',
-  isa => 'Int',
-);
+my %chr_lens = ( );
 
 # str_seq stores a string in a single scalar
-has str_seq => (
+has genome_seq => (
   is => 'rw',
   writer => undef,
-  builder => '_build_str_seq',
-  isa => 'ScalarRef[Str]',
-  cleaer => 'clear_char_seq',
-  predicate => 'has_char_seq',
+  default => sub { '' },
+  isa => 'Str',
+  traits => ['String'],
+  handles => {
+    add_seq => 'append',
+    clear_genome_seq => 'clear',
+    length_genome_seq => 'length',
+    get_base => 'substr',
+  },
+  lazy => 1,
 );
 
 =head1 SYNOPSIS
 
-This module holds a genome-size index that are stored in a single string of
-chars. It can return either the code (0..255 at the site) or the scaled value
-between 0 and 1. The former is useful for storing encoded information (e.g.,
-if a site is translated, is a SNP, etc.) and the later is useful for holding
-score-like information (e.g., conservation scores).
-
 =head1 METHODS
 
-=head2 _build_char_seq
+=head2 get_abs_pos
+
+Returns an absolute position for a given chr and position.
 
 =cut
 
-sub _build_str_seq {
-  my $self = shift;
-  my $str_seq = "";
-  return \$str_seq;
+sub get_abs_pos {
+  my ($self, $chr, $pos ) = @_;
+  confess "expected chromosome and position" unless defined $chr 
+    and defined $pos;
+  my $abs_pos //= $chr_lens{$chr} + $pos;
+  return $abs_pos;
 }
 
-sub substr_str_genome {
-  $_[0]->str_seq;
+=head2 _build_genome
+
+=cut
+
+sub build_genome {
+  my $self = shift;
+  my $local_dir   = File::Spec->canonpath( $self->local_dir );
+  my @local_files = $self->all_local_files;
+  my @genome_chrs = $self->all_genome_chrs;
+
+  for (my $i = 0; $i < @local_files; $i++)
+  {
+    my $file       = $local_files[$i];
+    my $chr        = $genome_chrs[$i];
+
+    my @file_fields = split(/\./, $file);
+    croak "expected chromosomes and sequence files to be in the"
+           . " same order but found $file with $chr\n"
+           unless $chr eq $file_fields[0];
+
+    my $local_file  = File::Spec->catfile( $local_dir, $file );
+    my $in_fh       = $self->get_read_fh( $local_file );
+    $chr_lens{$chr} = $self->length_genome_seq;
+    while ( my $line = $in_fh->getline() )
+    {
+      chomp $line;
+      $line =~ s/\s+//g;
+      next if ( $line =~ m/\A>/ );
+      if ( $line =~ m/(\A[ATCGNatcgn]+)\Z/)
+      {
+        $self->add_seq( $1 );
+      }
+      else
+      {
+        croak join("\n", "ERROR: Unexpected Non-Base Character.", 
+          "\tfile: $file ",
+          "\tline: $.",
+          "\tsequence: $line");
+      }
+    }
+  }
 }
+
+
+__PACKAGE__->meta->make_immutable;
+
+1; # End of Seq::Build::GenomeSizedTrackStr
