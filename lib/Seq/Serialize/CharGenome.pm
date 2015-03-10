@@ -5,8 +5,6 @@ use Carp;
 use Moose::Role;
 use YAML::XS qw(Dump);
 
-requires qw( substr_char_genome );
-
 =head1 NAME
 
 Seq::Serialize::CharGenome - The great new Seq::Serialize::CharGenome!
@@ -68,15 +66,15 @@ sub insert_score {
   return $inserted_char;
 }
 
-=head2 get_char
+=head2 get_base
 
 =cut
 
-sub get_char {
+sub get_base {
   my $self = shift;
   my ($pos) = @_;
   my $seq_len = $self->length;
-  confess "get_value() expects a position between 0 and end of the seq, which is $seq_len for the current string."
+  confess "get_base() expects a position between 0 and end of the seq, which is $seq_len for the current string."
     unless $pos >= 0 and $pos <= $seq_len;
 
   # position here is not adjusted for the Zero versus 1 index issue
@@ -90,7 +88,7 @@ sub get_char {
 sub get_score {
   my $self = shift;
   my ($pos) = @_;
-  my $char = $self->get_char( $pos );
+  my $char = $self->get_base( $pos );
   return $self->char2score->( $char );
 }
 

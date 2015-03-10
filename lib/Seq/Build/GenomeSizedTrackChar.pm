@@ -1,14 +1,14 @@
 package Seq::Build::GenomeSizedTrackChar;
 
 use 5.10.0;
-use Carp qw( confess );
+use Carp qw( confess croak );
 use File::Path;
 use File::Spec;
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw( reftype );
-extends 'Seq::Config::GenomeSizedTrackChar';
-with 'Seq::Serialize::CharGenome',  'Seq::IO';
+extends 'Seq::Config::GenomeSizedTrack';
+with 'Seq::Serialize::CharGenome', 'Seq::IO';
 
 =head1 NAME
 
@@ -22,15 +22,20 @@ Version 0.01
 
 our $VERSION = '0.01';
 
-has genome_index_dir => (
-  is => 'ro',
-  isa => 'Str',
-  required => 1,
+has length => (
+  is => 'rw',
+  isa => 'Int',
 );
 
-has length => (
-  is => 'ro',
-  isa => 'Int',
+has chr_len => (
+  is => 'rw',
+  isa => 'HashRef[Str]',
+  required => 1,
+  traits => ['Hash'],
+  handles => {
+    exists_chr_len => 'exists',
+    get_chr_len => 'get',
+  },
 );
 
 # char_seq stores a string of chars
@@ -39,7 +44,7 @@ has char_seq => (
   lazy => 1,
   writer => undef,
   builder => '_build_char_seq',
-  isa => 'ScalarRef[Str]',
+  isa => 'ScalarRef',
   clearer => 'clear_char_seq',
   predicate => 'has_char_seq',
 );
@@ -73,10 +78,6 @@ score-like information (e.g., conservation scores).
 
 =cut
 
-sub substr_char_genome {
-  $_[0]->char_seq;
-}
-
 sub _build_char_seq {
   my $self = shift;
   my $char_seq = "";
@@ -87,13 +88,24 @@ sub _build_char_seq {
   return \$char_seq;
 }
 
+sub get_abs_pos {
+  my $self = shift;
+  my ( $chr, $pos ) = @_;
+  unless ($self->exists_chr_len( $chr ))
+  {
+    confess "$chr not known get_abs_pos()\n";
+  }
+  my $abs_pos = $self->get_chr_len( $chr ) + $pos;
+  return $abs_pos;
+}
+
 sub write_char_seq {
   my $self        = shift;
-  my $file        = $self->type . ".idx";
+  my $file        = join(".", $self->name, $self->type, 'idx');
   my $index_dir   = File::Spec->cannonpath( $self->genome_index_dir );
   my $target_file = File::Spec->catfile( $index_dir, $file );
   my $fh          = $self->get_write_bin_fh( $target_file );
-  print $fh ${ $self->char_seq };
+  print { $fh } ${ $self->char_seq };
   close $fh;
 }
 
@@ -110,7 +122,7 @@ sub build_idx {
   {
     my $this_pos = $pos + 1;
     my $this_base = uc $genome_str->get_str( $pos );
-    my ( $in_gan, $in_gene, $in_exon, $in_snp ) = ( 0, 0, 0, 0);
+    my ( $in_gan, $in_gene, $in_exon, $in_snp ) = ( 0, 0, 0, 0 );
 
     $in_gan   = 1 if exists $exon_href->{$this_pos} || exists $flank_exon_href->{$this_pos};
     $in_gene  = $self->get_char( $pos );
@@ -124,7 +136,7 @@ sub build_idx {
     }
     else
     {
-      confess "fatal error at base: $pos ($this_base)\n".
+      confess "fatal error at base: $pos ($this_base)\n" .
         "in_gan: $in_gan, in_gene: $in_gene, in_exon: $in_exon, in_snp: $in_snp";
     }
   }
@@ -137,7 +149,7 @@ sub set_gene_regions {
   #       - the $tx_starts_href is a hash with keys that are
   #         tx start sites and values are arrays of end values
 
-  confess "set_gene_regions() can only be done on a genome type, not" . $self->type . "\n";
+  confess "set_gene_regions() can only be done on a genome type, not " . $self->type . "\n"
     unless $self->type eq "genome";
   confess "set_gene_regions() requires an array reference of transcript coordinates\n"
     unless reftype( $tx_starts_href ) eq "HASH";
@@ -150,7 +162,8 @@ sub set_gene_regions {
   # pick the 1st start site
   $tx_start = $sorted_tx_starts[$i];
   $i++;
-  $tx_stop  = shift sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+  my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+  $tx_stop  = shift @tx_stops;
 
   # recall the char string will be initialized to Zero's already so we only
   # need to consider when we are in a gene region
@@ -171,14 +184,48 @@ sub set_gene_regions {
         {
           $tx_start = $sorted_tx_starts[$i];
           $i++;
-          $tx_stop  = shift sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+          my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+          $tx_stop  = shift @tx_stops;
         }
       }
     }
   }
 }
 
+sub BUILDARGS {
+  my $class = shift;
+  my $href  = $_[0];
+  if (scalar @_ > 1 || reftype($href) ne "HASH")
+  {
+    confess "Error: Seq::Build::GenomeSizedTrackChar expects hash reference.\n";
+  }
+  else
+  {
+    my %hash;
+    if ($href->{type} eq "score")
+    {
+      if ($href->{name} eq "phastCons")
+      {
+        $hash{score2chr}  = sub { return (int ( $_ * 254 ) + 1) };
+        $hash{char2score} = sub { return ( $_ - 1 ) / 254 };
+      }
+      elsif ($href->{name} eq "phyloP")
+      {
+        $hash{score2chr}  = sub { return (int ( $_ * ( 127 / 30 ) ) + 128) };
+        $hash{char2score} = sub { return ( $_ - 128 ) / ( 127 / 30 ) }
+      }
+    }
 
+    # add remaining values to hash
+    # if char2score or score2char are set
+    # then the defaults will be overridden
+    for my $attr (keys %$href)
+    {
+      $hash{$attr} = $href->{$attr};
+    }
+    return $class->SUPER::BUILDARGS(\%hash);
+  }
+}
 =head1 AUTHOR
 
 Thomas Wingo, C<< <thomas.wingo at emory.edu> >>
