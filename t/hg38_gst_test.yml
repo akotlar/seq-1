@@ -8,35 +8,35 @@
 #  _gene_fields => $gene_fields_str
 #  _snp_fields  => $snp_fields_str
 #
---- 
+---
 genome_name: hg38
 genome_description: human
 genome_chrs:
-  - chr1
-  - chr2
-  - chr3
-  - chr4
-  - chr5
-  - chr6
-  - chr7
-  - chr8
-  - chr9
-  - chr10
-  - chr11
-  - chr12
-  - chr13
-  - chr14
-  - chr15
-  - chr16
-  - chr17
-  - chr18
-  - chr19
-  - chr20
-  - chr21
-  - chr22
-  - chrM
-  - chrX
-  - chrY
+  - test_chr1
+  - test_chr2
+  - test_chr3
+  - test_chr4
+  - test_chr5
+  - test_chr6
+  - test_chr7
+  - test_chr8
+  - test_chr9
+  - test_chr10
+  - test_chr11
+  - test_chr12
+  - test_chr13
+  - test_chr14
+  - test_chr15
+  - test_chr16
+  - test_chr17
+  - test_chr18
+  - test_chr19
+  - test_chr20
+  - test_chr21
+  - test_chr22
+  - test_chrM
+  - test_chrX
+  - test_chrY
 genome_raw_dir: ./hg38/raw
 genome_index_dir: ./hg38/index
 
@@ -68,58 +68,34 @@ genome_sized_tracks:
     type: genome
     local_dir: ./hg38/raw/seq/
     local_files:
-       - chr1.fa.gz
-       - chr2.fa.gz
-       - chr3.fa.gz
-       - chr4.fa.gz
-       - chr5.fa.gz
-       - chr6.fa.gz
-       - chr7.fa.gz
-       - chr8.fa.gz
-       - chr9.fa.gz
-       - chr10.fa.gz
-       - chr11.fa.gz
-       - chr12.fa.gz
-       - chr13.fa.gz
-       - chr14.fa.gz
-       - chr15.fa.gz
-       - chr16.fa.gz
-       - chr17.fa.gz
-       - chr18.fa.gz
-       - chr19.fa.gz
-       - chr20.fa.gz
-       - chr21.fa.gz
-       - chr22.fa.gz
-       - chrM.fa.gz
-       - chrX.fa.gz
-       - chrY.fa.gz
+      - test_chr1.fa.gz
+      - test_chr2.fa.gz
+      - test_chr3.fa.gz
+      - test_chr4.fa.gz
+      - test_chr5.fa.gz
+      - test_chr6.fa.gz
+      - test_chr7.fa.gz
+      - test_chr8.fa.gz
+      - test_chr9.fa.gz
+      - test_chr10.fa.gz
+      - test_chr11.fa.gz
+      - test_chr12.fa.gz
+      - test_chr13.fa.gz
+      - test_chr14.fa.gz
+      - test_chr15.fa.gz
+      - test_chr16.fa.gz
+      - test_chr17.fa.gz
+      - test_chr18.fa.gz
+      - test_chr19.fa.gz
+      - test_chr20.fa.gz
+      - test_chr21.fa.gz
+      - test_chr22.fa.gz
+      - test_chrM.fa.gz
+      - test_chrX.fa.gz
+      - test_chrY.fa.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/
     remote_files:
-       - chr1.fa.gz
-       - chr2.fa.gz
-       - chr3.fa.gz
-       - chr4.fa.gz
-       - chr5.fa.gz
-       - chr6.fa.gz
-       - chr7.fa.gz
-       - chr8.fa.gz
-       - chr9.fa.gz
-       - chr10.fa.gz
-       - chr11.fa.gz
-       - chr12.fa.gz
-       - chr13.fa.gz
-       - chr14.fa.gz
-       - chr15.fa.gz
-       - chr16.fa.gz
-       - chr17.fa.gz
-       - chr18.fa.gz
-       - chr19.fa.gz
-       - chr20.fa.gz
-       - chr21.fa.gz
        - chr22.fa.gz
-       - chrM.fa.gz
-       - chrX.fa.gz
-       - chrY.fa.gz
   - name: phastCons
     type: score
     local_dir: ./hg38/raw/phastCons

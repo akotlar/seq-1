@@ -23,7 +23,7 @@ our $VERSION = '0.01';
 my @snp_table_fields  = qw( chrom chromStart chromEnd name
                             alleleFreqCount alleles alleleFreqs );
 my @gene_table_fields = qw( chrom strand txStart txEnd cdsStart cdsEnd
-                            exonCount exonStarts exonEnds  proteinID
+                            exonCount exonStarts exonEnds proteinID
                             alignID );
 
 # track information
@@ -65,7 +65,7 @@ around 'sql_statement' => sub {
 
   my $new_stmt;
   my $snp_table_fields_str  = join(", ", @snp_table_fields);
-  my $gene_table_fields_str =  join(" ", @gene_table_fields,
+  my $gene_table_fields_str =  join(", ", @gene_table_fields,
     @{ $self->entry_names });
   if ($self->$orig(@_) =~ m/\_snp\_fields/)
   {

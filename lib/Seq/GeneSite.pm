@@ -3,6 +3,7 @@ package Seq::GeneSite;
 use 5.10.0;
 use Moose;
 use namespace::autoclean;
+use Moose::Util::TypeConstraints;
 
 =head1 NAME
 
@@ -16,7 +17,7 @@ Version 0.01
 
 our $VERSION = '0.01';
 
-enum GeneAnnotationTyoe => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
+enum GeneAnnotationType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                              'Splice Donor', 'Splice Acceptor' ];
 enum StrandType         => [ '+', '-' ];
 
@@ -26,7 +27,7 @@ has abs_pos => (
   required => 1,
   clearer => 'clear_abs_pos',
   predicate => 'has_abs_pos',
-)
+);
 
 has name => (
   is => 'rw',

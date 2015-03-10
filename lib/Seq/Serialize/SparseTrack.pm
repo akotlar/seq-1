@@ -1,14 +1,12 @@
-package Seq::Build::GeneTrack;
+package Seq::Serialize::SparseTrack;
 
 use 5.10.0;
-use Carp qw( croak );
-use Moose;
-use namespace::autoclean;
-extends 'Seq::GeneTrack';
+use Carp;
+use Moose::Role;
 
 =head1 NAME
 
-Seq::Build::GeneTrack - The great new Seq::Build::GeneTrack!
+Seq::Serialize::Sparse - The great new Seq::Serialize::Sparse!
 
 =head1 VERSION
 
@@ -18,46 +16,47 @@ Version 0.01
 
 our $VERSION = '0.01';
 
+
 =head1 SYNOPSIS
 
-This module is used to seralize and store the position of similar information
-or types.
+Quick summary of what the module does.
 
-What is a type? Good question. A type is either 'snpLike', 'geneLike', or
-'exonLike'.
+Perhaps a little code snippet.
 
-How are types used? Another good question. Let's back up a step and say that
-the ultiamte goal is to build an index of the genome that has information
-stored about each base - e.g., is the base coding, intergenic, a snp. To do
-this, we encode each base as a char and use 4 bits to store the base itself and
-are left with the other 4 to store other information. We have choose to store:
-  - snpLike tracks  => SNVs, indels from dbSNP or ClinVar
-  - exonLike tracks => transcript sort of info information
-  - geneLike tracks => intergenic, genic
+    use Seq::Serialize::Sparse;
 
-=head1 METHODS
+    my $foo = Seq::Serialize::Sparse->new();
+    ...
 
-=head2 save_site_and_seralize
+=head1 EXPORT
+
+A list of functions that can be exported.  You can delete this section
+if you don't export anything, such as for a purely object-oriented module.
+
+=head1 SUBROUTINES/METHODS
+
+=head2 function1
 
 =cut
 
-sub build_gene_db {
+sub as_href {
   my $self = shift;
+  my @attributes = @{ $self->meta->get_attributes };
+  my %href = map { $_ => $self->{$_} } @attributes;
+  return \%href;
+}
 
-  my $gene_site = Seq::GeneSite->new( save => 'disk' );
-  my %header;
-  my $fh = $self->get_fh;
-  while (<$fh>)
+=head2 function2
+
+=cut
+
+sub clear_all {
+  my $self = shift;
+  my @attributes = @{ $self->meta->get_attributes };
+  for my $attribute (@attributes)
   {
-    chomp $_;
-    my @fields = split(/\t/, $_);
-    if ($.==1)
-    {
-      map { $header{$fields[$_]} = $_ } (0..$#fields);
-      next;
-    }
-    my %data = map { $_ => $fields[ $header{$_} ] } @gene_attribs;
-
+    my $clear_method = $attribute . "_clear";
+    $self->$clear_method;
   }
 }
 
@@ -78,7 +77,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Build::GeneTrack
+    perldoc Seq::Serialize::Sparse
 
 
 You can also look for information at:
@@ -127,6 +126,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-__PACKAGE__->meta->make_immutable;
-
-1; # End of Seq::Build::GeneTrack
+no Moose::Role; 1; # End of Seq::Serialize::Sparse

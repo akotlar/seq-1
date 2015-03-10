@@ -5,6 +5,7 @@ use Moose;
 use namespace::autoclean;
 use Cpanel::JSON::XS;
 use Scalar::Util qw( reftype );
+with 'Seq::Serialize::SparseTrack';
 
 =head1 NAME
 
@@ -17,13 +18,6 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-my $json = Cpanel::JSON::XS->new();
-
-has fh => (
-  is => 'ro',
-  isa => 'FileHandle',
-  required => 1,
-);
 
 has abs_pos => (
   is => 'rw',
@@ -72,19 +66,9 @@ Perhaps a little code snippet.
 
 =cut
 
-sub write_snp {
-  my $self = shift;
-  my $fh   = $self->fh;
-  print $fh $json->encode($self->as_href);
-}
-
-=head2 seralize_sparse_attribs 
+=head2 seralize_sparse_attribs
 
 =cut
-
-sub seralize_sparse_attribs {
-  return (qw( abs_pos snp_id maf alleles ));
-}
 
 =head1 AUTHOR
 

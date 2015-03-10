@@ -2,6 +2,7 @@ package Seq::Config::Build;
 
 use 5.10.0;
 use Carp qw( croak );
+use Cpanel::JSON::XS;
 use File::Path;
 use File::Spec;
 use Moose;
@@ -20,7 +21,7 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-my %chr_lens = ( );
+
 
 has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
@@ -33,8 +34,8 @@ has genome_chrs => (
 
 # for now, `genome_raw_dir` is really not needed since the other tracks
 #   specify a directory and file to use for each feature
-has genome_raw_dir => ( is => 'ro', isa => 'Str', required => 1 );
-has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1 );
+has genome_raw_dir => ( is => 'ro', isa => 'Str', required => 1, );
+has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_str_track => (
   is => 'ro',
   isa => 'Seq::GenomeSizedTrackStr',
@@ -44,15 +45,25 @@ has genome_sized_tracks => (
   is => 'ro',
   isa => 'ArrayRef[Seq::GenomeSizedTrackChar]',
   required => 1,
+  trait => 'Array',
+  handles => {
+    all_genome_sized_tracks => 'elements',
+  },
 );
 has snp_tracks => (
   is => 'ro',
   isa => 'ArrayRef[Seq::Build::SnpTrack]',
+  handles => {
+    all_snp_tracks => 'elements',
+  },
 );
 has gene_tracks => (
   is => 'ro',
   isa => 'ArrayRef[Seq::Build::GeneTrack]',
-)
+  handles => {
+    all_gene_tracks => 'elements',
+  },
+);
 
 =head1 SYNOPSIS
 
@@ -73,33 +84,44 @@ Perhaps a little code snippet.
 
 sub build_index {
   my $self = shift;
-  $self->build_str_genome;
+
+  # build genome from fasta files (i.e., string)
+  $self->genome_str_track->build_str_genome;
 
   # build snp tracks
   my %snp_sites;
-  my $snp_tracks_aref = $self->snp_tracks;
-  for my $snp_track ( @$snp_tracks_aref )
+  for my $snp_track ( $self->all_snp_tracks )
   {
-    my $sites_aref = $snp_track->build_snp_db();
+    my $sites_aref = $self->build_snp_db( $snp_track );
     map { $snp_sites{$_}++ } @$sites_aref;
   }
 
   # build gene tracks
-  my (%flank_exon_sites, %exon_sites, $tx_start_href);
+  my (%flank_exon_sites, %exon_sites, $transcript_starts);
   my $gene_tracks_aref = $self->gene_tracks;
   for my $gene_track ( @$gene_tracks_aref )
   {
-    my ($flank_exon_sites_aref, $exon_sites_aref, $trans_coord_href)
-      = $gene_track->build_gene_db();
+    my ($flank_exon_sites_aref, $exon_sites_aref, $tx_start_href)
+      = $self->build_gene_db( $gene_track );
+
+    # add information from annotation sites and start/stop sites into
+    # master lists
     map { $flank_exon_sites{$_}++ } @$flank_exon_sites_aref;
-    map { $exon_sites{$_}++ } @$exon_sites;
+    map { $exon_sites{$_}++ } @$exon_sites_aref;
+    for my $tx_start ( keys %$tx_start_href )
+    {
+      for my $tx_stops ( @{ $tx_start_href->{$tx_Start} } )
+      {
+        push @{ $transcript_start{$tx_start} }, $tx_stops;
+      }
+    }
   }
 
   # make another genomesized track to deal with the in/outside of genes
   # and ultimately write over those 0's and 1's to store the genome assembly
   # idx codes...
   my $assembly = Seq::Build::GenomeSizedTrackChar->new(
-    { length => "$chr_len{genome}", $self->genome_index_dir,
+    { length => $self->genome_str_track->length, $self->genome_index_dir,
       name => $self->genome_name,
       type => 'genome',
       genome_chrs => $self->genome_chrs,
@@ -116,63 +138,39 @@ sub build_index {
 
   # set and write scores for conservation tracks / i.e., the other GenomeSized
   # Tracks
-  $self->build_genome_sized_tracks;
-  $self->write_genome_sized_tracks;
+  foreach my $gst ($self->all_genome_sized_tracks)
+  {
+    $gst->build_genome_sized_tracks;
+    $gst->write_genome_sized_tracks;
+  }
+  my $self->write_idx_config_file;
 }
 
-sub build_str_genome {
+sub write_idx_config_file {
   my $self = shift;
-  my $genome_str_track     = $self->genome_str_track;
-  my $local_dir        = File::Spec->canonpath( $genome_str_track->local_dir );
-  my $local_files_aref = $genome_str_track->loacl_files;
-  my $genome_chrs_aref = $genome_str_track->genome_chrs;
-  my $abs_pos = 0;
 
-  for my $i (0 .. $#local_files_aref)
-  {
-    my $file       = $local_file_aref[$i];
-    my $chr        = $genome_chrs_aref[$i];
-    my @file_fields = split(/\./, $file);
-    croak "expected chromosomes and sequence files to be in the
-           same order but found $file with $chr\n"
-           unless $chr eq $file_fields[0];
-
-    my $local_file = File::Spec->cannonpath( $local_dir, $file );
-    my $in_fh      = $self->get_fh( $local_file );
-    $chr_len{$chr} = $abs_pos;
-    while ( my $line = $in_fh->getline() )
-    {
-      chomp $line;
-      $line =~ s/\s+//g;
-      next if ( $line =~ m/\A>/ );
-      $genome_str_track->push_str( $line );
-      $abs_pos += length $line;
-    }
-  }
-  $chr_len{genome} = $abs_pos;
+  # TODO: Write me.
 }
 
 sub build_genome_sized_tracks {
   my $self = shift;
-  my $genome_sized_tracks_aref = $self->genome_sized_tracks;
-
-  foreach my $gst ( @$genome_sized_tracks_aref )
+  foreach my $gst ( $self->all_genome_sized_tracks )
   {
-    $gst->length         = $chr_len{genome};
-    $gst->score2char     = $convert{encode}{$gst->type};
     my $local_dir        = File::Spec->canonpath( $gst->local_dir );
-    my $local_files_aref = $gst->loacl_files;
+    my $local_files_aref = $gst->local_files;
     # there's only 1 file (at the moment) for all conservation stuff
-    for my $i (0 .. $#local_files_aref)
+    for my $i (0 .. $#{ $local_files_aref })
     {
-      my $file       = $local_file_aref[$i];
+      my $file       = $local_files_aref->[$i];
       my $local_file = File::Spec->cannonpath( $local_dir, $file );
-      my $in_fh      = $self->get_fh( $local_file );
+      my $in_fh      = $gst->get_fh( $local_file );
       while ( my $line = $in_fh->getline() )
       {
         chomp $line;
         my ( $chr, $pos, $score ) = split( /\t/, $line );
-        $gst->insert_score( $self->get_abs_pos( $chr, $pos ), $score );
+        my $encoded_score         = $self->score2char( $score );
+        $self->insert_score( $self->genome_str_track->get_abs_pos( $chr, $pos ),
+          $score );
       }
     }
   }
@@ -180,18 +178,70 @@ sub build_genome_sized_tracks {
 
 sub write_genome_sized_tracks {
   my $self = shift;
-  my $genome_sized_tracks_aref = $self->genome_sized_tracks;
-  foreach my $gst ( @$genome_sized_tracks_aref )
+  foreach my $gst ( $self->all_genome_sized_tracks )
   {
     $gst->write_char_seq;
     $gst->clear_char_seq;
   }
 }
 
+sub build_snp_db {
+  my ($self, $snp_track) = @_;
+  my @snp_sites;
+
+  my $local_dir     = File::Spec->canonpath( $snp_track->local_dir );
+  my $local_file    = File::Spec->catfile( $local_dir, $snp_track->local_file );
+  my $out_dir       = File::Spec->cannonpath( $self->genome_index_dir, 'snp' );
+  my $out_file_name = File::Spec->catfile( $out_dir, $snp_track->name );
+  my $out_fh        = $self->get_write_fh( $out_file_name );
+
+  open my $in_fh, '<', $local_file or croak "Cannot open $local_file: $!\n";
+  while(<$in_fh>)
+  {
+    chomp $_;
+    my @fields = split(/\t/, $_);
+    if ($. == 1)
+    {
+      map { $header{$fields[$_]} = $_ } (0..$#fields);
+      next;
+    }
+    my %data = map { $_ => $fields[ $header{$_} ] } @{ $snp_track->snp_fields_aref };
+    my ( $allele_freq_count, @alleles, @allele_freqs, $min_allele_freq );
+
+    if ( $data{alleleFreqCount} )
+    {
+      @alleles      = split( /,/, $data{alleles} );
+      @allele_freqs = split( /,/, $data{alleleFreqs} );
+      my @s_allele_freqs = sort { $b <=> $a } @allele_freqs;
+      $min_allele_freq = sprintf( "%0.6f", eval( 1 - $s_allele_freqs[0] ) );
+    }
+
+    if ( $data{name} =~ m/^rs(\d+)/ )
+    {
+      foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} )
+      {
+        my $abs_pos = $self->get_abs( $data{chrom}, $pos );
+        my $record  = { abs_pos => $abs_pos,
+                        snp_id  => $data{name},
+                      };
+        if ($min_allele_freq)
+        {
+          $record->{maf}     = $min_allele_freq;
+          $record->{alleles} = \@alleles;
+        }
+        push @snp_sites, $abs_pos;
+        print { $out_fh } encode_json( $snp_site->as_href );
+        $snp_site->clear_all;
+      }
+    }
+  }
+  return \@snp_sites;
+}
+
 sub BUILDARGS {
   my $class = shift;
   my $href  = $_[0];
-  if (scalar @_ > 1) || reftype($href) ne "HASH")
+  if (scalar @_ > 1 || reftype($href) ne "HASH")
   {
     confess "Error: Seq::Build expects hash reference.\n";
   }
@@ -239,17 +289,6 @@ sub BUILDARGS {
     }
     return $class->SUPER::BUILDARGS(\%hash);
   }
-}
-
-=head2 function2
-
-=cut
-
-sub get_abs_pos {
-  my $self = shift;
-  my ( $chr, $pos ) = @_;
-  my $abs_pos = $chr_len{$chr} + $pos;
-  return $abs_pos;
 }
 
 =head1 AUTHOR

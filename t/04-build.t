@@ -9,7 +9,7 @@ plan tests => 22;
 
 BEGIN
 {
-  chdir("./t");
+  chdir("./sandbox");
   use_ok( 'Seq::Build' ) || print "Bail out!\n";
 }
 
@@ -17,7 +17,7 @@ my $hg38_config_file = "hg38.yml";
 my $build_hg38 = Seq::Build->new_with_config( configfile => $hg38_config_file );
 isa_ok( $build_hg38 'Seq::Build', 'built Seq::Build with config file' );
 
- 
+
 __END__
 my $splice_site_length = 6;
 
@@ -79,4 +79,44 @@ sub BUILDARGS {
     }
     return $class->SUPER::BUILDARGS(\%new_hash);
   }
+}
+
+
+sub save_site_and_seralize {
+  my $self = shift;
+  $sites{$self->abs_pos} = 1;
+  return $self->as_href;
+};
+
+=head2 _clear_self
+
+=cut
+
+sub clear_all {
+  my $self = shift;
+  my @attributes = map {$_->name} $self->meta->get_all_attributes;
+  for my $attrib (@attributes)
+  {
+    my $clear_method = "clear\_$attrib";
+    $self->$clear_method;
+  }
+}
+
+=head2 have_annotated_site
+
+=cut
+
+sub have_annotated_site {
+  my $self = shift;
+  my $site = shift;
+  return exists($sites{$site});
+}
+
+=head2 have_annotated_site
+
+=cut
+
+sub serialize_sparse_attrs {
+  return qw( annotation_type strand codn codon_site_pos aa_residue_pos
+    error_code );
 }

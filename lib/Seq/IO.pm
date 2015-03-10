@@ -1,6 +1,7 @@
 package Seq::IO;
 
-use Carp qw( confess );
+use 5.10.0;
+use Carp qw( confess croak );
 use Moose::Role;
 use IO::File;
 use IO::Compress::Gzip qw( $GzipError );
@@ -8,7 +9,6 @@ use IO::Uncompress::Gunzip qw( $GunzipError );
 
 sub get_write_fh {
   my ( $self, $file ) = @_;
-
   croak "get_fh() expected a filename\n" unless $file;
   my $fh;
   if ($file =~ m/\.gz\Z/)
@@ -27,7 +27,7 @@ sub get_write_fh {
 sub get_read_fh {
   my ( $self, $file ) = @_;
 
-  croak "get_read_fh() expects a filename\n" unless -s $file;
+  croak "get_read_fh() expects a non-empty filename\n" unless -s $file;
   my $fh;
   if ($file =~ m/\.gz\Z/)
   {
@@ -45,11 +45,13 @@ sub get_read_fh {
 sub get_write_bin_fh {
   my ( $self, $file ) = @_;
 
-  confess "get_write_bin_fh() expects a filename\n"; unless $file;
+  confess "get_write_bin_fh() expects a filename\n" unless $file;
   my $fh = IO::File->new( $file, 'w' ) ||
     confess "unable to open file ($file) for writing: $!\n";
   binmode $fh;
   return $fh;
 }
 
-no Moose::Role; 1;
+no Moose::Role;
+
+1;

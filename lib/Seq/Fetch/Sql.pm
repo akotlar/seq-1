@@ -120,7 +120,7 @@ sub write_sql_data {
   my $cwd = cwd();
 
   # set file names
-  my $file_with_time    = $now_timestamp . "." . $self->local_file;
+  my $file_with_time   = $now_timestamp . "." . $self->local_file;
   my $target_file      = File::Spec->catfile( $dir, $file_with_time );
   my $symlink_original = File::Spec->catfile ( ($cwd, $dir), $file_with_time );
   my $symlink_target   = File::Spec->catfile ( ($cwd, $dir), $self->local_file );

@@ -65,6 +65,9 @@ has genome_chrs => (
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
   required => 1,
+  handles => {
+    all_genome_chrs => 'elements',
+  },
 );
 
 #
@@ -79,6 +82,9 @@ has local_files => (
   is => 'ro',
   isa => 'ArrayRef[Str]',
   traits => ['Array'],
+  handles => {
+    all_local_files => 'elements',
+  },
 );
 has remote_dir => ( is => 'ro', isa => 'Str' );
 has remote_files => (

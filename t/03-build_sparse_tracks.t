@@ -10,7 +10,7 @@ plan tests => 20;
 
 BEGIN
 {
-  chdir("./t");
+  chdir("./sandbox");
 }
 
 my $package = "Seq::Build::SparseTrack";
