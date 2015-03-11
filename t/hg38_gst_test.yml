@@ -44,7 +44,7 @@ genome_index_dir: ./hg38/index
 sparse_tracks:
   - type: gene
     local_dir: ./hg38/raw/gene
-    local_file: knownGene.txt.gz
+    local_file: slice.chr22.txt
     name: knownGene
     sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
     entry_names:
@@ -58,7 +58,7 @@ sparse_tracks:
       - rfamAcc
   - type: snp
     local_dir: ./hg38/raw/snp/
-    local_file: snp141.txt.gz
+    local_file: slice.chr22.txt
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141
     entry_names:

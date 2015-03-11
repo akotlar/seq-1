@@ -51,6 +51,8 @@ sub get_abs_pos {
   my ($self, $chr, $pos ) = @_;
   confess "expected chromosome and position" unless defined $chr and defined $pos;
   confess "expected position to be >= 1" unless $pos >= 1;
+  confess "position outside of genome, which is " . $self->length_genome_seq  
+    unless $pos < $self->length_genome_seq;
   my $abs_pos //= $chr_lens{$chr} + $pos - 1;
   return $abs_pos;
 }

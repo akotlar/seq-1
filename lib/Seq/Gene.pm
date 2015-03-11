@@ -152,19 +152,19 @@ sub BUILD {
   {
     # change all relative bp position to absolute positions
     my $abs_position_offset  = $self->get_abs_pos( $self->chr, 1 );
-    $self->transcript_start($abs_position_offset + $self->transcript_start);
-    $self->transcript_end(  $abs_position_offset + $self->transcript_end  );
-    $self->coding_start(    $abs_position_offset + $self->coding_start    );
-    $self->coding_end(      $abs_position_offset + $self->coding_end      );
+    $self->transcript_start( $abs_position_offset + $self->transcript_start - 1 );
+    $self->transcript_end(   $abs_position_offset + $self->transcript_end   - 1 );
+    $self->coding_start(     $abs_position_offset + $self->coding_start     - 1 );
+    $self->coding_end(       $abs_position_offset + $self->coding_end       - 1 );
 
     for (my $i = 0; $i < scalar ( $self->all_exon_starts ); $i++)
     {
       # set values for exon starts
-      my $abs_pos = $self->get_exon_starts( $i ) + $abs_position_offset;
+      my $abs_pos = $self->get_exon_starts( $i ) + $abs_position_offset - 1;
       $self->set_exon_starts( $i, $abs_pos );
       
       # set values for exon stops
-      $abs_pos = $self->get_exon_ends( $i ) + $abs_position_offset;
+      $abs_pos = $self->get_exon_ends( $i ) + $abs_position_offset - 1;
       $self->set_exon_ends( $i, $abs_pos );
     }
   }
@@ -199,13 +199,13 @@ sub _build_transcript_error {
     }
 
     # check begins with ATG
-    if ($self->transcript_seq !~ m/\A5+ATG/)
+    if ($self->transcript_annotation !~ m/\A[5]+ATG/)
     {
       push @errors, 'transcript does not begin with ATG';
     }
 
     # check stop codon
-    if ($self->transcript_seq !~ m/(TAA|TAG|TGA)3+\Z/)
+    if ($self->transcript_annotation !~ m/(TAA|TAG|TGA)[3]+\Z/)
     {
       push @errors, 'transcript does not end with stop codon';
     }
@@ -221,19 +221,15 @@ sub _build_transcript_abs_position {
 
   for (my $i = 0; $i < @exon_starts; $i++)
   {
-    for (my $abs_pos = $exon_starts[$i]; $abs_pos <= $exon_ends[$i]; $abs_pos++)
+    for (my $abs_pos = $exon_starts[$i]; $abs_pos < $exon_ends[$i]; $abs_pos++)
     {
       push @abs_pos, $abs_pos;
-      #$self->add_transcript_abs_position( $abs_pos );
     }
   }
   if ($self->strand eq "-")
   {
     # reverse array
     @abs_pos = reverse @abs_pos;
-    #$self->sort_transcript_abs_position( sub { $_[1] <=> $_[0] } );
-    #my @rev_tx_abs_pos = reverse $self->all_transcript_abs_position();
-    #$self->transcript_abs_position = \@rev_tx_abs_pos;
   }
   return \@abs_pos;
 }
@@ -245,14 +241,17 @@ sub _build_transcript_seq {
   my $self = shift;
   my @exon_starts = $self->all_exon_starts;
   my @exon_ends  = $self->all_exon_ends;
-  my $seq;
+  my ($seq);
 
   for (my $i = 0; $i < @exon_starts; $i++)
   {
-    for (my $abs_pos = $exon_starts[$i]; $abs_pos <= $exon_ends[$i]; $abs_pos++)
+    my $exon;
+    for (my $abs_pos = $exon_starts[$i]; $abs_pos < $exon_ends[$i]; $abs_pos++)
     {
-      $seq .= $self->get_base( $abs_pos, 1 );
+      $exon .= $self->get_base( $abs_pos, 1 );
     }
+    #say join ("\t", $exon_starts[$i], $exon_ends[$i], $exon);
+    $seq .= $exon;
   }
   if ($self->strand eq "-")
   {
@@ -276,7 +275,7 @@ sub _build_transcript_annotation {
 
   for (my $i = 0; $i < @exon_starts; $i++)
   {
-    for (my $abs_pos = $exon_starts[$i]; $abs_pos <= $exon_ends[$i]; $abs_pos++)
+    for (my $abs_pos = $exon_starts[$i]; $abs_pos < $exon_ends[$i]; $abs_pos++)
     {
       if ($non_coding)
       {
@@ -314,12 +313,14 @@ sub _build_transcript_annotation {
 sub get_transcript_sites {
   my $self = shift;
   my @exon_starts       = $self->all_exon_starts;
-  my @exon_ends        = $self->all_exon_ends;
+  my @exon_ends         = $self->all_exon_ends;
   my $coding_start      = $self->coding_start;
-  my $coding_end       = $self->coding_end;
+  my $coding_end        = $self->coding_end;
   my $coding_base_count = 0;
   my @gene_sites;
 
+  say join ("\t", "transcript: ", $self->transcript_seq);
+  say join ("\t", "tran_ann:  ", $self->transcript_annotation);
   for (my $i = 0; $i < ($self->all_transcript_abs_position); $i++)
   {
     my ($annotation_type, $codon_seq, $codon_number, $codon_position, 
@@ -332,18 +333,20 @@ sub get_transcript_sites {
     $gene_site{name}       = $self->transcript_id;
     $gene_site{strand}     = $self->strand;
     
+
     # is site coding
     if ($site_annotation =~ m/[ACGT]/)
     {
       $gene_site{annotation_type} = 'Coding';
-      $gene_site{codon_number}    = int( ( $coding_base_count / 3) ) + 1;
-      $gene_site{codon_position}  = $gene_site{codon_number} % 3;
+      $gene_site{codon_number}    = int( ( $coding_base_count / 3 ) ) + 1;
+      $gene_site{codon_position}  = $coding_base_count % 3;
       my $codon_start  = $i - $gene_site{codon_position};
-      my $codon_end   = $i + 2;
+      my $codon_end    = $codon_start + 2;
       
+      say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
       for (my $j = $codon_start; $j <= $codon_end; $j++)
       {
-         $gene_site{codon_seq} .= $self->get_base_transcript_seq( $i, 1 );
+         $gene_site{codon_seq} .= $self->get_base_transcript_seq( $j, 1 );
       }
       $coding_base_count++;
     }
@@ -363,6 +366,8 @@ sub get_transcript_sites {
     {
       confess "unknown site code $site_annotation";
     }
+    p %gene_site if $gene_site{annotation_type} eq 'Coding' and $coding_base_count < 9;
+    exit if $coding_base_count > 9;
     push @gene_sites, Seq::GeneSite->new( \%gene_site );
   }
   return @gene_sites;

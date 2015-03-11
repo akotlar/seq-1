@@ -11,7 +11,7 @@ use Lingua::EN::Inflect qw( A PL_N );
 plan tests => 22;
 
 # set test genome
-my $hg38_config_file = "hg38_gene_test.yml";
+my $hg38_config_file = "hg38_build_test.yml";
 
 # setup testing enviroment
 {

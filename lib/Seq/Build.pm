@@ -57,7 +57,6 @@ has genome_str_track => (
 has genome_sized_tracks => (
   is => 'ro',
   isa => 'ArrayRef[Seq::Build::GenomeSizedTrackChar]',
-  required => 1,
   traits => ['Array'],
   handles => {
     all_genome_sized_tracks => 'elements',
@@ -108,10 +107,13 @@ sub build_index {
 
   # build snp tracks
   my %snp_sites;
-  for my $snp_track ( $self->all_snp_tracks )
+  if ($self->snp_tracks)
   {
-    my $sites_aref = $self->build_snp_db( $snp_track );
-    map { $snp_sites{$_}++ } @$sites_aref;
+    for my $snp_track ( $self->all_snp_tracks )
+    {
+      my $sites_aref = $self->build_snp_db( $snp_track );
+      map { $snp_sites{$_}++ } @$sites_aref;
+    }
   }
 
   # build gene tracks
@@ -213,7 +215,7 @@ sub build_gene_db {
   my $out_file_name = File::Spec->catfile( $out_dir, $gene_track->name );
   my $out_fh        = $self->get_write_fh( $out_file_name );
 
-  my %ucsc_table_lu = ( name => 'transcript_id', chrom => 'chr', cdsEnd => 'coding_end',
+  my %ucsc_table_lu = ( alignID => 'transcript_id', chrom => 'chr', cdsEnd => 'coding_end',
     cdsStart => 'coding_start', exonEnds => 'exon_ends', exonStarts => 'exon_starts',
     strand => 'strand', txEnd => 'transcript_end', txStart => 'transcript_start',
   );
@@ -234,6 +236,7 @@ sub build_gene_db {
 
     # prepare basic gene data
     my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
+    p %gene_data;
     $gene_data{exon_ends}   = [ split(/\,/, $gene_data{exon_ends}) ];
     $gene_data{exon_starts} = [ split(/\,/, $gene_data{exon_starts}) ];
     $gene_data{genome}      = $self->genome_str_track;
@@ -319,7 +322,7 @@ sub build_snp_db {
       @alleles      = split( /,/, $data{alleles} );
       @allele_freqs = split( /,/, $data{alleleFreqs} );
       my @s_allele_freqs = sort { $b <=> $a } @allele_freqs;
-      $min_allele_freq = sprintf( "%0.6f", eval( 1 - $s_allele_freqs[0] ) );
+      $min_allele_freq = sprintf( "%0.6f", 1 - $s_allele_freqs[0]);
     }
 
     if ( $data{name} =~ m/^rs(\d+)/ )
