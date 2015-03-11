@@ -51,7 +51,7 @@ has snp_id => (
 # );
 
 has feature => (
-  is => 'rw',
+  is => 'ro',
   isa => 'HashRef',
   clearer => 'clear_feature',
   predicate => 'has_feature',

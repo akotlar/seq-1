@@ -116,7 +116,7 @@ has aa_residue => (
 
 has error_code => (
   is => 'rw',
-  isa => 'Str',
+  isa => 'ArrayRef',
   required => 1,
   clearer => 'clear_error_code',
   predicate => 'has_error_code',

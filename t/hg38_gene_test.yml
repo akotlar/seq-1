@@ -32,7 +32,6 @@ sparse_tracks:
       - refseq
       - protAcc
       - description
-      - rfamAcc
   - type: snp
     local_dir: ./hg38/raw/snp/
     local_file: snp141.txt.gz

@@ -10,14 +10,14 @@ use namespace::autoclean;
 use YAML::XS;
 use Scalar::Util qw( reftype openhandle );
 use DDP;
+use Seq::Gene;
+use Seq::GeneSite;
 use Seq::SnpSite;
 use Seq::Build::GenomeSizedTrackChar;
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::Config::SparseTrack;
 
 with 'Seq::ConfigFromFile', 'Seq::IO';
-
-
 
 =head1 NAME
 
@@ -51,8 +51,8 @@ has genome_str_track => (
   is => 'ro',
   isa => 'Seq::Build::GenomeSizedTrackStr',
   required => 1,
-  handles => [ 'get_abs_pos', 'get_base', 'get_chr_len',
-               'build_genome', 'length_genome_seq', ],
+  handles => [ 'get_abs_pos', 'get_base', 'build_genome', 
+    'length_genome_seq', ],
 );
 has genome_sized_tracks => (
   is => 'ro',
@@ -118,13 +118,13 @@ sub build_index {
   my (%flank_exon_sites, %exon_sites, %transcript_starts);
   for my $gene_track ( $self->all_gene_tracks )
   {
-    my ($flank_exon_sites_aref, $exon_sites_aref, $tx_start_href)
+    my ($flank_exon_sites_href, $exon_sites_href, $tx_start_href)
       = $self->build_gene_db( $gene_track );
 
     # add information from annotation sites and start/stop sites into
     # master lists
-    map { $flank_exon_sites{$_}++ } @$flank_exon_sites_aref;
-    map { $exon_sites{$_}++ } @$exon_sites_aref;
+    map { $flank_exon_sites{$_}++ } (keys %$flank_exon_sites_href);
+    map { $exon_sites{$_}++ } (keys %$exon_sites_href);
     for my $tx_start ( keys %$tx_start_href )
     {
       for my $tx_stops ( @{ $tx_start_href->{$tx_start} } )
@@ -135,13 +135,13 @@ sub build_index {
   }
 
   # make chr_len hash for binary genome
-  my %chr_len = map { $_ => $self->get_chr_len( $_ ) } ( $self->all_genome_chrs );
+  my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
   
   # make another genomesized track to deal with the in/outside of genes
   # and ultimately write over those 0's and 1's to store the genome assembly
   # idx codes...
   my $assembly = Seq::Build::GenomeSizedTrackChar->new(
-    { length => $self->length_genome_seq, $self->genome_index_dir,
+    { length => $self->length_genome_seq, genome_index_dir => $self->genome_index_dir,
       name => $self->genome_name, type => 'genome',
       genome_chrs => $self->genome_chrs, chr_len => \%chr_len,
     }
@@ -159,6 +159,7 @@ sub build_index {
   # Tracks
   foreach my $gst ($self->all_genome_sized_tracks)
   {
+    $gst->genome_index_dir( $self->genome_index_dir );
     $gst->build_genome_sized_tracks;
     $gst->write_genome_sized_tracks;
   }
@@ -200,7 +201,6 @@ sub write_genome_sized_tracks {
 
 sub build_gene_db {
   my ($self, $gene_track) = @_;
-  my (%flank_exon_sites, %exon_sites, %tx_starts);
 
   # input 
   my $local_dir     = File::Spec->canonpath( $gene_track->local_dir );
@@ -210,16 +210,79 @@ sub build_gene_db {
   # output
   my $out_dir       = File::Spec->catdir( $self->genome_index_dir, 'gene' );
   File::Path->make_path( $out_dir );
-  my $out_file_name = File::Spec->catfile( $out_dir, $snp_track->name );
+  my $out_file_name = File::Spec->catfile( $out_dir, $gene_track->name );
   my $out_fh        = $self->get_write_fh( $out_file_name );
 
-  my %header;
+  my %ucsc_table_lu = ( name => 'transcript_id', chrom => 'chr', cdsEnd => 'coding_end',
+    cdsStart => 'coding_start', exonEnds => 'exon_ends', exonStarts => 'exon_starts',
+    strand => 'strand', txEnd => 'transcript_end', txStart => 'transcript_start',
+  );
+  my ( %header, %transcript_start_sites, %flank_exon_sites, %exon_sites);
+  my $prn_count = 0;
+
   while(<$in_fh>)
   {
-     
-  }
-}
+     chomp $_;
+     my @fields = split(/\t/, $_);
+     if ($. == 1)
+     {
+      map { $header{$fields[$_]} = $_ } (0..$#fields);
+      next;
+    }
+    my %data = map { $_ => $fields[ $header{$_} ] } 
+      (@{ $gene_track->gene_fields_aref }, $gene_track->all_names);
 
+    # prepare basic gene data
+    my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
+    $gene_data{exon_ends}   = [ split(/\,/, $gene_data{exon_ends}) ];
+    $gene_data{exon_starts} = [ split(/\,/, $gene_data{exon_starts}) ];
+    $gene_data{genome}      = $self->genome_str_track;
+
+    # prepare alternative names for gene
+    my %alt_names = map { $_ => $data{$_} if exists $data{$_} } ( $gene_track->all_names );
+
+    my $gene = Seq::Gene->new( \%gene_data );
+    $gene->set_alt_names( %alt_names );
+
+    # get intronic flanking site annotations
+    my @flank_exon_sites = $gene->get_flanking_sites();
+    for my $site (@flank_exon_sites)
+    {
+      if ($prn_count == 0)
+      {
+        print { $out_fh } "[" . encode_json( $site->as_href );
+        $prn_count++;
+      }
+      else
+      {
+        print { $out_fh} "," . encode_json( $site->as_href );
+        $prn_count++;
+      }
+
+      $flank_exon_sites{ $site->abs_pos }++;
+    }
+
+    # get exon annotations
+    my @exon_sites = $gene->get_transcript_sites();
+    for my $site (@exon_sites)
+    {
+      if ($prn_count == 0)
+      {
+        print { $out_fh } "[" . encode_json( $site->as_href );
+        $prn_count++;
+      }
+      else
+      {
+        print { $out_fh} "," . encode_json( $site->as_href );
+        $prn_count++;
+      }
+      $exon_sites{ $site->abs_pos }++;
+    }
+    push @{ $transcript_start_sites{ $gene_data{transcript_start} } }, $gene_data{transcript_end};
+  }
+  print { $out_fh } "]";
+  return (\%flank_exon_sites, \%exon_sites, \%transcript_start_sites);
+}
 
 sub build_snp_db {
   my ($self, $snp_track) = @_;
@@ -236,7 +299,9 @@ sub build_snp_db {
   my $out_file_name = File::Spec->catfile( $out_dir, $snp_track->name );
   my $out_fh        = $self->get_write_fh( $out_file_name );
 
+
   my %header;
+  my $prn_counter = 0;
   while(<$in_fh>)
   {
     chomp $_;
@@ -275,15 +340,20 @@ sub build_snp_db {
         }
         push @snp_sites, $abs_pos;
 
-        #if ($abs_pos == 17152612)
-        #{
-        #  p %data;
-        #  p $snp_site->as_href;
-        #}
-        print { $out_fh } encode_json( $snp_site->as_href );
+        if ($prn_counter == 0)
+        {
+          print { $out_fh } "[" . encode_json( $snp_site->as_href );
+          $prn_counter++;
+        }
+        else
+        {
+          print { $out_fh } "," . encode_json( $snp_site->as_href );
+          $prn_counter++;
+        }
       }
     }
   }
+  print { $out_fh } "]";
   return \@snp_sites;
 }
 
@@ -324,6 +394,7 @@ sub BUILDARGS {
       {
         push @{ $hash{genome_sized_tracks} },
           Seq::Build::GenomeSizedTrackChar->new( $genome_str_track );
+
       }
       else
       {

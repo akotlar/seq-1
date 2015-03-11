@@ -81,8 +81,6 @@ ok ( ( $hg38_gst
   $hg38_gst->clear_genome_seq;
   $hg38_gst->build_genome;
 
-
-
 }
 
 sub does_role {
