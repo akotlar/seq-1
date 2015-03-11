@@ -146,13 +146,19 @@ has transcript_error => (
 sub BUILD {
   my $self = shift;
 
-  # ensure genome object is usable
+  # ensure genome object has the methods we will require - either the 
+  # string or char genome classes will be fine
   if (  $self->genome->meta->has_method( 'get_abs_pos' )
     and $self->genome->meta->has_method( 'get_base' ) )
   {
-    # change all relative bp position to absolute positions
+
+    # - get_abs_pos( chr, pos ) expects position to be a positive number
+    #   so it is -indexed but returnes the zero-index position
     my $abs_position_offset  = $self->get_abs_pos( $self->chr, 1 );
-    $self->transcript_start( $abs_position_offset + $self->transcript_start - 1 );
+
+    # - change all relative bp position to absolute positions and change to a 
+    #   Zero indexed genome (i.e., this is why everything has '-1' taken 
+    #   from it.     $self->transcript_start( $abs_position_offset + $self->transcript_start - 1 );
     $self->transcript_end(   $abs_position_offset + $self->transcript_end   - 1 );
     $self->coding_start(     $abs_position_offset + $self->coding_start     - 1 );
     $self->coding_end(       $abs_position_offset + $self->coding_end       - 1 );
@@ -343,7 +349,7 @@ sub get_transcript_sites {
       my $codon_start  = $i - $gene_site{codon_position};
       my $codon_end    = $codon_start + 2;
       
-      say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
+      #say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
       for (my $j = $codon_start; $j <= $codon_end; $j++)
       {
          $gene_site{codon_seq} .= $self->get_base_transcript_seq( $j, 1 );
@@ -366,8 +372,8 @@ sub get_transcript_sites {
     {
       confess "unknown site code $site_annotation";
     }
-    p %gene_site if $gene_site{annotation_type} eq 'Coding' and $coding_base_count < 9;
-    exit if $coding_base_count > 9;
+    #p %gene_site if $gene_site{annotation_type} eq 'Coding' and $coding_base_count < 9;
+    #exit if $coding_base_count > 9;
     push @gene_sites, Seq::GeneSite->new( \%gene_site );
   }
   return @gene_sites;
@@ -416,7 +422,7 @@ sub get_flanking_sites {
         $gene_site{base}            = $self->get_base( $gene_site{abs_pos}, 1 );
         $gene_site{error_code}      = $self->transcript_error;
         $gene_site{name}            = $self->transcript_id;
-        $gene_site{strand}     = $self->strand;
+        $gene_site{strand}          = $self->strand;
         push @gene_sites, Seq::GeneSite->new( \%gene_site );
       }
       # flanking sites at end of exon
@@ -429,7 +435,7 @@ sub get_flanking_sites {
         $gene_site{base}            = $self->get_base( $gene_site{abs_pos}, 1 );
         $gene_site{error_code}      = $self->transcript_error;
         $gene_site{name}            = $self->transcript_id;
-        $gene_site{strand}     = $self->strand;
+        $gene_site{strand}          = $self->strand;
         push @gene_sites, Seq::GeneSite->new( \%gene_site );
       }
     }

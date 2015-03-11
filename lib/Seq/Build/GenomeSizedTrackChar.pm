@@ -103,7 +103,7 @@ sub write_char_seq {
   # write idx file
   my $self        = shift;
   my $file        = join(".", $self->name, $self->type, 'idx');
-  my $index_dir   = File::Spec->cannonpath( $self->genome_index_dir );
+  my $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
   my $target_file = File::Spec->catfile( $index_dir, $file );
   my $fh          = $self->get_write_bin_fh( $target_file );
   print { $fh } ${ $self->char_seq };
@@ -113,7 +113,7 @@ sub write_char_seq {
   if ($self->type eq "genome")
   {
     $file        = join(".", $self->name, $self->type, 'chr_len');
-    $index_dir   = File::Spec->cannonpath( $self->genome_index_dir );
+    $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
     $target_file = File::Spec->catfile( $index_dir, $file );
     $fh          = $self->get_write_bin_fh( $target_file );
     print { $fh } Dump( $self->chr_len );
@@ -123,26 +123,28 @@ sub write_char_seq {
 sub build_idx {
   my ($self, $genome_str, $exon_href, $flank_exon_href, $snp_href) = @_;
 
-  # TODO: check for genome_str ...
+  confess "expected genome object to be able to get_abs_pos() and get_base()" 
+    unless (  $genome_str->meta->has_method( 'get_abs_pos' )
+      and $genome_str->meta->has_method( 'get_base' ) );
   
   confess "build_idx() expected a 3 hashes - exon, flanking exon, and snp sites"
-    unless reftype( $exon_href ) eq "HASH"
+    unless reftype( $exon_href )      eq "HASH"
       and reftype( $flank_exon_href ) eq "HASH"
-      and reftype( $snp_href ) eq "HASH";
+      and reftype( $snp_href )        eq "HASH";
 
   for ( my $pos = 0; $pos < $self->length; $pos++ )
   {
     my $this_pos = $pos + 1;
-    my $this_base = uc $genome_str->get_str( $pos );
+    my $this_base = uc $genome_str->get_base( $pos, 1 );
     my ( $in_gan, $in_gene, $in_exon, $in_snp ) = ( 0, 0, 0, 0 );
 
     $in_gan   = 1 if exists $exon_href->{$this_pos} || exists $flank_exon_href->{$this_pos};
-    $in_gene  = $self->get_char( $pos );
+    $in_gene  = $self->get_base( $pos );
     $in_exon  = 1 if exists $exon_href->{$this_pos};
     $in_snp   = 1 if exists $snp_href->{$this_pos};
 
     my $site_code = $self->get_idx_code( $this_base, $in_gan, $in_gene, $in_exon, $in_snp );
-    if ( $site_code )
+    if ( defined $site_code )
     {
       $self->insert_char( $pos, $site_code );
     }

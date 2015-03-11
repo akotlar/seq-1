@@ -159,13 +159,16 @@ sub build_index {
 
   # set and write scores for conservation tracks / i.e., the other GenomeSized
   # Tracks
-  foreach my $gst ($self->all_genome_sized_tracks)
+  if ($self->genome_sized_tracks)
   {
-    $gst->genome_index_dir( $self->genome_index_dir );
-    $gst->build_genome_sized_tracks;
-    $gst->write_genome_sized_tracks;
+    foreach my $gst ($self->all_genome_sized_tracks)
+    {
+      $gst->genome_index_dir( $self->genome_index_dir );
+      $gst->build_genome_sized_tracks;
+      $gst->write_genome_sized_tracks;
+    }
+    $self->write_idx_config_file;
   }
-  $self->write_idx_config_file;
 }
 
 sub build_genome_sized_tracks {
@@ -210,10 +213,11 @@ sub build_gene_db {
   my $in_fh         = $self->get_read_fh( $local_file );
 
   # output
-  my $out_dir       = File::Spec->catdir( $self->genome_index_dir, 'gene' );
+  my $out_dir       = File::Spec->canonpath( $self->genome_index_dir );
   File::Path->make_path( $out_dir );
-  my $out_file_name = File::Spec->catfile( $out_dir, $gene_track->name );
-  my $out_fh        = $self->get_write_fh( $out_file_name );
+  my $out_file_name = join(".", $self->genome_name, $gene_track->name, $gene_track->type, 'json' );
+  my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
+  my $out_fh        = $self->get_write_fh( $out_file_path );
 
   my %ucsc_table_lu = ( alignID => 'transcript_id', chrom => 'chr', cdsEnd => 'coding_end',
     cdsStart => 'coding_start', exonEnds => 'exon_ends', exonStarts => 'exon_starts',
@@ -297,11 +301,11 @@ sub build_snp_db {
   my $in_fh         = $self->get_read_fh( $local_file );
 
   # output
-  my $out_dir       = File::Spec->catdir( $self->genome_index_dir, 'snp' );
+  my $out_dir       = File::Spec->canonpath( $self->genome_index_dir);
   File::Path->make_path( $out_dir );
-  my $out_file_name = File::Spec->catfile( $out_dir, $snp_track->name );
-  my $out_fh        = $self->get_write_fh( $out_file_name );
-
+  my $out_file_name = join(".", $self->genome_name, $snp_track->name, $snp_track->type,  'json' );
+  my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
+  my $out_fh        = $self->get_write_fh( $out_file_path );
 
   my %header;
   my $prn_counter = 0;
