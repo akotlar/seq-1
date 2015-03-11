@@ -9,7 +9,6 @@ use Moose;
 use namespace::autoclean;
 use YAML::XS;
 use Scalar::Util qw( reftype openhandle );
-use DDP;
 use Seq::Gene;
 use Seq::GeneSite;
 use Seq::SnpSite;
