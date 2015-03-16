@@ -35,7 +35,8 @@ my @chrs = map { "chr$_" } (1..22, 'M', 'X', 'Y');
 
 if($file_name =~ m/\.gz$/)
 {
-  $in_fhs{$file_name} = new IO::Uncompress::Gunzip "$file_name" or die "gzip failed: $GunzipError\n";
+  $in_fhs{$file_name} = new IO::Uncompress::Gunzip "$file_name" 
+    or die "gzip failed: $GunzipError\n";
 }
 else
 {
