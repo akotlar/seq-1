@@ -2,12 +2,8 @@ package Seq::Build;
 
 use 5.10.0;
 use Carp qw( croak );
-#use Cpanel::JSON::XS;
-#use File::Path;
-#use File::Spec;
 use Moose;
 use namespace::autoclean;
-#use YAML::XS;
 use Scalar::Util qw( reftype );
 
 use Seq::Build::SnpTrack;
@@ -22,7 +18,7 @@ with 'Seq::ConfigFromFile', 'Seq::Role::IO';
 
 =head1 NAME
 
-Seq::Fetch - The great new Seq::Fetch!
+Seq::Build - The great new Seq::Build!
 
 =head1 VERSION
 
@@ -132,7 +128,8 @@ sub build_index {
     }
   }
 
-  # build gene tracks
+  # build gene tracks - these are gene annotation tracks downloaded from UCSC
+  # e.g., knownGene
   my (%flank_exon_sites, %exon_sites, %transcript_starts);
   for my $gene_track ( $self->all_gene_tracks )
   {
@@ -208,7 +205,7 @@ sub BUILDARGS {
   my $href  = $_[0];
   if (scalar @_ > 1 || reftype($href) ne "HASH")
   {
-    confess "Error: Seq::Build expects hash reference.\n";
+    confess "Error: $class expects hash reference.\n";
   }
   else
   {
@@ -275,7 +272,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Config::Build
+    perldoc Seq::Build
 
 
 You can also look for information at:
@@ -326,4 +323,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 __PACKAGE__->meta->make_immutable;
 
-1; # End of Seq::Config::Build
+1; # End of Seq::Build

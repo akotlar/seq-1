@@ -108,7 +108,7 @@ sub BUILDARGS {
   my $href  = $_[0];
   if (scalar @_ > 1 || reftype($href) ne "HASH")
   {
-    confess "Error: Seq::Build::GenomeSizedTrackChar expects hash reference.\n";
+    confess "Error: $class expects hash reference.\n";
   }
   else
   {

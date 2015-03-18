@@ -110,7 +110,7 @@ sub write_char_seq {
 
   # write char_len for each track - this is repetitive but, I think, will make
   # things simplier than only doing it for one track
-    $file        = join(".", $self->name, $self->type, 'chr_len');
+    $file        = join(".", $self->name, $self->type, 'yml');
     $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
     $target_file = File::Spec->catfile( $index_dir, $file );
     $fh          = $self->get_write_bin_fh( $target_file );
@@ -170,6 +170,8 @@ sub build_genome_idx {
     my $this_base = uc $genome_str->get_base( $pos, 1 );
     my ( $in_gan, $in_gene, $in_exon, $in_snp ) = ( 0, 0, 0, 0 );
 
+    # $in_gan -> means is this site annotated in the MongoDb gene track
+    # e.g., 5'UTR, Coding, intronic splice site donor, etc. 
     $in_gan   = 1 if exists $exon_href->{$pos} || exists $flank_exon_href->{$pos};
     $in_gene  = $self->get_base( $pos );
     $in_exon  = 1 if exists $exon_href->{$pos};

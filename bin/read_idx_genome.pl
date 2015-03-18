@@ -88,7 +88,7 @@ if ($pos_from >= $pos_to)
   binmode $idx_fh;
   my $genome_chr_seq;
   read $idx_fh, $genome_chr_seq, -s $db_file;
-  my $yaml_file = File::Spec->catfile( $db_location, "$db_name.genome.chr_len" );
+  my $yaml_file = File::Spec->catfile( $db_location, "$db_name.genome.yml" );
   my $chr_len_href = LoadFile( $yaml_file );
   p $chr_len_href;
 

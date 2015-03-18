@@ -28,6 +28,8 @@ Version 0.01
 
 our $VERSION = '0.01';
 
+$MongoDB::BSON::looks_like_number = 1;
+
 has genome_index_dir => (
   is => 'ro',
   isa => 'Str',
@@ -148,6 +150,8 @@ sub build_snp_db {
         {
           $snp_site->set_feature( maf => $min_allele_freq, alleles => join(",", @alleles));
         }
+
+        # record keeping - TODO: move into Moose Counter method
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
@@ -155,12 +159,12 @@ sub build_snp_db {
 
         if ($prn_counter == 0)
         {
-          print { $out_fh } "[" . encode_json( $snp_site->as_href );
+          print { $out_fh } "[" . encode_json( $site_href );
           $prn_counter++;
         }
         else
         {
-          print { $out_fh } "," . encode_json( $snp_site->as_href );
+          print { $out_fh } "," . encode_json( $site_href );
           $prn_counter++;
         }
       }

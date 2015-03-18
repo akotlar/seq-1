@@ -20,7 +20,12 @@
 #
 #   TODO:
 #     - change offsets so we grab flanking regions around each gene
-#
+#     - use YAML file to override the chromosome names hard coded into this
+#       script (Matthew)
+#     - add fake data for clinvar (Matthew)
+#     - add fake data for cad score (Matthew) and haploinsufficiency (Alex)
+#     - accomidate species without known SNPs ()
+#     - make a test "snpfile.txt" (Matthew)
 
 use 5.10.0;
 use strict;
