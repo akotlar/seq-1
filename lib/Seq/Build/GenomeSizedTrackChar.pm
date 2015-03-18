@@ -9,7 +9,7 @@ use namespace::autoclean;
 use Scalar::Util qw( reftype );
 use YAML::XS;
 extends 'Seq::Config::GenomeSizedTrack';
-with 'Seq::Serialize::CharGenome', 'Seq::IO';
+with 'Seq::Role::CharGenome', 'Seq::Role::IO', 'Seq::Role::Genome';
 
 =head1 NAME
 
@@ -23,7 +23,7 @@ Version 0.01
 
 our $VERSION = '0.01';
 
-has length => (
+has genome_length => (
   is => 'rw',
   isa => 'Int',
 );
@@ -38,11 +38,11 @@ has chr_len => (
   },
 );
 
-# char_seq stores a string of chars
+# stores the 1-indexed length of each chromosome
 has char_seq => (
   is => 'rw',
   lazy => 1,
-  writer => undef,
+  #writer => undef,
   builder => '_build_char_seq',
   isa => 'ScalarRef',
   clearer => 'clear_char_seq',
@@ -81,22 +81,11 @@ score-like information (e.g., conservation scores).
 sub _build_char_seq {
   my $self = shift;
   my $char_seq = "";
-  for ( my $pos = 0; $pos < $self->length; $pos++ )
+  for ( my $pos = 0; $pos < $self->genome_length; $pos++ )
   {
     $char_seq .= pack('C', 0);
   }
   return \$char_seq;
-}
-
-sub get_abs_pos {
-  my $self = shift;
-  my ( $chr, $pos ) = @_;
-  unless ($self->exists_chr_len( $chr ))
-  {
-    confess "$chr not known get_abs_pos()\n";
-  }
-  my $abs_pos = $self->get_chr_len( $chr ) + $pos;
-  return $abs_pos;
 }
 
 sub write_char_seq {
@@ -109,39 +98,72 @@ sub write_char_seq {
   print { $fh } ${ $self->char_seq };
   close $fh;
 
-  # write char_len file for genome
-  if ($self->type eq "genome")
-  {
+  # write char_len for each track - this is repetitive but, I think, will make
+  # things simplier than only doing it for one track
     $file        = join(".", $self->name, $self->type, 'chr_len');
     $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
     $target_file = File::Spec->catfile( $index_dir, $file );
     $fh          = $self->get_write_bin_fh( $target_file );
     print { $fh } Dump( $self->chr_len );
+    close $fh;
+}
+
+=head2 build_score_idx
+
+Method for building score index.
+
+=cut
+
+sub build_score_idx {
+  my $self = shift;
+
+  my $local_files_aref = $self->local_files;
+  my $local_dir = File::Spec->canonpath( $self->local_dir );
+
+  # there's only 1 score file for conservation stuff at the moment
+  for my $i (0 .. $#{ $local_files_aref })
+  {
+    my $file       = $local_files_aref->[$i];
+    my $local_file = File::Spec->catfile( $local_dir, $file );
+    my $fh         = $self->get_read_fh( $local_file );
+    while ( my $line = $fh->getline() )
+    {
+      chomp $line;
+      my ($chr, $pos, $score) = split( "\t", $line );
+      my $abs_pos = $self->get_abs_pos( $chr, $pos );
+      $self->insert_score( $abs_pos, $score );
+    }
   }
 }
 
-sub build_idx {
+=head2 build_genome_idx
+
+Method for building coded genome sequence index.
+
+=cut
+
+sub build_genome_idx {
   my ($self, $genome_str, $exon_href, $flank_exon_href, $snp_href) = @_;
 
-  confess "expected genome object to be able to get_abs_pos() and get_base()" 
+  confess "expected genome object to be able to get_abs_pos() and get_base()"
     unless (  $genome_str->meta->has_method( 'get_abs_pos' )
       and $genome_str->meta->has_method( 'get_base' ) );
-  
+
   confess "build_idx() expected a 3 hashes - exon, flanking exon, and snp sites"
     unless reftype( $exon_href )      eq "HASH"
       and reftype( $flank_exon_href ) eq "HASH"
       and reftype( $snp_href )        eq "HASH";
 
-  for ( my $pos = 0; $pos < $self->length; $pos++ )
+  for ( my $pos = 0; $pos < $self->genome_length; $pos++ )
   {
-    my $this_pos = $pos + 1;
+    # all absolute bases are zero-indexed
     my $this_base = uc $genome_str->get_base( $pos, 1 );
     my ( $in_gan, $in_gene, $in_exon, $in_snp ) = ( 0, 0, 0, 0 );
 
-    $in_gan   = 1 if exists $exon_href->{$this_pos} || exists $flank_exon_href->{$this_pos};
+    $in_gan   = 1 if exists $exon_href->{$pos} || exists $flank_exon_href->{$pos};
     $in_gene  = $self->get_base( $pos );
-    $in_exon  = 1 if exists $exon_href->{$this_pos};
-    $in_snp   = 1 if exists $snp_href->{$this_pos};
+    $in_exon  = 1 if exists $exon_href->{$pos};
+    $in_snp   = 1 if exists $snp_href->{$pos};
 
     my $site_code = $self->get_idx_code( $this_base, $in_gan, $in_gene, $in_exon, $in_snp );
     if ( defined $site_code )
@@ -181,7 +203,7 @@ sub set_gene_regions {
 
   # recall the char string will be initialized to Zero's already so we only
   # need to consider when we are in a gene region
-  for (my $pos = 0; $pos < $self->length; $pos++ )
+  for (my $pos = 0; $pos < $self->genome_length; $pos++ )
   {
     if ( $pos > ( $tx_start - 1 ) && $pos < ( $tx_stop - 1 ) )
     {
@@ -220,13 +242,25 @@ sub BUILDARGS {
     {
       if ($href->{name} eq "phastCons")
       {
-        $hash{score2chr}  = sub { return (int ( $_ * 254 ) + 1) };
-        $hash{char2score} = sub { return ( $_ - 1 ) / 254 };
+        $hash{score2char}  = sub {
+          my $score = shift;
+          return (int ( $score * 254 ) + 1)
+          };
+        $hash{char2score} = sub {
+          my $score = shift;
+          return ( $score- 1 ) / 254
+          };
       }
       elsif ($href->{name} eq "phyloP")
       {
-        $hash{score2chr}  = sub { return (int ( $_ * ( 127 / 30 ) ) + 128) };
-        $hash{char2score} = sub { return ( $_ - 128 ) / ( 127 / 30 ) }
+        $hash{score2char}  = sub {
+          my $score = shift;
+          return (int ( $score * ( 127 / 30 ) ) + 128)
+          };
+        $hash{char2score} = sub {
+          my $score = shift;
+          return ( $score - 128 ) / ( 127 / 30 )
+          };
       }
     }
 

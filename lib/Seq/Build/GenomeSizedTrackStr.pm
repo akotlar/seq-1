@@ -1,13 +1,14 @@
 package Seq::Build::GenomeSizedTrackStr;
 
 use 5.10.0;
-use Carp;
+use Carp qw( confess );
 use File::Path;
 use File::Spec;
 use Moose;
 use namespace::autoclean;
+
 extends 'Seq::Config::GenomeSizedTrack';
-with 'Seq::IO';
+with 'Seq::Role::IO', 'Seq::Role::Genome';
 
 =head1 NAME
 
@@ -19,8 +20,6 @@ Version 0.01
 
 =cut
 
-my %chr_lens = ( );
-
 # str_seq stores a string in a single scalar
 has genome_seq => (
   is => 'rw',
@@ -30,32 +29,30 @@ has genome_seq => (
   traits => ['String'],
   handles => {
     add_seq => 'append',
-    clear_genome_seq => 'clear',
-    length_genome_seq => 'length',
-    get_base => 'substr',
+    clear_genome => 'clear',
+    genome_length => 'length',
+    seq_length => 'length',
+    get_base => 'substr', # zero-indexed
   },
   lazy => 1,
 );
 
+# stores the 1-indexed length of each chromosome
+has chr_len => (
+  is => 'rw',
+  isa => 'HashRef[Str]',
+  traits => ['Hash'],
+  handles => {
+    exists_chr_len => 'exists',
+    get_chr_len => 'get',
+    set_chr_len => 'set',
+  },
+);
+
+
 =head1 SYNOPSIS
 
 =head1 METHODS
-
-=head2 get_abs_pos
-
-Returns an absolute position for a given chr and position.
-
-=cut
-
-sub get_abs_pos {
-  my ($self, $chr, $pos ) = @_;
-  confess "expected chromosome and position" unless defined $chr and defined $pos;
-  confess "expected position to be >= 1" unless $pos >= 1;
-  confess "position outside of genome, which is " . $self->length_genome_seq  
-    unless $pos < $self->length_genome_seq;
-  my $abs_pos //= $chr_lens{$chr} + $pos - 1;
-  return $abs_pos;
-}
 
 =head2 _build_genome
 
@@ -69,17 +66,18 @@ sub build_genome {
 
   for (my $i = 0; $i < @local_files; $i++)
   {
-    my $file       = $local_files[$i];
-    my $chr        = $genome_chrs[$i];
-
+    my $file        = $local_files[$i];
+    my $chr         = $genome_chrs[$i];
+    my $local_file  = File::Spec->catfile( $local_dir, $file );
+    my $in_fh       = $self->get_read_fh( $local_file );
     my @file_fields = split(/\./, $file);
-    croak "expected chromosomes and sequence files to be in the"
+
+    confess "expected chromosomes and sequence files to be in the"
            . " same order but found $file with $chr\n"
            unless $chr eq $file_fields[0];
 
-    my $local_file  = File::Spec->catfile( $local_dir, $file );
-    my $in_fh       = $self->get_read_fh( $local_file );
-    $chr_lens{$chr} = $self->length_genome_seq;
+    $self->set_chr_len( $chr => $self->seq_length );
+
     while ( my $line = $in_fh->getline() )
     {
       chomp $line;
@@ -91,7 +89,7 @@ sub build_genome {
       }
       else
       {
-        croak join("\n", "ERROR: Unexpected Non-Base Character.", 
+        confess join("\n", "ERROR: Unexpected Non-Base Character.",
           "\tfile: $file ",
           "\tline: $.",
           "\tsequence: $line");

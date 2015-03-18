@@ -5,7 +5,8 @@ use Moose;
 use namespace::autoclean;
 use Cpanel::JSON::XS;
 use Scalar::Util qw( reftype );
-with 'Seq::Serialize::SparseTrack';
+#with 'Seq::Role::SparseTrack';
+use DDP;
 
 =head1 NAME
 
@@ -51,7 +52,7 @@ has snp_id => (
 # );
 
 has feature => (
-  is => 'ro',
+  is => 'rw',
   isa => 'HashRef',
   clearer => 'clear_feature',
   predicate => 'has_feature',
@@ -60,6 +61,7 @@ has feature => (
     set_feature => 'set',
     get_feature => 'get',
     all_features => 'elements',
+    no_feature => 'is_empty',
   },
 );
 
@@ -76,13 +78,41 @@ Perhaps a little code snippet.
 
 =head1 METHODS
 
-=head2 save
+=head2 as_href
 
 =cut
 
-=head2 seralize_sparse_attribs
+sub as_href {
+  my $self = shift;
+  my %hash;
+
+  for my $attr ( qw( abs_pos snp_id feature ) )
+  {
+    if ($attr eq "feature")
+    {
+      $hash{$attr} = $self->$attr unless $self->no_feature;
+    }
+    else
+    {
+      $hash{$attr} = $self->$attr;
+    }
+  }
+  return \%hash;
+}
+
+=head2 function2
 
 =cut
+
+# sub clear_all {
+#   my $self = shift;
+#   my @attributes = @{ $self->meta->get_attributes };
+#   for my $attribute (@attributes)
+#   {
+#     my $clear_method = $attribute . "_clear";
+#     $self->$clear_method;
+#   }
+# }
 
 =head1 AUTHOR
 

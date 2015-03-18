@@ -55,7 +55,7 @@ my (%idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp)
   }
 }
 
-# 
+#
 # basic genome characteristics
 #
 has name => ( is => 'ro', isa => 'Str', required => 1, );
@@ -93,7 +93,7 @@ has remote_files => (
   traits => ['Array'],
 );
 
-# 
+#
 # for processing scripts
 #
 has proc_init_cmds => (
@@ -135,9 +135,9 @@ sub get_idx_code {
 
   confess "get_idx_code() expects base, in_gan, in_gene, in_exon, and in_snp"
     unless $base =~ m/[ACGTN]/
-      and defined $in_gan 
-      and defined $in_gene 
-      and defined $in_exon 
+      and defined $in_gan
+      and defined $in_gene
+      and defined $in_exon
       and defined $in_snp;
 
   my $code //= $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
@@ -145,34 +145,35 @@ sub get_idx_code {
 }
 
 sub get_idx_base {
-  shift;
-  my $base //= $idx_base{$_};
+  my ($self, $char) = @_;
+  my $base //= $idx_base{$char};
   return $base;
 }
 
 sub get_idx_in_gan {
-  shift;
-  my $code //= $idx_in_gan{$_};
+  my ($self, $char) = @_;
+  my $code //= $idx_in_gan{$char};
   return $code;
 }
 
 sub get_idx_in_gene {
-  shift;
-  my $code //= $idx_in_gene{$_};
+  my ($self, $char) = @_;
+  my $code //= $idx_in_gene{$char};
   return $code;
 }
 
 sub get_idx_in_exon {
-  shift;
-  my $code //= $idx_in_exon{$_};
+  my ($self, $char) = @_;
+  my $code //= $idx_in_exon{$char};
   return $code;
 }
 
 sub get_idx_in_snp {
-  shift;
-  my $code //= $idx_in_snp{$_};
+  my ($self, $char) = @_;
+  my $code //= $idx_in_snp{$char};
   return $code;
 }
+
 =head1 AUTHOR
 
 Thomas Wingo, C<< <thomas.wingo at emory.edu> >>

@@ -1,13 +1,14 @@
-package Seq::Serialize::CharGenome;
+package Seq::Role::CharGenome;
 
 use 5.10.0;
 use Carp;
 use Moose::Role;
 use YAML::XS qw(Dump);
+use Scalar::Util qw( reftype );
 
 =head1 NAME
 
-Seq::Serialize::CharGenome - The great new Seq::Serialize::CharGenome!
+Seq::Role::CharGenome - The great new Seq::Role::CharGenome!
 
 =head1 VERSION
 
@@ -32,16 +33,14 @@ their associated sequences of chars.
 sub insert_char {
   my $self = shift;
   my ($pos, $char) = @_;
-  my $seq_len = $self->length;
+  my $seq_len = $self->genome_length;
 
   confess "insert_char expects insert value and absolute position"
     unless defined $char and defined $pos;
-
   confess "insert_char expects insert value between 0 and 255"
     unless ($char >= 0 and $char <= 255);
-
   confess "insert_char expects pos value between 0 and $seq_len, got $pos"
-    unless ($pos >= 0 and $pos <= $seq_len);
+    unless ($pos >= 0 and $pos < $seq_len);
 
   # inserted character is a byproduct of a successful substr event
   my $inserted_char = substr( ${ $self->char_seq }, $pos, 1, pack( 'C', $char));
@@ -56,12 +55,20 @@ sub insert_char {
 sub insert_score {
   my $self = shift;
   my ($pos, $score) = @_;
-  my $seq_len = $self->length;
+  my $seq_len = $self->genome_length;
 
   confess "insert_score expects pos value between 0 and $seq_len, got $pos"
-    unless ($pos >= 0 and $pos <= $seq_len);
+    unless ($pos >= 0 and $pos < $seq_len);
+  confess "insert_score expects score2char() to be a coderef"
+    unless $self->meta->has_method( 'score2char' )
+      and reftype($self->score2char) eq 'CODE';
 
   my $char_score    = $self->score2char->( $score );
+  # say "insert score ($score) at pos ($pos) into "
+  #   . $self->name
+  #   . " got "
+  #   . sprintf("%d", $char_score);
+
   my $inserted_char = $self->insert_char( $pos, $char_score );
   return $inserted_char;
 }
@@ -71,11 +78,11 @@ sub insert_score {
 =cut
 
 sub get_base {
-  my $self = shift;
-  my ($pos) = @_;
-  my $seq_len = $self->length;
-  confess "get_base() expects a position between 0 and end of the seq, which is $seq_len for the current string."
-    unless $pos >= 0 and $pos <= $seq_len;
+  my ($self, $pos) = @_;
+  my $seq_len = $self->genome_length;
+
+  confess "get_base() expects a position between 0 and  $seq_len, got $pos."
+    unless $pos >= 0 and $pos < $seq_len;
 
   # position here is not adjusted for the Zero versus 1 index issue
   return unpack ('C', substr( ${$self->char_seq}, $pos, 1));
@@ -86,8 +93,12 @@ sub get_base {
 =cut
 
 sub get_score {
-  my $self = shift;
-  my ($pos) = @_;
+  my ($self, $pos) = @_;
+
+  confess "insert_score expects score2char() to be a coderef"
+    unless $self->meta->has_method( 'char2score' )
+      and reftype($self->char2score) eq 'CODE';
+
   my $char = $self->get_base( $pos );
   return $self->char2score->( $char );
 }
@@ -109,7 +120,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Serialize::CharGenome
+    perldoc Seq::Role::CharGenome
 
 
 You can also look for information at:
@@ -157,4 +168,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 
 =cut
-no Moose::Role; 1; # End of Seq::Serialize::CharGenome
+no Moose::Role; 1; # End of Seq::Role::CharGenome

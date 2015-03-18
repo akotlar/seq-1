@@ -6,6 +6,8 @@ use Moose::Util::TypeConstraints;
 use namespace::autoclean;
 use Scalar::Util qw( reftype );
 
+with 'Seq::Role::SparseTrack';
+
 enum SparseTrackType => [ 'gene', 'snp' ];
 
 =head1 NAME
@@ -30,10 +32,10 @@ my @gene_table_fields = qw( chrom strand txStart txEnd cdsStart cdsEnd
 has name => ( is => 'ro', isa => 'Str', required => 1, );
 has type => ( is => 'ro', isa => 'SparseTrackType', required => 1, );
 has sql_statement => ( is => 'rw', isa => 'Str', );
-has entry_names => ( 
-  is => 'ro', 
-  isa => 'ArrayRef[Str]', 
-  required => 1, 
+has entry_names => (
+  is => 'ro',
+  isa => 'ArrayRef[Str]',
+  required => 1,
   traits => ['Array'],
   handles => {
     all_names => 'elements',

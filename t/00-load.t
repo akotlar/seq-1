@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::More;
 
-plan tests => 15; 
+plan tests => 13; 
 
 BEGIN {
     use_ok( 'Seq' ) || print "Bail out!\n";
@@ -19,6 +19,7 @@ BEGIN {
     use_ok( 'Seq::SnpSite' ) || print "Bail out!\n";
     use_ok( 'Seq::Build::GenomeSizedTrackChar' ) || print "Bail out!\n";
     use_ok( 'Seq::Build::GenomeSizedTrackStr' ) || print "Bail out!\n";
+    use_ok( 'Seq::Build::SnpTrack' ) || print "Bail out!\n";
     use_ok( 'Seq::Build' ) || print "Bail out!\n";
 }
 diag( "Testing Seq $Seq::VERSION, Perl $], $^X" );

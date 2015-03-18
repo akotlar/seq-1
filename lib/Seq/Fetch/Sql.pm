@@ -11,7 +11,7 @@ use namespace::autoclean;
 use Time::localtime;
 
 extends 'Seq::Config::SparseTrack';
-with 'Seq::IO';
+with 'Seq::Role::IO';
 
 =head1 NAME
 

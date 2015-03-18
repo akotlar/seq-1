@@ -1,8 +1,13 @@
 package Seq::Build::GeneTrack;
 
-use 5.006;
-use strict;
-use warnings;
+use 5.10.0;
+use Moose;
+use namespace::autoclean;
+use Seq::Build::GenomeSizedTrackStr;
+use Cpanel::JSON::XS;
+
+extends 'Seq::Config::SparseTrack';
+with 'Seq::Role::IO';
 
 =head1 NAME
 

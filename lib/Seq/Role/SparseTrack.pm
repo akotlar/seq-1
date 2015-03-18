@@ -1,13 +1,12 @@
-package Seq::Serialize::SparseTrack;
+package Seq::Role::SparseTrack;
 
 use 5.10.0;
 use Carp;
 use Moose::Role;
-use DDP;
 
 =head1 NAME
 
-Seq::Serialize::Sparse - The great new Seq::Serialize::Sparse!
+Seq::Role::Sparse - The great new Seq::Role::Sparse!
 
 =head1 VERSION
 
@@ -24,9 +23,9 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use Seq::Serialize::Sparse;
+    use Seq::Role::Sparse;
 
-    my $foo = Seq::Serialize::Sparse->new();
+    my $foo = Seq::Role::Sparse->new();
     ...
 
 =head1 EXPORT
@@ -49,7 +48,10 @@ sub as_href {
     my $name = $attr->name;
     if (defined $self->$name)
     {
-      $hash{$name} = $self->$name;
+      if ($self->$name)
+      {
+        $hash{$name} = $self->$name;
+      }
     }
   }
   return \%hash;
@@ -86,7 +88,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Seq::Serialize::Sparse
+    perldoc Seq::Role::Sparse
 
 
 You can also look for information at:
@@ -135,4 +137,4 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-no Moose::Role; 1; # End of Seq::Serialize::Sparse
+no Moose::Role; 1; # End of Seq::Role::Sparse

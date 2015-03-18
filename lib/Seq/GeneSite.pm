@@ -4,7 +4,7 @@ use 5.10.0;
 use Moose;
 use namespace::autoclean;
 use Moose::Util::TypeConstraints;
-with 'Seq::Serialize::SparseTrack';
+with 'Seq::Role::SparseTrack';
 
 =head1 NAME
 
@@ -99,7 +99,7 @@ has codon_number => (
   predicate => 'has_codon_site_pos',
 );
 
-# amino acide residue # from start of transcript
+# amino acid residue # from start of transcript
 has codon_position => (
   is => 'rw',
   isa => 'Maybe[Int]',
@@ -120,6 +120,10 @@ has error_code => (
   required => 1,
   clearer => 'clear_error_code',
   predicate => 'has_error_code',
+  traits => ['Array'],
+  handles => {
+    no_error_code => 'is_empty',
+  },
 );
 
 =head1 SYNOPSIS

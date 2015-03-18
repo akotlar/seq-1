@@ -1,18 +1,18 @@
 #!/usr/bin/env perl
 # Name:           make_fake_genome.pl
 # Date Created:   Wed Mar 11 10:22:55 2015
-# Date Modified:  Wed Mar 11 10:22:55 2015
+# Date Modified:  2015-03-16
 # By:             TS Wingo
 #
-# Description: Prepare fake genomic data using single genes from each 
-#              chromosomes; write appropriate files to correct place in 
+# Description: Prepare fake genomic data using single genes from each
+#              chromosomes; write appropriate files to correct place in
 #              the directory tree.
 #
 #   1. select a real coding gene from each chromosome, which will become the
 #       entire chromsome in the fake genome
-#   2. use 2bit file and twoBitToFa to get genomic sequence and write as a 
+#   2. use 2bit file and twoBitToFa to get genomic sequence and write as a
 #       gzipped file for each chromosome
-#   3. shift genetic coordinates for each transcript to reflect the single 
+#   3. shift genetic coordinates for each transcript to reflect the single
 #       transcript as the entire test chromosome
 #   4. write genomic transcripts after UCSC's knownGene table
 #   5. write fake conservation scores - phyloP and phastCons
@@ -131,12 +131,12 @@ for my $chr (@chrs)
 {
   my $sth = $dbh->prepare(
     qq{
-    SELECT * 
-    FROM $genome.knownGene 
-    LEFT JOIN $genome.kgXref  
+    SELECT *
+    FROM $genome.knownGene
+    LEFT JOIN $genome.kgXref
     ON $genome.kgXref.kgID = $genome.knownGene.name
-    WHERE ($genome.knownGene.chrom = '$chr') 
-    AND ($genome.knownGene.cdsStart != $genome.knownGene.cdsEnd) 
+    WHERE ($genome.knownGene.chrom = '$chr')
+    AND ($genome.knownGene.cdsStart != $genome.knownGene.cdsEnd)
     LIMIT 1
     }
                          )
@@ -154,10 +154,10 @@ for my $chr (@chrs)
       # save in bed file (real coordinates)
       say {$out_fhs{bed}}
         join("\t", $data{chrom}, $data{txStart}, $data{txEnd}, $data{name});
-      
+
       # get real sequence from 2bit file
       $chr_seq{$chr} = Get_gz_seq($chr, $data{txStart}, $data{txEnd});
-      
+
       # reformat to 1-index sequence
       my @exon_starts = split(/\,/, $data{exonStarts});
       my @exon_ends   = split(/\,/, $data{exonEnds});
@@ -192,14 +192,16 @@ chdir $out_dirs{raw} or die "cannot change dir $out_dirs{raw}\n";
 p %found_chr;
 
 # print fake knownGene data
-say {$out_fhs{gene}} join("\t", (map { $_ } (sort keys %header)));
-for my $chr (sort keys %found_chr)
 {
-  say {$out_fhs{gene}}
-    join("\t", (map { $found_chr{$chr}{$_} } (sort keys %header)));
+  say {$out_fhs{gene}} join("\t", (map { $_ } (sort keys %header)));
+  for my $chr (sort keys %found_chr)
+  {
+    say {$out_fhs{gene}}
+      join("\t", (map { $found_chr{$chr}{$_} } (sort keys %header)));
+  }
 }
 
-# print fake conservation data
+# print fake conservation data - aboult half of the bases will have scores
 for my $chr (@chrs)
 {
   for (my $i = 0 ; $i < $chr_len{$chr} ; $i++)
@@ -211,10 +213,10 @@ for my $chr (@chrs)
   }
 }
 
-# print fake snp data
+# print fake snp data - about 1% of sites will be snps
 {
-  my @snp_fields = qw( chrom chromStart chromEnd name alleleFreqCount alleles 
-    alleleFreqs );
+  my @snp_fields = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs );
+  say { $out_fhs{snp} } join("\t", @snp_fields);
   my @alleles = qw( A C G T);
   my %seen_snp_name;
   for my $chr (@chrs)
@@ -223,13 +225,17 @@ for my $chr (@chrs)
     {
       if (rand(1) > 0.99)
       {
+        #  I strongly suspect that the mysql tables are zero-index
+        #  and I know that the ucsc browser is 1 indexed.
+
         my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
         my $minor_allele;
         my $name = 'rs' . int(rand(1000000));
         my @allele_freq;
         push @allele_freq, sprintf("%0.2f", rand(1));
         push @allele_freq, sprintf("%0.2f", eval(1 - $allele_freq[0]));
-        @allele_freq = sort { $a <=> $b } @allele_freq;
+        @allele_freq = sort { $b <=> $a } @allele_freq;
+        my @allele_freq_counts = map { $_ * 1000 } @allele_freq;
 
         do {
           $name = 'rs' . int(rand(1000000));
@@ -238,10 +244,15 @@ for my $chr (@chrs)
         do {
           $minor_allele = uc $alleles[ int(rand(3))  ];
         } while ( $minor_allele eq $ref_base );
-           
-        say { $out_fhs{snp} } join("\t", $chr, eval($i + 1), eval($i + 1), 
-          $name, join(",", @allele_freq), 
-          join(",", $ref_base, $minor_allele));
+
+        say { $out_fhs{snp} } join("\t",
+          $chr,
+          $i,           # start
+          eval($i + 1), # end
+          $name,
+          join(",", @allele_freq_counts),
+          join(",", $ref_base, $minor_allele),
+          join(",", @allele_freq));
       }
     }
   }
@@ -257,14 +268,14 @@ sub Get_gz_seq
     and $end;
 
   # grab sequence
-  my $fa_file = qq{test_$chr.fa};
+  my $fa_file = qq{$chr.fa};
   my $cmd     = qq{$twobit2fa_prog $twobit_genome:$chr:$start-$end $fa_file};
   say $cmd if $verbose;
   system $cmd;
 
   # check we got sequence
   die "error grabbing sequence with cmd:\n\t$cmd\n"
-    unless (-s "test_$chr.fa");
+    unless (-s $fa_file);
 
   # get length of sequence
   #   and gzip file
@@ -276,9 +287,9 @@ sub Get_gz_seq
   {
     chomp $_;
     $seq .= $_ unless ($_ =~ m/\A>/);
-    say {$gz_fh} $_;
+    say { $gz_fh } $_;
   }
   say join(" ", $chr, "=>", length $seq) if $verbose;
+  unlink $fa_file;
   return \$seq;
 }
-

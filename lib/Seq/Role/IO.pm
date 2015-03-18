@@ -1,4 +1,4 @@
-package Seq::IO;
+package Seq::Role::IO;
 
 use 5.10.0;
 use Carp qw( confess croak );
@@ -27,7 +27,7 @@ sub get_write_fh {
 sub get_read_fh {
   my ( $self, $file ) = @_;
 
-  croak "\nError: get_read_fh() expects a non-empty filename\n" 
+  croak "\nError: get_read_fh() expects a non-empty filename\n"
     . "\tGot $file " unless -s $file;
   my $fh;
   if ($file =~ m/\.gz\Z/)

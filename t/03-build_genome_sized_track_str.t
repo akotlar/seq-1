@@ -13,7 +13,7 @@ use YAML qw( LoadFile );
 plan tests => 15;
 
 # set test genome
-my $hg38_config_file = "hg38_gst_test.yml";
+my $hg38_config_file = "hg38_build_test.yml";
 
 # setup testing enviroment
 {
@@ -78,10 +78,10 @@ ok ( ( $hg38_gst
   is($hg38_gst->genome_seq, $test_str, 'build str seq from bases');
 
   # get genome length
-  is( $hg38_gst->length_genome_seq, 4, 'got length of string genome');
+  is( $hg38_gst->genome_length, 4, 'got length of string genome');
 
   # clear genome
-  $hg38_gst->clear_genome_seq;
+  $hg38_gst->clear_genome;
   is( $hg38_gst->genome_seq, '', 'cleared string genome');
 }
 
@@ -99,7 +99,7 @@ ok ( ( $hg38_gst
 # get a string of DNA bases from an arbitrary locaiton
 {
   # clear genome sequence
-  $hg38_gst->clear_genome_seq;
+  $hg38_gst->clear_genome;
 
   my @test_bases = qw( A C T G C A G T );
   my (@obs_bases, @exp_bases);
@@ -111,7 +111,10 @@ ok ( ( $hg38_gst
   for (my $i=$#test_bases; $i >= 0; $i--)
   {
     push @exp_bases, $test_bases[$i];
-    push @obs_bases, $hg38_gst->get_base( $i, 1 );
+    my $obs_base = $hg38_gst->get_base( $i, 1 );
+    push @obs_bases, $obs_base;
+
+    say "site: $i, base: $obs_base";
   }
   is_deeply(\@obs_bases, \@exp_bases, 'substring out correct base');
 }
@@ -119,7 +122,7 @@ ok ( ( $hg38_gst
 # build the genome
 {
   my %chr_lens = ( );
-  $hg38_gst->clear_genome_seq;
+  $hg38_gst->clear_genome;
   $hg38_gst->build_genome;
 
   my $exp_genome_seq = '';
@@ -150,7 +153,7 @@ ok ( ( $hg38_gst
     push @exp, $chr_lens{$chr};
   }
 
-  push @obs, $hg38_gst->length_genome_seq;
+  push @obs, $hg38_gst->genome_length;
   push @exp, $chr_lens{genome};
 
   is_deeply(\@obs, \@exp, 'get_abs_pos() index the genome');
