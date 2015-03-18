@@ -7,7 +7,10 @@ use Moose::Util::TypeConstraints;
 use namespace::autoclean;
 use Scalar::Util qw( reftype );
 use Cpanel::JSON::XS;
+
 use Seq::Build::GenomeSizedTrackStr;
+use Seq::SnpSite;
+
 use DDP;
 
 extends qw( Seq::Config::SparseTrack );
@@ -44,6 +47,12 @@ has genome_seq => (
   handles => [ 'get_abs_pos', 'get_base', ],
 );
 
+has host => (
+  is => 'ro',
+  isa => 'Str',
+  default => '127.0.0.1',
+);
+
 =head1 SYNOPSIS
 
 Quick summary of what the module does.
@@ -66,12 +75,25 @@ if you don't export anything, such as for a purely object-oriented module.
 
 =cut
 
-#
-# TODO - move to Seq::Build::SnpTrack package
-#
 sub build_snp_db {
   my $self = shift;
-  my @snp_sites;
+
+  #
+  # TODO - ?Deligate Mongo? for testing when we don't have mongo running?
+  #        could only invoke when we are passed a host...
+  #        same goes for Seq::Build::GeneTrack
+  #
+  my $client = MongoDB::MongoClient->new(host => "mongodb://" . $self->host)
+    or confess "Cannot connect to MongoDb at " .. $self->host;
+
+  my $db = $client->get_database( $self->genome_name )
+    or confess "Cannot access MongoDb database: " . $self->genome_name;
+
+  my $gene_collection = $db->get_collection( $self->name )
+    or confess "Cannot access MongoDb collection: " . $self->name
+    . "from database: " . $self->genome_name;
+
+  $gene_collection->drop;
 
   # input
   my $local_dir     = File::Spec->canonpath( $self->local_dir );
@@ -85,7 +107,7 @@ sub build_snp_db {
   my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
   my $out_fh        = $self->get_write_fh( $out_file_path );
 
-  my %header;
+  my (%header, @snp_sites);
   my $prn_counter = 0;
   while(<$in_fh>)
   {
@@ -120,13 +142,16 @@ sub build_snp_db {
         my $snp_site = Seq::SnpSite->new( $record );
         my $base = $self->get_base( $abs_pos, 1 );
         $snp_site->set_feature( base => $base );
-        say "chr: $chr, pos: $pos, abs_pos: $abs_pos";
+        #say "chr: $chr, pos: $pos, abs_pos: $abs_pos";
 
         if ($min_allele_freq)
         {
           $snp_site->set_feature( maf => $min_allele_freq, alleles => join(",", @alleles));
         }
         push @snp_sites, $abs_pos;
+
+        my $site_href = $snp_site->as_href;
+        $gene_collection->insert( $site_href );
 
         if ($prn_counter == 0)
         {

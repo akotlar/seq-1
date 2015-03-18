@@ -5,6 +5,9 @@ use Carp;
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw( reftype );
+
+use Seq::GeneSite;
+
 use DDP;
 
 # has features of a gene and will run through the sequence
@@ -14,7 +17,7 @@ use DDP;
 
 my $splice_site_length = 6;
 
-has genome => (
+has genome_track => (
   is => 'ro',
   required => 1,
   handles => [ 'get_abs_pos', 'get_base', ],
@@ -91,7 +94,7 @@ has alt_names => (
   isa => 'HashRef[Str]',
   traits => ['Hash'],
   handles => {
-    all_alt_names => 'elements',
+    all_alt_names => 'kv',
     get_alt_names => 'get',
     set_alt_names => 'set',
   },
@@ -146,18 +149,18 @@ has transcript_error => (
 sub BUILD {
   my $self = shift;
 
-  # ensure genome object has the methods we will require - either the 
+  # ensure genome object has the methods we will require - either the
   # string or char genome classes will be fine
-  if (  $self->genome->meta->has_method( 'get_abs_pos' )
-    and $self->genome->meta->has_method( 'get_base' ) )
+  if (  $self->genome_track->meta->has_method( 'get_abs_pos' )
+    and $self->genome_track->meta->has_method( 'get_base' ) )
   {
 
     # - get_abs_pos( chr, pos ) expects position to be a positive number
     #   so it is -indexed but returnes the zero-index position
     my $abs_position_offset  = $self->get_abs_pos( $self->chr, 1 );
 
-    # - change all relative bp position to absolute positions and change to a 
-    #   Zero indexed genome (i.e., this is why everything has '-1' taken 
+    # - change all relative bp position to absolute positions and change to a
+    #   Zero indexed genome (i.e., this is why everything has '-1' taken
     #   from it.     $self->transcript_start( $abs_position_offset + $self->transcript_start - 1 );
     $self->transcript_end(   $abs_position_offset + $self->transcript_end   - 1 );
     $self->coding_start(     $abs_position_offset + $self->coding_start     - 1 );
@@ -168,7 +171,7 @@ sub BUILD {
       # set values for exon starts
       my $abs_pos = $self->get_exon_starts( $i ) + $abs_position_offset - 1;
       $self->set_exon_starts( $i, $abs_pos );
-      
+
       # set values for exon stops
       $abs_pos = $self->get_exon_ends( $i ) + $abs_position_offset - 1;
       $self->set_exon_ends( $i, $abs_pos );
@@ -183,23 +186,23 @@ sub BUILD {
 sub _build_transcript_error {
   my $self = shift;
 
-  # check coding sequence is 
+  # check coding sequence is
   #   1. divisible by 3
   #   2. starts with ATG
   #   3. Ends with stop codon
-  
-  # check coding sequence 
+
+  # check coding sequence
   my @transcript_annotation = split(//, $self->transcript_annotation);
   my $coding_bases = grep { /ACTG/ } @transcript_annotation;
   my @errors;
-  
+
   if ($self->coding_start == $self->coding_end)
   {
     return \@errors;
   }
   else
   {
-    if ($coding_bases % 3 != 0) 
+    if ($coding_bases % 3 != 0)
     {
       push @errors, 'coding sequence not divisible by 3';
     }
@@ -272,11 +275,11 @@ sub _build_transcript_seq {
 sub _build_transcript_annotation {
 
   my $self = shift;
-  my @exon_starts    = $self->all_exon_starts;
-  my @exon_ends     = $self->all_exon_ends;
-  my $coding_start   = $self->coding_start;
-  my $coding_end    = $self->coding_end;
-  my $non_coding     = ( $coding_start == $coding_end ) ? 1 : 0;
+  my @exon_starts  = $self->all_exon_starts;
+  my @exon_ends    = $self->all_exon_ends;
+  my $coding_start = $self->coding_start;
+  my $coding_end   = $self->coding_end;
+  my $non_coding   = ( $coding_start == $coding_end ) ? 1 : 0;
   my $seq;
 
   for (my $i = 0; $i < @exon_starts; $i++)
@@ -329,16 +332,16 @@ sub get_transcript_sites {
   say join ("\t", "tran_ann:  ", $self->transcript_annotation);
   for (my $i = 0; $i < ($self->all_transcript_abs_position); $i++)
   {
-    my ($annotation_type, $codon_seq, $codon_number, $codon_position, 
+    my ($annotation_type, $codon_seq, $codon_number, $codon_position,
       %gene_site, $site_annotation);
-    $site_annotation       = $self->get_str_transcript_annotation( $i, 1 );
-    $gene_site{abs_pos}    = $self->get_transcript_abs_position( $i );
-    $gene_site{base}       = $self->get_base_transcript_seq( $i, 1 );
-    $gene_site{error_code} = $self->transcript_error;
-    $gene_site{alt_names}  = [ $self->all_alt_names ];
-    $gene_site{name}       = $self->transcript_id;
-    $gene_site{strand}     = $self->strand;
-    
+    $site_annotation          = $self->get_str_transcript_annotation( $i, 1 );
+    $gene_site{abs_pos}       = $self->get_transcript_abs_position( $i );
+    $gene_site{base}          = $self->get_base_transcript_seq( $i, 1 );
+    $gene_site{error_code}    = $self->transcript_error;
+    $gene_site{alt_names}     = $self->alt_names;
+    $gene_site{transcript_id} = $self->transcript_id;
+    $gene_site{strand}        = $self->strand;
+
 
     # is site coding
     if ($site_annotation =~ m/[ACGT]/)
@@ -348,7 +351,7 @@ sub get_transcript_sites {
       $gene_site{codon_position}  = $coding_base_count % 3;
       my $codon_start  = $i - $gene_site{codon_position};
       my $codon_end    = $codon_start + 2;
-      
+
       #say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
       for (my $j = $codon_start; $j <= $codon_end; $j++)
       {
@@ -402,9 +405,9 @@ sub get_flanking_sites {
 
   my $self = shift;
   my @exon_starts  = $self->all_exon_starts;
-  my @exon_ends   = $self->all_exon_ends;
+  my @exon_ends    = $self->all_exon_ends;
   my $coding_start = $self->coding_start;
-  my $coding_end  = $self->coding_end;
+  my $coding_end   = $self->coding_end;
   my (@gene_sites);
 
   for (my $i = 0; $i < @exon_starts; $i++)
@@ -413,28 +416,30 @@ sub get_flanking_sites {
     {
 
       # flanking sites at start of exon
-      if ( $exon_starts[$i] - $n > $coding_start && $exon_starts[$i] - $n < $coding_end)
+      if ( $exon_starts[$i] - $n > $coding_start
+        && $exon_starts[$i] - $n < $coding_end)
       {
         my %gene_site;
         $gene_site{abs_pos}         = $exon_starts[$i] - $n;
-        $gene_site{alt_names}       = [ $self->all_alt_names ];
+        $gene_site{alt_names}       = $self->alt_names;
         $gene_site{annotation_type} = ($self->strand eq "+") ? 'Splice Acceptor': 'Splice Donor';
         $gene_site{base}            = $self->get_base( $gene_site{abs_pos}, 1 );
         $gene_site{error_code}      = $self->transcript_error;
-        $gene_site{name}            = $self->transcript_id;
+        $gene_site{transcript_id}   = $self->transcript_id;
         $gene_site{strand}          = $self->strand;
         push @gene_sites, Seq::GeneSite->new( \%gene_site );
       }
       # flanking sites at end of exon
-      if ( $exon_ends[$i] + $n > $coding_start && $exon_ends[$i] + $n < $coding_end )
+      if ( $exon_ends[$i] + $n - 1 > $coding_start
+        && $exon_ends[$i] + $n - 1 < $coding_end )
       {
         my %gene_site;
-        $gene_site{abs_pos}         = $exon_ends[$i] + $n;
-        $gene_site{alt_names}       = [ $self->all_alt_names ];
+        $gene_site{abs_pos}         = $exon_ends[$i] + $n - 1;
+        $gene_site{alt_names}       = $self->alt_names;
         $gene_site{annotation_type} = ($self->strand eq "+") ? 'Splice Donor' : 'Splice Acceptor';
         $gene_site{base}            = $self->get_base( $gene_site{abs_pos}, 1 );
         $gene_site{error_code}      = $self->transcript_error;
-        $gene_site{name}            = $self->transcript_id;
+        $gene_site{transcript_id}   = $self->transcript_id;
         $gene_site{strand}          = $self->strand;
         push @gene_sites, Seq::GeneSite->new( \%gene_site );
       }

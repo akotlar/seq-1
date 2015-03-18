@@ -4,7 +4,6 @@ use 5.10.0;
 use Moose;
 use namespace::autoclean;
 use Moose::Util::TypeConstraints;
-with 'Seq::Role::SparseTrack';
 
 =head1 NAME
 
@@ -57,7 +56,7 @@ has base => (
   predicate => 'has_base',
 );
 
-has name => (
+has transcript_id => (
   is => 'rw',
   isa => 'Str',
   required => 1,
@@ -114,6 +113,15 @@ has aa_residue => (
   builder => '_set_aa_residue',
 );
 
+has alt_names => (
+  is => 'ro',
+  isa => 'HashRef',
+  traits => ['Hash'],
+  handles => {
+    no_alt_names => 'is_empty',
+  },
+);
+
 has error_code => (
   is => 'rw',
   isa => 'ArrayRef',
@@ -164,7 +172,28 @@ sub _set_aa_residue {
 
 =cut
 
-sub function2 {
+
+sub as_href {
+  my $self = shift;
+  my %hash;
+
+  for my $attr ( qw( abs_pos base transcript_id annotation_type strand codon_seq
+    codon_number codon_position aa_residue error_code alt_names ) )
+  {
+    my $empty_attr = "no_" . $attr;
+    if ( $self->$attr )
+    {
+      if ($self->meta->has_method($empty_attr))
+      {
+        $hash{$attr} = $self->$attr unless $self->$empty_attr;
+      }
+      else
+      {
+        $hash{$attr} = $self->$attr;
+      }
+    }
+  }
+  return \%hash;
 }
 
 =head1 AUTHOR

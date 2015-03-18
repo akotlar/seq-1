@@ -100,7 +100,7 @@ sub get_config_from_file {
     {
       say "ignoring comment in $file: $_";
     }
-    elsif ($_ =~ m/\A([\-\=\:\/\t\s\w.]+)\Z/)
+    elsif ($_ =~ m/\A([\.\-\=\:\/\t\s\w\d]+)\Z/)
     {
       $cleaned_txt .= $1 . "\n";
     }
@@ -180,4 +180,6 @@ along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut
 
-no Moose::Role; 1; # End of Seq::Config
+no Moose::Role;
+
+1; # End of Seq::Config

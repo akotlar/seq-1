@@ -8,7 +8,7 @@ use Scalar::Util qw( blessed );
 use DDP;
 use Lingua::EN::Inflect qw( A PL_N );
 
-plan tests => 22;
+plan tests => 2;
 
 # set test genome
 my $hg38_config_file = 'hg38_build_test.yml';

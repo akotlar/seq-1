@@ -20,10 +20,10 @@ use Modern::Perl qw(2013);
 use Pod::Usage;
 use Snpfile::Tools;
 use YAML::XS qw( LoadFile );
-use Seq::Build::GenomeSizedTrackChar;
+use Seq::GenomeSizedTrackChar;
 use DDP;
 
-my $hg38_config_file = "hg38_build_test.yml";
+my $hg38_config_file = "/Users/twingo/software/Seq/t/hg38_build_test.yml";
 
 my @exts              = qw(snp);
 my @var_types         = qw(DEL INS SNP MESS);
@@ -82,8 +82,8 @@ if ($pos_from >= $pos_to)
   #   idx - binary representation of every base in the genome
   #
   $db_location = File::Spec->canonpath( $db_location );
-  my $db_file     = File::Spec->catfile( $db_location, "$db_name.genome.idx" );
-  my $idx_fh = new IO::File->new( $db_file, 'r' )
+  my $db_file  = File::Spec->catfile( $db_location, "$db_name.genome.idx" );
+  my $idx_fh   = new IO::File->new( $db_file, 'r' )
     or die "cannot open $db_file";
   binmode $idx_fh;
   my $genome_chr_seq;
@@ -112,7 +112,8 @@ $hg38_genome_config{genome_length} =  -s $db_file;
 $hg38_genome_config{char_seq} = \$genome_chr_seq;
 $hg38_genome_config{chr_len} = $chr_len_href;
 
-my $gct = Seq::Build::GenomeSizedTrackChar->new( \%hg38_genome_config );
+my $gct = Seq::GenomeSizedTrackChar->new( \%hg38_genome_config );
+my @seq;
 
 for (my $i = $pos_from; $i < $pos_to; $i++)
 {
@@ -131,6 +132,19 @@ for (my $i = $pos_from; $i < $pos_to; $i++)
 
 
   say join ("\t", $i, $chr, $rel_pos, $base_code, $base, $gan, $gene, $exon, $snp );
+  push @seq, $base;
+}
+
+Print_fa (\@seq);
+
+sub Print_fa {
+  my $seq_aref = shift;
+
+  for (my $i = 0; $i < @{ $seq_aref }; $i++)
+  {
+    print "\n" if ($i % 80 == 0);
+    print $seq_aref->[$i];
+  }
 }
 
 sub get_chr {

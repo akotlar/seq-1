@@ -24,10 +24,10 @@ sub get_abs_pos {
   my ($self, $chr, $pos ) = @_;
 
   confess "get_abs_pos() requires method exists_chr_len()"
-    unless $self->meta->has_method('exists_chr_len');
+    unless $self->meta->find_method_by_name('exists_chr_len');
 
   confess "get_abs_pos() requires method genome_length()"
-    unless $self->meta->has_method('genome_length');
+    unless $self->meta->find_method_by_name('genome_length');
 
   confess "get_abs_pos() expects chr ($chr) and pos ($pos) "
     unless $self->exists_chr_len( $chr )
@@ -40,4 +40,6 @@ sub get_abs_pos {
   return $abs_pos;
 }
 
-no Moose::Role; 1;
+no Moose::Role;
+
+1;

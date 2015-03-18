@@ -8,8 +8,8 @@ use Moose;
 use namespace::autoclean;
 use Scalar::Util qw( reftype );
 use YAML::XS;
-extends 'Seq::Config::GenomeSizedTrack';
-with 'Seq::Role::CharGenome', 'Seq::Role::IO', 'Seq::Role::Genome';
+extends 'Seq::GenomeSizedTrackChar';
+with 'Seq::Role::IO', 'Seq::Role::Genome';
 
 =head1 NAME
 
@@ -22,47 +22,6 @@ Version 0.01
 =cut
 
 our $VERSION = '0.01';
-
-has genome_length => (
-  is => 'rw',
-  isa => 'Int',
-);
-
-has chr_len => (
-  is => 'rw',
-  isa => 'HashRef[Str]',
-  traits => ['Hash'],
-  handles => {
-    exists_chr_len => 'exists',
-    get_chr_len => 'get',
-  },
-);
-
-# stores the 1-indexed length of each chromosome
-has char_seq => (
-  is => 'rw',
-  lazy => 1,
-  #writer => undef,
-  builder => '_build_char_seq',
-  isa => 'ScalarRef',
-  clearer => 'clear_char_seq',
-  predicate => 'has_char_seq',
-);
-
-# holds a subroutine that converts chars to a score for the track, which is
-#   used to decode the score
-has char2score => (
-  is => 'ro',
-  isa => 'CodeRef',
-);
-
-# holds a subroutine that converts scores to a char for the track, which is
-#   used to encode the scores
-
-has score2char => (
-  is => 'ro',
-  isa => 'CodeRef',
-);
 
 =head1 SYNOPSIS
 
@@ -78,7 +37,58 @@ score-like information (e.g., conservation scores).
 
 =cut
 
-sub _build_char_seq {
+=head2 insert_char
+
+=cut
+
+sub insert_char {
+  my $self = shift;
+  my ($pos, $char) = @_;
+  my $seq_len = $self->genome_length;
+
+  confess "insert_char expects insert value and absolute position"
+    unless defined $char and defined $pos;
+  confess "insert_char expects insert value between 0 and 255"
+    unless ($char >= 0 and $char <= 255);
+  confess "insert_char expects pos value between 0 and $seq_len, got $pos"
+    unless ($pos >= 0 and $pos < $seq_len);
+
+  # inserted character is a byproduct of a successful substr event
+  my $inserted_char = substr( ${ $self->char_seq }, $pos, 1, pack( 'C', $char));
+
+  return $inserted_char;
+}
+
+=head2 insert_score
+
+=cut
+
+sub insert_score {
+  my $self = shift;
+  my ($pos, $score) = @_;
+  my $seq_len = $self->genome_length;
+
+  confess "insert_score expects pos value between 0 and $seq_len, got $pos"
+    unless ($pos >= 0 and $pos < $seq_len);
+  confess "insert_score expects score2char() to be a coderef"
+    unless $self->meta->find_method_by_name( 'score2char' )
+      and reftype($self->score2char) eq 'CODE';
+
+  my $char_score    = $self->score2char->( $score );
+  # say "insert score ($score) at pos ($pos) into "
+  #   . $self->name
+  #   . " got "
+  #   . sprintf("%d", $char_score);
+
+  my $inserted_char = $self->insert_char( $pos, $char_score );
+  return $inserted_char;
+}
+
+=head2 _build_char_seq
+
+=cut
+
+override '_build_char_seq' => sub {
   my $self = shift;
   my $char_seq = "";
   for ( my $pos = 0; $pos < $self->genome_length; $pos++ )
@@ -86,7 +96,7 @@ sub _build_char_seq {
     $char_seq .= pack('C', 0);
   }
   return \$char_seq;
-}
+};
 
 sub write_char_seq {
   # write idx file
@@ -178,6 +188,14 @@ sub build_genome_idx {
   }
 }
 
+
+=head2 set_gene_regions
+
+Method for setting genic and intergenic regions to be called before
+build_genome_idx().
+
+=cut
+
 sub set_gene_regions {
   my ( $self, $tx_starts_href ) = @_;
 
@@ -228,52 +246,7 @@ sub set_gene_regions {
   }
 }
 
-sub BUILDARGS {
-  my $class = shift;
-  my $href  = $_[0];
-  if (scalar @_ > 1 || reftype($href) ne "HASH")
-  {
-    confess "Error: Seq::Build::GenomeSizedTrackChar expects hash reference.\n";
-  }
-  else
-  {
-    my %hash;
-    if ($href->{type} eq "score")
-    {
-      if ($href->{name} eq "phastCons")
-      {
-        $hash{score2char}  = sub {
-          my $score = shift;
-          return (int ( $score * 254 ) + 1)
-          };
-        $hash{char2score} = sub {
-          my $score = shift;
-          return ( $score- 1 ) / 254
-          };
-      }
-      elsif ($href->{name} eq "phyloP")
-      {
-        $hash{score2char}  = sub {
-          my $score = shift;
-          return (int ( $score * ( 127 / 30 ) ) + 128)
-          };
-        $hash{char2score} = sub {
-          my $score = shift;
-          return ( $score - 128 ) / ( 127 / 30 )
-          };
-      }
-    }
 
-    # add remaining values to hash
-    # if char2score or score2char are set
-    # then the defaults will be overridden
-    for my $attr (keys %$href)
-    {
-      $hash{$attr} = $href->{$attr};
-    }
-    return $class->SUPER::BUILDARGS(\%hash);
-  }
-}
 =head1 AUTHOR
 
 Thomas Wingo, C<< <thomas.wingo at emory.edu> >>

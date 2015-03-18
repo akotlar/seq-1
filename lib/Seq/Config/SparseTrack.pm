@@ -6,8 +6,6 @@ use Moose::Util::TypeConstraints;
 use namespace::autoclean;
 use Scalar::Util qw( reftype );
 
-with 'Seq::Role::SparseTrack';
-
 enum SparseTrackType => [ 'gene', 'snp' ];
 
 =head1 NAME
@@ -95,6 +93,42 @@ sub snp_fields_aref {
 
 sub gene_fields_aref {
   return \@gene_table_fields;
+}
+
+=head2 as_href
+
+=cut
+
+sub as_href {
+  my $self = shift;
+  #my %href = map { $_ => $self->{$_} } @attributes;
+  my %hash;
+  for my $attr ( $self->meta->get_all_attributes )
+  {
+    my $name = $attr->name;
+    if (defined $self->$name)
+    {
+      if ($self->$name)
+      {
+        $hash{$name} = $self->$name;
+      }
+    }
+  }
+  return \%hash;
+}
+
+=head2 clear_all
+
+=cut
+
+sub clear_all {
+  my $self = shift;
+  my @attributes = @{ $self->meta->get_attributes };
+  for my $attribute (@attributes)
+  {
+    my $clear_method = $attribute . "_clear";
+    $self->$clear_method;
+  }
 }
 
 =head1 AUTHOR

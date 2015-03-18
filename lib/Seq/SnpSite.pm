@@ -5,7 +5,6 @@ use Moose;
 use namespace::autoclean;
 use Cpanel::JSON::XS;
 use Scalar::Util qw( reftype );
-#with 'Seq::Role::SparseTrack';
 use DDP;
 
 =head1 NAME
@@ -35,21 +34,6 @@ has snp_id => (
   clearer => 'clear_snp_id',
   predicate => 'has_snp_id',
 );
-
-# put these in features
-# has maf => (
-#   is => 'ro',
-#   isa => 'Str',
-#   clearer => 'clear_maf',
-#   predicate => 'has_maf',
-# );
-#
-# has alleles => (
-#   is => 'rw',
-#   isa => 'ArrayRef',
-#   clearer => 'clear_alleles',
-#   predicate => 'has_alleles',
-# );
 
 has feature => (
   is => 'rw',
@@ -99,20 +83,6 @@ sub as_href {
   }
   return \%hash;
 }
-
-=head2 function2
-
-=cut
-
-# sub clear_all {
-#   my $self = shift;
-#   my @attributes = @{ $self->meta->get_attributes };
-#   for my $attribute (@attributes)
-#   {
-#     my $clear_method = $attribute . "_clear";
-#     $self->$clear_method;
-#   }
-# }
 
 =head1 AUTHOR
 

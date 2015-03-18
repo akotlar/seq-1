@@ -40,6 +40,7 @@ genome_chrs:
   - chrY
 genome_raw_dir: ./hg38/raw
 genome_index_dir: ./hg38/index
+host: 127.0.0.1
 
 # sparse tracks
 sparse_tracks:
@@ -68,7 +69,7 @@ genome_sized_tracks:
   - name: hg38
     type: genome
     local_dir: ./hg38/raw/seq/
-    local_files: 
+    local_files:
       - chr1.fa.gz
       - chr2.fa.gz
       - chr3.fa.gz

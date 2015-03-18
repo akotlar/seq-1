@@ -2,17 +2,16 @@ package Seq::Build;
 
 use 5.10.0;
 use Carp qw( croak );
-use Cpanel::JSON::XS;
-use File::Path;
-use File::Spec;
+#use Cpanel::JSON::XS;
+#use File::Path;
+#use File::Spec;
 use Moose;
 use namespace::autoclean;
-use YAML::XS;
-use Scalar::Util qw( reftype openhandle );
-use Seq::Gene;
-use Seq::GeneSite;
-use Seq::SnpSite;
+#use YAML::XS;
+use Scalar::Util qw( reftype );
+
 use Seq::Build::SnpTrack;
+use Seq::Build::GeneTrack;
 use Seq::Build::GenomeSizedTrackChar;
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::Config::SparseTrack;
@@ -84,6 +83,12 @@ has gene_tracks => (
   },
 );
 
+has host => (
+  is => 'ro',
+  isa => 'Str',
+  default => '127.0.0.1',
+);
+
 =head1 SYNOPSIS
 
 Quick summary of what the module does.
@@ -116,14 +121,12 @@ sub build_index {
   {
     for my $snp_track ( $self->all_snp_tracks )
     {
-      p $snp_track;
       my $record = $snp_track->as_href;
-      $record->{genome_seq} = $self->genome_str_track;
+      $record->{genome_seq}       = $self->genome_str_track;
       $record->{genome_index_dir} = $self->genome_index_dir;
-      $record->{genome_name} = $self->genome_name;
-      my $snp_db = Seq::Build::SnpTrack->new( $record );
-      p $snp_db;
-
+      $record->{genome_name}      = $self->genome_name;
+      $record->{host}             = $self->host;
+      my $snp_db     = Seq::Build::SnpTrack->new( $record );
       my $sites_aref = $snp_db->build_snp_db;
       map { $snp_sites{$_}++ } @$sites_aref;
     }
@@ -133,8 +136,14 @@ sub build_index {
   my (%flank_exon_sites, %exon_sites, %transcript_starts);
   for my $gene_track ( $self->all_gene_tracks )
   {
-    my ($flank_exon_sites_href, $exon_sites_href, $tx_start_href)
-      = $self->build_gene_db( $gene_track );
+    my $record = $gene_track->as_href;
+    $record->{genome_track_str} = $self->genome_str_track;
+    $record->{genome_index_dir} = $self->genome_index_dir;
+    $record->{genome_name}      = $self->genome_name;
+    $record->{host}             = $self->host;
+    my $gene_db = Seq::Build::GeneTrack->new( $record );
+    my ($exon_sites_href, $flank_exon_sites_href, $tx_start_href)
+      = $gene_db->build_gene_db;
 
     # add information from annotation sites and start/stop sites into
     # master lists
@@ -149,16 +158,18 @@ sub build_index {
     }
   }
 
-
   # make another genomesized track to deal with the in/outside of genes
   # and ultimately write over those 0's and 1's to store the genome assembly
   # idx codes...
-  my $assembly = Seq::Build::GenomeSizedTrackChar->new(
-    { genome_length => $self->genome_length, genome_index_dir => $self->genome_index_dir,
-      name => $self->genome_name, type => 'genome',
-      genome_chrs => $self->genome_chrs, chr_len => \%chr_len,
-    }
-  );
+  my $assembly = Seq::Build::GenomeSizedTrackChar->new( {
+    genome_length => $self->genome_length,
+    genome_index_dir => $self->genome_index_dir,
+    genome_chrs => $self->genome_chrs,
+    name => $self->genome_name,
+    type => 'genome',
+    chr_len => \%chr_len,
+  } );
+  p $assembly;
 
   # set genic/intergenic regions
   $assembly->set_gene_regions( \%transcript_starts );
@@ -167,6 +178,7 @@ sub build_index {
   $assembly->build_genome_idx( $self->genome_str_track, \%exon_sites, \%flank_exon_sites, \%snp_sites );
   $assembly->write_char_seq;
   $assembly->clear_char_seq;
+
 
   # write conservation scores
   if ($self->genome_sized_tracks)
@@ -182,104 +194,14 @@ sub build_index {
         type => $gst->type,
         local_dir => $gst->local_dir,
         local_files => $gst->local_files,
-      });
+      } );
+      p $score_track;
       $score_track->build_score_idx;
       $score_track->write_char_seq;
       $score_track->clear_char_seq;
     }
   }
 }
-
-#
-# TODO - move to Seq::Build::GeneTrack package
-#
-sub build_gene_db {
-  my ($self, $gene_track) = @_;
-
-  # input
-  my $local_dir     = File::Spec->canonpath( $gene_track->local_dir );
-  my $local_file    = File::Spec->catfile( $local_dir, $gene_track->local_file );
-  my $in_fh         = $self->get_read_fh( $local_file );
-
-  # output
-  my $out_dir       = File::Spec->canonpath( $self->genome_index_dir );
-  File::Path->make_path( $out_dir );
-  my $out_file_name = join(".", $self->genome_name, $gene_track->name, $gene_track->type, 'json' );
-  my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
-  my $out_fh        = $self->get_write_fh( $out_file_path );
-
-  my %ucsc_table_lu = ( alignID => 'transcript_id', chrom => 'chr', cdsEnd => 'coding_end',
-    cdsStart => 'coding_start', exonEnds => 'exon_ends', exonStarts => 'exon_starts',
-    strand => 'strand', txEnd => 'transcript_end', txStart => 'transcript_start',
-  );
-  my ( %header, %transcript_start_sites, %flank_exon_sites, %exon_sites);
-  my $prn_count = 0;
-
-  while(<$in_fh>)
-  {
-     chomp $_;
-     my @fields = split(/\t/, $_);
-     if ($. == 1)
-     {
-      map { $header{$fields[$_]} = $_ } (0..$#fields);
-      next;
-    }
-    my %data = map { $_ => $fields[ $header{$_} ] }
-      (@{ $gene_track->gene_fields_aref }, $gene_track->all_names);
-
-    # prepare basic gene data
-    my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
-    $gene_data{exon_ends}   = [ split(/\,/, $gene_data{exon_ends}) ];
-    $gene_data{exon_starts} = [ split(/\,/, $gene_data{exon_starts}) ];
-    $gene_data{genome}      = $self->genome_str_track;
-
-    # prepare alternative names for gene
-    my %alt_names = map { $_ => $data{$_} if exists $data{$_} } ( $gene_track->all_names );
-
-    my $gene = Seq::Gene->new( \%gene_data );
-    $gene->set_alt_names( %alt_names );
-
-    # get intronic flanking site annotations
-    my @flank_exon_sites = $gene->get_flanking_sites();
-    for my $site (@flank_exon_sites)
-    {
-      if ($prn_count == 0)
-      {
-        print { $out_fh } "[" . encode_json( $site->as_href );
-        $prn_count++;
-      }
-      else
-      {
-        print { $out_fh} "," . encode_json( $site->as_href );
-        $prn_count++;
-      }
-
-      $flank_exon_sites{ $site->abs_pos }++;
-    }
-
-    # get exon annotations
-    my @exon_sites = $gene->get_transcript_sites();
-    for my $site (@exon_sites)
-    {
-      if ($prn_count == 0)
-      {
-        print { $out_fh } "[" . encode_json( $site->as_href );
-        $prn_count++;
-      }
-      else
-      {
-        print { $out_fh} "," . encode_json( $site->as_href );
-        $prn_count++;
-      }
-      $exon_sites{ $site->abs_pos }++;
-    }
-    push @{ $transcript_start_sites{ $gene_data{transcript_start} } }, $gene_data{transcript_end};
-  }
-  print { $out_fh } "]";
-  return (\%flank_exon_sites, \%exon_sites, \%transcript_start_sites);
-}
-
-
 
 sub BUILDARGS {
   my $class = shift;
@@ -301,7 +223,6 @@ sub BUILDARGS {
       elsif ( $sparse_track->{type} eq "snp" )
       {
         push @{ $hash{snp_tracks} }, Seq::Config::SparseTrack->new( $sparse_track );
-        p $hash{snp_tracks};
       }
       else
       {
