@@ -12,7 +12,6 @@
 use lib '/Users/twingo/software/Seq/lib';
 use autodie;
 use Cpanel::JSON::XS;
-use Fcntl qw(:DEFAULT :seek);
 use File::Spec;
 use IO::File;
 use Getopt::Long;
@@ -35,11 +34,9 @@ my @header_annotation = qw(base raw_genome_dat
                            gene_annotation_code
                            alt_name transcript_id
                            org_codon aa snp_id maf);
-my (%in_fhs, %bin_fhs);
-my ($chr_len_ref, $bin_codes_ref, $genome_bin_seq, $genome_dat_buffer, $idx_codes_ref);
-my ($chr_wanted, $pos_from, $pos_to, $db_location, $db_name, $verbose);
-my (%idx_2_base, %idx_2_snp, %idx_2_in_exon, %idx_2_annotated, %idx_2_in_gene);
+my ($chr_wanted, $pos_from, $pos_to, $db_location, $yaml_config, $verbose);
 my ($client, $db, $gan_db, $snp_db, $dbsnp_name, $dbgene_name);
+my (%tracks);
 
 #
 # usage
@@ -49,22 +46,16 @@ die "usage --from <pos> --to <pos> --db_name <hg38> --l <.>"
                     'c|chr=s'      => \$chr_wanted,
                     'f|from=n'     => \$pos_from,
                     't|to=n'       => \$pos_to,
-                    'n|db_name=s'  => \$db_name,
+                    'c|config=s'   => \$yaml_config,
                     'l|location=s' => \$db_location,
                     'v|verbose'    => \$verbose,
                    )
   and defined $pos_from
   and defined $pos_to
-  and defined $db_name
+  and defined $yaml_config
   and defined $db_location;
 
-#
-# process input preferences and load Mongodb collections
-#
-
-#
 # clean up position
-#
 $pos_from =~ s/\_|\,//g;
 $pos_to =~ s/\_|\,//g;
 
@@ -73,46 +64,70 @@ $pos_to =~ s/\_|\,//g;
 #
 if ($pos_from >= $pos_to)
 {
-  say "from_position ('$pos_from') needs to be smaller than to_position ('$pos_to')\n";
+  say "Error: from_position ('$pos_from') should be <= to_position ('$pos_to')\n";
   exit;
 }
 
-  #
-  #  open binary files
-  #   idx - binary representation of every base in the genome
-  #
-  $db_location = File::Spec->canonpath( $db_location );
-  my $db_file  = File::Spec->catfile( $db_location, "$db_name.genome.idx" );
-  my $idx_fh   = new IO::File->new( $db_file, 'r' )
-    or die "cannot open $db_file";
-  binmode $idx_fh;
-  my $genome_chr_seq;
-  read $idx_fh, $genome_chr_seq, -s $db_file;
-  my $yaml_file = File::Spec->catfile( $db_location, "$db_name.genome.yml" );
-  my $chr_len_href = LoadFile( $yaml_file );
-  p $chr_len_href;
+
+# load configuration file
+my $config_data = LoadFile( $yaml_config );
+
+# genome assembly
+my $assembly //= $config_data->{genome_name};
+
+# db location
+$db_location = File::Spec->canonpath( $db_location );
+
+# index directory
+my $index_dir //= $config_data->{genome_index_dir};
+$index_dir = File::Spec->canonpath( $index_dir );
 
 
-# obj creation
-my $hg38_dat = LoadFile( $hg38_config_file );
-my (%hg38_genome_config, %chr_lens);
-
-for my $attr_href ( @{ $hg38_dat->{genome_sized_tracks} } )
+#  make genome sized objects
+for my $gst (@{ $config_data->{genome_sized_tracks} })
 {
-  if ($attr_href->{type} eq "genome")
-  {
-    for my $attr ( keys %{ $attr_href })
-    {
-      $hg38_genome_config{ $attr } = $attr_href->{$attr};
-    }
-  }
-}
-$hg38_genome_config{genome_chrs} = $hg38_dat->{genome_chrs};
-$hg38_genome_config{genome_length} =  -s $db_file;
-$hg38_genome_config{char_seq} = \$genome_chr_seq;
-$hg38_genome_config{chr_len} = $chr_len_href;
+  # naming convetion is 'name.type.idx' and 'name.type.yml' for the index and
+  # the chr_len offsets, respectively
+  my $idx_file      = join( ".", $gst->{name}, $gst->{type}, 'idx' );
+  my $yml_file      = join( ".", $gst->{name}, $gst->{type}, 'yml' );
+  my $full_path_idx = File::Spec->catfile( $db_location, $index_dir, $idx_file );
+  my $full_path_yml = File::Spec->catfile( $db_location, $index_dir, $yml_file );
+  my $idx_fh        = new IO::File->new( $full_path_idx, 'r' )
+    or die "cannot open $full_path_idx";
 
-my $gct = Seq::GenomeSizedTrackChar->new( \%hg38_genome_config );
+  binmode $idx_fh;
+  my $gst_dat;
+  read $idx_fh, $gst_dat, -s $full_path_idx;
+  my $chr_len_href = LoadFile( $full_path_yml );
+
+  my %gst_config = %$gst;
+  $gst_config{genome_chrs}   = $config_data->{genome_chrs};
+  $gst_config{genome_length} = -s $full_path_idx;
+  $gst_config{chr_len}       = $chr_len_href;
+  p %gst_config;
+  $gst_config{char_seq}      = \$gst_dat;
+
+  push @{ $tracks{$gst->{type}} }, Seq::GenomeSizedTrackChar->new( \%gst_config );
+}
+
+# my (%hg38_genome_config, %chr_lens);
+#
+# for my $attr_href ( @{ $config_data->{genome_sized_tracks} } )
+# {
+#   if ($attr_href->{type} eq "genome")
+#   {
+#     for my $attr ( keys %{ $attr_href })
+#     {
+#       $hg38_genome_config{ $attr } = $attr_href->{$attr};
+#     }
+#   }
+# }
+# $hg38_genome_config{genome_chrs}   = $hg38_dat->{genome_chrs};
+# $hg38_genome_config{genome_length} =  -s $db_file;
+# $hg38_genome_config{char_seq}      = \$genome_chr_seq;
+# $hg38_genome_config{chr_len}       = $chr_len_href;
+#
+# my $gct = Seq::GenomeSizedTrackChar->new( \%hg38_genome_config );
 my @seq;
 
 for (my $i = $pos_from; $i < $pos_to; $i++)
@@ -120,18 +135,26 @@ for (my $i = $pos_from; $i < $pos_to; $i++)
   my $zero_idx = $i;
   my $one_idx  = $i + 1;
 
-  my $base_code = $gct->get_base( $zero_idx  );
+  my $genome = $tracks{genome}[0];
+
+  my $base_code = $genome->get_base( $zero_idx  );
   my $chr = get_chr( $zero_idx  );
-  my $rel_pos = $i + 1 - $gct->get_abs_pos( $chr, 1 );
+  my $rel_pos = $i + 1 - $genome->get_abs_pos( $chr, 1 );
 
-  my $base = $gct->get_idx_base( $base_code );
-  my $gan  = ($gct->get_idx_in_gan( $base_code )) ? 1 : 0;
-  my $gene = ($gct->get_idx_in_gene( $base_code )) ? 1 : 0;
-  my $exon = ($gct->get_idx_in_exon( $base_code )) ? 1 : 0;
-  my $snp  = ($gct->get_idx_in_snp( $base_code )) ? 1 : 0;
+  my $base = $genome->get_idx_base( $base_code );
+  my $gan  = ($genome->get_idx_in_gan( $base_code )) ? 1 : 0;
+  my $gene = ($genome->get_idx_in_gene( $base_code )) ? 1 : 0;
+  my $exon = ($genome->get_idx_in_exon( $base_code )) ? 1 : 0;
+  my $snp  = ($genome->get_idx_in_snp( $base_code )) ? 1 : 0;
 
+  my @site_scores;
+  for my $score_track ( @{ $tracks{score} } )
+  {
+    push @site_scores, $score_track->get_score( $zero_idx  );
+  }
 
-  say join ("\t", $i, $chr, $rel_pos, $base_code, $base, $gan, $gene, $exon, $snp );
+  say join ("\t", $i, $chr, $rel_pos, $base_code, $base, $gan, $gene, $exon, 
+    $snp, @site_scores);
   push @seq, $base;
 }
 
@@ -149,13 +172,14 @@ sub Print_fa {
 
 sub get_chr {
   my $pos = shift;
-  my @chrs = map { "chr" . $_ } (1..22, 'M', 'X', 'Y');
+  my @chrs = @{ $config_data->{genome_chrs} };
+  my $genome = $tracks{genome}[0];
   for my $i (0 .. scalar @chrs)
   {
     my $chr = $chrs[$i];
-    my $chr_len = $gct->get_abs_pos( $chr, 1 );
+    my $chr_len = $genome->get_abs_pos( $chr, 1 );
     my $next_chr = $chrs[$i+1];
-    my $next_chr_len = $gct->get_abs_pos( $next_chr, 1 );
+    my $next_chr_len = $genome->get_abs_pos( $next_chr, 1 );
 
     #say "$pos < $next_chr_len && $pos >= $chr_len";
 

@@ -93,10 +93,12 @@ sub get_base {
 sub get_score {
   my ($self, $pos) = @_;
 
-  confess "insert_score() expects score2char() to be a coderef"
+  confess "get_score() requires absolute genomic position (0-index)"
+    unless defined $pos;
+  confess "get_score() expects score2char() to be a coderef"
     unless $self->meta->has_method( 'char2score' )
       and reftype($self->char2score) eq 'CODE';
-  confess "insert_score() called on non-score track"
+  confess "get_score() called on non-score track"
     unless $self->type eq 'score';
 
   my $char = $self->get_base( $pos );
