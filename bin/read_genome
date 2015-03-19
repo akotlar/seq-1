@@ -1,12 +1,12 @@
 #!/usr/bin/env perl
 # Name:           read_idx_genome.pl
-# Description:    
-#   Input: 
+# Description:
+#   Input:
 #     - chromosome and positions
 #     - yaml configuration file
 #     - location of the database
 #   Output:
-#     - tab delimited genomic sequence and indication of features present at 
+#     - tab delimited genomic sequence and indication of features present at
 #       particular absolute positions in the genome
 #
 # Date Created:   Tue Sep 21 13:36:45 2014
@@ -36,25 +36,35 @@ my @header_annotation = qw(
   alt_name transcript_id
   org_codon aa snp_id maf);
 my ($chr_wanted, $pos_from, $pos_to, $db_location, $yaml_config, $verbose);
-my ($client,     $db,       $gan_db, $snp_db,      $dbsnp_name,  $dbgene_name);
+my ($client, $db, $gan_db, $snp_db, $dbsnp_name, $dbgene_name, $help);
 my (%tracks);
 
 #
 # usage
 #
-die "usage --from <pos> --to <pos> --config <yaml config file> --locaiton </path/to/organism/db>"
-  unless GetOptions(
-                    'c|chr=s'      => \$chr_wanted,
-                    'f|from=n'     => \$pos_from,
-                    't|to=n'       => \$pos_to,
-                    'c|config=s'   => \$yaml_config,
-                    'l|location=s' => \$db_location,
-                    'v|verbose'    => \$verbose,
-                   )
-  and defined $pos_from
-  and defined $pos_to
-  and defined $yaml_config
-  and defined $db_location;
+GetOptions(
+           'c|chr=s'      => \$chr_wanted,
+           'f|from=n'     => \$pos_from,
+           't|to=n'       => \$pos_to,
+           'c|config=s'   => \$yaml_config,
+           'l|location=s' => \$db_location,
+           'v|verbose'    => \$verbose,
+           'h|help'       => \$help,
+          );
+
+if ($help)
+{
+  Pod::Usage::pod2usage(1);
+  exit;
+}
+
+unless (    defined $pos_from
+        and defined $pos_to
+        and defined $yaml_config
+        and defined $db_location)
+{
+  Pod::Usage::pod2usage();
+}
 
 # clean up position
 $pos_from =~ s/\_|\,//g;
@@ -63,7 +73,7 @@ $pos_to =~ s/\_|\,//g;
 # sanity check position
 if ($pos_from >= $pos_to)
 {
-  say "Error: from_position ('$pos_from') should be <= to_position ('$pos_to')\n";
+  say "Error: 'from' ('$pos_from') is greater than 'to' ('$pos_to')\n";
   exit;
 }
 
