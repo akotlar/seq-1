@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+
 # Name:           read_idx_genome.pl
 # Description:
 #   Input:
@@ -12,6 +13,10 @@
 # Date Created:   Tue Sep 21 13:36:45 2014
 # Date Modified:  2015-03-19
 # By:             TS Wingo
+#
+# TODO:
+#   - remove relative library position
+#
 
 use lib '/Users/twingo/software/Seq/lib';
 use autodie;
@@ -23,6 +28,9 @@ use Modern::Perl qw( 2013 );
 use Pod::Usage;
 use YAML::XS qw( LoadFile );
 use Seq::GenomeSizedTrackChar;
+use Type::Params qw( compile );
+use Types::Standard qw( slurpy Str ArrayRef Num );
+
 use DDP;
 
 my @var_types         = qw(DEL INS SNP MESS);
@@ -164,9 +172,10 @@ Print_fa(\@seq);
 #
 sub Print_fa
 {
-  my $seq_aref = shift;
+  state $check = compile( ArrayRef[Str] );
+  my ($seq_aref) = $check->( @_ );
 
-  for (my $i = 0 ; $i < @{$seq_aref} ; $i++)
+  for (my $i = 0 ; $i < @$seq_aref; $i++)
   {
     print "\n" if ($i % 80 == 0);
     print $seq_aref->[$i];
@@ -175,7 +184,8 @@ sub Print_fa
 
 sub get_chr
 {
-  my $pos    = shift;
+  state $check = compile( Num );
+  my ($pos) = $check->( @_ );
   my @chrs   = @{$config_data->{genome_chrs}};
   my $genome = $tracks{genome}[0];
   for my $i (0 .. scalar @chrs)
