@@ -51,12 +51,11 @@ has genome_track_str => (
   handles => [ 'get_abs_pos', 'get_base', ],
 );
 
-has host => (
+has mongo_connection => (
   is => 'ro',
-  isa => 'Str',
-  default => '127.0.0.1',
+  isa => 'Seq::MongoManager',
+  required => 1,
 );
-
 
 =head1 SYNOPSIS
 
@@ -88,17 +87,19 @@ sub build_gene_db {
   #        could only invoke when we are passed a host...
   #        same goes for Seq::Build::GeneTrack
   #
-  my $client = MongoDB::MongoClient->new(host => "mongodb://" . $self->host)
-    or confess "Cannot connect to MongoDb at " .. $self->host;
-
-  my $db = $client->get_database( $self->genome_name )
-    or confess "Cannot access MongoDb database: " . $self->genome_name;
-
-  my $gene_collection = $db->get_collection( $self->name )
-    or confess "Cannot access MongoDb collection: " . $self->name
-    . "from database: " . $self->genome_name;
-
-  $gene_collection->drop;
+  # my $client = MongoDB::MongoClient->new(host => "mongodb://" . $self->host)
+  #   or confess "Cannot connect to MongoDb at " .. $self->host;
+  #
+  # my $db = $client->get_database( $self->genome_name )
+  #   or confess "Cannot access MongoDb database: " . $self->genome_name;
+  #
+  # my $gene_collection = $db->get_collection( $self->name )
+  #   or confess "Cannot access MongoDb collection: " . $self->name
+  #   . "from database: " . $self->genome_name;
+  #
+  # $gene_collection->drop;
+  $self->mongo_connection->_mongo_collection( $self->name );
+  $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir     = File::Spec->canonpath( $self->local_dir );
@@ -148,7 +149,8 @@ sub build_gene_db {
     for my $site (@flank_exon_sites)
     {
       my $site_href = $site->as_href;
-      $gene_collection->insert( $site_href );
+      $self->mongo_connection->_mongo_collection( $self->name )->insert( $site_href );
+      # $gene_collection->insert( $site_href );
 
       if ($prn_count == 0)
       {
@@ -168,7 +170,8 @@ sub build_gene_db {
     for my $site (@exon_sites)
     {
       my $site_href = $site->as_href;
-      $gene_collection->insert( $site_href );
+      $self->mongo_connection->_mongo_collection( $self->name )->insert( $site_href );
+      # $gene_collection->insert( $site_href );
 
       if ($prn_count == 0)
       {

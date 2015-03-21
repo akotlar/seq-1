@@ -11,6 +11,7 @@ use Seq::Build::GeneTrack;
 use Seq::Build::GenomeSizedTrackChar;
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::Config::SparseTrack;
+use Seq::MongoManager;
 
 use DDP;
 
@@ -122,6 +123,9 @@ sub build_index {
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
       $record->{host}             = $self->host;
+      $record->{mongo_connection} = Seq::MongoManager->new( {
+         default_database => $self->genome_name,
+         client_options => { host => "mongodb://" . $self->host } } );
       my $snp_db     = Seq::Build::SnpTrack->new( $record );
       my $sites_aref = $snp_db->build_snp_db;
       map { $snp_sites{$_}++ } @$sites_aref;
@@ -137,7 +141,9 @@ sub build_index {
     $record->{genome_track_str} = $self->genome_str_track;
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
-    $record->{host}             = $self->host;
+    $record->{mongo_connection} = Seq::MongoManager->new( {
+       default_database => $self->genome_name,
+       client_options => { host => "mongodb://" . $self->host } } );
     my $gene_db = Seq::Build::GeneTrack->new( $record );
     my ($exon_sites_href, $flank_exon_sites_href, $tx_start_href)
       = $gene_db->build_gene_db;

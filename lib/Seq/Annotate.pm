@@ -5,30 +5,10 @@ use Carp qw( croak );
 use Moose;
 use namespace::autoclean;
 use Scalar::Util qw( reftype );
-
-use Seq::Build::SnpTrack;
-use Seq::Build::GeneTrack;
-use Seq::Build::GenomeSizedTrackChar;
-use Seq::Build::GenomeSizedTrackStr;
-use Seq::Config::SparseTrack;
-
 use DDP;
 
-with 'Seq::ConfigFromFile', 'Seq::Role::IO', 'MooseX::Role::MongoDB';;
+with 'Seq::Role::IO', 'MooX::Role::Logger', 'MooseX::Role::MongoDB';
 
-has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_chrs => (
-  is => 'ro',
-  isa => 'ArrayRef[Str]',
-  traits => ['Array'],
-  required => 1,
-  handles => {
-    all_genome_chrs => 'elements',
-  },
-);
-
-has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_track => (
   is => 'ro',
   isa => 'Seq::GenomeSizedTrackStr',
@@ -37,31 +17,14 @@ has genome_track => (
     'get_idx_in_gan', 'get_idx_in_gene', 'get_idx_in_exon', 'get_idx_in_snp',
   ],
 );
+
 has genome_sized_tracks => (
   is => 'ro',
-  isa => 'ArrayRef[Seq::Annotate::GenomeSizedTrackStr]',
+  isa => 'ArrayRef[Seq::GenomeSizedTrackStr]',
   traits => ['Array'],
   handles => {
     all_genome_sized_tracks => 'elements',
     add_genome_sized_track  => 'push',
-  },
-);
-has snp_tracks => (
-  is => 'ro',
-  isa => 'ArrayRef[Seq::Config::SparseTrack]',
-  traits => ['Array'],
-  handles => {
-    all_snp_tracks => 'elements',
-    add_snp_track  => 'push',
-  },
-);
-has gene_tracks => (
-  is => 'ro',
-  isa => 'ArrayRef[Seq::Config::SparseTrack]',
-  traits => ['Array'],
-  handles => {
-    all_gene_tracks => 'elements',
-    add_gene_track  => 'push',
   },
 );
 
@@ -70,6 +33,8 @@ has _gene_dbs => (
   isa => 'ArrayRef[MongoDB::Collection]',
   trait => ['Array'],
   handles => [ 'get_gene_site_annotation' ],
+  builder => '_build_gene_dbs',
+  lazy => 1,
 );
 
 has _snp_dbs => (
@@ -77,6 +42,8 @@ has _snp_dbs => (
   isa => 'ArrayRef[MongoDB::Collection]',
   trait => ['Array'],
   handles => [ 'get_snp_site_annotation' ],
+  builder => '_build_gene_dbs',
+  lazy => 1,
 );
 
 has database => (

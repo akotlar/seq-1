@@ -7,6 +7,11 @@ use File::Copy;
 use Scalar::Util qw( blessed );
 use DDP;
 use Lingua::EN::Inflect qw( A PL_N );
+use Log::Any::Adapter;
+
+if ( $ENV{PERL_MONGODB_DEBUG} ) {
+    Log::Any::Adapter->set('Stdout');
+}
 
 plan tests => 2;
 

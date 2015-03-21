@@ -2,16 +2,13 @@ package Seq::Build::SnpTrack;
 
 use 5.10.0;
 use Carp qw( confess );
+use Cpanel::JSON::XS;
 use Moose;
 use Moose::Util::TypeConstraints;
 use namespace::autoclean;
-use Scalar::Util qw( reftype );
-use Cpanel::JSON::XS;
 
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::SnpSite;
-
-use DDP;
 
 extends qw( Seq::Config::SparseTrack );
 with qw( Seq::Role::IO );
@@ -49,10 +46,10 @@ has genome_seq => (
   handles => [ 'get_abs_pos', 'get_base', ],
 );
 
-has host => (
+has mongo_connection => (
   is => 'ro',
-  isa => 'Str',
-  default => '127.0.0.1',
+  isa => 'Seq::MongoManager',
+  required => 1,
 );
 
 =head1 SYNOPSIS
@@ -85,17 +82,21 @@ sub build_snp_db {
   #        could only invoke when we are passed a host...
   #        same goes for Seq::Build::GeneTrack
   #
-  my $client = MongoDB::MongoClient->new(host => "mongodb://" . $self->host)
-    or confess "Cannot connect to MongoDb at " .. $self->host;
+  # my $client = MongoDB::MongoClient->new(host => "mongodb://" . $self->host)
+  #   or confess "Cannot connect to MongoDb at " .. $self->host;
+  #
+  # my $db = $client->get_database( $self->genome_name )
+  #   or confess "Cannot access MongoDb database: " . $self->genome_name;
+  #
+  # my $gene_collection = $db->get_collection( $self->name )
+  #   or confess "Cannot access MongoDb collection: " . $self->name
+  #   . "from database: " . $self->genome_name;
+  #
+  # $gene_collection->drop;
 
-  my $db = $client->get_database( $self->genome_name )
-    or confess "Cannot access MongoDb database: " . $self->genome_name;
-
-  my $gene_collection = $db->get_collection( $self->name )
-    or confess "Cannot access MongoDb collection: " . $self->name
-    . "from database: " . $self->genome_name;
-
-  $gene_collection->drop;
+  # set mongo collection
+  $self->mongo_connection->_mongo_collection( $self->name );
+  $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir     = File::Spec->canonpath( $self->local_dir );
@@ -155,7 +156,8 @@ sub build_snp_db {
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
-        $gene_collection->insert( $site_href );
+        $self->mongo_connection->_mongo_collection( $self->name )->insert( $site_href );
+        #$gene_collection->insert( $site_href );
 
         if ($prn_counter == 0)
         {
