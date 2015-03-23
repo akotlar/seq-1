@@ -7,8 +7,13 @@ use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw( compile );
 use Types::Standard qw( :type );
-
+use Log::Any::Adapter;
 use Seq::Annotate;
+
+if ( $ENV{PERL_MONGODB_DEBUG} ) {
+  Log::Any::Adapter->set('Stdout');
+}
+
 
 use DDP;
 
