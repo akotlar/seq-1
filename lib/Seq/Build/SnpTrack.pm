@@ -53,7 +53,7 @@ has _snp_db => (
 
 sub _set_snp_db {
     my $self = shift;
-    return $self->mongo_connection->_mongo_collection($self->name );
+    return $self->mongo_connection->_mongo_collection( $self->name );
 }
 
 sub build_snp_db {

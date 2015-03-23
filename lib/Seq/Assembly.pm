@@ -13,6 +13,8 @@ use Scalar::Util qw/ reftype /;
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
 
+use DDP;
+
 with 'Seq::Role::ConfigFromFile', 'Seq::Role::IO';
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
