@@ -45,11 +45,21 @@ has mongo_connection => (
   required => 1,
 );
 
+has _gene_db => (
+    is => 'ro',
+    isa => 'MongoDB::Collection',
+    builder => '_set_gene_db',
+    lazy => 1,
+);
+
+sub _set_gene_db {
+    my $self = shift;
+    return $self->mongo_connection->_mongo_collection($self->name );
+}
 sub build_gene_db {
   my $self = shift;
 
-  $self->mongo_connection->_mongo_collection( $self->name );
-  $self->mongo_connection->_mongo_collection( $self->name )->drop;
+  $self->_gene_db->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -104,7 +114,7 @@ sub build_gene_db {
     my @flank_exon_sites = $gene->get_flanking_sites();
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
-      $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+      $self->_gene_db->insert($site_href);
       # $gene_collection->insert( $site_href );
 
       if ( $prn_count == 0 ) {
@@ -122,7 +132,7 @@ sub build_gene_db {
     my @exon_sites = $gene->get_transcript_sites();
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
-      $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+      $self->_gene_db->insert($site_href);
       # $gene_collection->insert( $site_href );
 
       if ( $prn_count == 0 ) {

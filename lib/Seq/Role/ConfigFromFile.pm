@@ -48,8 +48,8 @@ sub new_with_config {
 }
 
 sub get_config_from_file {
-  state $check = compile( Str, Object );
-  my ( $class, $file ) = $check->(@_);
+  #state $check = compile( Str, Object );
+  my ( $class, $file ) = @_;
 
   my $fh = $class->get_read_fh($file);
   my $cleaned_txt;
