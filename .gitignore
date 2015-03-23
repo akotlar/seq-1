@@ -16,9 +16,11 @@ nytprof.out
 *.o
 *.bs
 /_eumm/
+.tidyall.d
 
 # test files
 tmp*
 test*
 /sandbox/
 /t/*.sh
+/t/archive

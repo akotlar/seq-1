@@ -18,7 +18,7 @@
 #   - remove relative library position
 #
 
-use lib '/Users/twingo/software/Seq/lib';
+use lib '/Users/twingo/software/Seq_copy/lib';
 use autodie;
 use Cpanel::JSON::XS;
 use File::Spec;
@@ -216,7 +216,7 @@ read_genome --from --to --config --locaiton
 
 =head1 DESCRIPTION
 
-C<read_genome> takes a yaml configuration file and reads the binary genome 
+C<read_genome> takes a yaml configuration file and reads the binary genome
 specified by that file. The binary genome is created by the Seq package.
 
 =head1 OPTIONS
@@ -233,14 +233,14 @@ To: absolute position (0-indexed) to stop reading the genome.
 
 =item B<-c>, B<--config>
 
-Config: A YAML genome assembly configuration file that specifies the various 
-tracks and data associated with the assembly. This is the same file that is 
+Config: A YAML genome assembly configuration file that specifies the various
+tracks and data associated with the assembly. This is the same file that is
 used by the Seq Package to build the binary genome without any alteration.
 
 =item B<-l>, B<--location>
 
-Location: This is the base directory that will be added to the location 
-information in the YAML configuration file that has a key specifying the 
+Location: This is the base directory that will be added to the location
+information in the YAML configuration file that has a key specifying the
 location of the binary index.
 
 =back

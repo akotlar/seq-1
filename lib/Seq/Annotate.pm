@@ -1,158 +1,239 @@
-package Seq::Annotate;
-
 use 5.10.0;
-use Carp qw( croak );
-use Moose;
+use strict;
+use warnings;
+
+package Seq::Annotate;
+# ABSTRACT: Builds a plain text genome used for binary genome creation
+# VERSION
+
+use Moose 2;
+
+use Carp qw/ croak /;
+use File::Spec;
 use namespace::autoclean;
-use Scalar::Util qw( reftype );
+use Type::Params qw/ compile /;
+use Types::Standard qw/ :types /;
+use Try::Tiny::Retry 0.002 qw/:all/;
+use YAML::XS qw/ LoadFile /;
+
 use DDP;
 
-with 'Seq::Role::IO', 'MooX::Role::Logger', 'MooseX::Role::MongoDB';
+use Seq::GenomeSizedTrackChar;
+use Seq::MongoManager;
 
-has genome_track => (
-  is => 'ro',
-  isa => 'Seq::GenomeSizedTrackStr',
+extends 'Seq::Assembly';
+with 'Seq::Role::IO';
+
+has _genome => (
+  is       => 'ro',
+  isa      => 'Seq::GenomeSizedTrackChar',
   required => 1,
-  handles => [ 'get_abs_pos', 'get_base', 'genome_length', 'get_idx_base',
-    'get_idx_in_gan', 'get_idx_in_gene', 'get_idx_in_exon', 'get_idx_in_snp',
-  ],
+  # handles => [ 'get_abs_pos', 'get_base', 'genome_length', 'get_idx_base',
+  #   'get_idx_in_gan', 'get_idx_in_gene', 'get_idx_in_exon', 'get_idx_in_snp',
+  # ],
+  lazy    => 1,
+  builder => '_load_genome',
 );
 
-has genome_sized_tracks => (
-  is => 'ro',
-  isa => 'ArrayRef[Seq::GenomeSizedTrackStr]',
-  traits => ['Array'],
-  handles => {
-    all_genome_sized_tracks => 'elements',
-    add_genome_sized_track  => 'push',
-  },
+has _genome_score => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::GenomeSizedTrackChar]',
+  traits  => ['Array'],
+  handles => { _all_genome_scores => 'elements', },
+  lazy    => 1,
+  builder => '_load_scores',
+);
+#
+# has _mongo_connection => (
+#     is => 'ro',
+#     isa => 'Seq::MongoManager',
+#     lazy => 1,
+#     builder => '_build_mongo_connection',
+# );
+#
+# sub _build_mongo_connection {
+#     state $check = compile( Object );
+#     my ($self) = $check->(@_);
+#     return Seq::MongoManager->new( {
+#         default_database => $self->genome_name,
+#         client_options   => { host => "mongodb://" . $self->host }
+#     } );
+# }
+#
+# sub BUILD {
+#     my ($self) = @_;
+#     $self->_mongo_connection;
+# }
+has _mongo_snp_db => (
+  is      => 'ro',
+  isa     => 'ArrayRef[MongoDB::Collection]',
+  traits  => ['Array'],
+  handles => { _all_mongo_snp_db => 'elements', },
+  lazy    => 1,
+  builder => '_load_snpdb',
 );
 
-has _gene_dbs => (
-  is => 'ro',
-  isa => 'ArrayRef[MongoDB::Collection]',
-  trait => ['Array'],
-  handles => [ 'get_gene_site_annotation' ],
-  builder => '_build_gene_dbs',
-  lazy => 1,
+has _mongo_gene_db => (
+  is      => 'ro',
+  isa     => 'ArrayRef[MongoDB::Collection]',
+  traits  => ['Array'],
+  handles => { _all_mongo_gene_db => 'elements', },
+  lazy    => 1,
+  builder => '_load_gandb',
 );
 
-has _snp_dbs => (
-  is => 'ro',
-  isa => 'ArrayRef[MongoDB::Collection]',
-  trait => ['Array'],
-  handles => [ 'get_snp_site_annotation' ],
-  builder => '_build_gene_dbs',
-  lazy => 1,
-);
+sub _load_snpdb {
+  my $self = shift;
+  my @dbs;
+  for my $snp_track ( $self->all_snp_tracks ) {
+    push @dbs, $self->_load_mongo_connection( $snp_track->name );
+  }
+  return \@dbs;
+}
 
-has database => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
+sub _load_gandb {
+  my $self = shift;
+  my @dbs;
+  for my $gene_track ( $self->all_gene_tracks ) {
+    push @dbs, $self->_load_mongo_connection( $gene_track->name );
+  }
+  return \@dbs;
+}
 
-has client_options => (
-    is       => 'ro',
-    isa      => 'HashRef',
-    default  => sub { {} },
-);
+sub _load_mongo_connection {
+  state $check = compile( Object, Str );
+  my ( $self, $collection ) = $check->(@_);
+  my $db = Seq::MongoManager->new(
+    {
+      default_database => $self->genome_name,
+      client_options   => { host => "mongodb://" . $self->host }
+    }
+  );
+  return $db->_mongo_collection($collection);
+}
 
-sub _build__mongo_default_database { return $_[0]->database }
-sub _build__mongo_client_options   { return $_[0]->client_options }
+sub _load_genome {
+  my $self = shift;
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'genome' ) {
+      return $self->_load_genome_sized_track($gst);
+    }
+  }
+}
+
+sub _load_scores {
+  my $self = shift;
+
+  my @score_tracks;
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'score' ) {
+      push @score_tracks, $self->_load_genome_sized_track($gst);
+    }
+  }
+  return \@score_tracks;
+}
+
+sub _load_genome_sized_track {
+  # my ($self, $gst) = @_;
+  state $check = compile( Object, Object );
+  my ( $self, $gst ) = $check->(@_);
+
+  # index dir
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+
+  # idx file
+  my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
+  my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
+  my $idx_fh = $self->get_read_fh($idx_file);
+  binmode $idx_fh;
+
+  # yml file
+  my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
+  my $yml_file = File::Spec->catfile( $index_dir, $yml_name );
+
+  # read genome
+  my $seq           = '';
+  my $genome_length = -s $idx_file;
+  read $idx_fh, $seq, $genome_length;
+
+  # read yml chr offsets
+  my $chr_len_href = LoadFile($yml_file);
+
+  my $obj = Seq::GenomeSizedTrackChar->new(
+    {
+      name          => $gst->name,
+      type          => $gst->type,
+      genome_chrs   => $self->genome_chrs,
+      genome_length => $genome_length,
+      chr_len       => $chr_len_href,
+      char_seq      => \$seq,
+
+    }
+  );
+  return $obj;
+}
 
 sub annotate_site {
-  my ($self, $chr, $pos) = shift;
+  state $check = compile( Object, Str, Int );
+  my ( $self, $chr, $pos ) = $check->(@_);
 
   my %record;
 
   # check chr and pos exist
 
-  my $site_code = $self->get_base( $chr, $pos );
-  my $base      = $gct->get_idx_base( $base_code );
-  my $gan       = ($gct->get_idx_in_gan( $base_code )) ? 1 : 0;
-  my $gene      = ($gct->get_idx_in_gene( $base_code )) ? 1 : 0;
-  my $exon      = ($gct->get_idx_in_exon( $base_code )) ? 1 : 0;
-  my $snp       = ($gct->get_idx_in_snp( $base_code )) ? 1 : 0;
+  my $abs_pos   = $self->_genome->get_abs_pos( $chr, $pos );
+  my $site_code = $self->_genome->get_base($abs_pos);
+  my $base      = $self->_genome->get_idx_base($site_code);
+  my $gan       = ( $self->_genome->get_idx_in_gan($site_code) ) ? 1 : 0;
+  my $gene      = ( $self->_genome->get_idx_in_gene($site_code) ) ? 1 : 0;
+  my $exon      = ( $self->_genome->get_idx_in_exon($site_code) ) ? 1 : 0;
+  my $snp       = ( $self->_genome->get_idx_in_snp($site_code) ) ? 1 : 0;
 
-  if ($gan)
-  {
-    # lookup gene annotation
+  $record{abs_pos}   = $abs_pos;
+  $record{site_code} = $site_code;
+  $record{base}      = $base;
+  $record{gan}       = $gan;
+  $record{gene}      = $gene;
+  $record{exon}      = $exon;
+  $record{snp}       = $snp;
+
+  my ( @gan_data, @snp_data, %conserv_scores );
+
+  for my $gst ( $self->_all_genome_scores ) {
+    $conserv_scores{ $gst->name } = $gst->get_score($abs_pos);
   }
 
-  if ($snp)
-  {
-    # lookup snp annotation
+  if ($gan) {
+    for my $gene_track ( $self->_all_mongo_gene_db ) {
+      @gan_data = &retry(
+        sub { return $gene_track->find( { abs_pos => $abs_pos } )->all },
+        retry_if { /not connected / },
+        delay_exp { 5, 1e6 },
+        on_retry { $self->_mongo_clear_caches },
+        catch { croak "find error: $_" }
+      );
+    }
   }
+
+  if ($snp) {
+    for my $snp_track ( $self->_all_mongo_snp_db ) {
+      @snp_data = &retry(
+        sub { return $snp_track->find( { abs_pos => $abs_pos } )->all },
+        retry_if { /not connected / },
+        delay_exp { 5, 1e6 },
+        on_retry { $self->_mongo_clear_caches },
+        catch { croak "find error: $_" }
+      );
+    }
+  }
+
+  $record{conser_scores} = \%conserv_scores if %conserv_scores;
+  $record{gan_data}      = \@gan_data       if @gan_data;
+  $record{snp_data}      = \@snp_data       if @snp_data;
 
   return \%record;
 }
 
-sub BUILD {
-  # open the mongo db for the tracks
-  # open the genome file here and give it to GenomeSizedTrackChar
-}
+__PACKAGE__->meta->make_immutable;
 
-
-sub BUILDARGS {
-  my $class = shift;
-  my $href  = $_[0];
-  if (scalar @_ > 1 || reftype($href) ne "HASH")
-  {
-    confess "Error: $class expects hash reference.\n";
-  }
-  else
-  {
-    my %hash;
-    for my $sparse_track ( @{ $href->{sparse_tracks} } )
-    {
-      $sparse_track->{genome_name} = $href->{genome_name};
-      if ($sparse_track->{type} eq "gene")
-      {
-        push @{ $hash{gene_tracks} }, Seq::Config::SparseTrack->new( $sparse_track );
-      }
-      elsif ( $sparse_track->{type} eq "snp" )
-      {
-        push @{ $hash{snp_tracks} }, Seq::Config::SparseTrack->new( $sparse_track );
-      }
-      else
-      {
-        croak "unrecognized sparse track type $sparse_track->{type}\n";
-      }
-    }
-
-    # TODO: change genome_str_track to genome_track
-    for my $genome_str_track ( @{ $href->{genome_sized_tracks} } )
-    {
-      $genome_str_track->{genome_chrs} = $href->{genome_chrs};
-      $genome_str_track->{genome_index_dir} = $href->{genome_index_dir};
-
-      if ($genome_str_track->{type} eq "genome")
-      {
-        $hash{genome_track} = Seq::GenomeSizedTrackChar->new( $genome_str_track );
-      }
-      elsif ( $genome_str_track->{type} eq "score" )
-      {
-        push @{ $hash{genome_sized_tracks} },
-          Seq::Config::GenomeSizedTrack->new( $genome_str_track );
-      }
-      else
-      {
-        croak "unrecognized genome track type $genome_str_track->{type}\n"
-      }
-    }
-    for my $attrib (qw( genome_name genome_description genome_chrs
-      genome_raw_dir genome_index_dir ))
-    {
-      $hash{$attrib} //= $href->{$attrib} || "";
-    }
-    if (exists $attrib->{host})
-    {
-      my $port //= $attrib->{port} || '27017';
-      my $host //= $attrib->{host} || "mongodb://$host:$port";
-      $hash{database} = $hash{genome_name};
-      $hash{client_options} = { host => $host };
-    }
-    return $class->SUPER::BUILDARGS(\%hash);
-  }
-}
+1;

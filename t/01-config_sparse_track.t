@@ -23,29 +23,32 @@ ok( $package->can('meta'), "$package has a meta() method" )
   or BAIL_OUT("$package does not have a meta() method.");
 
 # check read-only attribute have read but no write methods
-has_ro_attr ( $package, $_ ) for ( qw( local_dir local_file 
-  name type entry_names ) );
+has_ro_attr( $package, $_ )
+  for (
+    qw( local_dir local_file
+    name type entry_names )
+  );
 
-has_rw_attr ( $package, $_ ) for ( qw( sql_statement ) );
+has_rw_attr( $package, $_ ) for (qw( sql_statement ));
 
 # check type constraints - Str
-for my $attr_name ( qw( local_dir local_file 
-  name sql_statement ))
+for my $attr_name (
+    qw( local_dir local_file
+    name sql_statement )
+  )
 {
-  my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint");
-  is( $attr->type_constraint->name, 'Str', "$attr_name type is Str" );
+    my $attr = $package->meta->get_attribute($attr_name);
+    ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
+    is( $attr->type_constraint->name, 'Str', "$attr_name type is Str" );
 }
 
 # check type constraints - SparseTrackType
-for my $attr_name ( qw( type ))
-{
-  my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint");
-  is( $attr->type_constraint->name, 'SparseTrackType', "$attr_name type is SparseTrackType" );
+for my $attr_name (qw( type )) {
+    my $attr = $package->meta->get_attribute($attr_name);
+    ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
+    is( $attr->type_constraint->name,
+        'SparseTrackType', "$attr_name type is SparseTrackType" );
 }
-
-
 
 sub check_isa {
     my $class   = shift;
@@ -54,7 +57,7 @@ sub check_isa {
     local $Test::Builder::Level = $Test::Builder::Level + 1;
 
     my @isa = $class->meta->linearized_isa;
-    shift @isa;    # returns $class as the first entry
+    shift @isa; # returns $class as the first entry
 
     my $count = scalar @{$parents};
     my $noun = PL_N( 'parent', $count );
@@ -73,21 +76,13 @@ sub has_ro_attr {
     local $Test::Builder::Level = $Test::Builder::Level + 1;
 
     my $articled = A($name);
-    ok(
-        $class->meta->has_attribute($name),
-        "$class has $articled attribute"
-    );
+    ok( $class->meta->has_attribute($name), "$class has $articled attribute" );
 
     my $attr = $class->meta->get_attribute($name);
 
-    is(
-        $attr->get_read_method, $name,
-        "$name attribute has a reader accessor - $name()"
-    );
-    is(
-        $attr->get_write_method, undef,
-        "$name attribute does not have a writer"
-    );
+    is( $attr->get_read_method, $name,
+        "$name attribute has a reader accessor - $name()" );
+    is( $attr->get_write_method, undef, "$name attribute does not have a writer" );
 }
 
 sub has_rw_attr {
@@ -98,19 +93,12 @@ sub has_rw_attr {
     local $Test::Builder::Level = $Test::Builder::Level + 1;
 
     my $articled = $overridden ? "an overridden $name" : A($name);
-    ok(
-        $class->meta->has_attribute($name),
-        "$class has $articled attribute"
-    );
+    ok( $class->meta->has_attribute($name), "$class has $articled attribute" );
 
     my $attr = $class->meta->get_attribute($name);
 
-    is(
-        $attr->get_read_method, $name,
-        "$name attribute has a reader accessor - $name()"
-    );
-    is(
-        $attr->get_write_method, $name,
-        "$name attribute has a writer accessor - $name()"
-    );
+    is( $attr->get_read_method, $name,
+        "$name attribute has a reader accessor - $name()" );
+    is( $attr->get_write_method, $name,
+        "$name attribute has a writer accessor - $name()" );
 }

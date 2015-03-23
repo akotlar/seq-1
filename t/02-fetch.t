@@ -14,44 +14,39 @@ plan tests => 6;
 # pick a test genome
 my $config_file = "hg38.yml";
 
-chdir ("./sandbox");
-copy("../t/$config_file", '.') or die "Cannot copy ../t/$config_file";
-
+chdir("./sandbox");
+copy( "../t/$config_file", '.' ) or die "Cannot copy ../t/$config_file";
 
 # setup data for reading sql db tests
 #   reads data after __END__
 {
-  my $dbh = DBI->connect('dbi:SQLite:dbname=test_hg38');
-  local $/=";\n";
-  $dbh->do( $_ ) while <DATA>;
+    my $dbh = DBI->connect('dbi:SQLite:dbname=test_hg38');
+    local $/ = ";\n";
+    $dbh->do($_) while <DATA>;
 }
 
-use_ok( 'Seq' ) || print "Bail_out!";
-use_ok( 'Seq::Fetch::Files' ) || print "Bail out!\n";
-use_ok( 'Seq::Fetch::Sql' ) || print "Bail out!\n";
-use_ok( 'Seq::Fetch' ) || print "Bail out!\n";
-
-
+use_ok('Seq')               || print "Bail_out!";
+use_ok('Seq::Fetch::Files') || print "Bail out!\n";
+use_ok('Seq::Fetch::Sql')   || print "Bail out!\n";
+use_ok('Seq::Fetch')        || print "Bail out!\n";
 
 # load the yaml file
-my $hg38_config_href = LoadFile( $config_file )
+my $hg38_config_href = LoadFile($config_file)
   || die "cannot load $config_file $!\n";
 
-for my $track ( @{ $hg38_config_href->{sparse_tracks} } )
-{
-  $track->{dsn}  = 'dbi:SQLite:dbname=test_hg38';
-  $track->{host} = '';
-  $track->{user} = '';
-  $track->{sql_statement} = 'SELECT id, name, feature FROM test';
+for my $track ( @{ $hg38_config_href->{sparse_tracks} } ) {
+    $track->{dsn}           = 'dbi:SQLite:dbname=test_hg38';
+    $track->{host}          = '';
+    $track->{user}          = '';
+    $track->{sql_statement} = 'SELECT id, name, feature FROM test';
 }
 
-for my $track ( @{ $hg38_config_href->{genome_sized_tracks} } )
-{
-  $track->{act} = 0;
-  $track->{verbose} = 1;
+for my $track ( @{ $hg38_config_href->{genome_sized_tracks} } ) {
+    $track->{act}     = 0;
+    $track->{verbose} = 1;
 }
 
-my $fetch_hg38 = Seq::Fetch->new( $hg38_config_href );
+my $fetch_hg38 = Seq::Fetch->new($hg38_config_href);
 
 isa_ok( $fetch_hg38, 'Seq::Fetch', 'Seq::Fetch made with a hash reference' );
 
@@ -61,18 +56,19 @@ isa_ok( $fetch_hg38_2, 'Seq::Fetch', 'Seq::Fetch made with a configfile' );
 
 $fetch_hg38->fetch_sparse_tracks;
 
-open my $fh, '>', "test_hg38_fetch_files.sh" || die "cannot open test_hg38_fetch_files.sh: $!\n";
+open my $fh, '>',
+  "test_hg38_fetch_files.sh" || die "cannot open test_hg38_fetch_files.sh: $!\n";
 say $fh "#!/bin/sh";
-$fetch_hg38->say_fetch_genome_size_tracks( $fh );
+$fetch_hg38->say_fetch_genome_size_tracks($fh);
 close $fh;
 
-open $fh, '>', "test_hg38_proc_files.sh" || die "cannot open test_hg38_proc_files.sh: $!\n";
+open $fh, '>',
+  "test_hg38_proc_files.sh" || die "cannot open test_hg38_proc_files.sh: $!\n";
 say $fh "#!/bin/sh";
-$fetch_hg38->say_process_genome_size_tracks( $fh );
+$fetch_hg38->say_process_genome_size_tracks($fh);
 close $fh;
 
-
-diag( "Testing Seq $Seq::VERSION, Perl $], $^X" );
+diag("Testing Seq $Seq::VERSION, Perl $], $^X");
 
 __DATA__
 BEGIN TRANSACTION;
