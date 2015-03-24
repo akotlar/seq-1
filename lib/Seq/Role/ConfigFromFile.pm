@@ -56,7 +56,7 @@ sub get_config_from_file {
 
   while (<$fh>) {
     chomp $_;
-    my $clean_line = $class->clean_line( $_ );
+    my $clean_line = $class->clean_line($_);
     $cleaned_txt .= $clean_line . "\n" if ($clean_line);
 
   }

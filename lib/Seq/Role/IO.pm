@@ -1,11 +1,17 @@
-package Seq::Role::IO;
-
 use 5.10.0;
-use Carp qw( confess croak );
+use strict;
+use warnings;
+
+package Seq::Role::IO;
+# ABSTRACT: A moose role for all of our file handle needs
+# VERSION
+
 use Moose::Role;
+
+use Carp qw/ confess croak /;
 use IO::File;
-use IO::Compress::Gzip qw( $GzipError );
-use IO::Uncompress::Gunzip qw( $GunzipError );
+use IO::Compress::Gzip qw/ $GzipError /;
+use IO::Uncompress::Gunzip qw/ $GunzipError /;
 
 sub get_write_fh {
   my ( $self, $file ) = @_;
@@ -48,18 +54,17 @@ sub get_write_bin_fh {
   binmode $fh;
   return $fh;
 }
-sub clean_line {
-    my ($self, $line) = @_;
 
-    if ($line =~ m/\A([\.\-\=\:\/\t\s\w\d]+)\Z/)
-    {
-        return $1;
-    }
-    else
-    {
-        warn "ignoring: $line";
-    }
-    return undef;
+sub clean_line {
+  my ( $self, $line ) = @_;
+
+  if ( $line =~ m/\A([\.\-\=\:\/\t\s\w\d]+)\Z/ ) {
+    return $1;
+  }
+  else {
+    warn "ignoring: $line";
+  }
+  return undef;
 }
 
 no Moose::Role;

@@ -1,8 +1,14 @@
-package Seq::Role::Genome;
-
 use 5.10.0;
-use Carp;
+use strict;
+use warnings;
+
+package Seq::Role::Genome;
+# ABSTRACT: A moose role for getting the 0-indexed absolute position in the genome
+# VERSION
+
 use Moose::Role;
+
+use Carp;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 

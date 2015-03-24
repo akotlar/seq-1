@@ -29,11 +29,8 @@ has _genome => (
   is       => 'ro',
   isa      => 'Seq::GenomeSizedTrackChar',
   required => 1,
-  # handles => [ 'get_abs_pos', 'get_base', 'genome_length', 'get_idx_base',
-  #   'get_idx_in_gan', 'get_idx_in_gene', 'get_idx_in_exon', 'get_idx_in_snp',
-  # ],
-  lazy    => 1,
-  builder => '_load_genome',
+  lazy     => 1,
+  builder  => '_load_genome',
 );
 
 has _genome_score => (
@@ -46,72 +43,22 @@ has _genome_score => (
 );
 
 has _mongo_connection => (
-    is => 'ro',
-    isa => 'Seq::MongoManager',
-    lazy => 1,
-    builder => '_build_mongo_connection',
+  is      => 'ro',
+  isa     => 'Seq::MongoManager',
+  lazy    => 1,
+  builder => '_build_mongo_connection',
 );
 
 sub _build_mongo_connection {
-    state $check = compile( Object );
-    my ($self) = $check->(@_);
-    return Seq::MongoManager->new( {
-        default_database => $self->genome_name,
-        client_options   => { host => "mongodb://" . $self->host }
-    } );
+  state $check = compile(Object);
+  my ($self) = $check->(@_);
+  return Seq::MongoManager->new(
+    {
+      default_database => $self->genome_name,
+      client_options   => { host => "mongodb://" . $self->host },
+    }
+  );
 }
-#
-# sub BUILD {
-#     my ($self) = @_;
-#     $self->_mongo_connection;
-# }
-# has _mongo_snp_db => (
-#   is      => 'ro',
-#   isa     => 'ArrayRef[MongoDB::Collection]',
-#   traits  => ['Array'],
-#   handles => { _all_mongo_snp_db => 'elements', },
-#   lazy    => 1,
-#   builder => '_load_snpdb',
-# );
-#
-# has _mongo_gene_db => (
-#   is      => 'ro',
-#   isa     => 'ArrayRef[MongoDB::Collection]',
-#   traits  => ['Array'],
-#   handles => { _all_mongo_gene_db => 'elements', },
-#   lazy    => 1,
-#   builder => '_load_gandb',
-# );
-#
-# sub _load_snpdb {
-#   my $self = shift;
-#   my @dbs;
-#   for my $snp_track ( $self->all_snp_tracks ) {
-#     push @dbs, $self->_load_mongo_connection( $snp_track->name );
-#   }
-#   return \@dbs;
-# }
-#
-# sub _load_gandb {
-#   my $self = shift;
-#   my @dbs;
-#   for my $gene_track ( $self->all_gene_tracks ) {
-#     push @dbs, $self->_load_mongo_connection( $gene_track->name );
-#   }
-#   return \@dbs;
-# }
-#
-# sub _load_mongo_connection {
-#   state $check = compile( Object, Str );
-#   my ( $self, $collection ) = $check->(@_);
-#   my $db = Seq::MongoManager->new(
-#     {
-#       default_database => $self->genome_name,
-#       client_options   => { host => "mongodb://" . $self->host }
-#     }
-#   );
-#   return $db->_mongo_collection($collection);
-# }
 
 sub _load_genome {
   my $self = shift;
@@ -201,37 +148,21 @@ sub annotate_site {
     $conserv_scores{ $gst->name } = $gst->get_score($abs_pos);
   }
 
-    if ($gan) {
-    # for my $gene_track ( $self->_all_mongo_gene_db ) {
-    #   push @gene_data, &retry(
-    #     sub { return $gene_track->find( { abs_pos => $abs_pos } )->all },
-    #     retry_if { /not connected / },
-    #     delay_exp { 5, 1e6 },
-    #     on_retry { $self->_mongo_clear_caches },
-    #     catch { croak "find error: $_" }
-    #   );
-    # }
-        for my $gene_track ( $self->all_gene_tracks ) {
-            push @gene_data, $self->_mongo_connection->_mongo_collection(
-                $gene_track->name )->find( { abs_pos => $abs_pos } )->all;
-        }
+  if ($gan) {
+    for my $gene_track ( $self->all_gene_tracks ) {
+      push @gene_data,
+        $self->_mongo_connection->_mongo_collection( $gene_track->name )
+        ->find( { abs_pos => $abs_pos } )->all;
     }
+  }
 
-    if ($snp) {
-    # for my $snp_track ( $self->_all_mongo_snp_db ) {
-    #   push @snp_data, &retry(
-    #     sub { return $snp_track->find( { abs_pos => $abs_pos } )->all },
-    #     retry_if { /not connected / },
-    #     delay_exp { 5, 1e6 },
-    #     on_retry { $self->_mongo_clear_caches },
-    #     catch { croak "find error: $_" }
-    #   );
-    # }
-        for my $snp_track ( $self->all_snp_tracks ) {
-            push @snp_data, $self->_mongo_connection->_mongo_collection(
-                $snp_track->name )->find( { abs_pos => $abs_pos } )->all;
-        }
+  if ($snp) {
+    for my $snp_track ( $self->all_snp_tracks ) {
+      push @snp_data,
+        $self->_mongo_connection->_mongo_collection( $snp_track->name )
+        ->find( { abs_pos => $abs_pos } )->all;
     }
+  }
 
   $record{conser_scores} = \%conserv_scores if %conserv_scores;
   $record{gan_data}      = \@gene_data      if @gene_data;

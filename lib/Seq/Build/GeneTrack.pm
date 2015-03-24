@@ -45,22 +45,11 @@ has mongo_connection => (
   required => 1,
 );
 
-# has _gene_db => (
-#     is => 'ro',
-#     isa => 'MongoDB::Collection',
-#     builder => '_set_gene_db',
-#     lazy => 1,
-# );
-#
-# sub _set_gene_db {
-#     my $self = shift;
-#     return $self->_mongo_connection->_mongo_collection($self->name );
-# }
-
 sub build_gene_db {
   my $self = shift;
 
-  $self->mongo_connection->_mongo_collection($self->name )->drop;
+  # defensively drop anything if the collection already exists
+  $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -147,8 +136,7 @@ sub build_gene_db {
       $exon_sites{ $site->abs_pos }++;
     }
     # these sites need to be 0-indexed
-    push @{ $transcript_start_sites{ $gene->transcript_start } },
-      $gene->transcript_end;
+    push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
   print {$out_fh} "]";
   return ( \%exon_sites, \%flank_exon_sites, \%transcript_start_sites );

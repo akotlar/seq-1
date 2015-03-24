@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Build;
+# ABSTRACT: A class for building a binary representation of a genome assembly
+# VERSION
+# TODO: make the build class extend the assembly class
 
 use Moose 2;
 

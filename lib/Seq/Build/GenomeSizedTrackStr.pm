@@ -6,7 +6,7 @@ package Seq::Build::GenomeSizedTrackStr;
 # ABSTRACT: Builds a plain text genome used for binary genome creation
 # VERSION
 
-use Moose;
+use Moose 2;
 
 use Carp qw/ confess /;
 use File::Path;

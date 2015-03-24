@@ -6,7 +6,7 @@ package Seq::Build::SnpTrack;
 # ABSTRACT: Builds a snp track using dbSnp data, derived from UCSC
 # VERSION
 
-use Moose;
+use Moose 2;
 
 use Carp qw/ confess /;
 use Cpanel::JSON::XS;
@@ -44,23 +44,11 @@ has mongo_connection => (
   isa      => 'Seq::MongoManager',
   required => 1,
 );
-#
-# has _snp_db => (
-#   is      => 'ro',
-#   isa     => 'MongoDB::Collection',
-#   builder => '_set_snp_db',
-#   lazy    => 1,
-# );
-#
-# sub _set_snp_db {
-#   my $self = shift;
-#   return $self->mongo_connection->_mongo_collection( $self->name );
-# }
 
 sub build_snp_db {
   my $self = shift;
 
-  # set mongo collection
+  # defensively drop anything if the collection already exists
   $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
@@ -107,18 +95,15 @@ sub build_snp_db {
         my $snp_site = Seq::SnpSite->new($record);
         my $base = $self->get_base( $abs_pos, 1 );
         $snp_site->set_feature( base => $base );
-        #say "chr: $chr, pos: $pos, abs_pos: $abs_pos";
 
         if ($min_allele_freq) {
           $snp_site->set_feature( maf => $min_allele_freq, alleles => join( ",", @alleles ) );
         }
 
-        # record keeping - TODO: move into Moose Counter method
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
         $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-        #$self->_snp_db->insert($site_href);
 
         if ( $prn_counter == 0 ) {
           print {$out_fh} "[" . encode_json($site_href);

@@ -3,6 +3,8 @@ use strict;
 use warnings;
 
 package Seq::Assembly;
+# ABSTRACT: A class for assembly information
+# VERSION
 
 use Moose 2;
 
@@ -12,8 +14,6 @@ use Scalar::Util qw/ reftype /;
 
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
-
-use DDP;
 
 with 'Seq::Role::ConfigFromFile', 'Seq::Role::IO';
 

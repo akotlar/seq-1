@@ -48,9 +48,9 @@ has genome_chrs => (
   required => 1,
   handles  => { all_genome_chrs => 'elements', },
 );
-has genome_index_dir => ( is  => 'ro', isa => 'Str', );
-has local_dir => ( is => 'ro', isa => 'Str', );
-has local_files => (
+has genome_index_dir => ( is => 'ro', isa => 'Str', );
+has local_dir        => ( is => 'ro', isa => 'Str', );
+has local_files      => (
   is      => 'ro',
   isa     => 'ArrayRef[Str]',
   traits  => ['Array'],
