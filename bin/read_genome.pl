@@ -18,31 +18,21 @@
 #   - remove relative library position
 #
 
-use lib '/Users/twingo/software/Seq_copy/lib';
+use lib './lib';
 use autodie;
 use Cpanel::JSON::XS;
 use File::Spec;
 use IO::File;
 use Getopt::Long;
-use Modern::Perl qw( 2013 );
+use Modern::Perl qw/ 2013 /;
 use Pod::Usage;
-use YAML::XS qw( LoadFile );
+use YAML::XS qw/ LoadFile /;
 use Seq::GenomeSizedTrackChar;
-use Type::Params qw( compile );
-use Types::Standard qw( slurpy Str ArrayRef Num );
-
+use Time::localtime;
+use Type::Params qw/ compile /;
+use Types::Standard qw/ FileHandle slurpy Str ArrayRef Num /;
 use DDP;
 
-my @var_types         = qw(DEL INS SNP MESS);
-my @var_type_codes    = qw(Silent Replacement Intronic Intergenic);
-my @header_snpfile    = qw(Fragment Position Reference Minor_allele Type);
-my @header_basefile   = qw(Fragment Position Reference);
-my @header_annotation = qw(
-  base raw_genome_dat
-  genomic_annotation_code
-  gene_annotation_code
-  alt_name transcript_id
-  org_codon aa snp_id maf);
 my ($chr_wanted, $pos_from, $pos_to, $db_location, $yaml_config, $verbose);
 my ($client, $db, $gan_db, $snp_db, $dbsnp_name, $dbgene_name, $help);
 my (%tracks);
@@ -84,6 +74,16 @@ if ($pos_from >= $pos_to)
   say "Error: 'from' ('$pos_from') is greater than 'to' ('$pos_to')\n";
   exit;
 }
+
+my $now_timestamp = sprintf("%d-%02d-%02d-%02d%02d%02d",
+    eval(localtime->year + 1900),
+    eval(localtime->mon + 1),
+    localtime->mday,
+    localtime->hour,
+    localtime->min,
+    localtime->sec
+);
+my $out_fh = IO::File->new( "fa.$now_timestamp.seq", 'w');
 
 # load configuration file
 my $config_data = LoadFile($yaml_config);
@@ -165,20 +165,20 @@ for (my $i = $pos_from ; $i < $pos_to ; $i++)
 }
 
 # print final sequence captured as a fa - for blat or something
-Print_fa(\@seq);
+Print_fa($out_fh, \@seq);
 
 #
 # subroutines
 #
 sub Print_fa
 {
-  state $check = compile( ArrayRef[Str] );
-  my ($seq_aref) = $check->( @_ );
+  state $check = compile( FileHandle, ArrayRef[Str] );
+  my ($fh, $seq_aref) = $check->( @_ );
 
   for (my $i = 0 ; $i < @$seq_aref; $i++)
   {
-    print "\n" if ($i % 80 == 0);
-    print $seq_aref->[$i];
+    print $fh "\n" if ($i % 80 == 0);
+    print $fh $seq_aref->[$i];
   }
 }
 

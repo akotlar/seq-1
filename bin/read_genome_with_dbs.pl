@@ -1,19 +1,18 @@
 #!/usr/bin/env perl
 
-use lib '/Users/twingo/software/Seq_copy/lib';
+use lib './lib';
 use Getopt::Long;
-use Modern::Perl qw( 2013 );
+use Modern::Perl qw/ 2013 /;
 use Path::Tiny;
 use Pod::Usage;
-use Type::Params qw( compile );
-use Types::Standard qw( :type );
+use Type::Params qw/ compile /;
+use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
 use Seq::Annotate;
 
 if ( $ENV{PERL_MONGODB_DEBUG} ) {
-  Log::Any::Adapter->set('Stdout');
+  Log::Any::Adapter->set('Stdoåut');
 }
-
 
 use DDP;
 
@@ -86,7 +85,7 @@ read_genome - reads binary genome
 
 =head1 SYNOPSIS
 
-read_genome --from --to --config --locaiton
+read_genome --chr <chr> --from <pos> --to <pos> --config <file> --locaiton <path>
 
 =head1 DESCRIPTION
 

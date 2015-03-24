@@ -48,6 +48,19 @@ sub get_write_bin_fh {
   binmode $fh;
   return $fh;
 }
+sub clean_line {
+    my ($self, $line) = @_;
+
+    if ($line =~ m/\A([\.\-\=\:\/\t\s\w\d]+)\Z/)
+    {
+        return $1;
+    }
+    else
+    {
+        warn "ignoring: $line";
+    }
+    return undef;
+}
 
 no Moose::Role;
 

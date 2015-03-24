@@ -39,9 +39,6 @@ my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp
   }
 }
 
-#
-# basic genome characteristics
-#
 has name => ( is => 'ro', isa => 'Str', required => 1, );
 has type => ( is => 'ro', isa => 'GenomeSizedTrackType', required => 1, );
 has genome_chrs => (
@@ -51,14 +48,7 @@ has genome_chrs => (
   required => 1,
   handles  => { all_genome_chrs => 'elements', },
 );
-
-#
-# directory and file information
-#
-has genome_index_dir => (
-  is  => 'ro',
-  isa => 'Str',
-);
+has genome_index_dir => ( is  => 'ro', isa => 'Str', );
 has local_dir => ( is => 'ro', isa => 'Str', );
 has local_files => (
   is      => 'ro',

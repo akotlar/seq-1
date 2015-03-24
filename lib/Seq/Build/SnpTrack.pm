@@ -11,6 +11,7 @@ use Moose;
 use Carp qw/ confess /;
 use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
+use MongoDB;
 use namespace::autoclean;
 
 use Seq::Build::GenomeSizedTrackStr;
@@ -43,24 +44,24 @@ has mongo_connection => (
   isa      => 'Seq::MongoManager',
   required => 1,
 );
-
-has _snp_db => (
-    is => 'ro',
-    isa => 'MongoDB::Collection',
-    builder => '_set_snp_db',
-    lazy => 1,
-);
-
-sub _set_snp_db {
-    my $self = shift;
-    return $self->mongo_connection->_mongo_collection( $self->name );
-}
+#
+# has _snp_db => (
+#   is      => 'ro',
+#   isa     => 'MongoDB::Collection',
+#   builder => '_set_snp_db',
+#   lazy    => 1,
+# );
+#
+# sub _set_snp_db {
+#   my $self = shift;
+#   return $self->mongo_connection->_mongo_collection( $self->name );
+# }
 
 sub build_snp_db {
   my $self = shift;
 
   # set mongo collection
-  $self->_snp_db->drop;
+  $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -116,8 +117,8 @@ sub build_snp_db {
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
-        $self->_snp_db->insert($site_href);
-        #$gene_collection->insert( $site_href );
+        $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+        #$self->_snp_db->insert($site_href);
 
         if ( $prn_counter == 0 ) {
           print {$out_fh} "[" . encode_json($site_href);

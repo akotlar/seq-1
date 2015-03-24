@@ -56,20 +56,10 @@ sub get_config_from_file {
 
   while (<$fh>) {
     chomp $_;
-    if ( $_ =~ /\A#/ ) {
-      say "ignoring comment in $file: $_";
-    }
-    elsif ( $_ =~ m/\A([\.\-\=\:\/\t\s\w\d]+)\Z/ ) {
-      $cleaned_txt .= $1 . "\n";
-    }
-    elsif ( $_ =~ m/\A\s*\Z/ ) {
-      say "skipping blank line in $file.";
-    }
-    else {
-      croak "Bad data in $file: $_\n";
-    }
-  }
+    my $clean_line = $class->clean_line( $_ );
+    $cleaned_txt .= $clean_line . "\n" if ($clean_line);
 
+  }
   return Load($cleaned_txt);
 }
 

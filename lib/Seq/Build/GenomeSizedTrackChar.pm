@@ -180,8 +180,8 @@ sub set_gene_regions {
         while ( ( $tx_stop - 1 ) <= $pos ) {
           $tx_start = $sorted_tx_starts[$i];
           $i++;
-          my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
-          $tx_stop = shift @tx_stops;
+          my @new_tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+          $tx_stop = shift @new_tx_stops;
         }
       }
     }

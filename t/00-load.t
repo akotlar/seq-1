@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::More;
 
-plan tests => 16;
+plan tests => 18;
 
 BEGIN {
   use_ok('Seq')                              || print "Bail out!\n";
@@ -26,4 +26,4 @@ BEGIN {
   use_ok('Seq::Build::SnpTrack')             || print "Bail out!\n";
   use_ok('Seq::Build')                       || print "Bail out!\n";
 }
-diag("Testing Seq $Seq::VERSION, Perl $], $^X");
+diag("Testing Seq, Perl $], $^X");

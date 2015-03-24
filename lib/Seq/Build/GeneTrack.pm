@@ -9,10 +9,10 @@ package Seq::Build::GeneTrack;
 use Moose 2;
 
 use Carp qw/ confess /;
-use namespace::autoclean;
 use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
 use MongoDB;
+use namespace::autoclean;
 
 use Seq::Gene;
 use Seq::Build::GenomeSizedTrackStr;
@@ -45,21 +45,22 @@ has mongo_connection => (
   required => 1,
 );
 
-has _gene_db => (
-    is => 'ro',
-    isa => 'MongoDB::Collection',
-    builder => '_set_gene_db',
-    lazy => 1,
-);
+# has _gene_db => (
+#     is => 'ro',
+#     isa => 'MongoDB::Collection',
+#     builder => '_set_gene_db',
+#     lazy => 1,
+# );
+#
+# sub _set_gene_db {
+#     my $self = shift;
+#     return $self->_mongo_connection->_mongo_collection($self->name );
+# }
 
-sub _set_gene_db {
-    my $self = shift;
-    return $self->mongo_connection->_mongo_collection($self->name );
-}
 sub build_gene_db {
   my $self = shift;
 
-  $self->_gene_db->drop;
+  $self->mongo_connection->_mongo_collection($self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -114,8 +115,8 @@ sub build_gene_db {
     my @flank_exon_sites = $gene->get_flanking_sites();
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
-      $self->_gene_db->insert($site_href);
-      # $gene_collection->insert( $site_href );
+
+      $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
 
       if ( $prn_count == 0 ) {
         print {$out_fh} "[" . encode_json($site_href);
@@ -132,8 +133,8 @@ sub build_gene_db {
     my @exon_sites = $gene->get_transcript_sites();
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
-      $self->_gene_db->insert($site_href);
-      # $gene_collection->insert( $site_href );
+
+      $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
 
       if ( $prn_count == 0 ) {
         print {$out_fh} "[" . encode_json($site_href);
@@ -145,8 +146,9 @@ sub build_gene_db {
       }
       $exon_sites{ $site->abs_pos }++;
     }
-    push @{ $transcript_start_sites{ $gene_data{transcript_start} } },
-      $gene_data{transcript_end};
+    # these sites need to be 0-indexed
+    push @{ $transcript_start_sites{ $gene->transcript_start } },
+      $gene->transcript_end;
   }
   print {$out_fh} "]";
   return ( \%exon_sites, \%flank_exon_sites, \%transcript_start_sites );
