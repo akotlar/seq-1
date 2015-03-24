@@ -99,6 +99,7 @@ my %out_dirs = (
                 gene      => "$genome/raw/gene",
                 phyloP    => "$genome/raw/phyloP",
                 phastCons => "$genome/raw/phastCons",
+                haploIns  => "$genome/raw/haploInsufficiency"
                );
 %out_dirs =
   map { $_ => File::Spec->rel2abs(File::Spec->canonpath($out_dirs{$_})) }
@@ -112,6 +113,7 @@ my %out_files = (
                  phyloP    => 'phyloP.txt.gz',
                  phastCons => 'phastCons.txt.gz',
                  snp       => 'snp141.txt.gz',
+                 haploIns  => 'haploIns.txt.gz',
                 );
 %out_files =
   map { $_ => File::Spec->catfile($out_dirs{$_}, $out_files{$_}) }
@@ -217,6 +219,17 @@ for my $chr (@chrs)
       if rand(1) > 0.5;
   }
 }
+
+# print fake haploinsufficiency data - about 70% of genes have scores
+# TODO: remove dependency on knowlege of geneSymbol key?
+{
+  for my $chr (sort keys %found_chr)
+  {
+      say {$out_fhs{haploIns}} join("\t", $found_chr{$chr}{geneSymbol}, rand(1) )
+        if rand(1) > 0.25;
+  } 
+}
+
 
 # print fake snp data - about 1% of sites will be snps
 {
