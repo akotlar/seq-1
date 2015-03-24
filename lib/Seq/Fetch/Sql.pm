@@ -4,7 +4,7 @@ use 5.10.0;
 use Carp;
 use Cwd;
 use DBI;
-use File::Path;
+use File::Path qw/ make_path /;
 use File::Spec;
 use Moose;
 use namespace::autoclean;
@@ -93,7 +93,7 @@ sub write_sql_data {
   my $symlink_target   = File::Spec->catfile( ( $cwd, $dir ), $self->local_file );
 
   # make target dir
-  File::Path->make_path($dir);
+  make_path($dir);
 
   my $out_fh = $self->get_write_fh($target_file);
 
