@@ -33,18 +33,19 @@ use warnings;
 use DBI;
 use Getopt::Long;
 use File::Spec;
-use File::Path qw( make_path );
+use File::Path qw/ make_path /;
 use IO::File;
-use IO::Compress::Gzip qw( gzip $GzipError );
-use IO::Uncompress::Gunzip qw( $GunzipError );
-use Scalar::Util qw( looks_like_number );
-use YAML qw(Dump Bless);
+use IO::Compress::Gzip qw/ gzip $GzipError /;
+use IO::Uncompress::Gunzip qw/ $GunzipError /;
+use List::Util qw/ shuffle /;
+use Scalar::Util qw/ looks_like_number /;
+use YAML qw/ Dump /;
 use DDP;
 
 #
 # variables
 #
-my ($verbose, $act, $out_ext);
+my ($verbose, $act, $out_ext, %snpfile_sites);
 my $dir            = 'sandbox';
 my $twobit2fa_prog = 'twoBitToFa';
 my $twobit_genome  = 'hg38.2bit';
@@ -62,6 +63,7 @@ die join("\n\t",
          "-g <genome, default = $genome>",
          "--twoBitToFa_prog <binary, default = $twobit2fa_prog>",
          "--twoBit_genome <2bit file, default = $twobit_genome",
+         "--out <out extension>"
         )
   unless GetOptions(
                     'v|verbose'         => \$verbose,
@@ -93,6 +95,7 @@ unless (File::Spec->file_name_is_absolute($twobit_genome))
 # make dirs
 my %out_dirs = (
                 bed       => "$genome/raw",
+                snpfile   => "$genome/raw",
                 raw       => "$genome/raw",
                 seq       => "$genome/raw/seq",
                 snp       => "$genome/raw/snp",
@@ -108,6 +111,7 @@ map { make_path($out_dirs{$_}) } keys %out_dirs;
 # make files
 my %out_files = (
                  bed       => "$out_ext.bed.gz",
+                 snpfile   => "$out_ext.snp.gz",
                  gene      => 'knownGene.txt.gz',
                  phyloP    => 'phyloP.txt.gz',
                  phastCons => 'phastCons.txt.gz',
@@ -258,9 +262,64 @@ for my $chr (@chrs)
           join(",", @allele_freq_counts),
           join(",", $ref_base, $minor_allele),
           join(",", @allele_freq));
+        # choose site (with 'known' snp) for snpfile
+        $snpfile_sites{"$chr:$i"} = join(":", $ref_base, $minor_allele) if (rand(1) > 0.50);
+      } # choose site for snpfile
+      elsif (rand(1) > 0.995) {
+        my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
+        my $minor_allele;
+        do {
+          $minor_allele = uc $alleles[ int(rand(3))  ];
+        } while ( $minor_allele eq $ref_base );
+        $snpfile_sites{"$chr:$i"} = join(":", $ref_base, $minor_allele);
       }
     }
   }
+}
+
+Print_snpfile( $out_fhs{snpfile}, \%snpfile_sites, '10');
+
+# the following just prints out ids who are homozygous for the minor allele;
+# limitations:
+#   - if the y chromsome is included, of course, these ids are men
+#   - every one who is non-referance is a homozygote carrier
+sub Print_snpfile {
+    my ($fh, $snpfile_href, $ids) = @_;
+
+    my @ids = map { 'id_' . $_ } (0..$ids);
+    my @header = qw/ Fragment Position Reference Type Alleles Allele_Counts /;
+
+    # print header
+    print {$fh} join("\t", join("\t", @header), join("\t\t", @ids)) . "\n";
+
+    for my $site (sort keys %$snpfile_href) {
+        my ($chr, $pos) = split(/:/, $site);
+        my ($ref_allele, $minor_allele) = split(/:/, $snpfile_href->{$site});
+        my $carriers = 0;
+        while ($carriers == 0) {
+            $carriers = int( rand( $#ids ) );
+        }
+        my $minor_allele_counts = 2 * $carriers;
+
+        # print out preamble
+        print {$fh} join("\t", $chr, $pos, $ref_allele, 'SNP', $minor_allele, $minor_allele_counts) . "\t";
+
+        # determine who should be homozygote carrier
+        my @shuffled_ids = shuffle @ids;
+        my @carrier_ids  = @shuffled_ids[0..$carriers];
+        my @alleles = ( );
+        for my $id (@ids) {
+            if (grep {/\A$id\Z/} @carrier_ids) {
+                push @alleles, join("\t", $minor_allele, '1');
+            }
+            else {
+                push @alleles, join("\t", $ref_allele, '1');
+            }
+        }
+
+        # print out carrier stuff
+        print {$fh} join("\t", @alleles) . "\n";
+    }
 }
 
 # returns scalar reference to sequence for region
@@ -279,8 +338,7 @@ sub Get_gz_seq
   system $cmd;
 
   # check we got sequence
-  die "error grabbing sequence with cmd:\n\t$cmd\n"
-    unless (-s $fa_file);
+  die "error grabbing sequence with cmd:\n\t$cmd\n" unless (-s $fa_file);
 
   # get length of sequence
   #   and gzip file
