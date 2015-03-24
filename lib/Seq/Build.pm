@@ -10,6 +10,7 @@ package Seq::Build;
 use Moose 2;
 
 use Carp qw/ croak /;
+use MongoDB;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
@@ -17,63 +18,35 @@ use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
 use Seq::Build::GenomeSizedTrackChar;
 use Seq::Build::GenomeSizedTrackStr;
-use Seq::Config::SparseTrack;
 use Seq::MongoManager;
 
-with 'Seq::Role::ConfigFromFile', 'Seq::Role::IO';
+extends 'Seq::Assembly';
+with 'Seq::Role::IO';
 
-has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_chrs        => (
-  is       => 'ro',
-  isa      => 'ArrayRef[Str]',
-  traits   => ['Array'],
-  required => 1,
-  handles  => { all_genome_chrs => 'elements', },
-);
-
-# for now, `genome_raw_dir` is really not needed since the other tracks
-#   specify a directory and file to use for each feature
-has genome_raw_dir   => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_str_track => (
-  is       => 'ro',
-  isa      => 'Seq::Build::GenomeSizedTrackStr',
-  required => 1,
-  handles  => [ 'get_abs_pos', 'get_base', 'build_genome', 'genome_length', ],
-);
-has genome_sized_tracks => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::Config::GenomeSizedTrack]',
-  traits  => ['Array'],
-  handles => {
-    all_genome_sized_tracks => 'elements',
-    add_genome_sized_track  => 'push',
-  },
+  isa     => 'Seq::Build::GenomeSizedTrackStr',
+  handles => [ 'get_abs_pos', 'get_base', 'build_genome', 'genome_length', ],
+  lazy    => 1,
+  builder => '_build_genome_str_track',
 );
-has snp_tracks => (
-  is      => 'ro',
-  isa     => 'ArrayRef[Seq::Config::SparseTrack]',
-  traits  => ['Array'],
-  handles => {
-    all_snp_tracks => 'elements',
-    add_snp_track  => 'push',
-  },
-);
-has gene_tracks => (
-  is      => 'ro',
-  isa     => 'ArrayRef[Seq::Config::SparseTrack]',
-  traits  => ['Array'],
-  handles => {
-    all_gene_tracks => 'elements',
-    add_gene_track  => 'push',
-  },
-);
-has host => (
-  is      => 'ro',
-  isa     => 'Str',
-  default => '127.0.0.1',
-);
+
+sub _build_genome_str_track {
+  my $self = shift;
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'genome' ) {
+      return Seq::Build::GenomeSizedTrackStr->new(
+        {
+          name        => $gst->name,
+          type        => $gst->type,
+          local_dir   => $gst->local_dir,
+          local_files => $gst->local_files,
+          genome_chrs => $gst->genome_chrs,
+        }
+      );
+    }
+  }
+}
 
 sub build_index {
   my $self = shift;
@@ -96,7 +69,10 @@ sub build_index {
       $record->{mongo_connection} = Seq::MongoManager->new(
         {
           default_database => $self->genome_name,
-          client_options   => { host => "mongodb://" . $self->host }
+          client_options   => {
+            host => $self->mongo_addr,
+            port => $self->port,
+          },
         }
       );
       my $snp_db     = Seq::Build::SnpTrack->new($record);
@@ -116,7 +92,10 @@ sub build_index {
     $record->{mongo_connection} = Seq::MongoManager->new(
       {
         default_database => $self->genome_name,
-        client_options   => { host => "mongodb://" . $self->host }
+        client_options   => {
+          host => $self->mongo_addr,
+          port => $self->port,
+        },
       }
     );
     my $gene_db = Seq::Build::GeneTrack->new($record);
@@ -160,6 +139,7 @@ sub build_index {
   # write conservation scores
   if ( $self->genome_sized_tracks ) {
     foreach my $gst ( $self->all_genome_sized_tracks ) {
+      next unless $gst->type eq 'score';
       my $score_track = Seq::Build::GenomeSizedTrackChar->new(
         {
           genome_length    => $self->genome_length,
@@ -176,53 +156,6 @@ sub build_index {
       $score_track->write_char_seq;
       $score_track->clear_char_seq;
     }
-  }
-}
-
-sub BUILDARGS {
-  my $class = shift;
-  my $href  = $_[0];
-  if ( scalar @_ > 1 || reftype($href) ne "HASH" ) {
-    confess "Error: $class expects hash reference.\n";
-  }
-  else {
-    my %hash;
-    for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
-      $sparse_track->{genome_name} = $href->{genome_name};
-      if ( $sparse_track->{type} eq "gene" ) {
-        push @{ $hash{gene_tracks} }, Seq::Config::SparseTrack->new($sparse_track);
-      }
-      elsif ( $sparse_track->{type} eq "snp" ) {
-        push @{ $hash{snp_tracks} }, Seq::Config::SparseTrack->new($sparse_track);
-      }
-      else {
-        croak "unrecognized sparse track type $sparse_track->{type}\n";
-      }
-    }
-    for my $genome_str_track ( @{ $href->{genome_sized_tracks} } ) {
-      $genome_str_track->{genome_chrs}      = $href->{genome_chrs};
-      $genome_str_track->{genome_index_dir} = $href->{genome_index_dir};
-
-      if ( $genome_str_track->{type} eq "genome" ) {
-        $hash{genome_str_track} = Seq::Build::GenomeSizedTrackStr->new($genome_str_track);
-      }
-      elsif ( $genome_str_track->{type} eq "score" ) {
-        push @{ $hash{genome_sized_tracks} },
-          Seq::Config::GenomeSizedTrack->new($genome_str_track);
-
-      }
-      else {
-        croak "unrecognized genome track type $genome_str_track->{type}\n";
-      }
-    }
-    for my $attrib (
-      qw( genome_name genome_description genome_chrs
-      genome_raw_dir genome_index_dir )
-      )
-    {
-      $hash{$attrib} //= $href->{$attrib} || "";
-    }
-    return $class->SUPER::BUILDARGS( \%hash );
   }
 }
 

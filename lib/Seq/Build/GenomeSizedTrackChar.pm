@@ -15,6 +15,8 @@ use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use YAML::XS qw/ Dump /;
 
+use DDP;
+
 extends 'Seq::GenomeSizedTrackChar';
 with 'Seq::Role::IO', 'Seq::Role::Genome';
 
@@ -92,7 +94,6 @@ sub build_score_idx {
   my $local_files_aref = $self->local_files;
   my $local_dir        = File::Spec->canonpath( $self->local_dir );
 
-  # there's only 1 score file for conservation stuff at the moment
   for my $i ( 0 .. $#{$local_files_aref} ) {
     my $file       = $local_files_aref->[$i];
     my $local_file = File::Spec->catfile( $local_dir, $file );

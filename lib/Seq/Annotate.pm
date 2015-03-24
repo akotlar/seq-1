@@ -10,14 +10,11 @@ use Moose 2;
 
 use Carp qw/ croak /;
 use File::Spec;
+use MongoDB;
 use namespace::autoclean;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
-use Try::Tiny::Retry 0.002 qw/:all/;
 use YAML::XS qw/ LoadFile /;
-use MongoDB;
-
-use DDP;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
@@ -55,7 +52,10 @@ sub _build_mongo_connection {
   return Seq::MongoManager->new(
     {
       default_database => $self->genome_name,
-      client_options   => { host => "mongodb://" . $self->host },
+      client_options   => {
+        host => $self->mongo_addr,
+        port => $self->port,
+      },
     }
   );
 }
@@ -164,9 +164,9 @@ sub annotate_site {
     }
   }
 
-  $record{conser_scores} = \%conserv_scores if %conserv_scores;
-  $record{gan_data}      = \@gene_data      if @gene_data;
-  $record{snp_data}      = \@snp_data       if @snp_data;
+  $record{conserv_scores} = \%conserv_scores if %conserv_scores;
+  $record{gan_data}       = \@gene_data      if @gene_data;
+  $record{snp_data}       = \@snp_data       if @snp_data;
 
   return \%record;
 }

@@ -38,9 +38,10 @@ genome_chrs:
   - chrM
   - chrX
   - chrY
-genome_raw_dir: ./hg38/raw
+genome_db_dir: sandbox
 genome_index_dir: ./hg38/index
 host: 127.0.0.1
+port: 27107
 
 # sparse tracks
 sparse_tracks:
