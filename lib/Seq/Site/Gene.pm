@@ -2,7 +2,7 @@ use 5.10.0;
 use strict;
 use warnings;
 
-package Seq::GeneSite;
+package Seq::Site::Gene;
 # ABSTRACT: Class for seralizing gene sites
 # VERSION
 
@@ -10,6 +10,8 @@ use Moose 2;
 use Moose::Util::TypeConstraints;
 
 use namespace::autoclean;
+
+extends 'Seq::Site';
 
 #<<< No perltidy
 my %Eu_codon_2_aa = (
@@ -30,99 +32,47 @@ my %Eu_codon_2_aa = (
     "TGA" => "*", "TGC" => "C", "TGG" => "W", "TGT" => "C",
     "TTA" => "L", "TTC" => "F", "TTG" => "L", "TTT" => "F"
 );
-# IPUAC ambiguity simplify representing genotypes
-my %IUPAC_codes = (
-    K => [ qw( G T ) ],
-    M => [ qw( A C ) ],
-    R => [ qw( A G ) ],
-    S => [ qw( C G ) ],
-    W => [ qw( A T ) ],
-    Y => [ qw( C T ) ],
-    A => [ qw( A A ) ],
-    C => [ qw( C C ) ],
-    G => [ qw( G G ) ],
-    T => [ qw( T T ) ],
-# these indel codes are not technically IUPAC but part of the snpfile spec
-    D => [ qw( '-' ) ],
-    E => [ qw( '-' ) ],
-    H => [ qw( '+' ) ],
-);
-enum GeneAnnotationType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
+
+enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                              'Splice Donor', 'Splice Acceptor' ];
-enum StrandType         => [ '+', '-' ];
+enum StrandType   => [ '+', '-' ];
 #>>>
 
-has abs_pos => (
-  is        => 'rw',
-  isa       => 'Int',
-  required  => 1,
-  clearer   => 'clear_abs_pos',
-  predicate => 'has_abs_pos',
-);
-
-has base => (
-  is        => 'rw',
-  isa       => 'Str',
-  required  => 1,
-  clearer   => 'clear_base',
-  predicate => 'has_base',
-);
-
 has transcript_id => (
-  is        => 'rw',
+  is        => 'ro',
   isa       => 'Str',
   required  => 1,
-  clearer   => 'clear_name',
   predicate => 'has_name',
 );
 
-has annotation_type => (
-  is        => 'rw',
-  isa       => 'GeneAnnotationType',
+has site_type => (
+  is        => 'ro',
+  isa       => 'GeneSiteType',
   required  => 1,
-  clearer   => 'clear_annotation_type',
-  predicate => 'has_annotation_type',
+  predicate => 'has_site_type',
 );
 
 has strand => (
-  is        => 'rw',
+  is        => 'ro',
   isa       => 'StrandType',
   required  => 1,
-  clearer   => 'clear_strand',
   predicate => 'has_strand',
-);
-
-# codon at site
-has codon_seq => (
-  is        => 'rw',
-  isa       => 'Maybe[Str]',
-  default   => sub { undef },
-  clearer   => 'clear_codon',
-  predicate => 'has_codon',
 );
 
 # bp position within the codon
 has codon_number => (
-  is        => 'rw',
+  is        => 'ro',
   isa       => 'Maybe[Int]',
   default   => sub { undef },
-  clearer   => 'clear_codon_site_pos',
   predicate => 'has_codon_site_pos',
 );
 
 # amino acid residue # from start of transcript
 has codon_position => (
-  is        => 'rw',
+  is        => 'ro',
   isa       => 'Maybe[Int]',
   default   => sub { undef },
-  clearer   => 'clear_aa_residue_pos',
   predicate => 'has_aa_residue_pos',
-);
-
-has aa_residue => (
-  is      => 'ro',
-  lazy    => 1,
-  builder => '_set_aa_residue',
 );
 
 has alt_names => (
@@ -133,32 +83,53 @@ has alt_names => (
 );
 
 has error_code => (
-  is        => 'rw',
+  is        => 'ro',
   isa       => 'ArrayRef',
-  required  => 1,
-  clearer   => 'clear_error_code',
   predicate => 'has_error_code',
   traits    => ['Array'],
   handles   => { no_error_code => 'is_empty', },
 );
 
-sub _set_aa_residue {
+# the following are attributs with respect to the reference genome
+
+# codon at site
+has ref_codon_seq => (
+  is        => 'ro',
+  isa       => 'Maybe[Str]',
+  default   => sub { undef },
+  predicate => 'has_codon',
+);
+
+has ref_aa_residue => (
+  is      => 'ro',
+  isa     => 'Maybe[Str]',
+  lazy    => 1,
+  builder => '_set_ref_aa_residue',
+);
+
+sub codon_2_aa {
+  my ($self, $codon) = @_;
+  return $Eu_codon_2_aa{ $codon };
+}
+
+sub _set_ref_aa_residue {
   my $self = shift;
-  if ( $self->codon_seq ) {
-    return $Eu_codon_2_aa{ $self->codon_seq };
+  if ( $self->ref_codon_seq ) {
+    return $self->codon_2_aa( $self->ref_codon_seq );
   }
   else {
     return;
   }
 }
 
+# this function is really for storing in mongo db collection
 sub as_href {
   my $self = shift;
   my %hash;
 
   for my $attr (
-    qw( abs_pos base transcript_id annotation_type strand codon_seq
-    codon_number codon_position aa_residue error_code alt_names )
+    qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
+    codon_number codon_position ref_aa_residue error_code alt_names )
     )
   {
     my $empty_attr = "no_" . $attr;
@@ -172,6 +143,11 @@ sub as_href {
     }
   }
   return \%hash;
+}
+
+sub seralizable_attributes {
+  return qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
+  codon_number codon_position ref_aa_residue error_code alt_names );
 }
 
 __PACKAGE__->meta->make_immutable;

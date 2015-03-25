@@ -11,7 +11,7 @@ use Moose 2;
 use Carp qw/ confess /;
 use namespace::autoclean;
 
-use Seq::GeneSite;
+use Seq::Site::Gene;
 
 # has features of a gene and will run through the sequence
 # build features will be implmented in Seq::Build::Gene that can build GeneSite
@@ -282,7 +282,7 @@ sub get_transcript_sites {
     );
     $site_annotation = $self->get_str_transcript_annotation( $i, 1 );
     $gene_site{abs_pos}       = $self->get_transcript_abs_position($i);
-    $gene_site{base}          = $self->get_base_transcript_seq( $i, 1 );
+    $gene_site{ref_base}          = $self->get_base_transcript_seq( $i, 1 );
     $gene_site{error_code}    = $self->transcript_error;
     $gene_site{alt_names}     = $self->alt_names;
     $gene_site{transcript_id} = $self->transcript_id;
@@ -290,33 +290,33 @@ sub get_transcript_sites {
 
     # is site coding
     if ( $site_annotation =~ m/[ACGT]/ ) {
-      $gene_site{annotation_type} = 'Coding';
-      $gene_site{codon_number}    = int( ( $coding_base_count / 3 ) ) + 1;
-      $gene_site{codon_position}  = $coding_base_count % 3;
+      $gene_site{site_type} = 'Coding';
+      $gene_site{codon_number}    = 1 + int( ( $coding_base_count / 3 ) );
+      $gene_site{codon_position}  = 1 + $coding_base_count % 3;
       my $codon_start = $i - $gene_site{codon_position};
       my $codon_end   = $codon_start + 2;
 
       #say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
       for ( my $j = $codon_start; $j <= $codon_end; $j++ ) {
-        $gene_site{codon_seq} .= $self->get_base_transcript_seq( $j, 1 );
+        $gene_site{ref_codon_seq} .= $self->get_base_transcript_seq( $j, 1 );
       }
       $coding_base_count++;
     }
     elsif ( $site_annotation eq '5' ) {
-      $gene_site{annotation_type} = '5UTR';
+      $gene_site{site_type} = '5UTR';
     }
     elsif ( $site_annotation eq '3' ) {
-      $gene_site{annotation_type} = '3UTR';
+      $gene_site{site_type} = '3UTR';
     }
     elsif ( $site_annotation eq '0' ) {
-      $gene_site{annotation_type} = 'non-coding RNA';
+      $gene_site{site_type} = 'non-coding RNA';
     }
     else {
       confess "unknown site code $site_annotation";
     }
-    #p %gene_site if $gene_site{annotation_type} eq 'Coding' and $coding_base_count < 9;
+    #p %gene_site if $gene_site{site_type} eq 'Coding' and $coding_base_count < 9;
     #exit if $coding_base_count > 9;
-    push @gene_sites, Seq::GeneSite->new( \%gene_site );
+    push @gene_sites, Seq::Site::Gene->new( \%gene_site );
   }
   return @gene_sites;
 }
@@ -359,13 +359,13 @@ sub get_flanking_sites {
         my %gene_site;
         $gene_site{abs_pos}   = $exon_starts[$i] - $n;
         $gene_site{alt_names} = $self->alt_names;
-        $gene_site{annotation_type} =
+        $gene_site{site_type} =
           ( $self->strand eq "+" ) ? 'Splice Acceptor' : 'Splice Donor';
-        $gene_site{base}          = $self->get_base( $gene_site{abs_pos}, 1 );
+        $gene_site{ref_base}          = $self->get_base( $gene_site{abs_pos}, 1 );
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
-        push @gene_sites, Seq::GeneSite->new( \%gene_site );
+        push @gene_sites, Seq::Site::Gene->new( \%gene_site );
       }
       # flanking sites at end of exon
       if ( $exon_ends[$i] + $n - 1 > $coding_start
@@ -374,13 +374,13 @@ sub get_flanking_sites {
         my %gene_site;
         $gene_site{abs_pos}   = $exon_ends[$i] + $n - 1;
         $gene_site{alt_names} = $self->alt_names;
-        $gene_site{annotation_type} =
+        $gene_site{site_type} =
           ( $self->strand eq "+" ) ? 'Splice Donor' : 'Splice Acceptor';
-        $gene_site{base}          = $self->get_base( $gene_site{abs_pos}, 1 );
+        $gene_site{ref_base}          = $self->get_base( $gene_site{abs_pos}, 1 );
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
-        push @gene_sites, Seq::GeneSite->new( \%gene_site );
+        push @gene_sites, Seq::Site::Gene->new( \%gene_site );
       }
     }
   }

@@ -2,26 +2,19 @@ use 5.10.0;
 use strict;
 use warnings;
 
-package Seq::SnpSite;
-# ABSTRACT: Builds a snp track using dbSnp data, derived from UCSC
+package Seq::Site::Snp;
+# ABSTRACT: A class for seralizing Snp sites
 # VERSION
 
 use Moose 2;
 
 use namespace::autoclean;
 
-has abs_pos => (
-  is        => 'ro',
-  isa       => 'Int',
-  required  => 1,
-  clearer   => 'clear_abs_pos',
-  predicate => 'has_abs_pos',
-);
+extends 'Seq::Site';
 
 has snp_id => (
   is        => 'ro',
   isa       => 'Str',
-  required  => 1,
   clearer   => 'clear_snp_id',
   predicate => 'has_snp_id',
 );
@@ -40,11 +33,12 @@ has feature => (
   },
 );
 
+# this function is really for storing in mongo db collection
 sub as_href {
   my $self = shift;
   my %hash;
 
-  for my $attr (qw( abs_pos snp_id feature )) {
+  for my $attr (qw( abs_pos ref_base snp_id feature )) {
     if ( $attr eq "feature" ) {
       $hash{$attr} = $self->$attr unless $self->no_feature;
     }
@@ -53,6 +47,10 @@ sub as_href {
     }
   }
   return \%hash;
+}
+
+sub seralizable_attributes {
+  return qw( snp_id feature );
 }
 
 __PACKAGE__->meta->make_immutable;

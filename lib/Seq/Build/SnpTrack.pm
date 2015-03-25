@@ -15,7 +15,7 @@ use MongoDB;
 use namespace::autoclean;
 
 use Seq::Build::GenomeSizedTrackStr;
-use Seq::SnpSite;
+use Seq::Site::Snp;
 
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
@@ -88,18 +88,16 @@ sub build_snp_db {
         my $chr     = $data{chrom};
         my $snp_id  = $data{name};
         my $abs_pos = $self->get_abs_pos( $chr, $pos );
-        my $record  = {
+        my $base = $self->get_base( $abs_pos, 1 );
+        my $snp_site = Seq::Site::Snp->new( {
           abs_pos => $abs_pos,
           snp_id  => $snp_id,
-        };
-        my $snp_site = Seq::SnpSite->new($record);
-        my $base = $self->get_base( $abs_pos, 1 );
-        $snp_site->set_feature( base => $base );
+          ref_base => $base,
+        });
 
         if ($min_allele_freq) {
           $snp_site->set_feature( maf => $min_allele_freq, alleles => join( ",", @alleles ) );
         }
-
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
