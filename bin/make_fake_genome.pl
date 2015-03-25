@@ -226,7 +226,7 @@ for my $chr (@chrs)
 {
   my @snp_fields = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs );
   say { $out_fhs{snp} } join("\t", @snp_fields);
-  my @alleles = qw( A C G T);
+  my @alleles = qw( A C G T );
   my %seen_snp_name;
   for my $chr (@chrs)
   {
@@ -251,7 +251,7 @@ for my $chr (@chrs)
         } while ( exists $seen_snp_name{$name} );
         $seen_snp_name{$name}++;
         do {
-          $minor_allele = uc $alleles[ int(rand(3))  ];
+          $minor_allele = uc $alleles[ int( rand ( $#alleles ) ) ];
         } while ( $minor_allele eq $ref_base );
 
         say { $out_fhs{snp} } join("\t",
@@ -281,7 +281,7 @@ Print_snpfile( $out_fhs{snpfile}, \%snpfile_sites, '10');
 
 # the following just prints out ids who are homozygous for the minor allele;
 # limitations:
-#   - if the y chromsome is included, of course, these ids are men
+#   - if the y chromsome is included having a polymorphic y chr will make them men
 #   - every one who is non-referance is a homozygote carrier
 sub Print_snpfile {
     my ($fh, $snpfile_href, $ids) = @_;
@@ -290,7 +290,7 @@ sub Print_snpfile {
     my @header = qw/ Fragment Position Reference Type Alleles Allele_Counts /;
 
     # print header
-    print {$fh} join("\t", join("\t", @header), join("\t\t", @ids)) . "\n";
+    say {$fh} join("\t", join("\t", @header), join("\t\t", @ids));
 
     for my $site (sort keys %$snpfile_href) {
         my ($chr, $pos) = split(/:/, $site);
@@ -302,7 +302,7 @@ sub Print_snpfile {
         my $minor_allele_counts = 2 * $carriers;
 
         # print out preamble
-        print {$fh} join("\t", $chr, $pos, $ref_allele, 'SNP', $minor_allele, $minor_allele_counts) . "\t";
+        my $prnt_str = join("\t", $chr, $pos, $ref_allele, 'SNP', $minor_allele, $minor_allele_counts) . "\t";
 
         # determine who should be homozygote carrier
         my @shuffled_ids = shuffle @ids;
@@ -318,7 +318,8 @@ sub Print_snpfile {
         }
 
         # print out carrier stuff
-        print {$fh} join("\t", @alleles) . "\n";
+        $prnt_str .= join("\t", @alleles);
+        say {$fh} $prnt_str;
     }
 }
 
