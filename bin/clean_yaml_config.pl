@@ -8,43 +8,37 @@ use Scalar::Util qw( reftype );
 use DDP;
 
 # variables
-my ($config_file, $help, $print_clean_file, $untaint);
-my $now_timestamp = sprintf("%d-%02d-%02d",
-                            eval(localtime->year() + 1900),
-                            eval(localtime->mon() + 1),
-                            localtime->mday());
+my ( $config_file, $help, $print_clean_file, $untaint );
+my $now_timestamp = sprintf( "%d-%02d-%02d",
+  ( localtime->year() + 1900 ),
+  ( localtime->mon() + 1 ),
+  localtime->mday() );
 
 # process command line arguments
 GetOptions(
-           'f|file=s'  => \$config_file,
-           'p|print'   => \$print_clean_file,
-           'u|untaint' => \$untaint,
-           'h|help'    => \$help
-          );
+  'f|file=s'  => \$config_file,
+  'p|print'   => \$print_clean_file,
+  'u|untaint' => \$untaint,
+  'h|help'    => \$help
+);
 pod2usage(1) if $help;
 pod2usage(2) unless $config_file;
 
-if ($untaint)
-{
+if ($untaint) {
   open my $in_fh, '<', $config_file;
   my $cleaned_txt;
-  while (<$in_fh>)
-  {
+  while (<$in_fh>) {
     chomp $_;
-    if ($_ =~ /\A#/)
-    {
+    if ( $_ =~ /\A#/ ) {
       say "ignoring comment in $config_file: $_";
     }
-    elsif ($_ =~ m/\A([\-\=\:\/\t\s\w.]+)\Z/)
-    {
+    elsif ( $_ =~ m/\A([\-\=\:\/\t\s\w.]+)\Z/ ) {
       $cleaned_txt .= $1 . "\n";
     }
-    elsif ($_ =~ m/\A\s*\Z/)
-    {
+    elsif ( $_ =~ m/\A\s*\Z/ ) {
       say "skipping blank line in $config_file: $_";
     }
-    else
-    {
+    else {
       die "Bad data in $config_file: $_\n";
     }
   }
@@ -53,33 +47,27 @@ if ($untaint)
   print Dump $opt_href;
   p $opt_href;
 }
-else
-{
+else {
   # load the yaml file
   my $config_href = LoadFile($config_file)
     || die "cannot load $config_file: $!\n";
   p $config_href;
 
-  for my $i (keys %$config_href)
-  {
+  for my $i ( keys %$config_href ) {
     my $type //= reftype $config_href->{$i};
-    if ($type)
-    {
-      if ($type eq "ARRAY")
-      {
-        say join(" ", $i, scalar @{$config_href->{$i}});
-        print Dump($config_href->{$i});
+    if ($type) {
+      if ( $type eq "ARRAY" ) {
+        say join( " ", $i, scalar @{ $config_href->{$i} } );
+        print Dump( $config_href->{$i} );
       }
     }
-    else
-    {
+    else {
       say $i;
     }
   }
 
   # print cleaned yaml configuration file if there were no errors
-  unless ($print_clean_file)
-  {
+  unless ($print_clean_file) {
     my $out_file = "clean.$now_timestamp." . $config_file;
     open my $out_fh, ">", $out_file;
     print $out_fh Dump($config_href);

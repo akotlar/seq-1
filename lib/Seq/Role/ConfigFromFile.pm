@@ -16,14 +16,14 @@ use Types::Standard qw/ :types /;
 use Scalar::Util qw/ reftype /;
 use YAML::XS qw/ Load /;
 
-with 'Seq::Role::IO';
+with 'Seq::Role::IO', 'MooseX::Getopt';
 
 has configfile => (
   is        => 'ro',
   isa       => Path | Undef,
   coerce    => 1,
   predicate => 'has_configfile',
-  eval "require MooseX::Getopt; 1" ? ( traits => ['Getopt'] ) : (),
+  traits => ['Getopt'],
 );
 
 sub new_with_config {

@@ -30,7 +30,23 @@ my %Eu_codon_2_aa = (
     "TGA" => "*", "TGC" => "C", "TGG" => "W", "TGT" => "C",
     "TTA" => "L", "TTC" => "F", "TTG" => "L", "TTT" => "F"
 );
-
+# IPUAC ambiguity simplify representing genotypes
+my %IUPAC_codes = (
+    K => [ qw( G T ) ],
+    M => [ qw( A C ) ],
+    R => [ qw( A G ) ],
+    S => [ qw( C G ) ],
+    W => [ qw( A T ) ],
+    Y => [ qw( C T ) ],
+    A => [ qw( A A ) ],
+    C => [ qw( C C ) ],
+    G => [ qw( G G ) ],
+    T => [ qw( T T ) ],
+# these indel codes are not technically IUPAC but part of the snpfile spec
+    D => [ qw( '-' ) ],
+    E => [ qw( '-' ) ],
+    H => [ qw( '+' ) ],
+);
 enum GeneAnnotationType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                              'Splice Donor', 'Splice Acceptor' ];
 enum StrandType         => [ '+', '-' ];
@@ -132,7 +148,7 @@ sub _set_aa_residue {
     return $Eu_codon_2_aa{ $self->codon_seq };
   }
   else {
-    return undef;
+    return;
   }
 }
 

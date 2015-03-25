@@ -45,35 +45,34 @@ use DDP;
 #
 # variables
 #
-my ($verbose, $act, $out_ext, %snpfile_sites);
+my ( $verbose, $act, $out_ext, %snpfile_sites );
 my $dir            = 'sandbox';
 my $twobit2fa_prog = 'twoBitToFa';
 my $twobit_genome  = 'hg38.2bit';
 my $genome         = 'hg38';
-my $dsn = "DBI:mysql:host=genome-mysql.cse.ucsc.edu;database=$genome";
-my $dbh = DBI->connect($dsn, "genome", "")
+my $dsn            = "DBI:mysql:host=genome-mysql.cse.ucsc.edu;database=$genome";
+my $dbh            = DBI->connect( $dsn, "genome", "" )
   or die "cannot connect to $dsn";
 
 #
 # get options
 #
-die join("\n\t",
-         "Usage: $0 [-v] [-a]",
-         "-d <dir to create data, default = $dir>",
-         "-g <genome, default = $genome>",
-         "--twoBitToFa_prog <binary, default = $twobit2fa_prog>",
-         "--twoBit_genome <2bit file, default = $twobit_genome",
-         "--out <out extension>"
-        )
+die join( "\n\t",
+  "Usage: $0 [-v] [-a]",
+  "-d <dir to create data, default = $dir>",
+  "-g <genome, default = $genome>",
+  "--twoBitToFa_prog <binary, default = $twobit2fa_prog>",
+  "--twoBit_genome <2bit file, default = $twobit_genome",
+  "--out <out extension>" )
   unless GetOptions(
-                    'v|verbose'         => \$verbose,
-                    'a|act'             => \$act,
-                    'g|genome=s'        => \$genome,
-                    'o|out=s'           => \$out_ext,
-                    'twoBitToFa_prog=s' => \$twobit2fa_prog,
-                    'twoBit_genome=s'   => \$twobit_genome,
-                    'd|dir=s'           => \$dir
-                   )
+  'v|verbose'         => \$verbose,
+  'a|act'             => \$act,
+  'g|genome=s'        => \$genome,
+  'o|out=s'           => \$out_ext,
+  'twoBitToFa_prog=s' => \$twobit2fa_prog,
+  'twoBit_genome=s'   => \$twobit_genome,
+  'd|dir=s'           => \$dir
+  )
   and $out_ext
   and $genome
   and $twobit2fa_prog
@@ -86,58 +85,56 @@ chdir $dir or die "cannot change into $dir";
 
 # get abs path to 2bit file
 #   going to assume twoBitToFa is in path
-unless (File::Spec->file_name_is_absolute($twobit_genome))
-{
-  my ($vol, $dir, $file) = File::Spec->splitpath($twobit_genome);
-  $twobit_genome = File::Spec->rel2abs($dir, $file);
+unless ( File::Spec->file_name_is_absolute($twobit_genome) ) {
+  my ( $vol, $dir, $file ) = File::Spec->splitpath($twobit_genome);
+  $twobit_genome = File::Spec->rel2abs( $dir, $file );
 }
 
 # make dirs
 my %out_dirs = (
-                bed       => "$genome/raw",
-                snpfile   => "$genome/raw",
-                raw       => "$genome/raw",
-                seq       => "$genome/raw/seq",
-                snp       => "$genome/raw/snp",
-                gene      => "$genome/raw/gene",
-                phyloP    => "$genome/raw/phyloP",
-                phastCons => "$genome/raw/phastCons",
-               );
+  bed       => "$genome/raw",
+  snpfile   => "$genome/raw",
+  raw       => "$genome/raw",
+  seq       => "$genome/raw/seq",
+  snp       => "$genome/raw/snp",
+  gene      => "$genome/raw/gene",
+  phyloP    => "$genome/raw/phyloP",
+  phastCons => "$genome/raw/phastCons",
+);
 %out_dirs =
-  map { $_ => File::Spec->rel2abs(File::Spec->canonpath($out_dirs{$_})) }
+  map { $_ => File::Spec->rel2abs( File::Spec->canonpath( $out_dirs{$_} ) ) }
   keys %out_dirs;
-map { make_path($out_dirs{$_}) } keys %out_dirs;
+map { make_path( $out_dirs{$_} ) } keys %out_dirs;
 
 # make files
 my %out_files = (
-                 bed       => "$out_ext.bed.gz",
-                 snpfile   => "$out_ext.snp.gz",
-                 gene      => 'knownGene.txt.gz',
-                 phyloP    => 'phyloP.txt.gz',
-                 phastCons => 'phastCons.txt.gz',
-                 snp       => 'snp141.txt.gz',
-                );
+  bed       => "$out_ext.bed.gz",
+  snpfile   => "$out_ext.snp.gz",
+  gene      => 'knownGene.txt.gz',
+  phyloP    => 'phyloP.txt.gz',
+  phastCons => 'phastCons.txt.gz',
+  snp       => 'snp141.txt.gz',
+);
 %out_files =
-  map { $_ => File::Spec->catfile($out_dirs{$_}, $out_files{$_}) }
+  map { $_ => File::Spec->catfile( $out_dirs{$_}, $out_files{$_} ) }
   keys %out_files;
 
 # open file handles
 my %out_fhs =
-  map { $_ => IO::Compress::Gzip->new($out_files{$_}) } keys %out_files;
+  map { $_ => IO::Compress::Gzip->new( $out_files{$_} ) } keys %out_files;
 
 # print out for debugging
-p %out_dirs;
-p %out_files;
-p %out_fhs;
-p $twobit_genome;
+# p %out_dirs;
+# p %out_files;
+# p %out_fhs;
+# p $twobit_genome;
 
-my @chrs = map { "chr$_" } (1 .. 22, 'M', 'X', 'Y');
-my (%header, %found_chr, %chr_len, %chr_seq);
+my @chrs = map { "chr$_" } ( 1 .. 22, 'M', 'X', 'Y' );
+my ( %header, %found_chr, %chr_len, %chr_seq );
 
 # change into seq dir to write files
 chdir $out_dirs{seq} || die "cannot change dir $out_dirs{seq}\n";
-for my $chr (@chrs)
-{
+for my $chr (@chrs) {
   my $sth = $dbh->prepare(
     qq{
     SELECT *
@@ -148,32 +145,29 @@ for my $chr (@chrs)
     AND ($genome.knownGene.cdsStart != $genome.knownGene.cdsEnd)
     LIMIT 1
     }
-                         )
-    or die $dbh->errstr;
+  ) or die $dbh->errstr;
   my $rc = $sth->execute() or die $dbh->errstr;
-  my @header = @{$sth->{NAME}};
-  %header = map { $header[$_] => $_ } (0 .. $#header) unless %header;
-  while (my @row = $sth->fetchrow_array)
-  {
-    my %data = map { $_ => $row[$header{$_}] } keys %header;
-    if ($data{cdsEnd} != $data{cdsStart}
-        && !exists $found_chr{$data{chrom}})
+  my @header = @{ $sth->{NAME} };
+  %header = map { $header[$_] => $_ } ( 0 .. $#header ) unless %header;
+  while ( my @row = $sth->fetchrow_array ) {
+    my %data = map { $_ => $row[ $header{$_} ] } keys %header;
+    if ( $data{cdsEnd} != $data{cdsStart}
+      && !exists $found_chr{ $data{chrom} } )
     {
 
       # save in bed file (real coordinates)
-      say {$out_fhs{bed}}
-        join("\t", $data{chrom}, $data{txStart}, $data{txEnd}, $data{name});
+      say { $out_fhs{bed} }
+        join( "\t", $data{chrom}, $data{txStart}, $data{txEnd}, $data{name} );
 
       # get real sequence from 2bit file
-      $chr_seq{$chr} = Get_gz_seq($chr, $data{txStart}, $data{txEnd});
+      $chr_seq{$chr} = Get_gz_seq( $chr, $data{txStart}, $data{txEnd} );
 
       # reformat to 1-index sequence
-      my @exon_starts = split(/\,/, $data{exonStarts});
-      my @exon_ends   = split(/\,/, $data{exonEnds});
-      my (@new_exon_ends, @new_exon_starts);
+      my @exon_starts = split( /\,/, $data{exonStarts} );
+      my @exon_ends   = split( /\,/, $data{exonEnds} );
+      my ( @new_exon_ends, @new_exon_starts );
       my $txStart = $data{txStart} - 1;
-      for (my $i = 0 ; $i < @exon_starts ; $i++)
-      {
+      for ( my $i = 0; $i < @exon_starts; $i++ ) {
         my $new_start = $exon_starts[$i] - $txStart;
         push @new_exon_starts, $new_start;
         my $new_ends = $exon_ends[$i] - $txStart;
@@ -183,150 +177,148 @@ for my $chr (@chrs)
       $data{txStart}  -= $txStart;
       $data{cdsStart} -= $txStart;
       $data{cdsEnd}   -= $txStart;
-      $data{exonStarts} = join(",", @new_exon_starts);
-      $data{exonEnds}   = join(",", @new_exon_ends);
+      $data{exonStarts} = join( ",", @new_exon_starts );
+      $data{exonEnds}   = join( ",", @new_exon_ends );
 
       # save 1-index sequence
-      $found_chr{$data{chrom}} = \%data;
+      $found_chr{ $data{chrom} } = \%data;
       $chr_len{$chr} = $data{txEnd} - $data{txStart};
 
       # check length of sequence is correct after processing
       die "expected lengths to match"
-        unless length ${ $chr_seq{$chr} } == ($data{txEnd} - $data{txStart});
+        unless length ${ $chr_seq{$chr} } == ( $data{txEnd} - $data{txStart} );
 
     }
   }
 }
 chdir $out_dirs{raw} or die "cannot change dir $out_dirs{raw}\n";
-p %found_chr;
 
 # print fake knownGene data
 {
-  say {$out_fhs{gene}} join("\t", (map { $_ } (sort keys %header)));
-  for my $chr (sort keys %found_chr)
-  {
-    say {$out_fhs{gene}}
-      join("\t", (map { $found_chr{$chr}{$_} } (sort keys %header)));
+  say { $out_fhs{gene} } join( "\t", ( map { $_ } ( sort keys %header ) ) );
+  for my $chr ( sort keys %found_chr ) {
+    say { $out_fhs{gene} }
+      join( "\t", ( map { $found_chr{$chr}{$_} } ( sort keys %header ) ) );
   }
 }
 
 # print fake conservation data - aboult half of the bases will have scores
-for my $chr (@chrs)
-{
-  for (my $i = 0 ; $i < $chr_len{$chr} ; $i++)
-  {
-    say {$out_fhs{phastCons}} join("\t", $chr, eval($i + 1), rand(1))
+for my $chr (@chrs) {
+  for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
+    say { $out_fhs{phastCons} } join( "\t", $chr, ( $i + 1 ), rand(1) )
       if rand(1) > 0.5;
-    say {$out_fhs{phyloP}} join("\t", $chr, eval($i + 1), eval(rand(60) - 30))
+    say { $out_fhs{phyloP} } join( "\t", $chr, ( $i + 1 ), ( rand(60) - 30 ) )
       if rand(1) > 0.5;
   }
 }
 
 # print fake snp data - about 1% of sites will be snps
 {
-  my @snp_fields = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs );
-  say { $out_fhs{snp} } join("\t", @snp_fields);
+  my @snp_fields =
+    qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs );
+  say { $out_fhs{snp} } join( "\t", @snp_fields );
   my @alleles = qw( A C G T );
   my %seen_snp_name;
-  for my $chr (@chrs)
-  {
-    for (my $i = 0 ; $i < $chr_len{$chr} ; $i++)
-    {
-      if (rand(1) > 0.99)
-      {
+  for my $chr (@chrs) {
+    for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
+      if ( rand(1) > 0.99 ) {
         #  I strongly suspect that the mysql tables are zero-index
         #  and I know that the ucsc browser is 1 indexed.
 
         my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
         my $minor_allele;
-        my $name = 'rs' . int(rand(1000000));
+        my $name = 'rs' . int( rand(1000000) );
         my @allele_freq;
-        push @allele_freq, sprintf("%0.2f", rand(1));
-        push @allele_freq, sprintf("%0.2f", eval(1 - $allele_freq[0]));
+        push @allele_freq, sprintf( "%0.2f", rand(1) );
+        push @allele_freq, sprintf( "%0.2f", ( 1 - $allele_freq[0] ) );
         @allele_freq = sort { $b <=> $a } @allele_freq;
         my @allele_freq_counts = map { $_ * 1000 } @allele_freq;
 
         do {
-          $name = 'rs' . int(rand(1000000));
+          $name = 'rs' . int( rand(1000000) );
         } while ( exists $seen_snp_name{$name} );
         $seen_snp_name{$name}++;
         do {
-          $minor_allele = uc $alleles[ int( rand ( $#alleles ) ) ];
+          $minor_allele = uc $alleles[ int( rand($#alleles) ) ];
         } while ( $minor_allele eq $ref_base );
 
-        say { $out_fhs{snp} } join("\t",
+        say { $out_fhs{snp} } join(
+          "\t",
           $chr,
-          $i,           # start
-          eval($i + 1), # end
+          $i,         # start
+          ( $i + 1 ), # end
           $name,
-          join(",", @allele_freq_counts),
-          join(",", $ref_base, $minor_allele),
-          join(",", @allele_freq));
+          join( ",", @allele_freq_counts ),
+          join( ",", $ref_base, $minor_allele ),
+          join( ",", @allele_freq )
+        );
         # choose site (with 'known' snp) for snpfile
-        $snpfile_sites{"$chr:$i"} = join(":", $ref_base, $minor_allele) if (rand(1) > 0.50);
+        $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele )
+          if ( rand(1) > 0.50 );
       } # choose site for snpfile
-      elsif (rand(1) > 0.995) {
+      elsif ( rand(1) > 0.995 ) {
         my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
         my $minor_allele;
         do {
-          $minor_allele = uc $alleles[ int(rand(3))  ];
+          $minor_allele = uc $alleles[ int( rand(3) ) ];
         } while ( $minor_allele eq $ref_base );
-        $snpfile_sites{"$chr:$i"} = join(":", $ref_base, $minor_allele);
+        $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele );
       }
     }
   }
 }
 
-Print_snpfile( $out_fhs{snpfile}, \%snpfile_sites, '10');
+Print_snpfile( $out_fhs{snpfile}, \%snpfile_sites, '10' );
 
 # the following just prints out ids who are homozygous for the minor allele;
 # limitations:
 #   - if the y chromsome is included having a polymorphic y chr will make them men
 #   - every one who is non-referance is a homozygote carrier
 sub Print_snpfile {
-    my ($fh, $snpfile_href, $ids) = @_;
+  my ( $fh, $snpfile_href, $ids ) = @_;
 
-    my @ids = map { 'id_' . $_ } (0..$ids);
-    my @header = qw/ Fragment Position Reference Type Alleles Allele_Counts /;
+  my @ids = map { 'id_' . $_ } ( 0 .. $ids );
+  my @header = qw/ Fragment Position Reference Type Alleles Allele_Counts /;
 
-    # print header
-    say {$fh} join("\t", join("\t", @header), join("\t\t", @ids));
+  # print header
+  say {$fh} join( "\t", join( "\t", @header ), join( "\t\t", @ids ) );
 
-    for my $site (sort keys %$snpfile_href) {
-        my ($chr, $pos) = split(/:/, $site);
-        my ($ref_allele, $minor_allele) = split(/:/, $snpfile_href->{$site});
-        my $carriers = 0;
-        while ($carriers == 0) {
-            $carriers = int( rand( $#ids ) );
-        }
-        my $minor_allele_counts = 2 * $carriers;
-
-        # print out preamble
-        my $prnt_str = join("\t", $chr, $pos, $ref_allele, 'SNP', $minor_allele, $minor_allele_counts) . "\t";
-
-        # determine who should be homozygote carrier
-        my @shuffled_ids = shuffle @ids;
-        my @carrier_ids  = @shuffled_ids[0..$carriers];
-        my @alleles = ( );
-        for my $id (@ids) {
-            if (grep {/\A$id\Z/} @carrier_ids) {
-                push @alleles, join("\t", $minor_allele, '1');
-            }
-            else {
-                push @alleles, join("\t", $ref_allele, '1');
-            }
-        }
-
-        # print out carrier stuff
-        $prnt_str .= join("\t", @alleles);
-        say {$fh} $prnt_str;
+  for my $site ( sort keys %$snpfile_href ) {
+    my ( $chr,        $pos )          = split( /:/, $site );
+    my ( $ref_allele, $minor_allele ) = split( /:/, $snpfile_href->{$site} );
+    my $carriers = 0;
+    while ( $carriers == 0 ) {
+      $carriers = int( rand($#ids) );
     }
+    my $minor_allele_counts = 2 * $carriers;
+
+    # print out preamble
+    my $prnt_str =
+      join( "\t", $chr, $pos, $ref_allele, 'SNP', $minor_allele, $minor_allele_counts );
+    $prnt_str .= "\t";
+
+    # determine who should be homozygote carrier
+    my @shuffled_ids = shuffle @ids;
+    my @carrier_ids  = @shuffled_ids[ 0 .. $carriers ];
+    my @alleles      = ();
+    for my $id (@ids) {
+      if ( grep { /\A$id\Z/ } @carrier_ids ) {
+        push @alleles, join( "\t", $minor_allele, '1' );
+      }
+      else {
+        push @alleles, join( "\t", $ref_allele, '1' );
+      }
+    }
+
+    # print out carrier stuff
+    $prnt_str .= join( "\t", @alleles );
+    say {$fh} $prnt_str;
+  }
 }
 
 # returns scalar reference to sequence for region
-sub Get_gz_seq
-{
-  my ($chr, $start, $end) = @_;
+sub Get_gz_seq {
+  my ( $chr, $start, $end ) = @_;
   die "error processing Get_gz_seq() arguments @_"
     unless $chr
     and $start
@@ -339,21 +331,20 @@ sub Get_gz_seq
   system $cmd;
 
   # check we got sequence
-  die "error grabbing sequence with cmd:\n\t$cmd\n" unless (-s $fa_file);
+  die "error grabbing sequence with cmd:\n\t$cmd\n" unless ( -s $fa_file );
 
   # get length of sequence
   #   and gzip file
-  my $seq = '';
-  my $fa_fh  = IO::File->new($fa_file, 'r');
-  my $gz_fh  = IO::Compress::Gzip->new("$fa_file.gz")
+  my $seq   = '';
+  my $fa_fh = IO::File->new( $fa_file, 'r' );
+  my $gz_fh = IO::Compress::Gzip->new("$fa_file.gz")
     or die "gzip failed: $GzipError\n";
-  while (<$fa_fh>)
-  {
+  while (<$fa_fh>) {
     chomp $_;
-    $seq .= $_ unless ($_ =~ m/\A>/);
-    say { $gz_fh } $_;
+    $seq .= $_ unless ( $_ =~ m/\A>/ );
+    say {$gz_fh} $_;
   }
-  say join(" ", $chr, "=>", length $seq) if $verbose;
+  say join( " ", $chr, "=>", length $seq ) if $verbose;
   unlink $fa_file;
   return \$seq;
 }

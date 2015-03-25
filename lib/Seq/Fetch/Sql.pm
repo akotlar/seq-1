@@ -13,10 +13,9 @@ use Time::localtime;
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
 
-my $now_timestamp = sprintf( "%d-%02d-%02d",
-  eval( localtime->year() + 1900 ),
-  eval( localtime->mon() + 1 ),
-  localtime->mday() );
+my $year = localtime->year() + 1900;
+my $mos  = localtime->mon() + 1;
+my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, localtime->mday );
 
 has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
 has dsn => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );

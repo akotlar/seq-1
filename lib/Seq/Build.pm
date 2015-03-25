@@ -65,7 +65,6 @@ sub build_index {
       $record->{genome_seq}       = $self->genome_str_track;
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
-      $record->{host}             = $self->host;
       $record->{mongo_connection} = Seq::MongoManager->new(
         {
           default_database => $self->genome_name,
