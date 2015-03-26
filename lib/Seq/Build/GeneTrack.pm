@@ -134,7 +134,7 @@ sub build_gene_db {
     #     $prn_count++;
     #   }
     #   $exon_sites{ $site->abs_pos }++;
-    # }
+    }
     # these sites need to be 0-indexed
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
