@@ -15,22 +15,22 @@ extends 'Seq::Site';
 
 #<<< No perltidy
 my %Eu_codon_2_aa = (
-    "AAA" => "K", "AAC" => "N", "AAG" => "K", "AAT" => "N",
-    "ACA" => "T", "ACC" => "T", "ACG" => "T", "ACT" => "T",
-    "AGA" => "R", "AGC" => "S", "AGG" => "R", "AGT" => "S",
-    "ATA" => "I", "ATC" => "I", "ATG" => "M", "ATT" => "I",
-    "CAA" => "Q", "CAC" => "H", "CAG" => "Q", "CAT" => "H",
-    "CCA" => "P", "CCC" => "P", "CCG" => "P", "CCT" => "P",
-    "CGA" => "R", "CGC" => "R", "CGG" => "R", "CGT" => "R",
-    "CTA" => "L", "CTC" => "L", "CTG" => "L", "CTT" => "L",
-    "GAA" => "E", "GAC" => "D", "GAG" => "E", "GAT" => "D",
-    "GCA" => "A", "GCC" => "A", "GCG" => "A", "GCT" => "A",
-    "GGA" => "G", "GGC" => "G", "GGG" => "G", "GGT" => "G",
-    "GTA" => "V", "GTC" => "V", "GTG" => "V", "GTT" => "V",
-    "TAA" => "*", "TAC" => "Y", "TAG" => "*", "TAT" => "Y",
-    "TCA" => "S", "TCC" => "S", "TCG" => "S", "TCT" => "S",
-    "TGA" => "*", "TGC" => "C", "TGG" => "W", "TGT" => "C",
-    "TTA" => "L", "TTC" => "F", "TTG" => "L", "TTT" => "F"
+  "AAA" => "K", "AAC" => "N", "AAG" => "K", "AAT" => "N",
+  "ACA" => "T", "ACC" => "T", "ACG" => "T", "ACT" => "T",
+  "AGA" => "R", "AGC" => "S", "AGG" => "R", "AGT" => "S",
+  "ATA" => "I", "ATC" => "I", "ATG" => "M", "ATT" => "I",
+  "CAA" => "Q", "CAC" => "H", "CAG" => "Q", "CAT" => "H",
+  "CCA" => "P", "CCC" => "P", "CCG" => "P", "CCT" => "P",
+  "CGA" => "R", "CGC" => "R", "CGG" => "R", "CGT" => "R",
+  "CTA" => "L", "CTC" => "L", "CTG" => "L", "CTT" => "L",
+  "GAA" => "E", "GAC" => "D", "GAG" => "E", "GAT" => "D",
+  "GCA" => "A", "GCC" => "A", "GCG" => "A", "GCT" => "A",
+  "GGA" => "G", "GGC" => "G", "GGG" => "G", "GGT" => "G",
+  "GTA" => "V", "GTC" => "V", "GTG" => "V", "GTT" => "V",
+  "TAA" => "*", "TAC" => "Y", "TAG" => "*", "TAT" => "Y",
+  "TCA" => "S", "TCC" => "S", "TCG" => "S", "TCT" => "S",
+  "TGA" => "*", "TGC" => "C", "TGG" => "W", "TGT" => "C",
+  "TTA" => "L", "TTC" => "F", "TTG" => "L", "TTT" => "F"
 );
 
 enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
@@ -109,7 +109,12 @@ has ref_aa_residue => (
 
 sub codon_2_aa {
   my ( $self, $codon ) = @_;
-  return $Eu_codon_2_aa{$codon};
+  if ($codon) {
+    return $Eu_codon_2_aa{$codon};
+  }
+  else {
+    return;
+  }
 }
 
 sub _set_ref_aa_residue {

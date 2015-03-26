@@ -98,21 +98,21 @@ sub build_snp_db {
         );
 
         if ($min_allele_freq) {
-          $snp_site->set_feature( maf => $min_allele_freq, alleles => join( ",", @alleles ) );
+          $snp_site->set_snp_feature( maf => $min_allele_freq, alleles => join( ",", @alleles ) );
         }
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
         $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
 
-        if ( $prn_counter == 0 ) {
-          print {$out_fh} "[" . encode_json($site_href);
-          $prn_counter++;
-        }
-        else {
-          print {$out_fh} "," . encode_json($site_href);
-          $prn_counter++;
-        }
+        # if ( $prn_counter == 0 ) {
+        #   print {$out_fh} "[" . encode_json($site_href);
+        #   $prn_counter++;
+        # }
+        # else {
+        #   print {$out_fh} "," . encode_json($site_href);
+        #   $prn_counter++;
+        # }
       }
     }
   }

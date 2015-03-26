@@ -19,10 +19,13 @@ use YAML::XS qw/ LoadFile /;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
-use Seq::Site::Annotation
+use Seq::Site::Annotation;
+use Seq::Site::Snp;
 
-  extends 'Seq::Assembly';
+extends 'Seq::Assembly';
 with 'Seq::Role::IO';
+
+use DDP;
 
 my @allowed_genotype_codes = [qw( A C G T K M R S W Y D E H N )];
 
@@ -208,18 +211,44 @@ sub get_var_annotation {
   my ( $self, $chr, $pos, $new_genotype ) = $check->(@_);
 
   my $ref_site_annotation = $self->get_ref_annotation( $chr, $pos );
-  my $snp_aref  //= $ref_site_annotation->{snp_data};
-  my $gene_aref //= $ref_site_annotation->{gene_data};
 
-  my @gene_site_annotations;
+  # gene site annotations
+  my $gene_aref //= $ref_site_annotation->{gene_data};
+  my %gene_site_annotation;
   for my $gene_site (@$gene_aref) {
     $gene_site->{minor_allele} = $new_genotype;
-    push @gene_site_annotations,
-      Seq::Site::Annotation->new($gene_site)->as_href_with_NAs;
+    my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs;
+    for my $attr (keys %$gan) {
+      if (exists($gene_site_annotation{$attr})) {
+        if ($gene_site_annotation{$attr} ne $gan->{$_}) {
+          push @{ $gene_site_annotation{$attr} }, $gan->{$_};
+        }
+      }
+      else {
+        $gene_site_annotation{$attr} = $gan->{$attr};
+      }
+    }
   }
 
+  # snp site annotation
+  my $snp_aref  //= $ref_site_annotation->{snp_data};
+  my %snp_site_annotation;
+  for my $snp_site (@$snp_aref) {
+    my $san = Seq::Site::Snp->new($snp_site)->as_href_with_NAs;
+    for my $attr (keys %$san ) {
+      if (exists($snp_site_annotation{$attr})) {
+        if ($snp_site_annotation{$attr} ne $san->{$attr}) {
+          push @{ $snp_site_annotation{$attr} }, $san->{$attr};
+        }
+      }
+      else {
+        $snp_site_annotation{$attr} = $san->{$attr};
+      }
+    }
+  }
   my $record = $ref_site_annotation;
-  $record->{gene_site_annotation} = \@gene_site_annotations;
+  $record->{gene_site_annotation} = \%gene_site_annotation;
+  $record->{snp_site_annotation}  = \%snp_site_annotation;
 
   return $record;
 

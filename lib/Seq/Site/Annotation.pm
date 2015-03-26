@@ -11,7 +11,7 @@ use Moose::Util::TypeConstraints;
 
 use namespace::autoclean;
 
-extends extends 'Seq::Site', 'Seq::Site::Gene', 'Seq::Site::Snp';
+extends extends 'Seq::Site', 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
 
 enum non_missing_base_types => [qw( A C G T )];
@@ -78,8 +78,7 @@ sub _set_annotation_type {
 override seralizable_attributes => sub {
   return qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
     codon_number codon_position ref_aa_residue error_code alt_names
-    genotype new_codon_seq new_aa_residue annotation_type
-    snp_id feature );
+    genotype new_codon_seq new_aa_residue annotation_type );
 };
 
 __PACKAGE__->meta->make_immutable;
