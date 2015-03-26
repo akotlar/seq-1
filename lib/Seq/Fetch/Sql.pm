@@ -13,8 +13,8 @@ use Time::localtime;
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
 
-my $year = localtime->year() + 1900;
-my $mos  = localtime->mon() + 1;
+my $year          = localtime->year() + 1900;
+my $mos           = localtime->mon() + 1;
 my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, localtime->mday );
 
 has genome_name => ( is => 'ro', isa => 'Str', required => 1, );

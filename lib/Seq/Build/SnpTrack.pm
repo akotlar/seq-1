@@ -85,15 +85,17 @@ sub build_snp_db {
 
     if ( $data{name} =~ m/^rs(\d+)/ ) {
       foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} ) {
-        my $chr     = $data{chrom};
-        my $snp_id  = $data{name};
-        my $abs_pos = $self->get_abs_pos( $chr, $pos );
-        my $base = $self->get_base( $abs_pos, 1 );
-        my $snp_site = Seq::Site::Snp->new( {
-          abs_pos => $abs_pos,
-          snp_id  => $snp_id,
-          ref_base => $base,
-        });
+        my $chr      = $data{chrom};
+        my $snp_id   = $data{name};
+        my $abs_pos  = $self->get_abs_pos( $chr, $pos );
+        my $base     = $self->get_base( $abs_pos, 1 );
+        my $snp_site = Seq::Site::Snp->new(
+          {
+            abs_pos  => $abs_pos,
+            snp_id   => $snp_id,
+            ref_base => $base,
+          }
+        );
 
         if ($min_allele_freq) {
           $snp_site->set_feature( maf => $min_allele_freq, alleles => join( ",", @alleles ) );

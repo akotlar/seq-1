@@ -21,9 +21,9 @@ my ( $verbose, $act, $genome_length );
 #
 die "Usage: $0 [-v] [-a]\n"
   unless GetOptions(
-    'v|verbose' => \$verbose,
-    'a|act'     => \$act,
-    'l|len=n'   => \$genome_length,
+  'v|verbose' => \$verbose,
+  'a|act'     => \$act,
+  'l|len=n'   => \$genome_length,
   );
 $verbose++ unless $act;
 
@@ -39,9 +39,9 @@ my $out_phyloP = IO::Compress::Gzip->new('phyloP.txt.gz')
   or die "$GzipError opening phyloPt.txt.gz: $!\n";
 
 for my $chr (@chrs) {
-    for ( my $i = 0; $i < $chr_len; $i++ ) {
-        say $out_phastCons join( "\t", $chr, eval( $i + 1 ), rand(1) );
-        say $out_phyloP join( "\t", $chr, eval( $i + 1 ), eval( rand(60) - 30 ) );
-    }
+  for ( my $i = 0; $i < $chr_len; $i++ ) {
+    say $out_phastCons join( "\t", $chr, eval( $i + 1 ), rand(1) );
+    say $out_phyloP join( "\t", $chr, eval( $i + 1 ), eval( rand(60) - 30 ) );
+  }
 }
 

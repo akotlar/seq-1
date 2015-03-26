@@ -282,7 +282,7 @@ sub get_transcript_sites {
     );
     $site_annotation = $self->get_str_transcript_annotation( $i, 1 );
     $gene_site{abs_pos}       = $self->get_transcript_abs_position($i);
-    $gene_site{ref_base}          = $self->get_base_transcript_seq( $i, 1 );
+    $gene_site{ref_base}      = $self->get_base_transcript_seq( $i, 1 );
     $gene_site{error_code}    = $self->transcript_error;
     $gene_site{alt_names}     = $self->alt_names;
     $gene_site{transcript_id} = $self->transcript_id;
@@ -290,9 +290,9 @@ sub get_transcript_sites {
 
     # is site coding
     if ( $site_annotation =~ m/[ACGT]/ ) {
-      $gene_site{site_type} = 'Coding';
-      $gene_site{codon_number}    = 1 + int( ( $coding_base_count / 3 ) );
-      $gene_site{codon_position}  = 1 + $coding_base_count % 3;
+      $gene_site{site_type}      = 'Coding';
+      $gene_site{codon_number}   = 1 + int( ( $coding_base_count / 3 ) );
+      $gene_site{codon_position} = 1 + $coding_base_count % 3;
       my $codon_start = $i - $gene_site{codon_position};
       my $codon_end   = $codon_start + 2;
 
@@ -361,7 +361,7 @@ sub get_flanking_sites {
         $gene_site{alt_names} = $self->alt_names;
         $gene_site{site_type} =
           ( $self->strand eq "+" ) ? 'Splice Acceptor' : 'Splice Donor';
-        $gene_site{ref_base}          = $self->get_base( $gene_site{abs_pos}, 1 );
+        $gene_site{ref_base}      = $self->get_base( $gene_site{abs_pos}, 1 );
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
@@ -376,7 +376,7 @@ sub get_flanking_sites {
         $gene_site{alt_names} = $self->alt_names;
         $gene_site{site_type} =
           ( $self->strand eq "+" ) ? 'Splice Donor' : 'Splice Acceptor';
-        $gene_site{ref_base}          = $self->get_base( $gene_site{abs_pos}, 1 );
+        $gene_site{ref_base}      = $self->get_base( $gene_site{abs_pos}, 1 );
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;

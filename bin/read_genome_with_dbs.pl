@@ -8,7 +8,9 @@ use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
+
 use Seq::Annotate;
+use Seq::Site::Gene;
 
 if ( $ENV{PERL_MONGODB_DEBUG} ) {
   Log::Any::Adapter->set('Stdout');
@@ -70,7 +72,11 @@ my $assembly = Seq::Annotate->new_with_config( { configfile => $yaml_config } );
 
 # 1-indexed coordinates
 for ( my $i = $pos_from; $i <= $pos_to; $i++ ) {
-  my $record = $assembly->annotate_site( $chr, $i );
+  my $record = $assembly->get_new_annotation( $chr, $i, 'A' );
+  # for my $gan (@{ $record->{gan_data}}) {
+  #     my $gst = Seq::Site::Gene->new( $gan )->as_href;
+  #     p $gst;
+  # }
   p $record;
 }
 

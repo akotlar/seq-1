@@ -34,7 +34,7 @@ my %Eu_codon_2_aa = (
 );
 
 enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
-                             'Splice Donor', 'Splice Acceptor' ];
+                       'Splice Donor', 'Splice Acceptor' ];
 enum StrandType   => [ '+', '-' ];
 #>>>
 
@@ -108,8 +108,8 @@ has ref_aa_residue => (
 );
 
 sub codon_2_aa {
-  my ($self, $codon) = @_;
-  return $Eu_codon_2_aa{ $codon };
+  my ( $self, $codon ) = @_;
+  return $Eu_codon_2_aa{$codon};
 }
 
 sub _set_ref_aa_residue {
@@ -147,7 +147,7 @@ sub as_href {
 
 sub seralizable_attributes {
   return qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
-  codon_number codon_position ref_aa_residue error_code alt_names );
+    codon_number codon_position ref_aa_residue error_code alt_names );
 }
 
 __PACKAGE__->meta->make_immutable;

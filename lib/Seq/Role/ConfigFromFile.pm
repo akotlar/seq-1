@@ -23,7 +23,7 @@ has configfile => (
   isa       => Path | Undef,
   coerce    => 1,
   predicate => 'has_configfile',
-  traits => ['Getopt'],
+  traits    => ['Getopt'],
 );
 
 sub new_with_config {

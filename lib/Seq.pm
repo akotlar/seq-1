@@ -63,7 +63,7 @@ sub annotate_snpfile {
         my $pos           = $fields[ $header{Position} ];
         my $ref_allele    = $fields[ $header{Reference} ];
         my $type          = $fields[ $header{Type} ];
-        my $alleles       = $fields[ $header{Alleles} ];
+        my $minor_alleles = $fields[ $header{Alleles} ];
         my $allele_counts = $fields[ $header{Allele_Counts} ];
 
         # get carrier ids for variant
@@ -71,7 +71,11 @@ sub annotate_snpfile {
           $self->_get_minor_allele_carriers( \@fields, \%ids, $ref_allele );
 
         # get annotation for site
-        my $record = $annotator->annotate_site( $chr, $pos );
+        for my $minor_allele (split(/,/, $minor_alleles))
+        {
+          my $record = $annotator->get_var_annotation( $chr, $pos, $minor_allele);
+          # merge alleles together...
+        }
     }
 }
 
@@ -86,10 +90,6 @@ sub _get_minor_allele_carriers {
         push @carriers, $id if $id_geno ne $ref_allele && $id_geno ne 'N';
     }
     return \@carriers;
-}
-
-sub _mung_record {
-    my ( $self, $record_href ) = @_;
 }
 
 __PACKAGE__->meta->make_immutable;
