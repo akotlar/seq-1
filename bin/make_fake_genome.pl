@@ -222,9 +222,9 @@ for my $chr (@chrs) {
   for my $chr (@chrs) {
     for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
       if ( rand(1) > 0.99 ) {
+
         #  I strongly suspect that the mysql tables are zero-index
         #  and I know that the ucsc browser is 1 indexed.
-
         my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
         my $minor_allele;
         my $name = 'rs' . int( rand(1000000) );
@@ -290,11 +290,14 @@ sub Print_snpfile {
     while ( $carriers == 0 ) {
       $carriers = int( rand($#ids) );
     }
-    my $minor_allele_counts = 2 * $carriers;
+    my $minor_allele_count = 2 * $carriers;
+    my $major_allele_count = ( 2 * scalar @ids ) - $minor_allele_count;
 
     # print out preamble
-    my $prnt_str =
-      join( "\t", $chr, $pos, $ref_allele, 'SNP', $minor_allele, $minor_allele_counts );
+    my $prnt_str = join( "\t",
+      $chr, $pos, $ref_allele, 'SNP',
+      join( ",", $ref_allele,         $minor_allele ),
+      join( ",", $major_allele_count, $minor_allele_count ) );
     $prnt_str .= "\t";
 
     # determine who should be homozygote carrier
