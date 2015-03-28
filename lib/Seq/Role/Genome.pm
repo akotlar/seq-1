@@ -12,6 +12,7 @@ use Moose::Role;
 use Carp;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
+use DDP;
 
 sub get_abs_pos {
   state $check = compile( Object, Str, Int );
@@ -28,8 +29,22 @@ sub get_abs_pos {
     and $pos >= 1
     and $pos < $class->genome_length;
 
-  # chromsomes are 1-indexed; but str and char genoems are 0-indexed
+  # grab the next chromosome start site, but if there is not next chromosome
+  # then we're at the end of the genome so get the length of the genome; these
+  # values are 0-indexed
+  my $next_chr //= $class->get_next_chr($chr);
+  my $next_chr_start //= ($next_chr) ? $class->get_chr_len($next_chr) : $class->genome_length;
+
+  # when we call chr:pos we're using a 1-index genome; but str and char genoems
+  # are 0-indexed so we subtract 1.
   my $abs_pos //= $class->get_chr_len($chr) + $pos - 1;
+
+  if ($abs_pos > $next_chr_start) {
+    # getting end of chromosome; converting to 1-index for printing
+    my $chr_end = $next_chr_start - $class->get_chr_len($chr) + 1;
+    croak "get_abs_pos(): site $pos is beyond end of the chr ($chr), which ends at $chr:$chr_end.\n";
+  }
+
 
   return $abs_pos;
 }
