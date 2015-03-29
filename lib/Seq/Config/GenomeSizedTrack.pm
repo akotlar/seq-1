@@ -48,6 +48,14 @@ has genome_chrs => (
   required => 1,
   handles  => { all_genome_chrs => 'elements', },
 );
+has _next_chrs => (
+  is => 'ro',
+  isa => 'HashRef',
+  traits => ['Hash'],
+  lazy => 1,
+  builder => '_build_next_chr',
+  handles  => { get_next_chr => 'get', },
+);
 has genome_index_dir => ( is => 'ro', isa => 'Str', );
 has local_dir        => ( is => 'ro', isa => 'Str', );
 has local_files      => (
@@ -81,6 +89,19 @@ has proc_clean_cmds => (
   isa    => 'ArrayRef[Str]',
   traits => ['Array'],
 );
+
+sub _build_next_chr {
+  my $self = shift;
+
+  my %next_chrs;
+  my @chrs = $self->all_genome_chrs;
+  for my $i (0..$#chrs) {
+    if (defined $chrs[$i + 1]) {
+      $next_chrs{$chrs[$i]} = $chrs[$i+1];
+    }
+  }
+  return \%next_chrs;
+}
 
 sub get_idx_code {
   my $self = shift;
