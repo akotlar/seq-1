@@ -16,9 +16,7 @@ if ( $ENV{PERL_MONGODB_DEBUG} ) {
   Log::Any::Adapter->set('Stdout');
 }
 
-use DDP;
-
-my ($yaml_config, $db_location, $verbose, $help);
+my ( $yaml_config, $db_location, $verbose, $help );
 
 #
 # usage
@@ -42,11 +40,11 @@ unless ( defined $yaml_config
 }
 
 # get absolute path for YAML file and db_location
-$yaml_config = path( $yaml_config )->absolute->stringify;
-$db_location = path( $db_location )->absolute->stringify;
+$yaml_config = path($yaml_config)->absolute->stringify;
+$db_location = path($db_location)->absolute->stringify;
 
 if ( -d $db_location ) {
-  chdir ($db_location) || croak "cannot change to dir: $db_location: $!\n";
+  chdir($db_location) || croak "cannot change to dir: $db_location: $!\n";
 }
 else {
   croak "expected location of db to be a directory instead got: $db_location\n";

@@ -17,7 +17,7 @@ if ( $ENV{PERL_MONGODB_DEBUG} ) {
 
 use DDP;
 
-my ($snpfile, $yaml_config, $db_location, $verbose, $help);
+my ( $snpfile, $yaml_config, $db_location, $verbose, $help );
 
 #
 # usage
@@ -42,7 +42,8 @@ unless ( defined $yaml_config
 }
 
 say qq{ snpfile => $snpfile, configfile => $yaml_config, db_dir => $db_location };
-my $annotate_instance = Seq->new( { snpfile => $snpfile, configfile => $yaml_config, db_dir => $db_location } );
+my $annotate_instance = Seq->new(
+  { snpfile => $snpfile, configfile => $yaml_config, db_dir => $db_location } );
 
 $annotate_instance->annotate_snpfile;
 
