@@ -1,4 +1,9 @@
 #!/usr/bin/env perl
+
+#
+# TODO: Ensure this is consistent with recent revamped Seq package scheme
+#
+
 use Modern::Perl qw(2013);
 use YAML::XS qw(Dump Load LoadFile);
 use Getopt::Long;
