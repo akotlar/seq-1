@@ -50,11 +50,12 @@ __END__
 
 =head1 NAME
 
-read_genome - reads binary genome
+annotate_snpfile - annotates a snpfile using a given genome assembly specified
+in a configuration file
 
 =head1 SYNOPSIS
 
-read_genome --snp <snpfile> --config <file> --locaiton <path>
+annotate_snpfile.pl --snp <snpfile> --config <file> --locaiton <path>
 
 =head1 DESCRIPTION
 
@@ -72,14 +73,12 @@ Snp: snpfile
 =item B<-c>, B<--config>
 
 Config: A YAML genome assembly configuration file that specifies the various
-tracks and data associated with the assembly. This is the same file that is
+tracks and data associated with the assembly. This is the same file that is also
 used by the Seq Package to build the binary genome without any alteration.
 
 =item B<-l>, B<--location>
 
-Location: This is the base directory that will be added to the location
-information in the YAML configuration file that has a key specifying the
-location of the binary index.
+Location: This is the base directory for the location of the binary index.
 
 =back
 
