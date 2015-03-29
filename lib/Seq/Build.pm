@@ -62,7 +62,7 @@ sub build_index {
   if ( $self->snp_tracks ) {
     for my $snp_track ( $self->all_snp_tracks ) {
       my $record = $snp_track->as_href;
-      $record->{genome_seq}       = $self->genome_str_track;
+      $record->{genome_track_str} = $self->genome_str_track;
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
       $record->{mongo_connection} = Seq::MongoManager->new(

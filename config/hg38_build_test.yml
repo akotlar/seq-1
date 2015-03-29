@@ -50,7 +50,9 @@ sparse_tracks:
     local_file: knownGene.txt.gz
     name: knownGene
     sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
-    entry_names:
+    # for gene sparse tracks the 'features' key holds extra names the gene may
+    # be called
+    features:
       - mRNA
       - spID
       - spDisplayID
@@ -64,8 +66,13 @@ sparse_tracks:
     local_file: snp141.txt.gz
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141
-    entry_names:
-      - name
+    # for snp sparse tracks the 'features' key holds extra annotation
+    # information
+    features:
+      - alleles
+      - maf
+
+# genome sized tracks: genome, phyloP, phastCons
 genome_sized_tracks:
   - name: hg38
     type: genome

@@ -14,6 +14,9 @@ use namespace::autoclean;
 extends 'Seq::Site';
 
 #<<< No perltidy
+my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
+    codon_number codon_position ref_aa_residue error_code alt_names );
+
 my %Eu_codon_2_aa = (
   "AAA" => "K", "AAC" => "N", "AAG" => "K", "AAT" => "N",
   "ACA" => "T", "ACC" => "T", "ACG" => "T", "ACT" => "T",
@@ -132,11 +135,7 @@ sub as_href {
   my $self = shift;
   my %hash;
 
-  for my $attr (
-    qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
-    codon_number codon_position ref_aa_residue error_code alt_names )
-    )
-  {
+  for my $attr (@attributes) {
     my $empty_attr = "no_" . $attr;
     if ( $self->$attr ) {
       if ( $self->meta->has_method($empty_attr) ) {
@@ -151,8 +150,7 @@ sub as_href {
 }
 
 sub seralizable_attributes {
-  return qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
-    codon_number codon_position ref_aa_residue error_code alt_names );
+  return @attributes;
 }
 
 __PACKAGE__->meta->make_immutable;

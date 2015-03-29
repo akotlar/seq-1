@@ -10,6 +10,8 @@ use Moose 2;
 
 use namespace::autoclean;
 
+my @attributes = qw( abs_pos ref_base snp_id snp_feature );
+
 extends 'Seq::Site';
 with 'Seq::Role::Serialize';
 
@@ -39,7 +41,7 @@ sub as_href {
   my $self = shift;
   my %hash;
 
-  for my $attr (qw( abs_pos ref_base snp_id snp_feature )) {
+  for my $attr (@attributes) {
     if ( $attr eq "feature" ) {
       $hash{$attr} = $self->$attr unless $self->no_feature;
     }
@@ -51,7 +53,7 @@ sub as_href {
 }
 
 sub seralizable_attributes {
-  return qw( snp_id snp_feature );
+  return @attributes;
 }
 
 __PACKAGE__->meta->make_immutable;

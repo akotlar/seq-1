@@ -14,7 +14,6 @@ use IO::File;
 use IO::Compress::Gzip qw/ $GzipError /;
 use IO::Uncompress::Gunzip qw/ $GunzipError /;
 
-
 # tried various ways of assigning this to an attrib, with the intention that
 # one could change the taint checking characters allowed but this is the simpliest
 # one that worked; wanted it precompiled to improve the speed of checking

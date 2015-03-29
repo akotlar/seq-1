@@ -72,7 +72,7 @@ my $assembly = Seq::Annotate->new_with_config( { configfile => $yaml_config } );
 
 # 1-indexed coordinates
 for ( my $i = $pos_from; $i <= $pos_to; $i++ ) {
-  my $record = $assembly->get_var_annotation( $chr, $i, 'A' );
+  my $record = $assembly->get_snp_annotation( $chr, $i, 'A' );
   # for my $gan (@{ $record->{gan_data}}) {
   #     my $gst = Seq::Site::Gene->new( $gan )->as_href;
   #     p $gst;

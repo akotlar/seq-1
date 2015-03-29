@@ -13,6 +13,7 @@ use Carp qw/ croak /;
 use File::Spec;
 use MongoDB;
 use namespace::autoclean;
+use Scalar::Util qw/ reftype /;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
@@ -21,32 +22,10 @@ use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
+use DDP;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
-
-use DDP;
-
-my @allowed_genotype_codes = [qw( A C G T K M R S W Y D E H N )];
-
-# IPUAC ambiguity simplify representing genotypes
-my %IUPAC_codes = (
-  K => [qw( G T )],
-  M => [qw( A C )],
-  R => [qw( A G )],
-  S => [qw( C G )],
-  W => [qw( A T )],
-  Y => [qw( C T )],
-  A => [qw( A )],
-  C => [qw( C )],
-  G => [qw( G )],
-  T => [qw( T )],
-  # these indel codes are not technically IUPAC but part of the snpfile spec
-  D => [qw( '-' )],
-  E => [qw( '-' )],
-  H => [qw( '+' )],
-  N => [],
-);
 
 has _genome => (
   is       => 'ro',
@@ -54,6 +33,7 @@ has _genome => (
   required => 1,
   lazy     => 1,
   builder  => '_load_genome',
+  handles  => ['get_abs_pos']
 );
 
 has _genome_score => (
@@ -70,6 +50,15 @@ has _mongo_connection => (
   isa     => 'Seq::MongoManager',
   lazy    => 1,
   builder => '_build_mongo_connection',
+);
+
+has _header => (
+  is      => 'ro',
+  isa     => 'ArrayRef',
+  lazy    => 1,
+  builder => '_build_header',
+  traits  => ['Array'],
+  handles => { all_header => 'elements' },
 );
 
 sub _build_mongo_connection {
@@ -97,7 +86,6 @@ sub _load_genome {
 
 sub _load_scores {
   my $self = shift;
-
   my @score_tracks;
   for my $gst ( $self->all_genome_sized_tracks ) {
     if ( $gst->type eq 'score' ) {
@@ -140,7 +128,6 @@ sub _load_genome_sized_track {
       genome_length => $genome_length,
       chr_len       => $chr_len_href,
       char_seq      => \$seq,
-
     }
   );
   return $obj;
@@ -152,7 +139,7 @@ sub get_ref_annotation {
 
   my %record;
 
-  my $abs_pos   = $self->_genome->get_abs_pos( $chr, $pos );
+  my $abs_pos   = $self->get_abs_pos( $chr, $pos );
   my $site_code = $self->_genome->get_base($abs_pos);
   my $base      = $self->_genome->get_idx_base($site_code);
   my $gan       = ( $self->_genome->get_idx_in_gan($site_code) ) ? 1 : 0;
@@ -206,7 +193,8 @@ sub get_ref_annotation {
   return \%record;
 }
 
-sub get_var_annotation {
+# indels will be handled in a separate method
+sub get_snp_annotation {
   state $check = compile( Object, Str, Int, Str );
   my ( $self, $chr, $pos, $new_genotype ) = $check->(@_);
 
@@ -218,9 +206,9 @@ sub get_var_annotation {
   for my $gene_site (@$gene_aref) {
     $gene_site->{minor_allele} = $new_genotype;
     my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs;
-    for my $attr (keys %$gan) {
-      if (exists($gene_site_annotation{$attr})) {
-        if ($gene_site_annotation{$attr} ne $gan->{$_}) {
+    for my $attr ( keys %$gan ) {
+      if ( exists $gene_site_annotation{$attr} ) {
+        if ( $gene_site_annotation{$attr} ne $gan->{$_} ) {
           push @{ $gene_site_annotation{$attr} }, $gan->{$_};
         }
       }
@@ -231,13 +219,13 @@ sub get_var_annotation {
   }
 
   # snp site annotation
-  my $snp_aref  //= $ref_site_annotation->{snp_data};
+  my $snp_aref //= $ref_site_annotation->{snp_data};
   my %snp_site_annotation;
   for my $snp_site (@$snp_aref) {
     my $san = Seq::Site::Snp->new($snp_site)->as_href_with_NAs;
-    for my $attr (keys %$san ) {
-      if (exists($snp_site_annotation{$attr})) {
-        if ($snp_site_annotation{$attr} ne $san->{$attr}) {
+    for my $attr ( keys %$san ) {
+      if ( exists $snp_site_annotation{$attr} ) {
+        if ( $snp_site_annotation{$attr} ne $san->{$attr} ) {
           push @{ $snp_site_annotation{$attr} }, $san->{$attr};
         }
       }
@@ -250,15 +238,66 @@ sub get_var_annotation {
   $record->{gene_site_annotation} = \%gene_site_annotation;
   $record->{snp_site_annotation}  = \%snp_site_annotation;
 
-  return $record;
+  my $gene_ann = $self->_for_output( \%gene_site_annotation );
+  my $snp_ann  = $self->_for_output( \%snp_site_annotation );
+  map { $record->{$_} = $gene_ann->{$_} } keys %$gene_ann;
+  map { $record->{$_} = $snp_ann->{$_} } keys %$snp_ann;
 
+  my @header = $self->all_header;
+  my %hash;
+  for my $attr (@header) {
+    if ( $record->{$attr} ) {
+      $hash{$attr} = $record->{$attr};
+    }
+    else {
+      $hash{$attr} = 'NA';
+    }
+  }
+
+  return \%hash;
 }
 
-sub genotype_2_alleles {
+sub _for_output {
+  my ( $self, $href ) = @_;
+  my %hash;
 
-  return;
+  for my $attrib ( keys %$href ) {
+    if ( reftype( $href->{$attrib} ) && reftype( $href->{$attrib} ) eq 'Array' ) {
+      $hash{$attrib} = join( ";", @{ $href->{$attrib} } );
+    }
+    else {
+      $hash{$attrib} = $href->{$attrib};
+    }
+  }
+  return \%hash;
 }
 
+sub _build_header {
+  my $self = shift;
+
+  my ( %gene_features, %snp_features );
+
+  for my $gene_track ( $self->all_gene_tracks ) {
+    my @features = $gene_track->all_features;
+    map { $gene_features{"alt_names.$_"}++ } @features;
+  }
+  my @alt_features = map { $_ } keys %gene_features;
+  p @alt_features;
+
+  for my $snp_track ( $self->all_snp_tracks ) {
+    my @snp_features = $snp_track->all_features;
+    map { $snp_features{"snp_features.$_"}++ } @snp_features;
+  }
+  map { push @alt_features, $_ } keys %snp_features;
+
+  my @features = qw( chr rel_pos ref_base annotation_type codon_number codon_position
+    error_code minor_allele new_aa_residue new_codon_seq ref_aa_residue ref_base
+    ref_codon_seq site_type strand transcript_id );
+
+  push @features, @alt_features;
+
+  return \@features;
+}
 __PACKAGE__->meta->make_immutable;
 
 1;

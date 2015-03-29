@@ -32,7 +32,7 @@ has genome_name => (
   required => 1,
 );
 
-has genome_seq => (
+has genome_track_str => (
   is       => 'ro',
   isa      => 'Seq::Build::GenomeSizedTrackStr',
   required => 1,
@@ -98,7 +98,10 @@ sub build_snp_db {
         );
 
         if ($min_allele_freq) {
-          $snp_site->set_snp_feature( maf => $min_allele_freq, alleles => join( ",", @alleles ) );
+          $snp_site->set_snp_feature(
+            maf     => $min_allele_freq,
+            alleles => join( ",", @alleles )
+          );
         }
         push @snp_sites, $abs_pos;
 

@@ -1,11 +1,17 @@
-package Seq::Config::GenomeSizedTrack;
-
 use 5.10.0;
-use Carp qw( confess );
-use Moose;
+use strict;
+use warnings;
+
+package Seq::Config::GenomeSizedTrack;
+# ABSTRACT: Configure a genome sized track
+# VERSION
+
+use Moose 2;
 use Moose::Util::TypeConstraints;
+
+use Carp qw/ confess /;
 use namespace::autoclean;
-use Scalar::Util qw( reftype );
+use Scalar::Util qw/ reftype /;
 
 enum GenomeSizedTrackType => [ 'genome', 'score', ];
 
@@ -49,12 +55,12 @@ has genome_chrs => (
   handles  => { all_genome_chrs => 'elements', },
 );
 has _next_chrs => (
-  is => 'ro',
-  isa => 'HashRef',
-  traits => ['Hash'],
-  lazy => 1,
+  is      => 'ro',
+  isa     => 'HashRef',
+  traits  => ['Hash'],
+  lazy    => 1,
   builder => '_build_next_chr',
-  handles  => { get_next_chr => 'get', },
+  handles => { get_next_chr => 'get', },
 );
 has genome_index_dir => ( is => 'ro', isa => 'Str', );
 has local_dir        => ( is => 'ro', isa => 'Str', );
@@ -95,9 +101,9 @@ sub _build_next_chr {
 
   my %next_chrs;
   my @chrs = $self->all_genome_chrs;
-  for my $i (0..$#chrs) {
-    if (defined $chrs[$i + 1]) {
-      $next_chrs{$chrs[$i]} = $chrs[$i+1];
+  for my $i ( 0 .. $#chrs ) {
+    if ( defined $chrs[ $i + 1 ] ) {
+      $next_chrs{ $chrs[$i] } = $chrs[ $i + 1 ];
     }
   }
   return \%next_chrs;

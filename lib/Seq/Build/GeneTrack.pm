@@ -14,8 +14,8 @@ use File::Path qw/ make_path /;
 use MongoDB;
 use namespace::autoclean;
 
-use Seq::Gene;
 use Seq::Build::GenomeSizedTrackStr;
+use Seq::Gene;
 
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
@@ -86,7 +86,7 @@ sub build_gene_db {
       next;
     }
     my %data = map { $_ => $fields[ $header{$_} ] }
-      ( @{ $self->gene_fields_aref }, $self->all_names );
+      ( @{ $self->gene_fields_aref }, $self->all_features );
 
     # prepare basic gene data
     my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
@@ -95,7 +95,7 @@ sub build_gene_db {
     $gene_data{genome_track} = $self->genome_track_str;
 
     # prepare alternative names for gene
-    my %alt_names = map { $_ => $data{$_} if exists $data{$_} } ( $self->all_names );
+    my %alt_names = map { $_ => $data{$_} if exists $data{$_} } ( $self->all_features );
 
     my $gene = Seq::Gene->new( \%gene_data );
     $gene->set_alt_names(%alt_names);

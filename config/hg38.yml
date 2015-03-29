@@ -47,7 +47,7 @@ sparse_tracks:
     local_file: hg38.txt
     name: knownGene
     sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
-    entry_names:
+    features:
       - mRNA
       - spID
       - spDisplayID
@@ -61,14 +61,14 @@ sparse_tracks:
     local_file: hg38.txt
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141
-    entry_names:
+    features:
       - name
   - type: clinvar
     local_dir: ./hg38/raw/gene
     local_file: hg38.txt
     name: clinvar
     sql_statement: SELECT * FROM Clinvar
-    entry_names:
+    features:
       - name 
 genome_sized_tracks:
   - name: hg38

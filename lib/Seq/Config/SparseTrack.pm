@@ -1,10 +1,16 @@
-package Seq::Config::SparseTrack;
-
 use 5.10.0;
-use Moose;
+use strict;
+use warnings;
+
+package Seq::Config::SparseTrack;
+# ABSTRACT: Configure a sparse traack
+# VERSION
+
+use Moose 2;
 use Moose::Util::TypeConstraints;
+
 use namespace::autoclean;
-use Scalar::Util qw( reftype );
+use Scalar::Util qw/ reftype /;
 
 enum SparseTrackType => [ 'gene', 'snp' ];
 
@@ -18,12 +24,12 @@ my @gene_table_fields = qw( chrom strand txStart txEnd cdsStart cdsEnd
 has name => ( is => 'ro', isa => 'Str',             required => 1, );
 has type => ( is => 'ro', isa => 'SparseTrackType', required => 1, );
 has sql_statement => ( is => 'rw', isa => 'Str', );
-has entry_names => (
+has features => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
   required => 1,
   traits   => ['Array'],
-  handles  => { all_names => 'elements', },
+  handles  => { all_features => 'elements', },
 );
 
 # file information
@@ -36,8 +42,7 @@ around 'sql_statement' => sub {
 
   my $new_stmt;
   my $snp_table_fields_str = join( ", ", @snp_table_fields );
-  my $gene_table_fields_str =
-    join( ", ", @gene_table_fields, @{ $self->entry_names } );
+  my $gene_table_fields_str = join( ", ", @gene_table_fields, @{ $self->features } );
   if ( $self->$orig(@_) =~ m/\_snp\_fields/ ) {
     ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/;
   }
@@ -58,7 +63,6 @@ sub gene_fields_aref {
 
 sub as_href {
   my $self = shift;
-  #my %href = map { $_ => $self->{$_} } @attributes;
   my %hash;
   for my $attr ( $self->meta->get_all_attributes ) {
     my $name = $attr->name;
@@ -69,15 +73,6 @@ sub as_href {
     }
   }
   return \%hash;
-}
-
-sub clear_all {
-  my $self       = shift;
-  my @attributes = @{ $self->meta->get_attributes };
-  for my $attribute (@attributes) {
-    my $clear_method = $attribute . "_clear";
-    $self->$clear_method;
-  }
 }
 
 __PACKAGE__->meta->make_immutable;
