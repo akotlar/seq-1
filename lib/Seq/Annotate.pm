@@ -22,7 +22,6 @@ use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
-use DDP;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
@@ -238,8 +237,8 @@ sub get_snp_annotation {
   $record->{gene_site_annotation} = \%gene_site_annotation;
   $record->{snp_site_annotation}  = \%snp_site_annotation;
 
-  my $gene_ann = $self->_for_output( \%gene_site_annotation );
-  my $snp_ann  = $self->_for_output( \%snp_site_annotation );
+  my $gene_ann = $self->_mung_ouptu( \%gene_site_annotation );
+  my $snp_ann  = $self->_mung_ouptu( \%snp_site_annotation );
   map { $record->{$_} = $gene_ann->{$_} } keys %$gene_ann;
   map { $record->{$_} = $snp_ann->{$_} } keys %$snp_ann;
 
@@ -257,7 +256,7 @@ sub get_snp_annotation {
   return \%hash;
 }
 
-sub _for_output {
+sub _mung_ouptu {
   my ( $self, $href ) = @_;
   my %hash;
 
@@ -282,7 +281,6 @@ sub _build_header {
     map { $gene_features{"alt_names.$_"}++ } @features;
   }
   my @alt_features = map { $_ } keys %gene_features;
-  p @alt_features;
 
   for my $snp_track ( $self->all_snp_tracks ) {
     my @snp_features = $snp_track->all_features;

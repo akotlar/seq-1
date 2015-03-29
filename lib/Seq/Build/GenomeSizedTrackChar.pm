@@ -16,8 +16,6 @@ use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use YAML::XS qw/ Dump /;
 
-use DDP;
-
 extends 'Seq::GenomeSizedTrackChar';
 with 'Seq::Role::IO', 'Seq::Role::Genome';
 

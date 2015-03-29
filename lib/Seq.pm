@@ -17,8 +17,6 @@ use Seq::Annotate;
 
 with 'Seq::Role::IO';
 
-use DDP;
-
 has snpfile => (
   is  => 'ro',
   isa => 'Str',
@@ -89,9 +87,9 @@ has genes_annotated => (
     keys_gene_ann   => 'keys',
     has_no_gene_ann => 'is_empty',
   },
-  )
+);
 
-  my @allowed_genotype_codes = [qw( A C G T K M R S W Y D E H N )];
+my @allowed_genotype_codes = [qw( A C G T K M R S W Y D E H N )];
 
 # IPUAC ambiguity simplify representing genotypes
 my %IUPAC_codes = (
@@ -169,11 +167,12 @@ sub annotate_snpfile {
     for my $allele ( split( /,/, $all_alleles ) ) {
       next if $allele eq $ref_allele;
       my $record = $annotator->get_snp_annotation( $chr, $pos, $allele );
-
     }
   }
   my @snpsites = sort { $a <=> $b } $self->keys_snp_sites;
-  p @keys;
+
+  # TODO: decide how to return data or do we just print it out...
+  return;
 }
 
 sub _get_minor_allele_carriers {

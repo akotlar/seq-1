@@ -13,8 +13,6 @@ use namespace::autoclean;
 
 use Seq::Site::Gene;
 
-use DDP;
-
 # has features of a gene and will run through the sequence
 # build features will be implmented in Seq::Build::Gene that can build GeneSite
 # objects

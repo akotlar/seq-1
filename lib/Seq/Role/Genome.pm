@@ -12,7 +12,6 @@ use Moose::Role;
 use Carp;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
-use DDP;
 
 sub get_abs_pos {
   state $check = compile( Object, Str, Int );
