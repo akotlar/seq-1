@@ -13,6 +13,8 @@ use namespace::autoclean;
 
 use Seq::Site::Gene;
 
+use DDP;
+
 # has features of a gene and will run through the sequence
 # build features will be implmented in Seq::Build::Gene that can build GeneSite
 # objects
@@ -171,7 +173,7 @@ sub _build_transcript_error {
     }
 
     # check begins with ATG
-    if ( $self->transcript_annotation !~ m/\A[5]+ATG/ ) {
+    if ( $self->transcript_annotation !~ m/\A[5]*ATG/ ) {
       push @errors, 'transcript does not begin with ATG';
     }
 
@@ -271,7 +273,7 @@ sub get_transcript_sites {
   my $coding_start      = $self->coding_start;
   my $coding_end        = $self->coding_end;
   my $coding_base_count = 0;
-  my @gene_sites;
+  my @sites;
 
   say join( "\t", "transcript: ", $self->transcript_seq );
   say join( "\t", "tran_ann:  ",  $self->transcript_annotation );
@@ -282,9 +284,9 @@ sub get_transcript_sites {
     );
     $site_annotation = $self->get_str_transcript_annotation( $i, 1 );
     $gene_site{abs_pos}       = $self->get_transcript_abs_position($i);
+    $gene_site{alt_names}     = $self->alt_names;
     $gene_site{ref_base}      = $self->get_base_transcript_seq( $i, 1 );
     $gene_site{error_code}    = $self->transcript_error;
-    $gene_site{alt_names}     = $self->alt_names;
     $gene_site{transcript_id} = $self->transcript_id;
     $gene_site{strand}        = $self->strand;
 
@@ -316,15 +318,12 @@ sub get_transcript_sites {
     }
     #p %gene_site if $gene_site{site_type} eq 'Coding' and $coding_base_count < 9;
     #exit if $coding_base_count > 9;
-    push @gene_sites, Seq::Site::Gene->new( \%gene_site );
+    push @sites, Seq::Site::Gene->new( \%gene_site );
   }
-  return @gene_sites;
+  return @sites;
 }
 
 sub get_flanking_sites {
-
-  # check genoem is a genome sized track or check whether it can give
-  # chromosome/position => abs position
 
   # Annotate splice donor/acceptor bp
   #  - i.e., bp within 6 bp of exon start / stop
@@ -347,7 +346,7 @@ sub get_flanking_sites {
   my @exon_ends    = $self->all_exon_ends;
   my $coding_start = $self->coding_start;
   my $coding_end   = $self->coding_end;
-  my (@gene_sites);
+  my (@sites);
 
   for ( my $i = 0; $i < @exon_starts; $i++ ) {
     for ( my $n = 1; $n <= $splice_site_length; $n++ ) {
@@ -365,7 +364,7 @@ sub get_flanking_sites {
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
-        push @gene_sites, Seq::Site::Gene->new( \%gene_site );
+        push @sites, Seq::Site::Gene->new( \%gene_site );
       }
       # flanking sites at end of exon
       if ( $exon_ends[$i] + $n - 1 > $coding_start
@@ -380,11 +379,11 @@ sub get_flanking_sites {
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
-        push @gene_sites, Seq::Site::Gene->new( \%gene_site );
+        push @sites, Seq::Site::Gene->new( \%gene_site );
       }
     }
   }
-  return @gene_sites;
+  return @sites;
 }
 
 __PACKAGE__->meta->make_immutable;

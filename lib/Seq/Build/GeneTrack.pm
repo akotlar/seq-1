@@ -104,17 +104,7 @@ sub build_gene_db {
     my @flank_exon_sites = $gene->get_flanking_sites();
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
-
       $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-
-      # if ( $prn_count == 0 ) {
-      #   print {$out_fh} "[" . encode_json($site_href);
-      #   $prn_count++;
-      # }
-      # else {
-      #   print {$out_fh} "," . encode_json($site_href);
-      #   $prn_count++;
-      # }
       $flank_exon_sites{ $site->abs_pos }++;
     }
 
@@ -122,23 +112,11 @@ sub build_gene_db {
     my @exon_sites = $gene->get_transcript_sites();
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
-
       $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-
-    #   if ( $prn_count == 0 ) {
-    #     print {$out_fh} "[" . encode_json($site_href);
-    #     $prn_count++;
-    #   }
-    #   else {
-    #     print {$out_fh} "," . encode_json($site_href);
-    #     $prn_count++;
-    #   }
-    #   $exon_sites{ $site->abs_pos }++;
+      $exon_sites{ $site->abs_pos }++;
     }
-    # these sites need to be 0-indexed
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
-  print {$out_fh} "]";
   return ( \%exon_sites, \%flank_exon_sites, \%transcript_start_sites );
 }
 
