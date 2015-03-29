@@ -104,15 +104,6 @@ sub build_snp_db {
 
         my $site_href = $snp_site->as_href;
         $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-
-        # if ( $prn_counter == 0 ) {
-        #   print {$out_fh} "[" . encode_json($site_href);
-        #   $prn_counter++;
-        # }
-        # else {
-        #   print {$out_fh} "," . encode_json($site_href);
-        #   $prn_counter++;
-        # }
       }
     }
   }
