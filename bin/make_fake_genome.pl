@@ -46,7 +46,7 @@ use DDP;
 #
 # variables
 #
-my ( $help, $out_ext, %snpfile_sites, $padding, $config_file, $twobit_genome);
+my ( $help, $out_ext, %snpfile_sites, $padding, $config_file, $twobit_genome );
 
 # defaults
 my $location       = 'sandbox';
@@ -60,18 +60,17 @@ GetOptions(
   'l|location=s'      => \$location,
   'p|padding=n'       => \$padding,
   'h|help'            => \$help,
-  );
+);
 
 if ($help) {
   Pod::Usage::pod2usage(1);
   exit;
 }
 
-unless (
-defined $out_ext
-and defined $twobit2fa_prog
-and defined $twobit_genome
-and defined $location)
+unless ( defined $out_ext
+  and defined $twobit2fa_prog
+  and defined $twobit_genome
+  and defined $location )
 {
   Pod::Usage::pod2usage();
 }
@@ -82,18 +81,19 @@ if ($padding) {
 
 # read config file, setup names for genome and chrs
 my $config_href = LoadFile($config_file) || croak "cannot load $config_file: $!";
-my $genome          //= $config_href->{genome_name};
-my $chrs_aref       //= $config_href->{genome_chrs};
+my $genome    //= $config_href->{genome_name};
+my $chrs_aref //= $config_href->{genome_chrs};
 
 # choose gene and snp track names
-my ($gene_track_name, $snp_track_name);
-for my $track (@{ $config_href->{sparse_tracks}}) {
-  if ($track->{type} eq 'gene') {
+my ( $gene_track_name, $snp_track_name );
+for my $track ( @{ $config_href->{sparse_tracks} } ) {
+  if ( $track->{type} eq 'gene' ) {
     $gene_track_name //= $track->{name};
-  } elsif ($track->{type} eq 'snp') {
+  }
+  elsif ( $track->{type} eq 'snp' ) {
     $snp_track_name //= $track->{name};
   }
-  last if ($gene_track_name && $snp_track_name);
+  last if ( $gene_track_name && $snp_track_name );
 }
 
 # setup UCSC connection
@@ -175,7 +175,8 @@ for my $chr (@$chrs_aref) {
         join( "\t", $data{chrom}, $data{txStart}, $data{txEnd}, $data{name} );
 
       # get real sequence from 2bit file
-      $chr_seq{$chr} = Get_gz_seq( $chr, ($data{txStart} - $padding), ($data{txEnd} + $padding) );
+      $chr_seq{$chr} =
+        Get_gz_seq( $chr, ( $data{txStart} - $padding ), ( $data{txEnd} + $padding ) );
 
       # reformat to 1-index sequence
       my @exon_starts = split( /\,/, $data{exonStarts} );
@@ -201,7 +202,8 @@ for my $chr (@$chrs_aref) {
 
       # check length of sequence is correct after processing
       croak "expected lengths to match"
-        unless length ${ $chr_seq{$chr} } == ( $data{txEnd} - $data{txStart} ) + 2 * $padding;
+        unless length ${ $chr_seq{$chr} }
+        == ( $data{txEnd} - $data{txStart} ) + 2 * $padding;
 
     }
   }
@@ -233,11 +235,12 @@ for my $chr (@$chrs_aref) {
 #
 
 # print header
-my @snp_fields = qw/ chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs /;
+my @snp_fields =
+  qw/ chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs /;
 say { $out_fhs{snp} } join( "\t", @snp_fields );
-my @clinvar_fields = qw/ chrom chromStart chromEnd SNPID ClinicalSignificance ReviewStatus PhenotypeID Cytogenic/;
-say { $out_fhs{clinvar} } join("\t", @clinvar_fields);
-
+my @clinvar_fields =
+  qw/ chrom chromStart chromEnd SNPID ClinicalSignificance ReviewStatus PhenotypeID Cytogenic/;
+say { $out_fhs{clinvar} } join( "\t", @clinvar_fields );
 
 my @alleles = qw( A C G T I D );
 my %seen_snp_name;
@@ -246,7 +249,7 @@ for my $chr (@$chrs_aref) {
 
     # the following is to _not_ build a snp_track if there's not known variants
     # for the genome assembly
-    if ( rand(1) > 0.99 && $snp_track_name) {
+    if ( rand(1) > 0.99 && $snp_track_name ) {
 
       #  I strongly suspect that the mysql tables are zero-index
       #  and I know that the ucsc browser is 1 indexed.
@@ -281,7 +284,7 @@ for my $chr (@$chrs_aref) {
       $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele )
         if ( rand(1) > 0.50 );
     } # choose site for snpfile, the rationale here is to build a snpfile
-      # without depending on if the organism has known variants
+    # without depending on if the organism has known variants
     elsif ( rand(1) > 0.995 ) {
       my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
       my $minor_allele;
@@ -290,25 +293,26 @@ for my $chr (@$chrs_aref) {
       } while ( $minor_allele eq $ref_base );
       $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele );
     }
-    if ($genome =~ m/\Ahg/ ) {
-      if (rand(1) > 0.9995) {
+    if ( $genome =~ m/\Ahg/ ) {
+      if ( rand(1) > 0.9995 ) {
         my @sig       = qw(pathogenic benign);
         my @pheno     = qw(MedGen OMIM GeneReviews);
         my @reviews   = qw(single multiple);
         my @cytogenic = qw(p22 q11 q24);
 
         my $snpid;
-        my $cyto = uc substr($chr, 3 );
+        my $cyto = uc substr( $chr, 3 );
         do {
-          $snpid = 'rs' . int(rand(1000000));
+          $snpid = 'rs' . int( rand(1000000) );
         } while ( exists $seen_snp_name{$snpid} );
         $seen_snp_name{$snpid}++;
 
-        my $sig_val   = uc $sig[ int(rand(1))  ];
-        my $pheno_val = uc $pheno[ int(rand(2))  ];
-        my $cyto_val  = uc $cytogenic[ int(rand(2)) ];
-        my $rev_val   = uc $reviews[ int(rand(1))  ];
-        say { $out_fhs{clinvar} } join("\t",
+        my $sig_val   = uc $sig[ int( rand(1) ) ];
+        my $pheno_val = uc $pheno[ int( rand(2) ) ];
+        my $cyto_val  = uc $cytogenic[ int( rand(2) ) ];
+        my $rev_val   = uc $reviews[ int( rand(1) ) ];
+        say { $out_fhs{clinvar} } join(
+          "\t",
           $chr,
           $i,         # start
           ( $i + 1 ), # end
@@ -316,10 +320,10 @@ for my $chr (@$chrs_aref) {
           $sig_val,
           $rev_val,
           $pheno_val,
-          join(".", $cyto, $cyto_val)
-          );
-       }
-     }
+          join( ".", $cyto, $cyto_val )
+        );
+      }
+    }
   }
 }
 
@@ -352,13 +356,13 @@ sub Print_snpfile {
 
     # choose type
     my $type;
-    if ($minor_allele eq 'I') {
+    if ( $minor_allele eq 'I' ) {
       $type = 'INS';
     }
-    elsif ($minor_allele eq 'D') {
+    elsif ( $minor_allele eq 'D' ) {
       $type = 'DEL';
     }
-    elsif ( $minor_allele =~ m/[ACTG]/) {
+    elsif ( $minor_allele =~ m/[ACTG]/ ) {
       $type = 'SNP';
     }
     # print out preamble

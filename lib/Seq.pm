@@ -37,13 +37,13 @@ has db_dir => (
 );
 
 has out_file => (
-  is => 'ro',
+  is  => 'ro',
   isa => 'Str',
 );
 
 has _out_fh => (
-  is => 'ro',
-  lazy => 1,
+  is      => 'ro',
+  lazy    => 1,
   builder => '_build_out_fh',
 );
 
@@ -125,9 +125,9 @@ my %IUPAC_codes = (
 
 sub _build_out_fh {
   my $self = shift;
-  if ($self->out_file) {
+  if ( $self->out_file ) {
     my $out_file = path( $self->out_file )->absolute->stringify;
-    return $self->get_write_bin_fh( $out_file );
+    return $self->get_write_bin_fh($out_file);
   }
   else {
     return \*STDOUT;
@@ -152,15 +152,16 @@ sub annotate_snpfile {
 
   # setup
   my $abs_snpfile = path( $self->snpfile )->absolute->stringify;
-  my $snpfile_fh = $self->get_read_fh($abs_snpfile);
-  my $annotator  = $self->_get_annotator;
+  my $snpfile_fh  = $self->get_read_fh($abs_snpfile);
+  my $annotator   = $self->_get_annotator;
 
   # for writing data
-  my $csv_writer = Text::CSV_XS->new({binary => 1, auto_diag => 1, always_quote => 1, eol => "\n"});
+  my $csv_writer = Text::CSV_XS->new(
+    { binary => 1, auto_diag => 1, always_quote => 1, eol => "\n" } );
 
   # write header
   my @header = $annotator->all_header;
-  $csv_writer->print( $self->_out_fh, \@header) or $csv_writer->error_diag;
+  $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
   # process snpdata
   my ( %header, %ids );

@@ -17,7 +17,7 @@ if ( $ENV{PERL_MONGODB_DEBUG} ) {
 
 use DDP;
 
-my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file);
+my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file );
 
 #
 # usage
@@ -28,7 +28,7 @@ GetOptions(
   'l|location=s' => \$db_location,
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
-  'o|out=s'        => \$out_file,
+  'o|out=s'      => \$out_file,
 );
 
 if ($help) {
@@ -44,11 +44,18 @@ unless ( defined $yaml_config
 
 # need to give absolute path to avoid placing it in an odd location (e.g., where
 # the genome is located)
-$out_file = path( $out_file )->absolute->stringify;
+$out_file = path($out_file)->absolute->stringify;
 
-say qq{ snpfile => $snpfile, configfile => $yaml_config, db_dir => $db_location, out_file => $out_file };
+say
+  qq{ snpfile => $snpfile, configfile => $yaml_config, db_dir => $db_location, out_file => $out_file };
 my $annotate_instance = Seq->new(
-  { snpfile => $snpfile, configfile => $yaml_config, db_dir => $db_location, out_file => $out_file } );
+  {
+    snpfile    => $snpfile,
+    configfile => $yaml_config,
+    db_dir     => $db_location,
+    out_file   => $out_file
+  }
+);
 
 $annotate_instance->annotate_snpfile;
 
