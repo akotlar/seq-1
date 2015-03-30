@@ -69,9 +69,19 @@ sparse_tracks:
     # for snp sparse tracks the 'features' key holds extra annotation
     # information
     features:
+      - alleleFreqCount
       - alleles
-      - maf
-
+      - alleleFreqs
+  - type: snp
+    local_dir: ./hg19/raw/snp/
+    local_file: clinvar.txt.gz
+    name: clinvar
+    sql_statement: SELECT _snp_fields FROM Clinvar
+    features:
+      - ClinicalSignificance
+      - ReviewStatus
+      - PhenotypeID
+      - Cytogenic
 # genome sized tracks: genome, phyloP, phastCons
 genome_sized_tracks:
   - name: hg38

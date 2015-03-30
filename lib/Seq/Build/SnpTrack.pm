@@ -56,19 +56,24 @@ sub build_snp_db {
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
 
-  # output
-  my $out_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path($out_dir);
-  my $out_file_name =
-    join( ".", $self->genome_name, $self->name, $self->type, 'json' );
-  my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
-  my $out_fh = $self->get_write_fh($out_file_path);
+  # # output
+  # my $out_dir = File::Spec->canonpath( $self->genome_index_dir );
+  # make_path($out_dir);
+  # my $out_file_name =
+  #   join( ".", $self->genome_name, $self->name, $self->type, 'json' );
+  # my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
+  # my $out_fh = $self->get_write_fh($out_file_path);
 
   my ( %header, @snp_sites );
   my $prn_counter = 0;
-  while (<$in_fh>) {
-    chomp $_;
-    my @fields = split( /\t/, $_ );
+  while (my $line = $in_fh->getline) {
+
+    # taint check
+    chomp $line;
+    my $clean_line = $self->clean_line($_);
+    next unless $clean_line;
+    my @fields = split( /\t/, $clean_line );
+
     if ( $. == 1 ) {
       map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
       next;
@@ -96,6 +101,10 @@ sub build_snp_db {
             ref_base => $base,
           }
         );
+
+        # TODO:
+        # should take 'features' and add them all to the site... this way
+        # we will not need a separate track for each snp-like track we want to add...
 
         if ($min_allele_freq) {
           $snp_site->set_snp_feature(
