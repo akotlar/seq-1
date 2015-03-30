@@ -20,9 +20,9 @@ copy( "../t/$config_file", '.' ) or die "Cannot copy ../t/$config_file";
 # setup data for reading sql db tests
 #   reads data after __END__
 {
-    my $dbh = DBI->connect('dbi:SQLite:dbname=test_hg38');
-    local $/ = ";\n";
-    $dbh->do($_) while <DATA>;
+  my $dbh = DBI->connect('dbi:SQLite:dbname=test_hg38');
+  local $/ = ";\n";
+  $dbh->do($_) while <DATA>;
 }
 
 use_ok('Seq')               || print "Bail_out!";
@@ -35,15 +35,15 @@ my $hg38_config_href = LoadFile($config_file)
   || die "cannot load $config_file $!\n";
 
 for my $track ( @{ $hg38_config_href->{sparse_tracks} } ) {
-    $track->{dsn}           = 'dbi:SQLite:dbname=test_hg38';
-    $track->{host}          = '';
-    $track->{user}          = '';
-    $track->{sql_statement} = 'SELECT id, name, feature FROM test';
+  $track->{dsn}           = 'dbi:SQLite:dbname=test_hg38';
+  $track->{host}          = '';
+  $track->{user}          = '';
+  $track->{sql_statement} = 'SELECT id, name, feature FROM test';
 }
 
 for my $track ( @{ $hg38_config_href->{genome_sized_tracks} } ) {
-    $track->{act}     = 0;
-    $track->{verbose} = 1;
+  $track->{act}     = 0;
+  $track->{verbose} = 1;
 }
 
 my $fetch_hg38 = Seq::Fetch->new($hg38_config_href);

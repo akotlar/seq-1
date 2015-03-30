@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# Name:           read_idx_genome.pl
+# Name:           read_genome.pl
 # Description:
 #   Input:
 #     - chromosome and positions
@@ -18,58 +18,47 @@
 #   - remove relative library position
 #
 
-use lib '/Users/twingo/software/Seq_copy/lib';
+use lib './lib';
 use autodie;
 use Cpanel::JSON::XS;
 use File::Spec;
 use IO::File;
 use Getopt::Long;
-use Modern::Perl qw( 2013 );
+use Modern::Perl qw/ 2013 /;
 use Pod::Usage;
-use YAML::XS qw( LoadFile );
+use YAML::XS qw/ LoadFile /;
 use Seq::GenomeSizedTrackChar;
-use Type::Params qw( compile );
-use Types::Standard qw( slurpy Str ArrayRef Num );
-
+use Time::localtime;
+use Type::Params qw/ compile /;
+use Types::Standard qw/ FileHandle slurpy Str ArrayRef Num /;
 use DDP;
 
-my @var_types         = qw(DEL INS SNP MESS);
-my @var_type_codes    = qw(Silent Replacement Intronic Intergenic);
-my @header_snpfile    = qw(Fragment Position Reference Minor_allele Type);
-my @header_basefile   = qw(Fragment Position Reference);
-my @header_annotation = qw(
-  base raw_genome_dat
-  genomic_annotation_code
-  gene_annotation_code
-  alt_name transcript_id
-  org_codon aa snp_id maf);
-my ($chr_wanted, $pos_from, $pos_to, $db_location, $yaml_config, $verbose);
-my ($client, $db, $gan_db, $snp_db, $dbsnp_name, $dbgene_name, $help);
+my ( $chr_wanted, $pos_from, $pos_to, $db_location, $yaml_config, $verbose );
+my ( $client, $db, $gan_db, $snp_db, $dbsnp_name, $dbgene_name, $help );
 my (%tracks);
 
 #
 # usage
 #
 GetOptions(
-           'c|chr=s'      => \$chr_wanted,
-           'f|from=n'     => \$pos_from,
-           't|to=n'       => \$pos_to,
-           'c|config=s'   => \$yaml_config,
-           'l|location=s' => \$db_location,
-           'v|verbose'    => \$verbose,
-           'h|help'       => \$help,
-          );
+  'c|chr=s'      => \$chr_wanted,
+  'f|from=n'     => \$pos_from,
+  't|to=n'       => \$pos_to,
+  'c|config=s'   => \$yaml_config,
+  'l|location=s' => \$db_location,
+  'v|verbose'    => \$verbose,
+  'h|help'       => \$help,
+);
 
-if ($help)
-{
+if ($help) {
   Pod::Usage::pod2usage(1);
   exit;
 }
 
-unless (    defined $pos_from
-        and defined $pos_to
-        and defined $yaml_config
-        and defined $db_location)
+unless ( defined $pos_from
+  and defined $pos_to
+  and defined $yaml_config
+  and defined $db_location )
 {
   Pod::Usage::pod2usage();
 }
@@ -79,11 +68,18 @@ $pos_from =~ s/\_|\,//g;
 $pos_to =~ s/\_|\,//g;
 
 # sanity check position
-if ($pos_from >= $pos_to)
-{
+if ( $pos_from >= $pos_to ) {
   say "Error: 'from' ('$pos_from') is greater than 'to' ('$pos_to')\n";
   exit;
 }
+
+my $now_timestamp = sprintf(
+  "%d-%02d-%02d-%02d%02d%02d",
+  ( localtime->year + 1900 ),
+  ( localtime->mon + 1 ),
+  localtime->mday, localtime->hour, localtime->min, localtime->sec
+);
+my $out_fh = IO::File->new( "fa.$now_timestamp.seq", 'w' );
 
 # load configuration file
 my $config_data = LoadFile($yaml_config);
@@ -99,15 +95,14 @@ my $index_dir //= $config_data->{genome_index_dir};
 $index_dir = File::Spec->canonpath($index_dir);
 
 #  make genome sized objects
-for my $gst (@{$config_data->{genome_sized_tracks}})
-{
+for my $gst ( @{ $config_data->{genome_sized_tracks} } ) {
   # naming convetion is 'name.type.idx' and 'name.type.yml' for the index and
   # the chr_len offsets, respectively
-  my $idx_file = join(".", $gst->{name}, $gst->{type}, 'idx');
-  my $yml_file = join(".", $gst->{name}, $gst->{type}, 'yml');
-  my $full_path_idx = File::Spec->catfile($db_location, $index_dir, $idx_file);
-  my $full_path_yml = File::Spec->catfile($db_location, $index_dir, $yml_file);
-  my $idx_fh = new IO::File->new($full_path_idx, 'r')
+  my $idx_file = join( ".", $gst->{name}, $gst->{type}, 'idx' );
+  my $yml_file = join( ".", $gst->{name}, $gst->{type}, 'yml' );
+  my $full_path_idx = File::Spec->catfile( $db_location, $index_dir, $idx_file );
+  my $full_path_yml = File::Spec->catfile( $db_location, $index_dir, $yml_file );
+  my $idx_fh = new IO::File->new( $full_path_idx, 'r' )
     or die "cannot open $full_path_idx";
 
   binmode $idx_fh;
@@ -123,20 +118,18 @@ for my $gst (@{$config_data->{genome_sized_tracks}})
   #p %gst_config;
   $gst_config{char_seq} = \$gst_dat;
 
-  push @{$tracks{$gst->{type}}}, Seq::GenomeSizedTrackChar->new(\%gst_config);
+  push @{ $tracks{ $gst->{type} } }, Seq::GenomeSizedTrackChar->new( \%gst_config );
 }
 
 # print header
 my @header = qw( abs_pos chr pos base_code base gan gene exon snp );
-for my $score_track (@{$tracks{score}})
-{
+for my $score_track ( @{ $tracks{score} } ) {
   push @header, 'score';
 }
-say join("\t", @header);
+say join( "\t", @header );
 
 my @seq;
-for (my $i = $pos_from ; $i < $pos_to ; $i++)
-{
+for ( my $i = $pos_from; $i < $pos_to; $i++ ) {
   my $zero_idx = $i;
   my $one_idx  = $i + 1;
 
@@ -144,61 +137,54 @@ for (my $i = $pos_from ; $i < $pos_to ; $i++)
 
   my $base_code = $genome->get_base($zero_idx);
   my $chr       = get_chr($zero_idx);
-  my $rel_pos   = $i + 1 - $genome->get_abs_pos($chr, 1);
+  my $rel_pos   = $i + 1 - $genome->get_abs_pos( $chr, 1 );
 
   my $base = $genome->get_idx_base($base_code);
-  my $gan  = ($genome->get_idx_in_gan($base_code)) ? 1 : 0;
-  my $gene = ($genome->get_idx_in_gene($base_code)) ? 1 : 0;
-  my $exon = ($genome->get_idx_in_exon($base_code)) ? 1 : 0;
-  my $snp  = ($genome->get_idx_in_snp($base_code)) ? 1 : 0;
+  my $gan  = ( $genome->get_idx_in_gan($base_code) ) ? 1 : 0;
+  my $gene = ( $genome->get_idx_in_gene($base_code) ) ? 1 : 0;
+  my $exon = ( $genome->get_idx_in_exon($base_code) ) ? 1 : 0;
+  my $snp  = ( $genome->get_idx_in_snp($base_code) ) ? 1 : 0;
 
   my @site_scores;
-  for my $score_track (@{$tracks{score}})
-  {
+  for my $score_track ( @{ $tracks{score} } ) {
     push @site_scores, $score_track->get_score($zero_idx);
   }
 
-  say join("\t",
-           $i,   $chr,  $rel_pos, $base_code, $base,
-           $gan, $gene, $exon,    $snp,       @site_scores);
+  say join( "\t",
+    $i, $chr, $rel_pos, $base_code, $base, $gan, $gene, $exon, $snp, @site_scores );
   push @seq, $base;
 }
 
 # print final sequence captured as a fa - for blat or something
-Print_fa(\@seq);
+Print_fa( $out_fh, \@seq );
 
 #
 # subroutines
 #
-sub Print_fa
-{
-  state $check = compile( ArrayRef[Str] );
-  my ($seq_aref) = $check->( @_ );
+sub Print_fa {
+  state $check = compile( FileHandle, ArrayRef [Str] );
+  my ( $fh, $seq_aref ) = $check->(@_);
 
-  for (my $i = 0 ; $i < @$seq_aref; $i++)
-  {
-    print "\n" if ($i % 80 == 0);
-    print $seq_aref->[$i];
+  for ( my $i = 0; $i < @$seq_aref; $i++ ) {
+    print $fh "\n" if ( $i % 80 == 0 );
+    print $fh $seq_aref->[$i];
   }
 }
 
-sub get_chr
-{
-  state $check = compile( Num );
-  my ($pos) = $check->( @_ );
-  my @chrs   = @{$config_data->{genome_chrs}};
+sub get_chr {
+  state $check = compile(Num);
+  my ($pos)  = $check->(@_);
+  my @chrs   = @{ $config_data->{genome_chrs} };
   my $genome = $tracks{genome}[0];
-  for my $i (0 .. scalar @chrs)
-  {
+  for my $i ( 0 .. scalar @chrs ) {
     my $chr          = $chrs[$i];
-    my $chr_len      = $genome->get_abs_pos($chr, 1);
-    my $next_chr     = $chrs[$i + 1];
-    my $next_chr_len = $genome->get_abs_pos($next_chr, 1);
+    my $chr_len      = $genome->get_abs_pos( $chr, 1 );
+    my $next_chr     = $chrs[ $i + 1 ];
+    my $next_chr_len = $genome->get_abs_pos( $next_chr, 1 );
 
     #say "$pos < $next_chr_len && $pos >= $chr_len";
 
-    if ($pos < $next_chr_len && $pos >= $chr_len)
-    {
+    if ( $pos < $next_chr_len && $pos >= $chr_len ) {
       return $chr;
     }
   }

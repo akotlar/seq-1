@@ -4,10 +4,10 @@ use strict;
 use warnings;
 use Test::More;
 use File::Copy;
-use File::Path;
-use Scalar::Util qw( blessed );
+use File::Path qw/ make_path /;
+use Scalar::Util qw/ blessed /;
 use DDP;
-use Lingua::EN::Inflect qw( A PL_N );
+use Lingua::EN::Inflect qw/ A PL_N /;
 use Log::Any::Adapter;
 
 if ( $ENV{PERL_MONGODB_DEBUG} ) {
@@ -21,7 +21,7 @@ my $hg38_config_file = 'hg38_build_test.yml';
 
 # setup testing enviroment
 {
-  File::Path->make_path('./sandbox');
+  make_path('./sandbox');
   copy( "./t/$hg38_config_file", "./sandbox/$hg38_config_file" )
     or die "cannot copy ./t/$hg38_config_file to ./sandbox/$hg38_config_file $!";
   chdir("./sandbox");

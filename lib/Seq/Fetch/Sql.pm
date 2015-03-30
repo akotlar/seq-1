@@ -4,7 +4,7 @@ use 5.10.0;
 use Carp;
 use Cwd;
 use DBI;
-use File::Path;
+use File::Path qw/ make_path /;
 use File::Spec;
 use Moose;
 use namespace::autoclean;
@@ -13,10 +13,9 @@ use Time::localtime;
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
 
-my $now_timestamp = sprintf( "%d-%02d-%02d",
-  eval( localtime->year() + 1900 ),
-  eval( localtime->mon() + 1 ),
-  localtime->mday() );
+my $year          = localtime->year() + 1900;
+my $mos           = localtime->mon() + 1;
+my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, localtime->mday );
 
 has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
 has dsn => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
@@ -93,7 +92,7 @@ sub write_sql_data {
   my $symlink_target   = File::Spec->catfile( ( $cwd, $dir ), $self->local_file );
 
   # make target dir
-  File::Path->make_path($dir);
+  make_path($dir);
 
   my $out_fh = $self->get_write_fh($target_file);
 

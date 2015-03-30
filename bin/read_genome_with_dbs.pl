@@ -1,46 +1,51 @@
 #!/usr/bin/env perl
 
-use lib '/Users/twingo/software/Seq_copy/lib';
+use lib './lib';
 use Getopt::Long;
-use Modern::Perl qw( 2013 );
+use Modern::Perl qw/ 2013 /;
 use Path::Tiny;
 use Pod::Usage;
-use Type::Params qw( compile );
-use Types::Standard qw( :type );
+use Type::Params qw/ compile /;
+use Types::Standard qw/ :type /;
+use Log::Any::Adapter;
 
 use Seq::Annotate;
+use Seq::Site::Gene;
+
+if ( $ENV{PERL_MONGODB_DEBUG} ) {
+  Log::Any::Adapter->set('Stdout');
+}
 
 use DDP;
 
-my ($chr_wanted, $pos_from, $pos_to, $db_location, $yaml_config, $verbose);
-my ($client, $db, $gan_db, $snp_db, $dbsnp_name, $dbgene_name, $help, $chr);
+my ( $chr_wanted, $pos_from, $pos_to, $db_location, $yaml_config, $verbose );
+my ( $client, $db, $gan_db, $snp_db, $dbsnp_name, $dbgene_name, $help, $chr );
 my (%tracks);
 
 #
 # usage
 #
 GetOptions(
-           'c|chr=s'      => \$chr_wanted,
-           'f|from=n'     => \$pos_from,
-           't|to=n'       => \$pos_to,
-           'c|config=s'   => \$yaml_config,
-           'l|location=s' => \$db_location,
-           'chr=s'        => \$chr,
-           'v|verbose'    => \$verbose,
-           'h|help'       => \$help,
-          );
+  'c|chr=s'      => \$chr_wanted,
+  'f|from=n'     => \$pos_from,
+  't|to=n'       => \$pos_to,
+  'c|config=s'   => \$yaml_config,
+  'l|location=s' => \$db_location,
+  'chr=s'        => \$chr,
+  'v|verbose'    => \$verbose,
+  'h|help'       => \$help,
+);
 
-if ($help)
-{
+if ($help) {
   Pod::Usage::pod2usage(1);
   exit;
 }
 
-unless (    defined $chr
-        and defined $pos_from
-        and defined $pos_to
-        and defined $yaml_config
-        and defined $db_location)
+unless ( defined $chr
+  and defined $pos_from
+  and defined $pos_to
+  and defined $yaml_config
+  and defined $db_location )
 {
   Pod::Usage::pod2usage();
 }
@@ -50,8 +55,7 @@ $pos_from =~ s/\_|\,//g;
 $pos_to =~ s/\_|\,//g;
 
 # sanity check position
-if ($pos_from >= $pos_to)
-{
+if ( $pos_from >= $pos_to ) {
   say "Error: 'from' ('$pos_from') is greater than 'to' ('$pos_to')\n";
   exit;
 }
@@ -67,9 +71,12 @@ chdir($db_location) || die "cannot change to $db_location: $!";
 my $assembly = Seq::Annotate->new_with_config( { configfile => $yaml_config } );
 
 # 1-indexed coordinates
-for (my $i = $pos_from ; $i <= $pos_to ; $i++)
-{
-  my $record = $assembly->annotate_site( $chr, $i );
+for ( my $i = $pos_from; $i <= $pos_to; $i++ ) {
+  my $record = $assembly->get_snp_annotation( $chr, $i, 'A' );
+  # for my $gan (@{ $record->{gan_data}}) {
+  #     my $gst = Seq::Site::Gene->new( $gan )->as_href;
+  #     p $gst;
+  # }
   p $record;
 }
 
@@ -81,7 +88,7 @@ read_genome - reads binary genome
 
 =head1 SYNOPSIS
 
-read_genome --from --to --config --locaiton
+read_genome --chr <chr> --from <pos> --to <pos> --config <file> --locaiton <path>
 
 =head1 DESCRIPTION
 

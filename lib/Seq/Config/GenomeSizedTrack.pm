@@ -1,11 +1,17 @@
-package Seq::Config::GenomeSizedTrack;
-
 use 5.10.0;
-use Carp qw( confess );
-use Moose;
+use strict;
+use warnings;
+
+package Seq::Config::GenomeSizedTrack;
+# ABSTRACT: Configure a genome sized track
+# VERSION
+
+use Moose 2;
 use Moose::Util::TypeConstraints;
+
+use Carp qw/ confess /;
 use namespace::autoclean;
-use Scalar::Util qw( reftype );
+use Scalar::Util qw/ reftype /;
 
 enum GenomeSizedTrackType => [ 'genome', 'score', ];
 
@@ -39,9 +45,6 @@ my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp
   }
 }
 
-#
-# basic genome characteristics
-#
 has name => ( is => 'ro', isa => 'Str', required => 1, );
 has type => ( is => 'ro', isa => 'GenomeSizedTrackType', required => 1, );
 has genome_chrs => (
@@ -51,16 +54,17 @@ has genome_chrs => (
   required => 1,
   handles  => { all_genome_chrs => 'elements', },
 );
-
-#
-# directory and file information
-#
-has genome_index_dir => (
-  is  => 'ro',
-  isa => 'Str',
+has _next_chrs => (
+  is      => 'ro',
+  isa     => 'HashRef',
+  traits  => ['Hash'],
+  lazy    => 1,
+  builder => '_build_next_chr',
+  handles => { get_next_chr => 'get', },
 );
-has local_dir => ( is => 'ro', isa => 'Str', );
-has local_files => (
+has genome_index_dir => ( is => 'ro', isa => 'Str', );
+has local_dir        => ( is => 'ro', isa => 'Str', );
+has local_files      => (
   is      => 'ro',
   isa     => 'ArrayRef[Str]',
   traits  => ['Array'],
@@ -91,6 +95,19 @@ has proc_clean_cmds => (
   isa    => 'ArrayRef[Str]',
   traits => ['Array'],
 );
+
+sub _build_next_chr {
+  my $self = shift;
+
+  my %next_chrs;
+  my @chrs = $self->all_genome_chrs;
+  for my $i ( 0 .. $#chrs ) {
+    if ( defined $chrs[ $i + 1 ] ) {
+      $next_chrs{ $chrs[$i] } = $chrs[ $i + 1 ];
+    }
+  }
+  return \%next_chrs;
+}
 
 sub get_idx_code {
   my $self = shift;

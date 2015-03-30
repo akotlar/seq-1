@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 package Seq::Build::GenomeSizedTrackChar;
+
 # ABSTRACT: Builds encoded binary representation of the genome
 # VERSION
 
@@ -31,7 +32,8 @@ sub insert_char {
     unless ( $pos >= 0 and $pos < $seq_len );
 
   # inserted character is a byproduct of a successful substr event
-  my $inserted_char = substr( ${ $self->char_seq }, $pos, 1, pack( 'C', $char ) );
+  my $inserted_char =
+    substr( ${ $self->char_seq }, $pos, 1, pack( 'C', $char ) );
 
   return $inserted_char;
 }
@@ -48,6 +50,7 @@ sub insert_score {
     and reftype( $self->score2char ) eq 'CODE';
 
   my $char_score = $self->score2char->($score);
+
   # say "insert score ($score) at pos ($pos) into "
   #   . $self->name
   #   . " got "
@@ -67,6 +70,7 @@ override '_build_char_seq' => sub {
 };
 
 sub write_char_seq {
+
   # write idx file
   my $self        = shift;
   my $file        = join( ".", $self->name, $self->type, 'idx' );
@@ -92,7 +96,6 @@ sub build_score_idx {
   my $local_files_aref = $self->local_files;
   my $local_dir        = File::Spec->canonpath( $self->local_dir );
 
-  # there's only 1 score file for conservation stuff at the moment
   for my $i ( 0 .. $#{$local_files_aref} ) {
     my $file       = $local_files_aref->[$i];
     my $local_file = File::Spec->catfile( $local_dir, $file );
@@ -119,13 +122,15 @@ sub build_genome_idx {
     and reftype($snp_href) eq "HASH";
 
   for ( my $pos = 0; $pos < $self->genome_length; $pos++ ) {
+
     # all absolute bases are zero-indexed
     my $this_base = uc $genome_str->get_base( $pos, 1 );
     my ( $in_gan, $in_gene, $in_exon, $in_snp ) = ( 0, 0, 0, 0 );
 
     # $in_gan -> means is this site annotated in the MongoDb gene track
     # e.g., 5'UTR, Coding, intronic splice site donor, etc.
-    $in_gan  = 1 if exists $exon_href->{$pos} || exists $flank_exon_href->{$pos};
+    $in_gan = 1
+      if exists $exon_href->{$pos} || exists $flank_exon_href->{$pos};
     $in_gene = $self->get_base($pos);
     $in_exon = 1 if exists $exon_href->{$pos};
     $in_snp  = 1 if exists $snp_href->{$pos};
@@ -173,15 +178,18 @@ sub set_gene_regions {
       $self->insert_char( $pos, '1' );
     }
     elsif ( $pos == ( $tx_stop - 1 ) ) {
+
       # end of coding portion of genome?
       if ( $i < scalar @sorted_tx_starts ) {
         $self->insert_char( $pos, '1' );
+
         # pick a new tx start and stop with a stop beyond the present position
         while ( ( $tx_stop - 1 ) <= $pos ) {
           $tx_start = $sorted_tx_starts[$i];
           $i++;
-          my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
-          $tx_stop = shift @tx_stops;
+          my @new_tx_stops =
+            sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+          $tx_stop = shift @new_tx_stops;
         }
       }
     }

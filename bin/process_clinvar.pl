@@ -24,25 +24,23 @@ use constant FALSE => 0;
 use constant TRUE  => 1;
 
 use constant VERSION => '1.0.0';
-use constant PROGRAM => eval { ($0 =~ m/(\w+\.pl)$/) ? $1 : $0 };
+use constant PROGRAM => eval { ( $0 =~ m/(\w+\.pl)$/ ) ? $1 : $0 };
 
 ##############################################################################
 ### Globals
 ##############################################################################
-my $dbh = DBI->connect(          
-    "dbi:SQLite:dbname=test.db", 
-    "",                          
-    "",                          
-    { RaiseError => 1 },         
-) or die $DBI::errstr;
+my $dbh = DBI->connect( "dbi:SQLite:dbname=test.db", "", "", { RaiseError => 1 }, )
+  or die $DBI::errstr;
 
 $dbh->do("DROP TABLE IF EXISTS Clinvar");
-$dbh->do("CREATE TABLE Clinvar(chrom TEXT, SNPID TEXT, chromStart INT, chromEnd INT, ClinicalSignificance TEXT, ReviewStatus TEXT, Origin TEXT, PhenotypeID TEXT, Cytogenic TEXT)");
+$dbh->do(
+  "CREATE TABLE Clinvar(chrom TEXT, SNPID TEXT, chromStart INT, chromEnd INT, ClinicalSignificance TEXT, ReviewStatus TEXT, Origin TEXT, PhenotypeID TEXT, Cytogenic TEXT)"
+);
 
 my %hCmdLineOption = ();
-my $sHelpHeader = "\nThis is ".PROGRAM." version ".VERSION."\n";
+my $sHelpHeader    = "\nThis is " . PROGRAM . " version " . VERSION . "\n";
 
-my ($sInFile, $sAssembly);
+my ( $sInFile, $sAssembly );
 my $fpIN;
 my @afields;
 
@@ -50,64 +48,62 @@ my @afields;
 ### Main
 ##############################################################################
 
-GetOptions( \%hCmdLineOption,
-            'infile|i=s',
-            'assembly|a=s',
-            'verbose|v',
-            'debug',
-            'help',
-            'man') or pod2usage(2);
+GetOptions( \%hCmdLineOption, 'infile|i=s', 'assembly|a=s', 'verbose|v', 'debug',
+  'help', 'man' )
+  or pod2usage(2);
 
-if ($hCmdLineOption{'debug'}) {
-	$hCmdLineOption{'infile'} = "";
-	$bDebug = TRUE;
+if ( $hCmdLineOption{'debug'} ) {
+  $hCmdLineOption{'infile'} = "";
+  $bDebug = TRUE;
 }
 
-if ( $hCmdLineOption{'help'} || (! defined $hCmdLineOption{'infile'})) {
-	pod2usage( -msg => $sHelpHeader, -exitval => 1);
+if ( $hCmdLineOption{'help'} || ( !defined $hCmdLineOption{'infile'} ) ) {
+  pod2usage( -msg => $sHelpHeader, -exitval => 1 );
 }
-pod2usage( -exitval => 0, -verbose => 2) if $hCmdLineOption{'man'};
+pod2usage( -exitval => 0, -verbose => 2 ) if $hCmdLineOption{'man'};
 
-$bDebug   = (defined $hCmdLineOption{'debug'}) ? TRUE : FALSE;
-$bVerbose = (defined $hCmdLineOption{'verbose'}) ? TRUE : FALSE;
+$bDebug   = ( defined $hCmdLineOption{'debug'} )   ? TRUE : FALSE;
+$bVerbose = ( defined $hCmdLineOption{'verbose'} ) ? TRUE : FALSE;
 
 $sInFile = $hCmdLineOption{'infile'};
 
 $sAssembly = $hCmdLineOption{'assembly'};
 
-($bDebug || $bVerbose) ? print STDERR "\n\t\tInput file\t: $sInFile\n" : undef;
+( $bDebug || $bVerbose ) ? print STDERR "\n\t\tInput file\t: $sInFile\n" : undef;
 
-$fpIN = IO::Uncompress::Gunzip->new($sInFile) or die "\tError : Cannot open $sInFile for reading .....\n";
-
+$fpIN = IO::Uncompress::Gunzip->new($sInFile)
+  or die "\tError : Cannot open $sInFile for reading .....\n";
 
 my $nX = 0;
 my $nY = 0;
-my ($chrs, $snpid);
+my ( $chrs, $snpid );
 my @asub;
 
 while (<$fpIN>) {
-	$_ =~ s/\s+$//;
-	
-	if ($nX == 0) {
-		$nY++;
-		}	
-	
-	else {
-	      ($_, @afields) = split(/\t/, $_); 
-	       if ($afields[11] eq $sAssembly) {
-	           $chrs = 'chr'.$afields[12];
-	           if ($afields[5] != -1) {
-	               $snpid = 'rs'.$afields[5];
-	              }
-	           else {
-	                 $snpid = 'NA';
-	                }
-	           @asub = split (/ /, $afields[16]);
-	           $dbh->do("INSERT INTO Clinvar VALUES('$chrs', '$snpid', $afields[13],$afields[14],'$afields[4]','$asub[2]','$afields[10]','$afields[9]','$afields[15]' )");
-	         }
-	       }
-	$nX++;
-   }
+  $_ =~ s/\s+$//;
+
+  if ( $nX == 0 ) {
+    $nY++;
+  }
+
+  else {
+    ( $_, @afields ) = split( /\t/, $_ );
+    if ( $afields[11] eq $sAssembly ) {
+      $chrs = 'chr' . $afields[12];
+      if ( $afields[5] != -1 ) {
+        $snpid = 'rs' . $afields[5];
+      }
+      else {
+        $snpid = 'NA';
+      }
+      @asub = split( / /, $afields[16] );
+      $dbh->do(
+        "INSERT INTO Clinvar VALUES('$chrs', '$snpid', $afields[13],$afields[14],'$afields[4]','$asub[2]','$afields[10]','$afields[9]','$afields[15]' )"
+      );
+    }
+  }
+  $nX++;
+}
 
 $dbh->disconnect();
 exit;

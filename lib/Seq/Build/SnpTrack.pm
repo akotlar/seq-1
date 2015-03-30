@@ -6,15 +6,16 @@ package Seq::Build::SnpTrack;
 # ABSTRACT: Builds a snp track using dbSnp data, derived from UCSC
 # VERSION
 
-use Moose;
+use Moose 2;
 
 use Carp qw/ confess /;
 use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
+use MongoDB;
 use namespace::autoclean;
 
 use Seq::Build::GenomeSizedTrackStr;
-use Seq::SnpSite;
+use Seq::Site::Snp;
 
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
@@ -31,7 +32,7 @@ has genome_name => (
   required => 1,
 );
 
-has genome_seq => (
+has genome_track_str => (
   is       => 'ro',
   isa      => 'Seq::Build::GenomeSizedTrackStr',
   required => 1,
@@ -44,23 +45,11 @@ has mongo_connection => (
   required => 1,
 );
 
-has _snp_db => (
-    is => 'ro',
-    isa => 'MongoDB::Collection',
-    builder => '_set_snp_db',
-    lazy => 1,
-);
-
-sub _set_snp_db {
-    my $self = shift;
-    return $self->mongo_connection->_mongo_collection($self->name );
-}
-
 sub build_snp_db {
   my $self = shift;
 
-  # set mongo collection
-  $self->_snp_db->drop;
+  # defensively drop anything if the collection already exists
+  $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -96,37 +85,28 @@ sub build_snp_db {
 
     if ( $data{name} =~ m/^rs(\d+)/ ) {
       foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} ) {
-        my $chr     = $data{chrom};
-        my $snp_id  = $data{name};
-        my $abs_pos = $self->get_abs_pos( $chr, $pos );
-        my $record  = {
-          abs_pos => $abs_pos,
-          snp_id  => $snp_id,
-        };
-        my $snp_site = Seq::SnpSite->new($record);
-        my $base = $self->get_base( $abs_pos, 1 );
-        $snp_site->set_feature( base => $base );
-        #say "chr: $chr, pos: $pos, abs_pos: $abs_pos";
+        my $chr      = $data{chrom};
+        my $snp_id   = $data{name};
+        my $abs_pos  = $self->get_abs_pos( $chr, $pos );
+        my $base     = $self->get_base( $abs_pos, 1 );
+        my $snp_site = Seq::Site::Snp->new(
+          {
+            abs_pos  => $abs_pos,
+            snp_id   => $snp_id,
+            ref_base => $base,
+          }
+        );
 
         if ($min_allele_freq) {
-          $snp_site->set_feature( maf => $min_allele_freq, alleles => join( ",", @alleles ) );
+          $snp_site->set_snp_feature(
+            maf     => $min_allele_freq,
+            alleles => join( ",", @alleles )
+          );
         }
-
-        # record keeping - TODO: move into Moose Counter method
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
-        $self->_snp_db->insert($site_href);
-        #$gene_collection->insert( $site_href );
-
-        if ( $prn_counter == 0 ) {
-          print {$out_fh} "[" . encode_json($site_href);
-          $prn_counter++;
-        }
-        else {
-          print {$out_fh} "," . encode_json($site_href);
-          $prn_counter++;
-        }
+        $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
       }
     }
   }

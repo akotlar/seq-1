@@ -9,13 +9,13 @@ package Seq::Build::GeneTrack;
 use Moose 2;
 
 use Carp qw/ confess /;
-use namespace::autoclean;
 use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
 use MongoDB;
+use namespace::autoclean;
 
-use Seq::Gene;
 use Seq::Build::GenomeSizedTrackStr;
+use Seq::Gene;
 
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
@@ -45,21 +45,11 @@ has mongo_connection => (
   required => 1,
 );
 
-has _gene_db => (
-    is => 'ro',
-    isa => 'MongoDB::Collection',
-    builder => '_set_gene_db',
-    lazy => 1,
-);
-
-sub _set_gene_db {
-    my $self = shift;
-    return $self->mongo_connection->_mongo_collection($self->name );
-}
 sub build_gene_db {
   my $self = shift;
 
-  $self->_gene_db->drop;
+  # defensively drop anything if the collection already exists
+  $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -96,7 +86,7 @@ sub build_gene_db {
       next;
     }
     my %data = map { $_ => $fields[ $header{$_} ] }
-      ( @{ $self->gene_fields_aref }, $self->all_names );
+      ( @{ $self->gene_fields_aref }, $self->all_features );
 
     # prepare basic gene data
     my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
@@ -105,7 +95,7 @@ sub build_gene_db {
     $gene_data{genome_track} = $self->genome_track_str;
 
     # prepare alternative names for gene
-    my %alt_names = map { $_ => $data{$_} if exists $data{$_} } ( $self->all_names );
+    my %alt_names = map { $_ => $data{$_} if exists $data{$_} } ( $self->all_features );
 
     my $gene = Seq::Gene->new( \%gene_data );
     $gene->set_alt_names(%alt_names);
@@ -114,17 +104,7 @@ sub build_gene_db {
     my @flank_exon_sites = $gene->get_flanking_sites();
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
-      $self->_gene_db->insert($site_href);
-      # $gene_collection->insert( $site_href );
-
-      if ( $prn_count == 0 ) {
-        print {$out_fh} "[" . encode_json($site_href);
-        $prn_count++;
-      }
-      else {
-        print {$out_fh} "," . encode_json($site_href);
-        $prn_count++;
-      }
+      $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
       $flank_exon_sites{ $site->abs_pos }++;
     }
 
@@ -132,23 +112,11 @@ sub build_gene_db {
     my @exon_sites = $gene->get_transcript_sites();
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
-      $self->_gene_db->insert($site_href);
-      # $gene_collection->insert( $site_href );
-
-      if ( $prn_count == 0 ) {
-        print {$out_fh} "[" . encode_json($site_href);
-        $prn_count++;
-      }
-      else {
-        print {$out_fh} "," . encode_json($site_href);
-        $prn_count++;
-      }
+      $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
       $exon_sites{ $site->abs_pos }++;
     }
-    push @{ $transcript_start_sites{ $gene_data{transcript_start} } },
-      $gene_data{transcript_end};
+    push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
-  print {$out_fh} "]";
   return ( \%exon_sites, \%flank_exon_sites, \%transcript_start_sites );
 }
 

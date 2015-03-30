@@ -9,24 +9,24 @@ use DDP;
 my $dbh;
 {
   $dbh = DBI->connect('dbi:SQLite:dbname=ucsc.sqlite3.db');
-  local $/=";\n";
-  $dbh->do( $_ ) while <DATA>;
+  local $/ = ";\n";
+  $dbh->do($_) while <DATA>;
 }
 
-my $snp_data = "snp141.txt";
+my $snp_data       = "snp141.txt";
 my $knownGene_data = "knownGene.txt";
-my $kgXref_data = "kgXref_data";
+my $kgXref_data    = "kgXref_data";
 
 # fill knownGene
 {
   my $file = $knownGene_data;
-  my $sth = $dbh->prepare( qq{ INSERT INTO knownGene VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) } );
+  my $sth  = $dbh->prepare(
+    qq{ INSERT INTO knownGene VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) });
   open my $in_fh, "<", $knownGene_data;
-  while (<$in_fh>)
-  {
+  while (<$in_fh>) {
     say "$file: $.";
     chomp $_;
-    my @line = split(/\t/, $_);
+    my @line = split( /\t/, $_ );
     $sth->execute(@line);
   }
 }
@@ -34,13 +34,13 @@ my $kgXref_data = "kgXref_data";
 # fill kgXref
 {
   my $file = $kgXref_data;
-  my $sth = $dbh->prepare( qq{ INSERT INTO kgXref VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) } );
+  my $sth =
+    $dbh->prepare(qq{ INSERT INTO kgXref VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) });
   open my $in_fh, "<", $file;
-  while (<$in_fh>)
-  {
+  while (<$in_fh>) {
     say "$file: $.";
     chomp $_;
-    my @line = split(/\t/, $_);
+    my @line = split( /\t/, $_ );
     $sth->execute(@line);
   }
 }
@@ -48,19 +48,17 @@ my $kgXref_data = "kgXref_data";
 # fill snp141
 {
   my $file = $snp_data;
-  my $sth = $dbh->prepare( qq{ INSERT INTO snp141 VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) } );
+  my $sth  = $dbh->prepare(
+    qq{ INSERT INTO snp141 VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) }
+  );
   open my $in_fh, "<", $file;
-  while (<$in_fh>)
-  {
+  while (<$in_fh>) {
     say "$file: $.";
     chomp $_;
-    my @line = split(/\t/, $_);
+    my @line = split( /\t/, $_ );
     $sth->execute(@line);
   }
 }
-
-
-
 
 __END__
 BEGIN TRANSACTION;
