@@ -26,7 +26,7 @@ sub get_write_fh {
 
   my $fh;
   if ( $file =~ m/\.gz\Z/ ) {
-    $fh = new IO::Compress::Gzip $file
+    $fh = IO::Compress::Gzip->new( $file )
       || croak "gzip failed: $GzipError\n";
   }
   else {
@@ -41,7 +41,7 @@ sub get_read_fh {
 
   my $fh;
   if ( $file =~ m/\.gz\Z/ ) {
-    $fh = new IO::Uncompress::Gunzip $file
+    $fh = IO::Uncompress::Gunzip->new( $file )
       || confess "\nError: gzip failed: $GunzipError\n";
   }
   else {

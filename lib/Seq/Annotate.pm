@@ -208,7 +208,8 @@ sub get_snp_annotation {
     for my $attr ( keys %$gan ) {
       if ( exists $gene_site_annotation{$attr} ) {
         if ( $gene_site_annotation{$attr} ne $gan->{$_} ) {
-          push @{ $gene_site_annotation{$attr} }, $gan->{$_};
+          $gene_site_annotation{$attr} =
+            $self->_join_data( $gene_site_annotation{$attr}, $gan->{$_} );
         }
       }
       else {
@@ -225,7 +226,8 @@ sub get_snp_annotation {
     for my $attr ( keys %$san ) {
       if ( exists $snp_site_annotation{$attr} ) {
         if ( $snp_site_annotation{$attr} ne $san->{$attr} ) {
-          push @{ $snp_site_annotation{$attr} }, $san->{$attr};
+          $snp_site_annotation{$attr} =
+            $self->_join_data( $snp_site_annotation{$attr}, $san->{$attr});
         }
       }
       else {
@@ -253,6 +255,21 @@ sub get_snp_annotation {
     }
   }
   return \%hash;
+}
+
+sub _join_data {
+  my ($self, $old_val, $new_val) = @_;
+  my $type = reftype($old_val);
+  if ( $type eq 'Array' && $type ) {
+    unless ( grep {/$new_val/} @$old_val ) {
+      push @{ $old_val }, $new_val;
+      return $old_val;
+    }
+  } else {
+    my @new_array;
+    push @new_array, $old_val, $new_val;
+    return \@new_array;
+  }
 }
 
 sub _mung_output {
@@ -287,8 +304,9 @@ sub _build_header {
   }
   map { push @alt_features, $_ } keys %snp_features;
 
-  my @features = qw( chr rel_pos ref_base annotation_type codon_number codon_position
-    error_code minor_allele new_aa_residue new_codon_seq ref_aa_residue ref_base
+  my @features = qw( chr rel_pos ref_base genomic_annotation_code annotation_type
+    codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
+    ref_aa_residue ref_base
     ref_codon_seq site_type strand transcript_id );
 
   push @features, @alt_features;

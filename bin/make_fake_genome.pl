@@ -281,7 +281,8 @@ for my $chr (@$chrs_aref) {
         join( ",", @allele_freq )
       );
       # choose site (with 'known' snp) for snpfile
-      $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele )
+      my $rel_pos = $i + 1;
+      $snpfile_sites{"$chr:$rel_pos"} = join( ":", $ref_base, $minor_allele )
         if ( rand(1) > 0.50 );
     } # choose site for snpfile, the rationale here is to build a snpfile
     # without depending on if the organism has known variants
@@ -291,7 +292,8 @@ for my $chr (@$chrs_aref) {
       do {
         $minor_allele = uc $alleles[ int( rand(3) ) ];
       } while ( $minor_allele eq $ref_base );
-      $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele );
+      my $rel_pos = $i + 1;
+      $snpfile_sites{"$chr:$rel_pos"} = join( ":", $ref_base, $minor_allele );
     }
     if ( $genome =~ m/\Ahg/ ) {
       if ( rand(1) > 0.9995 ) {

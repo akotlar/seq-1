@@ -190,21 +190,20 @@ sub annotate_snpfile {
     my $all_alleles   = $fields[ $header{Alleles} ];
     my $allele_counts = $fields[ $header{Allele_Counts} ];
 
-    if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
-      my $method = lc 'set_' . $type . '_site';
-      $self->$method( $annotator->get_abs_pos( $chr, $pos ) => [ $chr, $pos ] );
-    }
-
     # get carrier ids for variant
     my @carriers = $self->_get_minor_allele_carriers( \@fields, \%ids, $ref_allele );
 
-    # get annotation for snp sites
-    next unless uc $type eq 'SNP';
-    for my $allele ( split( /,/, $all_alleles ) ) {
-      next if $allele eq $ref_allele;
-      my $record_href = $annotator->get_snp_annotation( $chr, $pos, $allele );
-      my @record = map { $record_href->{$_} } @header;
-      $csv_writer->print( $self->_out_fh, \@record ) or $csv_writer->error_diag;
+    if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
+      my $method = lc 'set_' . $type . '_site';
+      $self->$method( $annotator->get_abs_pos( $chr, $pos ) => [ $chr, $pos ] );
+      # get annotation for snp sites
+      next unless uc $type eq 'SNP';
+      for my $allele ( split( /,/, $all_alleles ) ) {
+        next if $allele eq $ref_allele;
+        my $record_href = $annotator->get_snp_annotation( $chr, $pos, $allele );
+        my @record = map { $record_href->{$_} } @header;
+        $csv_writer->print( $self->_out_fh, \@record ) or $csv_writer->error_diag;
+      }
     }
   }
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
