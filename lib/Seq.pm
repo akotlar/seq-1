@@ -15,6 +15,8 @@ use Path::Tiny;
 use Text::CSV_XS;
 use Seq::Annotate;
 
+use DDP;
+
 with 'Seq::Role::IO';
 
 has snpfile => (
@@ -32,6 +34,17 @@ has db_dir => (
   is       => 'ro',
   isa      => 'Str',
   required => 1,
+);
+
+has out_file => (
+  is => 'ro',
+  isa => 'Str',
+);
+
+has _out_fh => (
+  is => 'ro',
+  lazy => 1,
+  builder => '_build_out_fh',
 );
 
 has del_sites => (
@@ -110,6 +123,17 @@ my %IUPAC_codes = (
   N => [],
 );
 
+sub _build_out_fh {
+  my $self = shift;
+  if ($self->out_file) {
+    my $out_file = path( $self->out_file )->absolute->stringify;
+    return $self->get_write_bin_fh( $out_file );
+  }
+  else {
+    return \*STDOUT;
+  }
+}
+
 sub _get_annotator {
   my $self           = shift;
   my $abs_configfile = path( $self->configfile )->absolute;
@@ -126,16 +150,27 @@ sub annotate_snpfile {
 
   croak "specify a snpfile to annotate\n" unless $self->snpfile;
 
+  # setup
   my $abs_snpfile = path( $self->snpfile )->absolute->stringify;
-
   my $snpfile_fh = $self->get_read_fh($abs_snpfile);
   my $annotator  = $self->_get_annotator;
 
+  # for writing data
+  my $csv_writer = Text::CSV_XS->new({binary => 1, auto_diag => 1, always_quote => 1, eol => "\n"});
+
+  # write header
+  my @header = $annotator->all_header;
+  $csv_writer->print( $self->_out_fh, \@header) or $csv_writer->error_diag;
+
+  # process snpdata
   my ( %header, %ids );
   while ( my $line = $snpfile_fh->getline ) {
+
+    # process snpfile
     chomp $line;
     my $clean_line = $self->clean_line($line);
 
+    # skip lines that don't return any usable data
     next unless $clean_line;
 
     my @fields = split( /\t/, $clean_line );
@@ -166,10 +201,14 @@ sub annotate_snpfile {
     next unless uc $type eq 'SNP';
     for my $allele ( split( /,/, $all_alleles ) ) {
       next if $allele eq $ref_allele;
-      my $record = $annotator->get_snp_annotation( $chr, $pos, $allele );
+      my $record_href = $annotator->get_snp_annotation( $chr, $pos, $allele );
+      my @record = map { $record_href->{$_} } @header;
+      $csv_writer->print( $self->_out_fh, \@record ) or $csv_writer->error_diag;
     }
   }
-  my @snpsites = sort { $a <=> $b } $self->keys_snp_sites;
+  my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
+  my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
+  my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
 
   # TODO: decide how to return data or do we just print it out...
   return;

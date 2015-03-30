@@ -237,8 +237,8 @@ sub get_snp_annotation {
   $record->{gene_site_annotation} = \%gene_site_annotation;
   $record->{snp_site_annotation}  = \%snp_site_annotation;
 
-  my $gene_ann = $self->_mung_ouptu( \%gene_site_annotation );
-  my $snp_ann  = $self->_mung_ouptu( \%snp_site_annotation );
+  my $gene_ann = $self->_mung_output( \%gene_site_annotation );
+  my $snp_ann  = $self->_mung_output( \%snp_site_annotation );
   map { $record->{$_} = $gene_ann->{$_} } keys %$gene_ann;
   map { $record->{$_} = $snp_ann->{$_} } keys %$snp_ann;
 
@@ -252,11 +252,10 @@ sub get_snp_annotation {
       $hash{$attr} = 'NA';
     }
   }
-
   return \%hash;
 }
 
-sub _mung_ouptu {
+sub _mung_output {
   my ( $self, $href ) = @_;
   my %hash;
 

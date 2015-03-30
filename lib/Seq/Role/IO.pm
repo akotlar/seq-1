@@ -68,9 +68,9 @@ sub clean_line {
   if ( $line =~ m/$taint_check_regex/ ) {
     return $1;
   }
-  else {
-    warn "ignoring: $line";
-  }
+  # else {
+  #   warn "ignoring: $line";
+  # }
   return;
 }
 

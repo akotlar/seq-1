@@ -19,18 +19,16 @@
 #   6. write fake snps that occur ~1% of the genome after UCSC's snp tables
 #
 #   TODO:
-#     - change offsets so we grab flanking regions around each gene
-#     - use YAML file to override the chromosome names hard coded into this
-#       script (Matthew)
-#     - add fake data for clinvar (Matthew)
-#     - add fake data for cad score (Matthew) and haploinsufficiency (Alex)
+#     - haploinsufficiency - presently this is based on transcript ID but that
+#       doesn't fold into the current framework well. Would rec changing to a
+#       specific bases (Alex)
 #     - accomidate species without known SNPs ()
-#     - make a test "snpfile.txt" (Matthew)
 
 use 5.10.0;
 use strict;
 use warnings;
 use DBI;
+use Carp qw/ croak /;
 use Getopt::Long;
 use File::Spec;
 use File::Path qw/ make_path /;
@@ -38,50 +36,72 @@ use IO::File;
 use IO::Compress::Gzip qw/ gzip $GzipError /;
 use IO::Uncompress::Gunzip qw/ $GunzipError /;
 use List::Util qw/ shuffle /;
+use Pod::Usage;
 use Scalar::Util qw/ looks_like_number /;
+use YAML::XS qw/ LoadFile /;
 use YAML qw/ Dump /;
+
 use DDP;
 
 #
 # variables
 #
-my ( $verbose, $act, $out_ext, %snpfile_sites );
-my $dir            = 'sandbox';
-my $twobit2fa_prog = 'twoBitToFa';
-my $twobit_genome  = 'hg38.2bit';
-my $genome         = 'hg38';
-my $dsn            = "DBI:mysql:host=genome-mysql.cse.ucsc.edu;database=$genome";
-my $dbh            = DBI->connect( $dsn, "genome", "" )
-  or die "cannot connect to $dsn";
+my ( $help, $out_ext, %snpfile_sites, $padding, $config_file, $twobit_genome);
 
-#
-# get options
-#
-die join( "\n\t",
-  "Usage: $0 [-v] [-a]",
-  "-d <dir to create data, default = $dir>",
-  "-g <genome, default = $genome>",
-  "--twoBitToFa_prog <binary, default = $twobit2fa_prog>",
-  "--twoBit_genome <2bit file, default = $twobit_genome",
-  "--out <out extension>" )
-  unless GetOptions(
-  'v|verbose'         => \$verbose,
-  'a|act'             => \$act,
-  'g|genome=s'        => \$genome,
+# defaults
+my $location       = 'sandbox';
+my $twobit2fa_prog = 'twoBitToFa';
+
+GetOptions(
+  'c|config=s'        => \$config_file,
   'o|out=s'           => \$out_ext,
   'twoBitToFa_prog=s' => \$twobit2fa_prog,
   'twoBit_genome=s'   => \$twobit_genome,
-  'd|dir=s'           => \$dir
-  )
-  and $out_ext
-  and $genome
-  and $twobit2fa_prog
-  and $twobit_genome
-  and $dir;
-$verbose++ unless $act;
+  'l|location=s'      => \$location,
+  'p|padding=n'       => \$padding,
+  'h|help'            => \$help,
+  );
+
+if ($help) {
+  Pod::Usage::pod2usage(1);
+  exit;
+}
+
+unless (
+defined $out_ext
+and defined $twobit2fa_prog
+and defined $twobit_genome
+and defined $location)
+{
+  Pod::Usage::pod2usage();
+}
+
+if ($padding) {
+  croak "padding should be between 1-10000" unless $padding > 0 && $padding < 10000;
+}
+
+# read config file, setup names for genome and chrs
+my $config_href = LoadFile($config_file) || croak "cannot load $config_file: $!";
+my $genome          //= $config_href->{genome_name};
+my $chrs_aref       //= $config_href->{genome_chrs};
+
+# choose gene and snp track names
+my ($gene_track_name, $snp_track_name);
+for my $track (@{ $config_href->{sparse_tracks}}) {
+  if ($track->{type} eq 'gene') {
+    $gene_track_name //= $track->{name};
+  } elsif ($track->{type} eq 'snp') {
+    $snp_track_name //= $track->{name};
+  }
+  last if ($gene_track_name && $snp_track_name);
+}
+
+# setup UCSC connection
+my $dsn = "DBI:mysql:host=genome-mysql.cse.ucsc.edu;database=$genome";
+my $dbh = DBI->connect( $dsn, "genome", "" ) or croak "cannot connect to $dsn";
 
 # change dir to directory where we'll download data
-chdir $dir or die "cannot change into $dir";
+chdir $location or croak "cannot change into $location";
 
 # get abs path to 2bit file
 #   going to assume twoBitToFa is in path
@@ -97,6 +117,7 @@ my %out_dirs = (
   raw       => "$genome/raw",
   seq       => "$genome/raw/seq",
   snp       => "$genome/raw/snp",
+  clinvar   => "$genome/raw/clinvar",
   gene      => "$genome/raw/gene",
   phyloP    => "$genome/raw/phyloP",
   phastCons => "$genome/raw/phastCons",
@@ -110,10 +131,11 @@ map { make_path( $out_dirs{$_} ) } keys %out_dirs;
 my %out_files = (
   bed       => "$out_ext.bed.gz",
   snpfile   => "$out_ext.snp.gz",
-  gene      => 'knownGene.txt.gz',
+  gene      => "$gene_track_name.txt.gz",
   phyloP    => 'phyloP.txt.gz',
   phastCons => 'phastCons.txt.gz',
-  snp       => 'snp141.txt.gz',
+  snp       => "$snp_track_name.txt.gz",
+  clinvar   => 'clinvar.txt.gz',
 );
 %out_files =
   map { $_ => File::Spec->catfile( $out_dirs{$_}, $out_files{$_} ) }
@@ -123,18 +145,11 @@ my %out_files = (
 my %out_fhs =
   map { $_ => IO::Compress::Gzip->new( $out_files{$_} ) } keys %out_files;
 
-# print out for debugging
-# p %out_dirs;
-# p %out_files;
-# p %out_fhs;
-# p $twobit_genome;
-
-my @chrs = map { "chr$_" } ( 1 .. 22, 'M', 'X', 'Y' );
 my ( %header, %found_chr, %chr_len, %chr_seq );
 
 # change into seq dir to write files
-chdir $out_dirs{seq} || die "cannot change dir $out_dirs{seq}\n";
-for my $chr (@chrs) {
+chdir $out_dirs{seq} || croak "cannot change dir $out_dirs{seq}\n";
+for my $chr (@$chrs_aref) {
   my $sth = $dbh->prepare(
     qq{
     SELECT *
@@ -145,8 +160,8 @@ for my $chr (@chrs) {
     AND ($genome.knownGene.cdsStart != $genome.knownGene.cdsEnd)
     LIMIT 1
     }
-  ) or die $dbh->errstr;
-  my $rc = $sth->execute() or die $dbh->errstr;
+  ) or croak $dbh->errstr;
+  my $rc = $sth->execute() or croak $dbh->errstr;
   my @header = @{ $sth->{NAME} };
   %header = map { $header[$_] => $_ } ( 0 .. $#header ) unless %header;
   while ( my @row = $sth->fetchrow_array ) {
@@ -160,13 +175,13 @@ for my $chr (@chrs) {
         join( "\t", $data{chrom}, $data{txStart}, $data{txEnd}, $data{name} );
 
       # get real sequence from 2bit file
-      $chr_seq{$chr} = Get_gz_seq( $chr, $data{txStart}, $data{txEnd} );
+      $chr_seq{$chr} = Get_gz_seq( $chr, ($data{txStart} - $padding), ($data{txEnd} + $padding) );
 
       # reformat to 1-index sequence
       my @exon_starts = split( /\,/, $data{exonStarts} );
       my @exon_ends   = split( /\,/, $data{exonEnds} );
       my ( @new_exon_ends, @new_exon_starts );
-      my $txStart = $data{txStart} - 1;
+      my $txStart = $data{txStart} - 1 - $padding;
       for ( my $i = 0; $i < @exon_starts; $i++ ) {
         my $new_start = $exon_starts[$i] - $txStart;
         push @new_exon_starts, $new_start;
@@ -182,16 +197,16 @@ for my $chr (@chrs) {
 
       # save 1-index sequence
       $found_chr{ $data{chrom} } = \%data;
-      $chr_len{$chr} = $data{txEnd} - $data{txStart};
+      $chr_len{$chr} = $data{txEnd} - $data{txStart} + 2 * $padding;
 
       # check length of sequence is correct after processing
-      die "expected lengths to match"
-        unless length ${ $chr_seq{$chr} } == ( $data{txEnd} - $data{txStart} );
+      croak "expected lengths to match"
+        unless length ${ $chr_seq{$chr} } == ( $data{txEnd} - $data{txStart} ) + 2 * $padding;
 
     }
   }
 }
-chdir $out_dirs{raw} or die "cannot change dir $out_dirs{raw}\n";
+chdir $out_dirs{raw} or croak "cannot change dir $out_dirs{raw}\n";
 
 # print fake knownGene data
 {
@@ -203,7 +218,7 @@ chdir $out_dirs{raw} or die "cannot change dir $out_dirs{raw}\n";
 }
 
 # print fake conservation data - aboult half of the bases will have scores
-for my $chr (@chrs) {
+for my $chr (@$chrs_aref) {
   for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
     say { $out_fhs{phastCons} } join( "\t", $chr, ( $i + 1 ), rand(1) )
       if rand(1) > 0.5;
@@ -212,63 +227,105 @@ for my $chr (@chrs) {
   }
 }
 
+#
 # print fake snp data - about 1% of sites will be snps
-{
-  my @snp_fields =
-    qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs );
-  say { $out_fhs{snp} } join( "\t", @snp_fields );
-  my @alleles = qw( A C G T );
-  my %seen_snp_name;
-  for my $chr (@chrs) {
-    for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
-      if ( rand(1) > 0.99 ) {
+# for human genome, create clinvar data, about 0.05% will be clinvar sites
+#
 
-        #  I strongly suspect that the mysql tables are zero-index
-        #  and I know that the ucsc browser is 1 indexed.
-        my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
-        my $minor_allele;
-        my $name = 'rs' . int( rand(1000000) );
-        my @allele_freq;
-        push @allele_freq, sprintf( "%0.2f", rand(1) );
-        push @allele_freq, sprintf( "%0.2f", ( 1 - $allele_freq[0] ) );
-        @allele_freq = sort { $b <=> $a } @allele_freq;
-        my @allele_freq_counts = map { $_ * 1000 } @allele_freq;
+# print header
+my @snp_fields = qw/ chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs /;
+say { $out_fhs{snp} } join( "\t", @snp_fields );
+my @clinvar_fields = qw/ chrom chromStart chromEnd SNPID ClinicalSignificance ReviewStatus PhenotypeID Cytogenic/;
+say { $out_fhs{clinvar} } join("\t", @clinvar_fields);
 
+
+my @alleles = qw( A C G T I D );
+my %seen_snp_name;
+for my $chr (@$chrs_aref) {
+  for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
+
+    # the following is to _not_ build a snp_track if there's not known variants
+    # for the genome assembly
+    if ( rand(1) > 0.99 && $snp_track_name) {
+
+      #  I strongly suspect that the mysql tables are zero-index
+      #  and I know that the ucsc browser is 1 indexed.
+      my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
+      my $minor_allele;
+      my $name = 'rs' . int( rand(1000000) );
+      my @allele_freq;
+      push @allele_freq, sprintf( "%0.2f", rand(1) );
+      push @allele_freq, sprintf( "%0.2f", ( 1 - $allele_freq[0] ) );
+      @allele_freq = sort { $b <=> $a } @allele_freq;
+      my @allele_freq_counts = map { $_ * 1000 } @allele_freq;
+
+      do {
+        $name = 'rs' . int( rand(1000000) );
+      } while ( exists $seen_snp_name{$name} );
+      $seen_snp_name{$name}++;
+      do {
+        $minor_allele = uc $alleles[ int( rand($#alleles) ) ];
+      } while ( $minor_allele eq $ref_base );
+
+      say { $out_fhs{snp} } join(
+        "\t",
+        $chr,
+        $i,         # start
+        ( $i + 1 ), # end
+        $name,
+        join( ",", @allele_freq_counts ),
+        join( ",", $ref_base, $minor_allele ),
+        join( ",", @allele_freq )
+      );
+      # choose site (with 'known' snp) for snpfile
+      $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele )
+        if ( rand(1) > 0.50 );
+    } # choose site for snpfile, the rationale here is to build a snpfile
+      # without depending on if the organism has known variants
+    elsif ( rand(1) > 0.995 ) {
+      my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
+      my $minor_allele;
+      do {
+        $minor_allele = uc $alleles[ int( rand(3) ) ];
+      } while ( $minor_allele eq $ref_base );
+      $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele );
+    }
+    if ($genome =~ m/\Ahg/ ) {
+      if (rand(1) > 0.9995) {
+        my @sig       = qw(pathogenic benign);
+        my @pheno     = qw(MedGen OMIM GeneReviews);
+        my @reviews   = qw(single multiple);
+        my @cytogenic = qw(p22 q11 q24);
+
+        my $snpid;
+        my $cyto = uc substr($chr, 3 );
         do {
-          $name = 'rs' . int( rand(1000000) );
-        } while ( exists $seen_snp_name{$name} );
-        $seen_snp_name{$name}++;
-        do {
-          $minor_allele = uc $alleles[ int( rand($#alleles) ) ];
-        } while ( $minor_allele eq $ref_base );
+          $snpid = 'rs' . int(rand(1000000));
+        } while ( exists $seen_snp_name{$snpid} );
+        $seen_snp_name{$snpid}++;
 
-        say { $out_fhs{snp} } join(
-          "\t",
+        my $sig_val   = uc $sig[ int(rand(1))  ];
+        my $pheno_val = uc $pheno[ int(rand(2))  ];
+        my $cyto_val  = uc $cytogenic[ int(rand(2)) ];
+        my $rev_val   = uc $reviews[ int(rand(1))  ];
+        say { $out_fhs{clinvar} } join("\t",
           $chr,
           $i,         # start
           ( $i + 1 ), # end
-          $name,
-          join( ",", @allele_freq_counts ),
-          join( ",", $ref_base, $minor_allele ),
-          join( ",", @allele_freq )
-        );
-        # choose site (with 'known' snp) for snpfile
-        $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele )
-          if ( rand(1) > 0.50 );
-      } # choose site for snpfile
-      elsif ( rand(1) > 0.995 ) {
-        my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
-        my $minor_allele;
-        do {
-          $minor_allele = uc $alleles[ int( rand(3) ) ];
-        } while ( $minor_allele eq $ref_base );
-        $snpfile_sites{"$chr:$i"} = join( ":", $ref_base, $minor_allele );
-      }
-    }
+          $snpid,
+          $sig_val,
+          $rev_val,
+          $pheno_val,
+          join(".", $cyto, $cyto_val)
+          );
+       }
+     }
   }
 }
 
-Print_snpfile( $out_fhs{snpfile}, \%snpfile_sites, '10' );
+# this accomidates the unlikely but possible situation we don't have anything
+# to put into the snpfile
+Print_snpfile( $out_fhs{snpfile}, \%snpfile_sites, '10' ) if %snpfile_sites;
 
 # the following just prints out ids who are homozygous for the minor allele;
 # limitations:
@@ -293,9 +350,20 @@ sub Print_snpfile {
     my $minor_allele_count = 2 * $carriers;
     my $major_allele_count = ( 2 * scalar @ids ) - $minor_allele_count;
 
+    # choose type
+    my $type;
+    if ($minor_allele eq 'I') {
+      $type = 'INS';
+    }
+    elsif ($minor_allele eq 'D') {
+      $type = 'DEL';
+    }
+    elsif ( $minor_allele =~ m/[ACTG]/) {
+      $type = 'SNP';
+    }
     # print out preamble
     my $prnt_str = join( "\t",
-      $chr, $pos, $ref_allele, 'SNP',
+      $chr, $pos, $ref_allele, $type,
       join( ",", $ref_allele,         $minor_allele ),
       join( ",", $major_allele_count, $minor_allele_count ) );
     $prnt_str .= "\t";
@@ -322,7 +390,7 @@ sub Print_snpfile {
 # returns scalar reference to sequence for region
 sub Get_gz_seq {
   my ( $chr, $start, $end ) = @_;
-  die "error processing Get_gz_seq() arguments @_"
+  croak "error processing Get_gz_seq() arguments @_"
     unless $chr
     and $start
     and $end;
@@ -330,24 +398,92 @@ sub Get_gz_seq {
   # grab sequence
   my $fa_file = qq{$chr.fa};
   my $cmd     = qq{$twobit2fa_prog $twobit_genome:$chr:$start-$end $fa_file};
-  say $cmd if $verbose;
   system $cmd;
 
   # check we got sequence
-  die "error grabbing sequence with cmd:\n\t$cmd\n" unless ( -s $fa_file );
+  croak "error grabbing sequence with cmd:\n\t$cmd\n" unless ( -s $fa_file );
 
   # get length of sequence
   #   and gzip file
   my $seq   = '';
   my $fa_fh = IO::File->new( $fa_file, 'r' );
   my $gz_fh = IO::Compress::Gzip->new("$fa_file.gz")
-    or die "gzip failed: $GzipError\n";
+    or croak "gzip failed: $GzipError\n";
   while (<$fa_fh>) {
     chomp $_;
     $seq .= $_ unless ( $_ =~ m/\A>/ );
     say {$gz_fh} $_;
   }
-  say join( " ", $chr, "=>", length $seq ) if $verbose;
   unlink $fa_file;
   return \$seq;
 }
+
+__END__
+
+=head1 NAME
+
+make_fake_genome - prepare a 'fake' whole genome for Seq package using a configuration
+file
+
+=head1 SYNOPSIS
+
+make_fake_genome.pl
+  --config <file>
+  --locaiton <path>
+  --twoBitToFa_prog <path/to/twoBitToFa_binary>
+  --twoBit_genome <path/to/2bit_genome>
+  --out <output extension for snpfile and bedfile of actual genomic coordinates>
+  [--pading <int>]
+
+
+=head1 DESCRIPTION
+
+C<annotate_snpfile.pl> takes a genome assembly from a configuration file (YAML format)
+and creates a small 'whole genome' consisting of different chromosomes and one
+coding gene per chromosome.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-c>, B<--config>
+
+Config: A YAML genome assembly configuration file that specifies the various
+tracks and data associated with the assembly. This is the same file that is also
+used by the Seq Package to build the binary genome without any alteration.
+
+=item B<-l>, B<--location>
+
+Location: This is the base directory for the location of the binary index.
+
+=item B<--twoBitToFa_prog>
+
+twoBitToFa_prog: Full path to the Jim Kent's twoBitToFa binary.
+
+=item B<--twoBit_genome>
+
+twoBit_genome: Full path to the 2bit genome for your genome of interest.
+
+=item B<-p>, B<--padding>
+
+Padding: How much to pad the coding sites. Default = 0.
+
+=item B<-o>, B<--out>
+
+Out: output extension for snpfile and bedfile of actual genomic coordinates.
+
+=item B<-h>, B<--help>
+
+Help: Prints help message.
+
+=back
+
+=head1 AUTHOR
+
+Thomas Wingo
+
+=head1 SEE ALSO
+
+Seq Package
+
+=cut
