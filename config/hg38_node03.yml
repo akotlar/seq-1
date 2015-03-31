@@ -1,0 +1,176 @@
+# hg38 annotated with UCSC knownGene, snp141, phastCons and phyloP
+#
+# special commands:
+#  _add_file    => >>
+#  _asterisk    => *
+#  _chr         => specific chr (e.g., chr1..chrY)
+#  _dir         => type
+#  _gene_fields => $gene_fields_str
+#  _snp_fields  => $snp_fields_str
+#
+# test genome length = 1
+---
+genome_name: hg38
+genome_description: human
+genome_chrs:
+  - chr1
+  - chr2
+  - chr3
+  - chr4
+  - chr5
+  - chr6
+  - chr7
+  - chr8
+  - chr9
+  - chr10
+  - chr11
+  - chr12
+  - chr13
+  - chr14
+  - chr15
+  - chr16
+  - chr17
+  - chr18
+  - chr19
+  - chr20
+  - chr21
+  - chr22
+  - chrM
+  - chrX
+  - chrY
+genome_db_dir: sandbox
+genome_index_dir: ./hg38/index
+host: 192.168.15.103
+port: 27107
+
+# sparse tracks
+sparse_tracks:
+  - type: gene
+    local_dir: ./hg38/raw/gene
+    local_file: knownGene.txt.gz
+    name: knownGene
+    sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
+    # for gene sparse tracks the 'features' key holds extra names the gene may
+    # be called
+    features:
+      - mRNA
+      - spID
+      - spDisplayID
+      - geneSymbol
+      - refseq
+      - protAcc
+      - description
+      - rfamAcc
+  - type: snp
+    local_dir: ./hg38/raw/snp/
+    local_file: snp141.txt.gz
+    name: snp141
+    sql_statement: SELECT _snp_fields FROM hg38.snp141
+    # for snp sparse tracks the 'features' key holds extra annotation
+    # information
+    features:
+      - alleleFreqCount
+      - alleles
+      - alleleFreqs
+  - type: snp
+    local_dir: ./hg38/raw/snp/
+    local_file: clinvar.txt.gz
+    name: clinvar
+    sql_statement: SELECT _snp_fields FROM Clinvar
+    features:
+      - ClinicalSignificance
+      - Cytogenic
+      - PhenotypeID
+      - ReviewStatus
+# genome sized tracks: genome, phyloP, phastCons
+genome_sized_tracks:
+  - name: hg38
+    type: genome
+    local_dir: ./hg38/raw/seq/
+    local_files:
+      - chr1.fa.gz
+      - chr2.fa.gz
+      - chr3.fa.gz
+      - chr4.fa.gz
+      - chr5.fa.gz
+      - chr6.fa.gz
+      - chr7.fa.gz
+      - chr8.fa.gz
+      - chr9.fa.gz
+      - chr10.fa.gz
+      - chr11.fa.gz
+      - chr12.fa.gz
+      - chr13.fa.gz
+      - chr14.fa.gz
+      - chr15.fa.gz
+      - chr16.fa.gz
+      - chr17.fa.gz
+      - chr18.fa.gz
+      - chr19.fa.gz
+      - chr20.fa.gz
+      - chr21.fa.gz
+      - chr22.fa.gz
+      - chrM.fa.gz
+      - chrX.fa.gz
+      - chrY.fa.gz
+    remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/
+    remote_files:
+      - chr1.fa.gz
+      - chr2.fa.gz
+      - chr3.fa.gz
+      - chr4.fa.gz
+      - chr5.fa.gz
+      - chr6.fa.gz
+      - chr7.fa.gz
+      - chr8.fa.gz
+      - chr9.fa.gz
+      - chr10.fa.gz
+      - chr11.fa.gz
+      - chr12.fa.gz
+      - chr13.fa.gz
+      - chr14.fa.gz
+      - chr15.fa.gz
+      - chr16.fa.gz
+      - chr17.fa.gz
+      - chr18.fa.gz
+      - chr19.fa.gz
+      - chr20.fa.gz
+      - chr21.fa.gz
+      - chr22.fa.gz
+      - chrM.fa.gz
+      - chrX.fa.gz
+      - chrY.fa.gz
+  - name: phastCons
+    type: score
+    local_dir: ./hg38/raw/phastCons
+    local_files:
+      - phastCons.txt.gz
+    remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phastCons7way/
+    remote_files:
+      - hg38.phastCons7way.wigFix.gz
+    proc_init_cmds:
+      - split_wigFix.py _asterisk.wigFix.gz
+    proc_chrs_cmds:
+      - create_cons.py _chr _dir
+      - cat _chr._dir _add_file _dir.txt
+      - rm _chr._dir
+      - rm _chr
+    proc_clean_cmds:
+      - gzip phastCons.txt
+  - name: phyloP
+    type: score
+    local_dir: ./hg38/raw/phyloP
+    local_files:
+      - phyloP.txt.gz
+    remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP7way/
+    remote_files:
+      - hg38.phyloP7way.wigFix.gz
+    proc_init_cmds:
+      - split_wigFix.py _asterisk.wigFix.gz
+    proc_chrs_cmds:
+      - create_cons.py _chr _dir
+      - cat _chr._dir _add_file _dir.txt
+      - rm _chr._dir
+      - rm _chr
+    proc_clean_cmds:
+      - gzip phyloP.txt
