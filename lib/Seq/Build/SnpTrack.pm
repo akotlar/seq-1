@@ -67,7 +67,6 @@ sub build_snp_db {
 
     if ( $. == 1 ) {
       map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
-      p %header;
       next;
     }
     my %data = map { $_ => $fields[ $header{$_} ] } @{ $self->snp_fields_aref };
