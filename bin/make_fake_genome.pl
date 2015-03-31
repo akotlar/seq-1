@@ -21,8 +21,7 @@
 #   TODO:
 #     - haploinsufficiency - presently this is based on transcript ID but that
 #       doesn't fold into the current framework well. Would rec changing to a
-#       specific bases (Alex)
-#     - accomidate species without known SNPs ()
+#       sparse type track (Alex)
 
 use 5.10.0;
 use strict;
@@ -67,16 +66,19 @@ if ($help) {
   exit;
 }
 
-unless ( defined $out_ext
-  and defined $twobit2fa_prog
-  and defined $twobit_genome
-  and defined $location )
+unless ( $config_file
+  and $out_ext
+  and $twobit2fa_prog
+  and $twobit_genome
+  and $location )
 {
   Pod::Usage::pod2usage();
 }
 
 if ($padding) {
   croak "padding should be between 1-10000" unless $padding > 0 && $padding < 10000;
+} else {
+  $padding = 0;
 }
 
 # read config file, setup names for genome and chrs
@@ -112,12 +114,12 @@ unless ( File::Spec->file_name_is_absolute($twobit_genome) ) {
 
 # make dirs
 my %out_dirs = (
-  bed       => "$genome/raw",
-  snpfile   => "$genome/raw",
+  bed       => "$genome/test_files",
+  snpfile   => "$genome/test_files",
   raw       => "$genome/raw",
   seq       => "$genome/raw/seq",
   snp       => "$genome/raw/snp",
-  clinvar   => "$genome/raw/clinvar",
+  clinvar   => "$genome/raw/snp",
   gene      => "$genome/raw/gene",
   phyloP    => "$genome/raw/phyloP",
   phastCons => "$genome/raw/phastCons",
@@ -239,7 +241,7 @@ my @snp_fields =
   qw/ chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs /;
 say { $out_fhs{snp} } join( "\t", @snp_fields );
 my @clinvar_fields =
-  qw/ chrom chromStart chromEnd SNPID ClinicalSignificance ReviewStatus PhenotypeID Cytogenic/;
+  qw/ chrom chromStart chromEnd name ClinicalSignificance ReviewStatus PhenotypeID Cytogenic/;
 say { $out_fhs{clinvar} } join( "\t", @clinvar_fields );
 
 my @alleles = qw( A C G T I D );

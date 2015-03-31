@@ -36,8 +36,10 @@ if ($help) {
   exit;
 }
 
-unless ( defined $yaml_config
-  and defined $db_location )
+unless ( -f $yaml_config
+  and -d $db_location
+  and -f $snpfile
+  and $out_file)
 {
   Pod::Usage::pod2usage();
 }
@@ -68,7 +70,7 @@ in a configuration file
 
 =head1 SYNOPSIS
 
-annotate_snpfile.pl --snp <snpfile> --config <file> --locaiton <path>
+annotate_snpfile.pl --config <assembly config> --snp <snpfile> --config <file> --locaiton <path> --out <file_ext>
 
 =head1 DESCRIPTION
 
