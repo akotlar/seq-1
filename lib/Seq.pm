@@ -22,6 +22,7 @@ with 'Seq::Role::IO';
 has snpfile => (
   is  => 'ro',
   isa => 'Str',
+  required => 1,
 );
 
 has configfile => (

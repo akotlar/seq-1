@@ -111,6 +111,11 @@ has transcript_error => (
   isa     => 'ArrayRef',
   lazy    => 1,
   builder => '_build_transcript_error',
+  traits  => ['Array'],
+  handles => {
+    no_transcript_error => 'is_empty',
+    all_transcript_errors => 'elements',
+  },
 );
 
 sub BUILD {
@@ -176,7 +181,7 @@ sub _build_transcript_error {
     }
 
     # check stop codon
-    if ( $self->transcript_annotation !~ m/(TAA|TAG|TGA)[3]+\Z/ ) {
+    if ( $self->transcript_annotation !~ m/(TAA|TAG|TGA)[3]*\Z/ ) {
       push @errors, 'transcript does not end with stop codon';
     }
   }
@@ -273,8 +278,9 @@ sub get_transcript_sites {
   my $coding_base_count = 0;
   my @sites;
 
-  say join( "\t", "transcript: ", $self->transcript_seq );
-  say join( "\t", "tran_ann:  ",  $self->transcript_annotation );
+  say join("\t", "transcipt error", $self->transcript_id, $self->all_transcript_errors );
+  say join( "\t", "transcript: ", $self->transcript_seq ) unless $self->no_transcript_error;
+  say join( "\t", "tran_ann:  ",  $self->transcript_annotation ) unless $self->no_transcript_error;;
   for ( my $i = 0; $i < ( $self->all_transcript_abs_position ); $i++ ) {
     my (
       $annotation_type, $codon_seq, $codon_number,

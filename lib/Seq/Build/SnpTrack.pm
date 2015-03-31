@@ -56,26 +56,18 @@ sub build_snp_db {
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
 
-  # # output
-  # my $out_dir = File::Spec->canonpath( $self->genome_index_dir );
-  # make_path($out_dir);
-  # my $out_file_name =
-  #   join( ".", $self->genome_name, $self->name, $self->type, 'json' );
-  # my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
-  # my $out_fh = $self->get_write_fh($out_file_path);
-
   my ( %header, @snp_sites );
-  my $prn_counter = 0;
   while (my $line = $in_fh->getline) {
 
     # taint check
     chomp $line;
-    my $clean_line = $self->clean_line($_);
+    my $clean_line = $self->clean_line($line);
     next unless $clean_line;
     my @fields = split( /\t/, $clean_line );
 
     if ( $. == 1 ) {
       map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
+      p %header;
       next;
     }
     my %data = map { $_ => $fields[ $header{$_} ] } @{ $self->snp_fields_aref };
@@ -102,16 +94,16 @@ sub build_snp_db {
           }
         );
 
-        # TODO:
-        # should take 'features' and add them all to the site... this way
-        # we will not need a separate track for each snp-like track we want to add...
+        my %feature_hash = map { $_ => $data{$_} } ($self->all_features);
 
-        if ($min_allele_freq) {
-          $snp_site->set_snp_feature(
-            maf     => $min_allele_freq,
-            alleles => join( ",", @alleles )
-          );
-        }
+        # this is a total hack - MAF might be nice to have but doesn't fit into the
+        # present framework well since it's not a 'feature' we retrieve but rather
+        # it's calculated... since you get about the same infor with alleleFreqs
+        # I'm not really sure it's even needed.
+        $feature_hash{maf} = $min_allele_freq if ($min_allele_freq);
+
+        $snp_site->set_snp_feature( %feature_hash );
+
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
@@ -119,7 +111,6 @@ sub build_snp_db {
       }
     }
   }
-  print {$out_fh} "]";
   return \@snp_sites;
 }
 

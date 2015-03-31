@@ -26,6 +26,8 @@ use Seq::Site::Snp;
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
 
+use DDP;
+
 has _genome => (
   is       => 'ro',
   isa      => 'Seq::GenomeSizedTrackChar',
@@ -300,7 +302,12 @@ sub _build_header {
 
   for my $snp_track ( $self->all_snp_tracks ) {
     my @snp_features = $snp_track->all_features;
-    map { $snp_features{"snp_features.$_"}++ } @snp_features;
+
+    # this is a total hack got allow me to calcuate a single MAF for the snp
+    # that's not already a value we retrieve and, therefore, doesn't fit in the
+    # framework well
+    push @snp_features, 'maf';
+    map { $snp_features{"snp_feature.$_"}++ } @snp_features;
   }
   map { push @alt_features, $_ } keys %snp_features;
 
