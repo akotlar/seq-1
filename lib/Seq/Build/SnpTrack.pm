@@ -13,9 +13,12 @@ use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
 use MongoDB;
 use namespace::autoclean;
+use Try::Tiny;
 
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::Site::Snp;
+
+use DDP;
 
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
@@ -45,18 +48,53 @@ has mongo_connection => (
   required => 1,
 );
 
+has 'counter' => (
+    traits  => ['Counter'],
+    is      => 'ro',
+    isa     => 'Num',
+    default => 0,
+    handles => {
+        inc_counter   => 'inc',
+        dec_counter   => 'dec',
+        reset_counter => 'reset',
+    }
+);
+
+has '_mongo_bulk_handler' => (
+  is => 'rw',
+  isa => 'MongoDB::BulkWrite',
+  clearer => '_clear_mongo_bulk_handler',
+  builder => '_build_mongo_bulk_handler',
+  handles => ['insert', 'execute'],
+  lazy => 1,
+);
+
+sub _build_mongo_bulk_handler {
+  my $self = shift;
+  return $self->mongo_connection->_mongo_collection( $self->name )->initialize_ordered_bulk_op;
+}
+
+after execute => sub {
+  my $self = shift;
+  $self->_clear_mongo_bulk_handler;
+  $self->_build_mongo_bulk_handler;
+};
+
+
 sub build_snp_db {
   my $self = shift;
 
   # defensively drop anything if the collection already exists
   $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
+  #my $bulk = $self->mongo_connection->_mongo_collection( $self->name )->initialize_ordered_bulk_op;
+
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
 
-  my ( %header, @snp_sites );
+  my ( %header, @snp_sites, @insert_data );
   while (my $line = $in_fh->getline) {
 
     # taint check
@@ -109,10 +147,23 @@ sub build_snp_db {
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
-        $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+        #$self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+        # $bulk->insert($site_href);
+        # $self->inc_counter;
+        # if ($self->counter > 200) {
+        #     $self->reset_counter;
+        # }
+        $self->insert($site_href);
+        $self->inc_counter;
+        if ( $self->counter > 800 ) {
+          $self->execute;
+          $self->reset_counter;
+        }
       }
     }
   }
+  # $bulk->execute;
+  $self->execute if $self->counter;
   return \@snp_sites;
 }
 
