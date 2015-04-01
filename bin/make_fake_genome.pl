@@ -268,13 +268,16 @@ for my $chr (@$chrs_aref) {
         $name = 'rs' . int( rand(1000000) );
       } while ( exists $seen_snp_name{$name} );
       $seen_snp_name{$name}++;
+
       do {
         $minor_allele = uc $alleles[ int( rand($#alleles) ) ];
       } while ( $minor_allele eq $ref_base );
 
+      my $prn_chr = (rand(1) > 0.95) ? join("_", $chr, 'alt') : $chr;
+
       say { $out_fhs{snp} } join(
         "\t",
-        $chr,
+        $prn_chr,
         $i,         # start
         ( $i + 1 ), # end
         $name,
@@ -282,11 +285,13 @@ for my $chr (@$chrs_aref) {
         join( ",", $ref_base, $minor_allele ),
         join( ",", @allele_freq )
       );
+
       # choose site (with 'known' snp) for snpfile
       my $rel_pos = $i + 1;
       $snpfile_sites{"$chr:$rel_pos"} = join( ":", $ref_base, $minor_allele )
-        if ( rand(1) > 0.50 );
-    } # choose site for snpfile, the rationale here is to build a snpfile
+        if ( rand(1) > 0.50 && $prn_chr !~ m/alt/);
+    }
+    # choose site for snpfile, the rationale here is to build a snpfile
     # without depending on if the organism has known variants
     elsif ( rand(1) > 0.995 ) {
       my $ref_base = uc substr( ${ $chr_seq{$chr} }, $i, 1 );
@@ -297,8 +302,9 @@ for my $chr (@$chrs_aref) {
       my $rel_pos = $i + 1;
       $snpfile_sites{"$chr:$rel_pos"} = join( ":", $ref_base, $minor_allele );
     }
+
     if ( $genome =~ m/\Ahg/ ) {
-      if ( rand(1) > 0.9995 ) {
+      if ( rand(1) > 0.999 ) {
         my @sig       = qw(pathogenic benign);
         my @pheno     = qw(MedGen OMIM GeneReviews);
         my @reviews   = qw(single multiple);
@@ -306,6 +312,7 @@ for my $chr (@$chrs_aref) {
 
         my $snpid;
         my $cyto = uc substr( $chr, 3 );
+
         do {
           $snpid = 'rs' . int( rand(1000000) );
         } while ( exists $seen_snp_name{$snpid} );

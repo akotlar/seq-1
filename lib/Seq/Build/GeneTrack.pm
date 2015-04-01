@@ -36,7 +36,7 @@ has genome_track_str => (
   is       => 'ro',
   isa      => 'Seq::Build::GenomeSizedTrackStr',
   required => 1,
-  handles  => [ 'get_abs_pos', 'get_base', ],
+  handles  => [ 'get_abs_pos', 'get_base', 'exists_chr_len' ],
 );
 
 has mongo_connection => (
@@ -87,6 +87,9 @@ sub build_gene_db {
     }
     my %data = map { $_ => $fields[ $header{$_} ] }
       ( @{ $self->gene_fields_aref }, $self->all_features );
+
+    # skip sites on alt chromosome builds
+    next unless $self->exists_chr_len( $data{chrom} );
 
     # prepare basic gene data
     my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
