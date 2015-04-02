@@ -41,35 +41,36 @@ has mongo_connection => (
 );
 
 has counter => (
-    traits  => ['Counter'],
-    is      => 'ro',
-    isa     => 'Num',
-    default => 0,
-    handles => {
-        inc_counter   => 'inc',
-        dec_counter   => 'dec',
-        reset_counter => 'reset',
-    }
+  traits  => ['Counter'],
+  is      => 'ro',
+  isa     => 'Num',
+  default => 0,
+  handles => {
+    inc_counter   => 'inc',
+    dec_counter   => 'dec',
+    reset_counter => 'reset',
+  }
 );
 
 has bulk_insert_threshold => (
-  is => 'ro',
-  isa => 'Num',
+  is      => 'ro',
+  isa     => 'Num',
   default => 10_000,
 );
 
 has _mongo_bulk_handler => (
-  is => 'rw',
-  isa => 'MongoDB::BulkWrite',
+  is      => 'rw',
+  isa     => 'MongoDB::BulkWrite',
   clearer => '_clear_mongo_bulk_handler',
   builder => '_build_mongo_bulk_handler',
-  handles => ['insert', 'execute'],
-  lazy => 1,
+  handles => [ 'insert', 'execute' ],
+  lazy    => 1,
 );
 
 sub _build_mongo_bulk_handler {
   my $self = shift;
-  return $self->mongo_connection->_mongo_collection( $self->name )->initialize_ordered_bulk_op;
+  return $self->mongo_connection->_mongo_collection( $self->name )
+    ->initialize_ordered_bulk_op;
 }
 
 after insert => sub {

@@ -54,7 +54,7 @@ sub get_config_from_file {
   my $fh = $class->get_read_fh($file);
   my $cleaned_txt;
 
-  while (my $line = $fh->getline) {
+  while ( my $line = $fh->getline ) {
     chomp $line;
     my $clean_line = $class->clean_line($line);
     $cleaned_txt .= $clean_line . "\n" if ($clean_line);

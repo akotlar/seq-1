@@ -14,11 +14,11 @@ use Scalar::Util qw/ reftype /;
 
 enum SparseTrackType => [ 'gene', 'snp' ];
 
-
 # ideally, we'd have 2 sort of sparse tracks - 1) genes, 2) snps / positions of interest
 
 my @snp_track_fields = qw( chrom chromStart chromEnd name );
-my @gene_track_fields = qw( chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds alignID );
+my @gene_track_fields =
+  qw( chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds alignID );
 
 # my @snp_table_fields = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs
 #    );
@@ -54,7 +54,7 @@ around 'sql_statement' => sub {
   my $new_stmt;
 
   my $gene_table_fields_str = join( ", ", @gene_track_fields, @{ $self->features } );
-  my $snp_table_fields_str = join( ", ", @snp_track_fields, @{ $self->features } );
+  my $snp_table_fields_str  = join( ", ", @snp_track_fields,  @{ $self->features } );
 
   if ( $self->$orig(@_) =~ m/\_snp\_fields/ ) {
     ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/;
@@ -68,7 +68,7 @@ around 'sql_statement' => sub {
 
 sub snp_fields_aref {
   my $self = shift;
-  if ($self->type eq 'snp' ) {
+  if ( $self->type eq 'snp' ) {
     my @out_array;
     push @out_array, @snp_track_fields, @{ $self->features };
     return \@out_array;
@@ -80,7 +80,7 @@ sub snp_fields_aref {
 
 sub gene_fields_aref {
   my $self = shift;
-  if ($self->type eq 'gene') {
+  if ( $self->type eq 'gene' ) {
     my @out_array;
     push @out_array, @gene_track_fields, @{ $self->features };
     return \@out_array;

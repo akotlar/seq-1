@@ -18,7 +18,6 @@ use Seq::Site::Snp;
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
-
 sub build_snp_db {
   my $self = shift;
 
@@ -33,7 +32,7 @@ sub build_snp_db {
   my $in_fh      = $self->get_read_fh($local_file);
 
   my ( %header, @snp_sites, @insert_data );
-  while (my $line = $in_fh->getline) {
+  while ( my $line = $in_fh->getline ) {
 
     # taint check
     chomp $line;
@@ -72,7 +71,7 @@ sub build_snp_db {
           }
         );
 
-        my %feature_hash = map { $_ => $data{$_} } ($self->all_features);
+        my %feature_hash = map { $_ => $data{$_} } ( $self->all_features );
 
         # this is a total hack - MAF might be nice to have but doesn't fit into the
         # present framework well since it's not a 'feature' we retrieve but rather
@@ -80,7 +79,7 @@ sub build_snp_db {
         # I'm not really sure it's even needed.
         $feature_hash{maf} = $min_allele_freq if ($min_allele_freq);
 
-        $snp_site->set_snp_feature( %feature_hash );
+        $snp_site->set_snp_feature(%feature_hash);
 
         push @snp_sites, $abs_pos;
 

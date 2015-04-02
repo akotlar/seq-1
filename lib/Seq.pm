@@ -20,8 +20,8 @@ use DDP;
 with 'Seq::Role::IO';
 
 has snpfile => (
-  is  => 'ro',
-  isa => 'Str',
+  is       => 'ro',
+  isa      => 'Str',
   required => 1,
 );
 
