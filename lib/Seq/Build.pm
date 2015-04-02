@@ -5,13 +5,13 @@ use warnings;
 package Seq::Build;
 # ABSTRACT: A class for building a binary representation of a genome assembly
 # VERSION
-# TODO: make the build class extend the assembly class
 
 use Moose 2;
 
 use Carp qw/ croak /;
 use MongoDB;
 use namespace::autoclean;
+use Path::Tiny;
 use Scalar::Util qw/ reftype /;
 use Storable;
 
@@ -41,20 +41,6 @@ has is_initialized => (
     initalized => 'set',
   },
 );
-
-# has snp_sites => (
-#   is => 'ro',
-#   isa => 'HashRef',
-#   traits => ['HashRef'],
-#   handles => {
-#     set_snp_sites => 'set',
-#     has_no_snp_sites => 'is_empty',
-#     exists_snp_site => 'exists',
-#   },
-#   lazy => 1,
-#   builder => '_build_snp_sites',
-# );
-
 
 sub _build_genome_str_track {
   my $self = shift;
@@ -93,6 +79,8 @@ sub save_sites {
 
   my $dir  = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
+
+  path($dir)->mkpath unless -f $dir;
 
   return store( $href, $file );
 }

@@ -53,6 +53,7 @@ sparse_tracks:
     # for gene sparse tracks the 'features' key holds extra names the gene may
     # be called
     features:
+      - proteinID
       - mRNA
       - spID
       - spDisplayID

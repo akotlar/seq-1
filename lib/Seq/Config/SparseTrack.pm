@@ -18,7 +18,7 @@ enum SparseTrackType => [ 'gene', 'snp' ];
 
 my @snp_track_fields = qw( chrom chromStart chromEnd name );
 my @gene_track_fields =
-  qw( chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds alignID );
+  qw( chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds name );
 
 # my @snp_table_fields = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs
 #    );
