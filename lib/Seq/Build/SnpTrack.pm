@@ -11,74 +11,12 @@ use Moose 2;
 use Carp qw/ confess /;
 use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
-use MongoDB;
 use namespace::autoclean;
-use Try::Tiny;
 
-use Seq::Build::GenomeSizedTrackStr;
 use Seq::Site::Snp;
 
-use DDP;
-
-extends 'Seq::Config::SparseTrack';
+extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
-
-has genome_index_dir => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
-
-has genome_name => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
-
-has genome_track_str => (
-  is       => 'ro',
-  isa      => 'Seq::Build::GenomeSizedTrackStr',
-  required => 1,
-  handles  => [ 'get_abs_pos', 'get_base', 'exists_chr_len' ],
-);
-
-has mongo_connection => (
-  is       => 'ro',
-  isa      => 'Seq::MongoManager',
-  required => 1,
-);
-
-has 'counter' => (
-    traits  => ['Counter'],
-    is      => 'ro',
-    isa     => 'Num',
-    default => 0,
-    handles => {
-        inc_counter   => 'inc',
-        dec_counter   => 'dec',
-        reset_counter => 'reset',
-    }
-);
-
-has '_mongo_bulk_handler' => (
-  is => 'rw',
-  isa => 'MongoDB::BulkWrite',
-  clearer => '_clear_mongo_bulk_handler',
-  builder => '_build_mongo_bulk_handler',
-  handles => ['insert', 'execute'],
-  lazy => 1,
-);
-
-sub _build_mongo_bulk_handler {
-  my $self = shift;
-  return $self->mongo_connection->_mongo_collection( $self->name )->initialize_ordered_bulk_op;
-}
-
-after execute => sub {
-  my $self = shift;
-  $self->_clear_mongo_bulk_handler;
-  $self->_build_mongo_bulk_handler;
-};
 
 
 sub build_snp_db {
@@ -147,22 +85,12 @@ sub build_snp_db {
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
-        #$self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-        # $bulk->insert($site_href);
-        # $self->inc_counter;
-        # if ($self->counter > 200) {
-        #     $self->reset_counter;
-        # }
+
         $self->insert($site_href);
-        $self->inc_counter;
-        if ( $self->counter > 800 ) {
-          $self->execute;
-          $self->reset_counter;
-        }
+        $self->execute if $self->counter > $self->bulk_insert_threshold;
       }
     }
   }
-  # $bulk->execute;
   $self->execute if $self->counter;
   return \@snp_sites;
 }

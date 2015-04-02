@@ -11,39 +11,12 @@ use Moose 2;
 use Carp qw/ confess /;
 use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
-use MongoDB;
 use namespace::autoclean;
 
-use Seq::Build::GenomeSizedTrackStr;
 use Seq::Gene;
 
-extends 'Seq::Config::SparseTrack';
+extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
-
-has genome_index_dir => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
-
-has genome_name => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
-
-has genome_track_str => (
-  is       => 'ro',
-  isa      => 'Seq::Build::GenomeSizedTrackStr',
-  required => 1,
-  handles  => [ 'get_abs_pos', 'get_base', 'exists_chr_len' ],
-);
-
-has mongo_connection => (
-  is       => 'ro',
-  isa      => 'Seq::MongoManager',
-  required => 1,
-);
 
 sub build_gene_db {
   my $self = shift;
@@ -107,7 +80,9 @@ sub build_gene_db {
     my @flank_exon_sites = $gene->get_flanking_sites();
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
-      $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+      # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+      $self->insert($site_href);
+      $self->execute if $self->counter > $self->bulk_insert_threshold;
       $flank_exon_sites{ $site->abs_pos }++;
     }
 
@@ -115,7 +90,9 @@ sub build_gene_db {
     my @exon_sites = $gene->get_transcript_sites();
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
-      $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+      # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+      $self->insert($site_href);
+      $self->execute if $self->counter > $self->bulk_insert_threshold;
       $exon_sites{ $site->abs_pos }++;
     }
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
