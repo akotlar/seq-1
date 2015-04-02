@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use lib './lib';
+use Coro;
 use Carp qw/ croak /;
 use Getopt::Long;
 use Modern::Perl qw/ 2013 /;
@@ -52,7 +53,31 @@ else {
 
 say qq{ configfile => $yaml_config, db_dir => $db_location };
 my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
-$assembly->build_index;
+
+# threads
+{
+  my @coros;
+  for my $method (qw/ build_snp_sites build_gene_sites build_conserv_scores_index/ ) {
+    my $coro = async {
+      my $result = $assembly->$method;
+      return $result;
+    };
+    push @coros, $coro;
+  }
+  $_->join for @coros;
+  $assembly->build_genome_index;
+}
+
+# linear
+# {
+#   $assembly->build_snp_sites;
+#   say "done with building snps";
+#   $assembly->build_gene_sites;
+#   say "done with building genes";
+#   $assembly->build_conserv_scores_index;
+#   say "done with building conserv scores";
+#   $assembly->build_genome_index;
+# }
 
 __END__
 

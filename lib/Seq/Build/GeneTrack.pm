@@ -29,13 +29,13 @@ sub build_gene_db {
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
 
-  # output
-  my $out_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path($out_dir);
-  my $out_file_name =
-    join( ".", $self->genome_name, $self->name, $self->type, 'json' );
-  my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
-  my $out_fh = $self->get_write_fh($out_file_path);
+  # # output
+  # my $out_dir = File::Spec->canonpath( $self->genome_index_dir );
+  # make_path($out_dir);
+  # my $out_file_name =
+  #   join( ".", $self->genome_name, $self->name, $self->type, 'json' );
+  # my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
+  # my $out_fh = $self->get_write_fh($out_file_path);
 
   my %ucsc_table_lu = (
     alignID    => 'transcript_id',
@@ -48,7 +48,7 @@ sub build_gene_db {
     txEnd      => 'transcript_end',
     txStart    => 'transcript_start',
   );
-  my ( %header, %transcript_start_sites, %flank_exon_sites, %exon_sites );
+  my ( %header, %exon_sites, %flank_exon_sites,  %transcript_start_sites );
   my $prn_count = 0;
 
   while (<$in_fh>) {
@@ -97,7 +97,11 @@ sub build_gene_db {
     }
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
-  return ( \%exon_sites, \%flank_exon_sites, \%transcript_start_sites );
+  my $sites_href = { flank_exon_sites => \%flank_exon_sites,
+                     exon_sites => \%exon_sites,
+                     transcript_start_sites => \%transcript_start_sites,
+  };
+  return ( $sites_href );
 }
 
 __PACKAGE__->meta->make_immutable;

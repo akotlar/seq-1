@@ -13,6 +13,7 @@ use Carp qw/ croak /;
 use MongoDB;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
+use Storable;
 
 use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
@@ -31,6 +32,30 @@ has genome_str_track => (
   builder => '_build_genome_str_track',
 );
 
+has is_initialized => (
+  is => 'ro',
+  isa => 'Bool',
+  traits => ['Bool'],
+  default => 0,
+  handles => {
+    initalized => 'set',
+  },
+);
+
+# has snp_sites => (
+#   is => 'ro',
+#   isa => 'HashRef',
+#   traits => ['HashRef'],
+#   handles => {
+#     set_snp_sites => 'set',
+#     has_no_snp_sites => 'is_empty',
+#     exists_snp_site => 'exists',
+#   },
+#   lazy => 1,
+#   builder => '_build_snp_sites',
+# );
+
+
 sub _build_genome_str_track {
   my $self = shift;
   for my $gst ( $self->all_genome_sized_tracks ) {
@@ -48,20 +73,103 @@ sub _build_genome_str_track {
   }
 }
 
-sub build_index {
+before qw/ build_snp_sites build_gene_sites build_conserv_scores_index / => sub {
   my $self = shift;
 
-  # build genome from fasta files (i.e., string)
-  $self->build_genome;
+  unless ( $self->is_initialized ) {
+    $self->build_genome;
+    $self->initalized;
+  }
+};
 
-  # make chr_len hash for binary genome
-  my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
+sub build_assembly {
+  my $self = shift;
+  $self->build_genome_index;
+  $self->build_conserv_scores_index;
+}
 
+sub save_sites {
+  my ( $self, $href, $name ) = @_;
+
+  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my $file = File::Spec->catfile( $dir, $name );
+
+  return store( $href, $file );
+}
+
+sub load_sites {
+  my ( $self, $name ) = @_;
+
+  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my $file = File::Spec->catfile( $dir, $name );
+
+  # do we find a file a non-zero file? Retrieve that data else undef.
+  if (-s $file ) {
+    return retrieve($file);
+  }
+  else {
+    return;
+  }
+}
+
+sub build_snp_sites {
+  my $self = shift;
   # build snp tracks
   my %snp_sites;
   if ( $self->snp_tracks ) {
     for my $snp_track ( $self->all_snp_tracks ) {
-      my $record = $snp_track->as_href;
+
+      # create a file name for loading / saving track data
+      my $snp_track_file_name  = join('.', $snp_track->name, $snp_track->type, 'dat' );
+
+      # is there evidence for having done this before?
+      my $sites_aref = $self->load_sites( $snp_track_file_name );
+
+      # build the track if we didn't load anything
+      unless ($sites_aref) {
+        my $record = $snp_track->as_href;
+        $record->{genome_track_str} = $self->genome_str_track;
+        $record->{genome_index_dir} = $self->genome_index_dir;
+        $record->{genome_name}      = $self->genome_name;
+        $record->{mongo_connection} = Seq::MongoManager->new(
+          {
+            default_database => $self->genome_name,
+            client_options   => {
+              host => $self->mongo_addr,
+              port => $self->port,
+            },
+          }
+        );
+        my $snp_db  = Seq::Build::SnpTrack->new($record);
+        $sites_aref = $snp_db->build_snp_db;
+
+        # save the gene track data
+        unless ( $self->save_sites( $sites_aref, $snp_track_file_name ) ) {
+          croak "error saving snp sites for:  $snp_track_file_name\n";
+        }
+      }
+      map { $snp_sites{$_}++ } @$sites_aref;
+    }
+  }
+  return \%snp_sites;
+}
+
+sub build_gene_sites {
+  my $self = shift;
+  # build gene tracks - these are gene annotation tracks downloaded from UCSC
+  # e.g., knownGene
+  my ( %flank_exon_sites, %exon_sites, %transcript_starts );
+  for my $gene_track ( $self->all_gene_tracks ) {
+
+    # create a file name for loading / saving track data
+    my $gene_track_file_name  = join('.', $gene_track->name, $gene_track->type, 'dat' );
+
+    # try to load data
+    my $sites_href = $self->load_sites( $gene_track_file_name );
+
+    # build the track if we didn't load anything
+    unless ($sites_href) {
+      my $record = $gene_track->as_href;
       $record->{genome_track_str} = $self->genome_str_track;
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
@@ -74,66 +182,32 @@ sub build_index {
           },
         }
       );
-      my $snp_db     = Seq::Build::SnpTrack->new($record);
-      my $sites_aref = $snp_db->build_snp_db;
-      map { $snp_sites{$_}++ } @$sites_aref;
-    }
-  }
+      my $gene_db = Seq::Build::GeneTrack->new($record);
+      $sites_href = $gene_db->build_gene_db;
 
-  # build gene tracks - these are gene annotation tracks downloaded from UCSC
-  # e.g., knownGene
-  my ( %flank_exon_sites, %exon_sites, %transcript_starts );
-  for my $gene_track ( $self->all_gene_tracks ) {
-    my $record = $gene_track->as_href;
-    $record->{genome_track_str} = $self->genome_str_track;
-    $record->{genome_index_dir} = $self->genome_index_dir;
-    $record->{genome_name}      = $self->genome_name;
-    $record->{mongo_connection} = Seq::MongoManager->new(
-      {
-        default_database => $self->genome_name,
-        client_options   => {
-          host => $self->mongo_addr,
-          port => $self->port,
-        },
+      # save the gene track data
+      unless ( $self->save_sites( $sites_href, $gene_track_file_name ) ) {
+        croak "error saving snp sites for:  $gene_track_file_name\n";
       }
-    );
-    my $gene_db = Seq::Build::GeneTrack->new($record);
-    my ( $exon_sites_href, $flank_exon_sites_href, $tx_start_href ) =
-      $gene_db->build_gene_db;
+    }
 
-    # add information from annotation sites and start/stop sites into
-    # master lists
-    map { $flank_exon_sites{$_}++ } ( keys %$flank_exon_sites_href );
-    map { $exon_sites{$_}++ }       ( keys %$exon_sites_href );
-    for my $tx_start ( keys %$tx_start_href ) {
-      for my $tx_stops ( @{ $tx_start_href->{$tx_start} } ) {
+    # merge all gene track data into one master record
+    map { $flank_exon_sites{$_}++ } ( keys %{ $sites_href->{flank_exon_sites} } );
+    map { $exon_sites{$_}++ }       ( keys %{ $sites_href->{exon_sites} } );
+    for my $tx_start ( keys %{ $sites_href->{transcript_start_sites} } ) {
+      for my $tx_stops ( @{ $sites_href->{transcript_start_sites}{$tx_start} } ) {
         push @{ $transcript_starts{$tx_start} }, $tx_stops;
       }
     }
   }
+  return ( \%flank_exon_sites, \%exon_sites, \%transcript_starts );
+}
 
-  # make another genomesized track to deal with the in/outside of genes
-  # and ultimately write over those 0's and 1's to store the genome assembly
-  # idx codes...
-  my $assembly = Seq::Build::GenomeSizedTrackChar->new(
-    {
-      genome_length    => $self->genome_length,
-      genome_index_dir => $self->genome_index_dir,
-      genome_chrs      => $self->genome_chrs,
-      name             => $self->genome_name,
-      type             => 'genome',
-      chr_len          => \%chr_len,
-    }
-  );
+sub build_conserv_scores_index {
+  my $self = shift;
 
-  # set genic/intergenic regions
-  $assembly->set_gene_regions( \%transcript_starts );
-
-  # use gene, snp tracks, and genic/intergenic regions to build coded genome
-  $assembly->build_genome_idx( $self->genome_str_track, \%exon_sites,
-    \%flank_exon_sites, \%snp_sites );
-  $assembly->write_char_seq;
-  $assembly->clear_char_seq;
+  # make chr_len hash for binary genome
+  my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
 
   # write conservation scores
   if ( $self->genome_sized_tracks ) {
@@ -156,6 +230,39 @@ sub build_index {
       $score_track->clear_char_seq;
     }
   }
+}
+
+sub build_genome_index {
+  my $self = shift;
+
+  my $snp_sites = $self->build_snp_sites;
+  my ($flank_exon_sites, $exon_sites, $transcript_starts) = $self->build_gene_sites;
+
+  # make chromosome start offsets for binary genome
+  my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
+
+  # make another genomesized track to deal with the in/outside of genes
+  # and ultimately write over those 0's and 1's to store the genome assembly
+  # idx codes...
+  my $assembly = Seq::Build::GenomeSizedTrackChar->new(
+    {
+      genome_length    => $self->genome_length,
+      genome_index_dir => $self->genome_index_dir,
+      genome_chrs      => $self->genome_chrs,
+      name             => $self->genome_name,
+      type             => 'genome',
+      chr_len          => \%chr_len,
+    }
+  );
+
+  # set genic/intergenic regions
+  $assembly->set_gene_regions( $transcript_starts );
+
+  # use gene, snp tracks, and genic/intergenic regions to build coded genome
+  $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
+    $flank_exon_sites, $snp_sites );
+  $assembly->write_char_seq;
+  $assembly->clear_char_seq;
 }
 
 __PACKAGE__->meta->make_immutable;
