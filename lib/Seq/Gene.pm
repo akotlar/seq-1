@@ -127,25 +127,23 @@ sub BUILD {
     and $self->genome_track->meta->has_method('get_base') )
   {
 
-    # - get_abs_pos( chr, pos ) expects position to be a positive number
-    #   so it is -indexed but returnes the zero-index position
+    # get_abs_pos( chr, pos ) expects a 1-indexed relative genome position
+    # but returnes the zero-index absolute position
     my $abs_position_offset = $self->get_abs_pos( $self->chr, 1 );
 
-    # - change all relative bp position to absolute positions and change to a
-    #   Zero indexed genome (i.e., this is why everything has '-1' taken
-    #   from it.
-    $self->transcript_start( $abs_position_offset + $self->transcript_start - 1 );
-    $self->transcript_end( $abs_position_offset + $self->transcript_end - 1 );
-    $self->coding_start( $abs_position_offset + $self->coding_start - 1 );
-    $self->coding_end( $abs_position_offset + $self->coding_end - 1 );
+    # the UCSC mysql tables are zero-indexed relative genome positions
+    $self->transcript_start( $abs_position_offset + $self->transcript_start );
+    $self->transcript_end( $abs_position_offset + $self->transcript_end );
+    $self->coding_start( $abs_position_offset + $self->coding_start );
+    $self->coding_end( $abs_position_offset + $self->coding_end );
 
     for ( my $i = 0; $i < scalar( $self->all_exon_starts ); $i++ ) {
       # set values for exon starts
-      my $abs_pos = $self->get_exon_starts($i) + $abs_position_offset - 1;
+      my $abs_pos = $self->get_exon_starts($i) + $abs_position_offset;
       $self->set_exon_starts( $i, $abs_pos );
 
       # set values for exon stops
-      $abs_pos = $self->get_exon_ends($i) + $abs_position_offset - 1;
+      $abs_pos = $self->get_exon_ends($i) + $abs_position_offset;
       $self->set_exon_ends( $i, $abs_pos );
     }
   }
@@ -278,12 +276,14 @@ sub get_transcript_sites {
   my $coding_base_count = 0;
   my @sites;
 
-  say join( "\t", "transcipt error", $self->transcript_id,
-    $self->all_transcript_errors );
-  say join( "\t", "transcript: ", $self->transcript_seq )
-    unless $self->no_transcript_error;
-  say join( "\t", "tran_ann:  ", $self->transcript_annotation )
-    unless $self->no_transcript_error;
+  say join( "\t",
+    "transcipt error",
+    $self->transcript_id, $self->chr, $self->strand, $self->all_transcript_errors,
+  );
+  say join( "\t", "transcript: ", $self->transcript_seq );
+  #unless $self->no_transcript_error;
+  say join( "\t", "tran_ann:  ", $self->transcript_annotation );
+  #unless $self->no_transcript_error;
   for ( my $i = 0; $i < ( $self->all_transcript_abs_position ); $i++ ) {
     my (
       $annotation_type, $codon_seq, $codon_number,

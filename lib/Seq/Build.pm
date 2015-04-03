@@ -33,13 +33,11 @@ has genome_str_track => (
 );
 
 has is_initialized => (
-  is => 'ro',
-  isa => 'Bool',
-  traits => ['Bool'],
+  is      => 'ro',
+  isa     => 'Bool',
+  traits  => ['Bool'],
   default => 0,
-  handles => {
-    initalized => 'set',
-  },
+  handles => { initalized => 'set', },
 );
 
 sub _build_genome_str_track {
@@ -77,7 +75,7 @@ sub build_assembly {
 sub save_sites {
   my ( $self, $href, $name ) = @_;
 
-  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
   path($dir)->mkpath unless -f $dir;
@@ -88,11 +86,11 @@ sub save_sites {
 sub load_sites {
   my ( $self, $name ) = @_;
 
-  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
   # do we find a file a non-zero file? Retrieve that data else undef.
-  if (-s $file ) {
+  if ( -s $file ) {
     return retrieve($file);
   }
   else {
@@ -108,10 +106,10 @@ sub build_snp_sites {
     for my $snp_track ( $self->all_snp_tracks ) {
 
       # create a file name for loading / saving track data
-      my $snp_track_file_name  = join('.', $snp_track->name, $snp_track->type, 'dat' );
+      my $snp_track_file_name = join( '.', $snp_track->name, $snp_track->type, 'dat' );
 
       # is there evidence for having done this before?
-      my $sites_aref = $self->load_sites( $snp_track_file_name );
+      my $sites_aref = $self->load_sites($snp_track_file_name);
 
       # build the track if we didn't load anything
       unless ($sites_aref) {
@@ -128,7 +126,7 @@ sub build_snp_sites {
             },
           }
         );
-        my $snp_db  = Seq::Build::SnpTrack->new($record);
+        my $snp_db = Seq::Build::SnpTrack->new($record);
         $sites_aref = $snp_db->build_snp_db;
 
         # save the gene track data
@@ -150,10 +148,10 @@ sub build_gene_sites {
   for my $gene_track ( $self->all_gene_tracks ) {
 
     # create a file name for loading / saving track data
-    my $gene_track_file_name  = join('.', $gene_track->name, $gene_track->type, 'dat' );
+    my $gene_track_file_name = join( '.', $gene_track->name, $gene_track->type, 'dat' );
 
     # try to load data
-    my $sites_href = $self->load_sites( $gene_track_file_name );
+    my $sites_href = $self->load_sites($gene_track_file_name);
 
     # build the track if we didn't load anything
     unless ($sites_href) {
@@ -224,7 +222,7 @@ sub build_genome_index {
   my $self = shift;
 
   my $snp_sites = $self->build_snp_sites;
-  my ($flank_exon_sites, $exon_sites, $transcript_starts) = $self->build_gene_sites;
+  my ( $flank_exon_sites, $exon_sites, $transcript_starts ) = $self->build_gene_sites;
 
   # make chromosome start offsets for binary genome
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
@@ -244,7 +242,7 @@ sub build_genome_index {
   );
 
   # set genic/intergenic regions
-  $assembly->set_gene_regions( $transcript_starts );
+  $assembly->set_gene_regions($transcript_starts);
 
   # use gene, snp tracks, and genic/intergenic regions to build coded genome
   $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,

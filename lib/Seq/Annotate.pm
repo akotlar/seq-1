@@ -26,8 +26,6 @@ use Seq::Site::Snp;
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
 
-use DDP;
-
 has _genome => (
   is       => 'ro',
   isa      => 'Seq::GenomeSizedTrackChar',
@@ -262,10 +260,12 @@ sub get_snp_annotation {
 sub _join_data {
   my ( $self, $old_val, $new_val ) = @_;
   my $type = reftype($old_val);
-  if ( $type eq 'Array' && $type ) {
-    unless ( grep { /$new_val/ } @$old_val ) {
-      push @{$old_val}, $new_val;
-      return $old_val;
+  if ($type) {
+    if ( $type eq 'Array' ) {
+      unless ( grep { /$new_val/ } @$old_val ) {
+        push @{$old_val}, $new_val;
+        return $old_val;
+      }
     }
   }
   else {
@@ -278,9 +278,9 @@ sub _join_data {
 sub _mung_output {
   my ( $self, $href ) = @_;
   my %hash;
-
   for my $attrib ( keys %$href ) {
-    if ( reftype( $href->{$attrib} ) && reftype( $href->{$attrib} ) eq 'Array' ) {
+    my $ref = reftype( $href->{$attrib} );
+    if ( $ref && $ref eq 'Array' ) {
       $hash{$attrib} = join( ";", @{ $href->{$attrib} } );
     }
     else {

@@ -14,6 +14,8 @@ use Cpanel::JSON::XS;
 use Scalar::Util qw/ reftype /;
 use YAML::XS qw/ Dump /;
 
+use DDP;
+
 # not using this sub since we're asking the meta class about the attributes
 requires qw/ seralizable_attributes  /;
 
@@ -23,9 +25,9 @@ sub as_href_with_NAs {
   for my $attr ( $self->meta->get_all_attributes ) {
     my $name            = $attr->name;
     my $type_constraint = $attr->type_constraint;
-    # say join( ". .", $name, $type_constraint );
-    # say "this attrib: " . $attr->name . " has value: ";
-    # p $self->$name;
+    #  say join( ". .", $name, $type_constraint );
+    #  say "this attrib: " . $attr->name . " has value: ";
+    #  p $self->$name;
     if ( $attr->has_value($self) && $self->$name ) {
       if ( $type_constraint eq 'HashRef' ) {
         map { $obj{"$name.$_"} = $self->$name->{$_} } keys %{ $self->$name };

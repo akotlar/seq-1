@@ -40,8 +40,8 @@ sub build_gene_db {
     txEnd      => 'transcript_end',
     txStart    => 'transcript_start',
   );
-  my ( %header, %exon_sites, %flank_exon_sites,  %transcript_start_sites );
-  
+  my ( %header, %exon_sites, %flank_exon_sites, %transcript_start_sites );
+
   while (<$in_fh>) {
     chomp $_;
     my @fields = split( /\t/, $_ );
@@ -88,11 +88,12 @@ sub build_gene_db {
     }
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
-  my $sites_href = { flank_exon_sites => \%flank_exon_sites,
-                     exon_sites => \%exon_sites,
-                     transcript_start_sites => \%transcript_start_sites,
+  my $sites_href = {
+    flank_exon_sites       => \%flank_exon_sites,
+    exon_sites             => \%exon_sites,
+    transcript_start_sites => \%transcript_start_sites,
   };
-  return ( $sites_href );
+  return ($sites_href);
 }
 
 __PACKAGE__->meta->make_immutable;

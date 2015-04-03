@@ -66,7 +66,7 @@ sub get_sql_aref {
   my $line_cnt = 0;
   while ( my @row = $sth->fetchrow_array ) {
     if ( $line_cnt == 0 ) {
-        push @sql_data, $sth->{NAME};
+      push @sql_data, $sth->{NAME};
     }
     else {
       my $clean_row_aref = $self->_clean_row( \@row );
@@ -79,7 +79,7 @@ sub get_sql_aref {
 }
 
 sub _clean_row {
-  my ($self, $aref) = @_;
+  my ( $self, $aref ) = @_;
 
   my @clean_array;
   for my $ele (@$aref) {
