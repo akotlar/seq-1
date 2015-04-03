@@ -30,7 +30,7 @@ use DBI;
 use Carp qw/ croak /;
 use Getopt::Long;
 use File::Spec;
-use File::Path qw/ make_path /;
+use Path::Tiny;
 use IO::File;
 use IO::Compress::Gzip qw/ gzip $GzipError /;
 use IO::Uncompress::Gunzip qw/ $GunzipError /;
@@ -50,6 +50,7 @@ my ( $help, $out_ext, %snpfile_sites, $padding, $config_file, $twobit_genome );
 # defaults
 my $location       = 'sandbox';
 my $twobit2fa_prog = 'twoBitToFa';
+my $gene_count     = 1;
 
 GetOptions(
   'c|config=s'        => \$config_file,
@@ -59,6 +60,7 @@ GetOptions(
   'l|location=s'      => \$location,
   'p|padding=n'       => \$padding,
   'h|help'            => \$help,
+  'g|gene_count=n'    => \$gene_count,
 );
 
 if ($help) {
@@ -70,14 +72,16 @@ unless ( $config_file
   and $out_ext
   and $twobit2fa_prog
   and $twobit_genome
-  and $location )
+  and $location
+  and $gene_count > 0 )
 {
   Pod::Usage::pod2usage();
 }
 
 if ($padding) {
   croak "padding should be between 1-10000" unless $padding > 0 && $padding < 10000;
-} else {
+}
+else {
   $padding = 0;
 }
 
@@ -127,7 +131,7 @@ my %out_dirs = (
 %out_dirs =
   map { $_ => File::Spec->rel2abs( File::Spec->canonpath( $out_dirs{$_} ) ) }
   keys %out_dirs;
-map { make_path( $out_dirs{$_} ) } keys %out_dirs;
+map { path( $out_dirs{$_} )->mkpath } keys %out_dirs;
 
 # make files
 my %out_files = (
@@ -149,8 +153,9 @@ my %out_fhs =
 
 my ( %header, %found_chr, %chr_len, %chr_seq );
 
-# change into seq dir to write files
-chdir $out_dirs{seq} || croak "cannot change dir $out_dirs{seq}\n";
+# create a hash of chr length offsets and initialize to zero
+my %chr_length_offsets = map { $_ => 0 } @$chrs_aref;
+
 for my $chr (@$chrs_aref) {
   my $sth = $dbh->prepare(
     qq{
@@ -160,7 +165,7 @@ for my $chr (@$chrs_aref) {
     ON $genome.kgXref.kgID = $genome.knownGene.name
     WHERE ($genome.knownGene.chrom = '$chr')
     AND ($genome.knownGene.cdsStart != $genome.knownGene.cdsEnd)
-    LIMIT 1
+    LIMIT $gene_count
     }
   ) or croak $dbh->errstr;
   my $rc = $sth->execute() or croak $dbh->errstr;
@@ -168,56 +173,71 @@ for my $chr (@$chrs_aref) {
   %header = map { $header[$_] => $_ } ( 0 .. $#header ) unless %header;
   while ( my @row = $sth->fetchrow_array ) {
     my %data = map { $_ => $row[ $header{$_} ] } keys %header;
-    if ( $data{cdsEnd} != $data{cdsStart}
-      && !exists $found_chr{ $data{chrom} } )
-    {
+    p %data;
+    if ( $data{cdsEnd} != $data{cdsStart} ) {
 
       # save in bed file (real coordinates)
       say { $out_fhs{bed} }
         join( "\t", $data{chrom}, $data{txStart}, $data{txEnd}, $data{name} );
 
       # get real sequence from 2bit file
-      $chr_seq{$chr} =
-        Get_gz_seq( $chr, ( $data{txStart} - $padding ), ( $data{txEnd} + $padding ) );
+      my $seq_sref =
+        Get_fa_seq( $chr, ( $data{txStart} - $padding ), ( $data{txEnd} + $padding ) );
 
-      # reformat to 1-index sequence
+      # add new sequence to existing 'chromosome' sequence
+      my $seq //= $chr_seq{$chr};
+      if ($seq) {
+        ${ $chr_seq{$chr} } .= ${$seq_sref};
+      }
+      else {
+        $chr_seq{$chr} = $seq_sref;
+      }
+
       my @exon_starts = split( /\,/, $data{exonStarts} );
       my @exon_ends   = split( /\,/, $data{exonEnds} );
+      my $txStart     = $data{txStart} - $padding;
+
       my ( @new_exon_ends, @new_exon_starts );
-      my $txStart = $data{txStart} - 1 - $padding;
       for ( my $i = 0; $i < @exon_starts; $i++ ) {
-        my $new_start = $exon_starts[$i] - $txStart;
+        my $new_start = $chr_length_offsets{$chr} + $exon_starts[$i] - $txStart;
         push @new_exon_starts, $new_start;
-        my $new_ends = $exon_ends[$i] - $txStart;
+        my $new_ends = $chr_length_offsets{$chr} + $exon_ends[$i] - $txStart;
         push @new_exon_ends, $new_ends;
       }
-      $data{txEnd}    -= $txStart;
-      $data{txStart}  -= $txStart;
-      $data{cdsStart} -= $txStart;
-      $data{cdsEnd}   -= $txStart;
+
+      for my $ele (qw/ txEnd txStart cdsStart cdsEnd /) {
+        $data{$ele} -= $txStart;
+        $data{$ele} += $chr_length_offsets{$chr};
+      }
       $data{exonStarts} = join( ",", @new_exon_starts );
       $data{exonEnds}   = join( ",", @new_exon_ends );
 
-      # save 1-index sequence
-      $found_chr{ $data{chrom} } = \%data;
+      # save 0-index sequence
+      push @{ $found_chr{ $data{chrom} } }, \%data;
       $chr_len{$chr} = $data{txEnd} - $data{txStart} + 2 * $padding;
 
       # check length of sequence is correct after processing
       croak "expected lengths to match"
         unless length ${ $chr_seq{$chr} }
-        == ( $data{txEnd} - $data{txStart} ) + 2 * $padding;
-
+        == $chr_length_offsets{$chr} + ( $data{txEnd} - $data{txStart} ) + 2 * $padding;
+      $chr_length_offsets{$chr} += length ${ $chr_seq{$chr} };
     }
   }
 }
+# change into seq dir to write files
+chdir $out_dirs{seq} || croak "cannot change dir $out_dirs{seq}\n";
+Write_gz_seq( \%chr_seq );
+
+# change to raw dir
 chdir $out_dirs{raw} or croak "cannot change dir $out_dirs{raw}\n";
 
 # print fake knownGene data
 {
   say { $out_fhs{gene} } join( "\t", ( map { $_ } ( sort keys %header ) ) );
   for my $chr ( sort keys %found_chr ) {
-    say { $out_fhs{gene} }
-      join( "\t", ( map { $found_chr{$chr}{$_} } ( sort keys %header ) ) );
+    for my $ele ( @{ $found_chr{$chr} } ) {
+      say { $out_fhs{gene} } join( "\t", map { $ele->{$_} } ( sort keys %header ) );
+    }
   }
 }
 
@@ -273,7 +293,7 @@ for my $chr (@$chrs_aref) {
         $minor_allele = uc $alleles[ int( rand($#alleles) ) ];
       } while ( $minor_allele eq $ref_base );
 
-      my $prn_chr = (rand(1) > 0.95) ? join("_", $chr, 'alt') : $chr;
+      my $prn_chr = ( rand(1) > 0.95 ) ? join( "_", $chr, 'alt' ) : $chr;
 
       say { $out_fhs{snp} } join(
         "\t",
@@ -289,7 +309,7 @@ for my $chr (@$chrs_aref) {
       # choose site (with 'known' snp) for snpfile
       my $rel_pos = $i + 1;
       $snpfile_sites{"$chr:$rel_pos"} = join( ":", $ref_base, $minor_allele )
-        if ( rand(1) > 0.50 && $prn_chr !~ m/alt/);
+        if ( rand(1) > 0.50 && $prn_chr !~ m/alt/ );
     }
     # choose site for snpfile, the rationale here is to build a snpfile
     # without depending on if the organism has known variants
@@ -403,7 +423,7 @@ sub Print_snpfile {
 }
 
 # returns scalar reference to sequence for region
-sub Get_gz_seq {
+sub Get_fa_seq {
   my ( $chr, $start, $end ) = @_;
   croak "error processing Get_gz_seq() arguments @_"
     unless $chr
@@ -420,17 +440,33 @@ sub Get_gz_seq {
 
   # get length of sequence
   #   and gzip file
-  my $seq   = '';
+  my $seq = '';
   my $fa_fh = IO::File->new( $fa_file, 'r' );
-  my $gz_fh = IO::Compress::Gzip->new("$fa_file.gz")
-    or croak "gzip failed: $GzipError\n";
+  # my $gz_fh = IO::Compress::Gzip->new("$fa_file.gz")
+  #   or croak "gzip failed: $GzipError\n";
   while (<$fa_fh>) {
     chomp $_;
     $seq .= $_ unless ( $_ =~ m/\A>/ );
-    say {$gz_fh} $_;
+    #say {$gz_fh} $_;
   }
   unlink $fa_file;
   return \$seq;
+}
+
+# change into seq dir to write files
+chdir $out_dirs{seq} || croak "cannot change dir $out_dirs{seq}\n";
+
+sub Write_gz_seq {
+  my ($href) = @_;
+
+  my $dir = path( $out_dirs{seq} );
+
+  for my $chr ( keys %$href ) {
+    my $file  = $dir->child("$chr.fa.gz")->absolute->stringify;
+    my $gz_fh = IO::Compress::Gzip->new($file)
+      or croak "gzip failed: $GzipError\n";
+    say {$gz_fh} ${ $href->{$chr} };
+  }
 }
 
 __END__

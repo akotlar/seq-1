@@ -57,9 +57,12 @@ my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
 # threads
 {
   my @coros;
-  for my $method (qw/ build_snp_sites build_gene_sites build_conserv_scores_index/ ) {
+  for my $method (qw/ build_snp_sites build_gene_sites build_conserv_scores_index/) {
     my $coro = async {
-      my $result = $assembly->$method;
+      my $result;
+      unless ( $assembly->$method ) {
+        $result = "done with $method";
+      }
       return $result;
     };
     push @coros, $coro;
@@ -68,7 +71,7 @@ my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
   $assembly->build_genome_index;
 }
 
-# linear
+#linear
 # {
 #   $assembly->build_snp_sites;
 #   say "done with building snps";

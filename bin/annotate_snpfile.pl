@@ -1,8 +1,12 @@
 #!/usr/bin/env perl
 
+use 5.10.0;
+use strict;
+use warnings;
+
 use lib './lib';
+use Carp;
 use Getopt::Long;
-use Modern::Perl qw/ 2013 /;
 use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw/ compile /;
@@ -14,8 +18,6 @@ use Seq;
 if ( $ENV{PERL_MONGODB_DEBUG} ) {
   Log::Any::Adapter->set('Stdout');
 }
-
-use DDP;
 
 my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file );
 
@@ -36,13 +38,15 @@ if ($help) {
   exit;
 }
 
-unless ( -f $yaml_config
+unless ( $yaml_config
   and -d $db_location
   and -f $snpfile
-  and $out_file)
+  and $out_file )
 {
   Pod::Usage::pod2usage();
 }
+
+croak "expected '$yaml_config' to be a file" unless -f $yaml_config;
 
 # need to give absolute path to avoid placing it in an odd location (e.g., where
 # the genome is located)
@@ -70,7 +74,7 @@ in a configuration file
 
 =head1 SYNOPSIS
 
-annotate_snpfile.pl --config <assembly config> --snp <snpfile> --config <file> --locaiton <path> --out <file_ext>
+annotate_snpfile.pl --config <assembly config> --snp <snpfile> --locaiton <path> --out <file_ext>
 
 =head1 DESCRIPTION
 

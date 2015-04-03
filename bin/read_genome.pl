@@ -33,7 +33,11 @@ use Type::Params qw/ compile /;
 use Types::Standard qw/ FileHandle slurpy Str ArrayRef Num /;
 use DDP;
 
-my ( $chr_wanted, $pos_from, $pos_to, $db_location, $yaml_config, $verbose, $client, $db, $gan_db, $snp_db, $dbsnp_name, $dbgene_name, $help, $genome_length );
+my (
+  $chr_wanted, $pos_from,    $pos_to, $db_location, $yaml_config,
+  $verbose,    $client,      $db,     $gan_db,      $snp_db,
+  $dbsnp_name, $dbgene_name, $help,   $genome_length
+);
 my (%tracks);
 
 #
@@ -177,9 +181,9 @@ sub get_chr {
   my @chrs   = @{ $config_data->{genome_chrs} };
   my $genome = $tracks{genome}[0];
   for my $i ( 0 .. scalar @chrs ) {
-    my $chr          = $chrs[$i];
-    my $chr_len      = $genome->get_abs_pos( $chr, 1 );
-    my $next_chr     = $chrs[ $i + 1 ];
+    my $chr      = $chrs[$i];
+    my $chr_len  = $genome->get_abs_pos( $chr, 1 );
+    my $next_chr = $chrs[ $i + 1 ];
     if ($next_chr) {
       my $next_chr_len = $genome->get_abs_pos( $next_chr, 1 );
       if ( $pos < $next_chr_len && $pos >= $chr_len ) {
@@ -187,14 +191,12 @@ sub get_chr {
       }
     }
     else {
-      if ($pos < $genome_length && $pos >= $chr_len ){
+      if ( $pos < $genome_length && $pos >= $chr_len ) {
         return $chr;
       }
     }
 
-
     #say "$pos < $next_chr_len && $pos >= $chr_len";
-
 
   }
 }
