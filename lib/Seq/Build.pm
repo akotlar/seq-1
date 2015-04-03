@@ -57,9 +57,9 @@ sub _build_genome_str_track {
   }
 }
 
-before qw/ build_snp_sites build_gene_sites build_conserv_scores_index / => sub {
+sub BUILD {
+#before qw/ build_snp_sites build_gene_sites build_conserv_scores_index / => sub {
   my $self = shift;
-
   unless ( $self->is_initialized ) {
     $self->build_genome;
     $self->initalized;
