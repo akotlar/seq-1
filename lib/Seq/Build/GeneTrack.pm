@@ -62,7 +62,14 @@ sub build_gene_db {
     $gene_data{genome_track} = $self->genome_track_str;
 
     # prepare alternative names for gene
-    my %alt_names = map { $_ => $data{$_} if exists $data{$_} } ( $self->all_features );
+    #   - the basic problem is that the type constraint on alt_names wants 
+    #   the hash to contain strings; without the ($data{$_}) ? $data{$_} : 'NA' 
+    #   there were some keys with blank values
+    #   - this feels like a bit of a hack to accomidate the type constraint 
+    #   on alt_names attributes and will increase the db size; may just drop the
+    #   keys without data in the future but it's running now so will hold off
+    #   for the time being.
+    my %alt_names = map { $_ => ($data{$_}) ? $data{$_} : 'NA' if exists $data{$_} } ( $self->all_features );
 
     my $gene = Seq::Gene->new( \%gene_data );
     $gene->set_alt_names(%alt_names);
