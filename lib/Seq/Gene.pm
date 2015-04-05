@@ -20,6 +20,8 @@ use Seq::Site::Gene;
 
 my $splice_site_length = 6;
 
+use DDP;
+
 has genome_track => (
   is       => 'ro',
   required => 1,
@@ -61,7 +63,7 @@ has transcript_id => ( is => 'rw', isa => 'Str', required => 1, );
 
 has alt_names => (
   is      => 'rw',
-  isa     => 'HashRef[Str]',
+  isa     => 'HashRef',
   traits  => ['Hash'],
   handles => {
     all_alt_names => 'kv',
@@ -117,6 +119,50 @@ has transcript_error => (
     all_transcript_errors => 'elements',
   },
 );
+
+has peptide => (
+  is      => 'ro',
+  isa     => 'ArrayRef',
+  lazy    => 1,
+  builder => '_build_peptide',
+  traits  => ['Array'],
+  handles => {
+    no_peptide  => 'is_empty',
+    all_peptide => 'elements',
+  },
+);
+
+# has transcript_sites => (
+#   is => 'ro',
+#   isa     => 'ArrayRef',
+#   lazy    => 1,
+#   builder => '_build_transcript_sites',
+#   traits  => ['Array'],
+#   handles => {
+#     all_transcript_sites => 'elements',
+#     add_transcript_site  => 'push',
+#   },
+# );
+#
+# has flanking_sites => (
+#   is => 'ro',
+#   isa     => 'ArrayRef',
+#   lazy    => 1,
+#   builder => '_build_flanking_sites',
+#   traits  => ['Array'],
+#   handles => {
+#     all_flanking_sites => 'elements',
+#     add_flanking_sites => 'push',
+#   },
+# );
+#
+# sub BUILD {
+#   my $self = shift;
+#
+#   # the byproduct of setting peptide is to fill the transcript_sites attr
+#   $self->peptide;
+# }
+
 
 sub BUILD {
   my $self = shift;
@@ -267,6 +313,72 @@ sub _build_transcript_annotation {
   return $seq;
 }
 
+sub _build_peptide {
+  my $self              = shift;
+  my @exon_starts       = $self->all_exon_starts;
+  my @exon_ends         = $self->all_exon_ends;
+  my $coding_start      = $self->coding_start;
+  my $coding_end        = $self->coding_end;
+  my $coding_base_count = 0;
+  my $last_codon_number = 0;
+  my @peptide;
+
+  say join( "\t",
+    "transcipt error",
+    $self->transcript_id, $self->chr, $self->strand, $self->all_transcript_errors,
+  );
+  for ( my $i = 0; $i < ( $self->all_transcript_abs_position ); $i++ ) {
+    my (
+      $annotation_type, $codon_seq, $codon_number,
+      $codon_position,  %gene_site, $site_annotation
+    );
+    $site_annotation = $self->get_str_transcript_annotation( $i, 1 );
+    $gene_site{abs_pos}       = $self->get_transcript_abs_position($i);
+    $gene_site{alt_names}     = $self->alt_names;
+    $gene_site{ref_base}      = $self->get_base_transcript_seq( $i, 1 );
+    $gene_site{error_code}    = $self->transcript_error;
+    $gene_site{transcript_id} = $self->transcript_id;
+    $gene_site{strand}        = $self->strand;
+
+    # is site coding
+    if ( $site_annotation =~ m/[ACGT]/ ) {
+      $gene_site{site_type}      = 'Coding';
+      $gene_site{codon_number}   = 1 + int( ( $coding_base_count / 3 ) );
+      $gene_site{codon_position} = $coding_base_count % 3;
+      my $codon_start = $i - $gene_site{codon_position};
+      my $codon_end   = $codon_start + 2;
+
+      #say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
+      for ( my $j = $codon_start; $j <= $codon_end; $j++ ) {
+        $gene_site{ref_codon_seq} .= $self->get_base_transcript_seq( $j, 1 );
+      }
+      $coding_base_count++;
+    }
+    elsif ( $site_annotation eq '5' ) {
+      $gene_site{site_type} = '5UTR';
+    }
+    elsif ( $site_annotation eq '3' ) {
+      $gene_site{site_type} = '3UTR';
+    }
+    elsif ( $site_annotation eq '0' ) {
+      $gene_site{site_type} = 'non-coding RNA';
+    }
+    else {
+      confess "unknown site code $site_annotation";
+    }
+    #p %gene_site if $gene_site{site_type} eq 'Coding' and $coding_base_count < 9;
+    #exit if $coding_base_count > 9;
+
+    my $site = Seq::Site::Gene->new( \%gene_site );
+
+    if ($site->codon_number) {
+      push @peptide, $site->ref_aa_residue if ($last_codon_number != $site->codon_number);
+    }
+    $last_codon_number = $site->codon_number if $site->codon_number;
+  }
+  return \@peptide;
+}
+
 sub get_transcript_sites {
   my $self              = shift;
   my @exon_starts       = $self->all_exon_starts;
@@ -274,6 +386,7 @@ sub get_transcript_sites {
   my $coding_start      = $self->coding_start;
   my $coding_end        = $self->coding_end;
   my $coding_base_count = 0;
+  my $last_codon_number = 0;
   my @sites;
 
   say join( "\t",
