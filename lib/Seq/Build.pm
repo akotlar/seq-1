@@ -17,6 +17,7 @@ use Storable;
 
 use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
+use Seq::Build::TxTrack;
 use Seq::Build::GenomeSizedTrackChar;
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::MongoManager;
@@ -138,6 +139,30 @@ sub build_snp_sites {
     }
   }
   return \%snp_sites;
+}
+
+sub build_transcript_seq {
+  my $self = shift;
+
+  for my $gene_track ( $self->all_gene_tracks ) {
+
+    my $record = $gene_track->as_href;
+    $record->{genome_track_str} = $self->genome_str_track;
+    $record->{genome_index_dir} = $self->genome_index_dir;
+    $record->{genome_name}      = $self->genome_name;
+    $record->{name}             = $gene_track->name . '_tx';
+    $record->{mongo_connection} = Seq::MongoManager->new(
+      {
+        default_database => $self->genome_name,
+        client_options   => {
+          host => $self->mongo_addr,
+          port => $self->port,
+        },
+      }
+    );
+    my $gene_db = Seq::Build::TxTrack->new($record);
+    $gene_db->insert_transcript_seq;
+  }
 }
 
 sub build_gene_sites {
