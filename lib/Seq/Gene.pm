@@ -13,14 +13,14 @@ use namespace::autoclean;
 
 use Seq::Site::Gene;
 
+with 'MooX::Role::Logger';
+
 # has features of a gene and will run through the sequence
 # build features will be implmented in Seq::Build::Gene that can build GeneSite
 # objects
 # would be useful to extend to have capcity to build peptides
 
 my $splice_site_length = 6;
-
-use DDP;
 
 has genome_track => (
   is       => 'ro',
@@ -65,6 +65,7 @@ has alt_names => (
   is      => 'rw',
   isa     => 'HashRef',
   traits  => ['Hash'],
+  default => sub { { } },
   handles => {
     all_alt_names => 'kv',
     get_alt_names => 'get',
@@ -122,47 +123,36 @@ has transcript_error => (
 
 has peptide => (
   is      => 'ro',
-  isa     => 'ArrayRef',
-  lazy    => 1,
-  builder => '_build_peptide',
-  traits  => ['Array'],
+  isa     => 'Str',
+  default => q{},
+  traits  => ['String'],
   handles => {
-    no_peptide  => 'is_empty',
-    all_peptide => 'elements',
+    len_aa_residue => 'length',
+    add_aa_residue => 'append',
   },
 );
 
-# has transcript_sites => (
-#   is => 'ro',
-#   isa     => 'ArrayRef',
-#   lazy    => 1,
-#   builder => '_build_transcript_sites',
-#   traits  => ['Array'],
-#   handles => {
-#     all_transcript_sites => 'elements',
-#     add_transcript_site  => 'push',
-#   },
-# );
-#
-# has flanking_sites => (
-#   is => 'ro',
-#   isa     => 'ArrayRef',
-#   lazy    => 1,
-#   builder => '_build_flanking_sites',
-#   traits  => ['Array'],
-#   handles => {
-#     all_flanking_sites => 'elements',
-#     add_flanking_sites => 'push',
-#   },
-# );
-#
-# sub BUILD {
-#   my $self = shift;
-#
-#   # the byproduct of setting peptide is to fill the transcript_sites attr
-#   $self->peptide;
-# }
+has transcript_sites => (
+  is => 'ro',
+  isa     => 'ArrayRef[Seq::Site::Gene]',
+  default => sub { [ ] },
+  traits  => ['Array'],
+  handles => {
+    all_transcript_sites => 'elements',
+    add_transcript_site  => 'push',
+  },
+);
 
+has flanking_sites => (
+  is => 'ro',
+  isa     => 'ArrayRef[Seq::Site::Gene]',
+  default => sub { [ ] },
+  traits  => ['Array'],
+  handles => {
+    all_flanking_sites => 'elements',
+    add_flanking_sites => 'push',
+  },
+);
 
 sub BUILD {
   my $self = shift;
@@ -196,6 +186,10 @@ sub BUILD {
   else {
     confess "Cannot use genome object because it does not have get_abs_pos() method";
   }
+
+  # the by-product of _build_transcript_sites is to build the peptide
+  $self->_build_transcript_sites;
+  $self->_build_flanking_sites;
 }
 
 sub _build_transcript_error {
@@ -313,7 +307,7 @@ sub _build_transcript_annotation {
   return $seq;
 }
 
-sub _build_peptide {
+sub _build_transcript_sites {
   my $self              = shift;
   my @exon_starts       = $self->all_exon_starts;
   my @exon_ends         = $self->all_exon_ends;
@@ -321,12 +315,14 @@ sub _build_peptide {
   my $coding_end        = $self->coding_end;
   my $coding_base_count = 0;
   my $last_codon_number = 0;
-  my @peptide;
+  my @sites;
 
-  say join( "\t",
-    "transcipt error",
-    $self->transcript_id, $self->chr, $self->strand, $self->all_transcript_errors,
-  );
+  if ($self->no_transcript_error) {
+    $self->_logger->info( join(" ", $self->transcript_id, $self->chr, $self->strand ));
+  }
+  else {
+    $self->_logger->warn( join(" ", $self->transcript_id, $self->chr, $self->strand, $self->all_transcript_errors ));
+  }
   for ( my $i = 0; $i < ( $self->all_transcript_abs_position ); $i++ ) {
     my (
       $annotation_type, $codon_seq, $codon_number,
@@ -366,84 +362,22 @@ sub _build_peptide {
     else {
       confess "unknown site code $site_annotation";
     }
-    #p %gene_site if $gene_site{site_type} eq 'Coding' and $coding_base_count < 9;
-    #exit if $coding_base_count > 9;
 
+    # get annotation
     my $site = Seq::Site::Gene->new( \%gene_site );
 
+    # build peptide
     if ($site->codon_number) {
-      push @peptide, $site->ref_aa_residue if ($last_codon_number != $site->codon_number);
+      $self->add_aa_residue( $site->ref_aa_residue ) if ($last_codon_number != $site->codon_number);
     }
+
     $last_codon_number = $site->codon_number if $site->codon_number;
+
+    $self->add_transcript_site( $site );
   }
-  return \@peptide;
 }
 
-sub get_transcript_sites {
-  my $self              = shift;
-  my @exon_starts       = $self->all_exon_starts;
-  my @exon_ends         = $self->all_exon_ends;
-  my $coding_start      = $self->coding_start;
-  my $coding_end        = $self->coding_end;
-  my $coding_base_count = 0;
-  my $last_codon_number = 0;
-  my @sites;
-
-  say join( "\t",
-    "transcipt error",
-    $self->transcript_id, $self->chr, $self->strand, $self->all_transcript_errors,
-  );
-  say join( "\t", "transcript: ", $self->transcript_seq );
-  #unless $self->no_transcript_error;
-  say join( "\t", "tran_ann:  ", $self->transcript_annotation );
-  #unless $self->no_transcript_error;
-  for ( my $i = 0; $i < ( $self->all_transcript_abs_position ); $i++ ) {
-    my (
-      $annotation_type, $codon_seq, $codon_number,
-      $codon_position,  %gene_site, $site_annotation
-    );
-    $site_annotation = $self->get_str_transcript_annotation( $i, 1 );
-    $gene_site{abs_pos}       = $self->get_transcript_abs_position($i);
-    $gene_site{alt_names}     = $self->alt_names;
-    $gene_site{ref_base}      = $self->get_base_transcript_seq( $i, 1 );
-    $gene_site{error_code}    = $self->transcript_error;
-    $gene_site{transcript_id} = $self->transcript_id;
-    $gene_site{strand}        = $self->strand;
-
-    # is site coding
-    if ( $site_annotation =~ m/[ACGT]/ ) {
-      $gene_site{site_type}      = 'Coding';
-      $gene_site{codon_number}   = 1 + int( ( $coding_base_count / 3 ) );
-      $gene_site{codon_position} = 1 + $coding_base_count % 3;
-      my $codon_start = $i - $gene_site{codon_position};
-      my $codon_end   = $codon_start + 2;
-
-      #say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
-      for ( my $j = $codon_start; $j <= $codon_end; $j++ ) {
-        $gene_site{ref_codon_seq} .= $self->get_base_transcript_seq( $j, 1 );
-      }
-      $coding_base_count++;
-    }
-    elsif ( $site_annotation eq '5' ) {
-      $gene_site{site_type} = '5UTR';
-    }
-    elsif ( $site_annotation eq '3' ) {
-      $gene_site{site_type} = '3UTR';
-    }
-    elsif ( $site_annotation eq '0' ) {
-      $gene_site{site_type} = 'non-coding RNA';
-    }
-    else {
-      confess "unknown site code $site_annotation";
-    }
-    #p %gene_site if $gene_site{site_type} eq 'Coding' and $coding_base_count < 9;
-    #exit if $coding_base_count > 9;
-    push @sites, Seq::Site::Gene->new( \%gene_site );
-  }
-  return @sites;
-}
-
-sub get_flanking_sites {
+sub _build_flanking_sites {
 
   # Annotate splice donor/acceptor bp
   #  - i.e., bp within 6 bp of exon start / stop
@@ -484,8 +418,9 @@ sub get_flanking_sites {
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
-        push @sites, Seq::Site::Gene->new( \%gene_site );
+        $self->add_flanking_sites( Seq::Site::Gene->new( \%gene_site ) );
       }
+
       # flanking sites at end of exon
       if ( $exon_ends[$i] + $n - 1 > $coding_start
         && $exon_ends[$i] + $n - 1 < $coding_end )
@@ -499,11 +434,10 @@ sub get_flanking_sites {
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
-        push @sites, Seq::Site::Gene->new( \%gene_site );
+        $self->add_flanking_sites( Seq::Site::Gene->new( \%gene_site ) );
       }
     }
   }
-  return @sites;
 }
 
 __PACKAGE__->meta->make_immutable;

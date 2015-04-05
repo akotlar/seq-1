@@ -22,6 +22,8 @@ use Seq::Build::GenomeSizedTrackChar;
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::MongoManager;
 
+use DDP;
+
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
 

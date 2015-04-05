@@ -9,13 +9,10 @@ use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
-use Log::Any::Adapter;
+use Log::Any::Adapter ('File', 'build.log');
 
 use Seq::Build;
 
-if ( $ENV{PERL_MONGODB_DEBUG} ) {
-  Log::Any::Adapter->set('Stdout');
-}
 
 my ( $yaml_config, $db_location, $verbose, $help );
 
@@ -57,7 +54,7 @@ my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
 # threads
 {
   my @coros;
-  for my $method (qw/ build_snp_sites build_gene_sites build_conserv_scores_index/) {
+  for my $method (qw/ build_snp_sites build_gene_sites build_transcript_seq build_conserv_scores_index/) {
     my $coro = async {
       my $result;
       unless ( $assembly->$method ) {

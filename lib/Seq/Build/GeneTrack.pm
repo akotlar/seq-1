@@ -15,6 +15,8 @@ use namespace::autoclean;
 
 use Seq::Gene;
 
+use DDP;
+
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
@@ -62,10 +64,10 @@ sub build_gene_db {
     $gene_data{genome_track} = $self->genome_track_str;
 
     # prepare alternative names for gene
-    #   - the basic problem is that the type constraint on alt_names wants 
-    #   the hash to contain strings; without the ($data{$_}) ? $data{$_} : 'NA' 
+    #   - the basic problem is that the type constraint on alt_names wants
+    #   the hash to contain strings; without the ($data{$_}) ? $data{$_} : 'NA'
     #   there were some keys with blank values
-    #   - this feels like a bit of a hack to accomidate the type constraint 
+    #   - this feels like a bit of a hack to accomidate the type constraint
     #   on alt_names attributes and will increase the db size; may just drop the
     #   keys without data in the future but it's running now so will hold off
     #   for the time being.
@@ -75,7 +77,7 @@ sub build_gene_db {
     $gene->set_alt_names(%alt_names);
 
     # get intronic flanking site annotations
-    my @flank_exon_sites = $gene->get_flanking_sites();
+    my @flank_exon_sites = $gene->all_flanking_sites;
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
       # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
@@ -85,7 +87,7 @@ sub build_gene_db {
     }
 
     # get exon annotations
-    my @exon_sites = $gene->get_transcript_sites();
+    my @exon_sites = $gene->all_transcript_sites;
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
       # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);

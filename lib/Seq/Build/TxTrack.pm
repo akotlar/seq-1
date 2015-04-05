@@ -71,7 +71,7 @@ sub insert_transcript_seq {
                 transcript_seq => $gene->transcript_seq,
                 transcript_annotation => $gene->transcript_annotation,
                 transcript_abs_position => $gene->transcript_abs_position,
-                peptide_seq => join('', @{ $gene->peptide }),
+                peptide_seq => $gene->peptide,
               };
     $self->insert($record_href);
     $self->execute if $self->counter > $self->bulk_insert_threshold;

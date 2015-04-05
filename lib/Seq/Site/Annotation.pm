@@ -59,7 +59,7 @@ sub _set_new_codon_seq {
   my $self      = shift;
   my $new_codon = $self->ref_codon_seq;
   if ($new_codon) {
-    substr( $new_codon, ( $self->codon_position - 1 ), 1, $self->minor_allele );
+    substr( $new_codon, ( $self->codon_position ), 1, $self->minor_allele );
     return $new_codon;
   }
   else {
