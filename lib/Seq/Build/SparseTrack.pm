@@ -40,6 +40,13 @@ has mongo_connection => (
   required => 1,
 );
 
+has bdb_connection => (
+  is => 'ro',
+  isa => 'Seq::BDBManager',
+  required => 1,
+  handles => [ 'db_put', 'db_get' ],
+);
+
 has counter => (
   traits  => ['Counter'],
   is      => 'ro',

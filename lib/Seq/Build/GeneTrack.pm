@@ -81,20 +81,24 @@ sub build_gene_db {
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
       # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-      $self->insert($site_href);
-      $self->execute if $self->counter > $self->bulk_insert_threshold;
+      # $self->insert($site_href);
+      # $self->execute if $self->counter > $self->bulk_insert_threshold;
+      $self->db_put( $site_href->{abs_pos}, $site_href );
       $flank_exon_sites{ $site->abs_pos }++;
     }
+    # $self->execute if $self->counter;
 
     # get exon annotations
     my @exon_sites = $gene->all_transcript_sites;
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
       # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-      $self->insert($site_href);
-      $self->execute if $self->counter > $self->bulk_insert_threshold;
+      # $self->insert($site_href);
+      # $self->execute if $self->counter > $self->bulk_insert_threshold;
+      $self->db_put( $site_href->{abs_pos}, $site_href );
       $exon_sites{ $site->abs_pos }++;
     }
+    # $self->execute if $self->counter
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
   my $sites_href = {
