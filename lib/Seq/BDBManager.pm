@@ -15,11 +15,13 @@ use DB_File;
 use Storable qw/ freeze thaw /;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
-use Hash::Merge;
+use Hash::Merge qw/ merge _hashify _merge_hashes /;
 
-use DDP;
+# use DDP;
 
 with 'Seq::Role::IO';
+
+my $i = 1;
 
 has filename => (
   is => 'ro',
@@ -38,11 +40,34 @@ has _hash_merge => (
   is => 'ro',
   isa => 'Hash::Merge',
   builder => '_build_hash_merge',
+  handles => [ 'merge' ],
 );
 
 sub _build_hash_merge {
   my $self = shift;
-  return Hash::Merge->new('RETAINMENT_PRECEDENT');
+  my $merge_name = 'merge_behavior_' . $i;
+  $i++;
+  my $merge = Hash::Merge->new();
+  Hash::Merge::specify_behavior( {
+      'SCALAR' => {
+          'SCALAR' => sub { if ( $_[0] eq $_[1] ) { $_[0] } else { join(";", $_[0], $_[1]) } },
+          'ARRAY'  => sub { [ $_[0], @{ $_[1] } ] },
+          'HASH'   => sub { _merge_hashes( _hashify( $_[0] ), $_[1] ) },
+      },
+      'ARRAY' => {
+          'SCALAR' => sub { [ @{ $_[0] },                     $_[1] ] },
+          'ARRAY'  => sub { [ @{ $_[0] }, @{ $_[1] } ] },
+          'HASH'   => sub { _merge_hashes( _hashify( $_[0] ), $_[1] ) },
+      },
+      'HASH' => {
+          'SCALAR' => sub { _merge_hashes( $_[0], _hashify( $_[1] ) ) },
+          'ARRAY'  => sub { _merge_hashes( $_[0], _hashify( $_[1] ) ) },
+          'HASH'   => sub { _merge_hashes( $_[0], $_[1] ) },
+      },
+    }, $merge_name,
+  );
+
+  return $merge;
 }
 
 sub _build_db {
@@ -66,7 +91,12 @@ sub db_put {
   # is there data for the key?
   if (defined $old_href) {
     # merge hashes
-    my $new_href = $self->_hash_merge( $old_href, $href );
+    # p $old_href;
+
+    my $new_href = $self->merge( $old_href, $href );
+
+    # p $new_href;
+
     # save merged hash
     $self->_db->put( $key, freeze( $new_href ) );
   }
