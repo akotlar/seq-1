@@ -24,7 +24,7 @@ sub build_gene_db {
   my $self = shift;
 
   # defensively drop anything if the collection already exists
-  $self->mongo_connection->_mongo_collection( $self->name )->drop;
+  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );

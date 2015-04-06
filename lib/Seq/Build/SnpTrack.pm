@@ -22,7 +22,7 @@ sub build_snp_db {
   my $self = shift;
 
   # defensively drop anything if the collection already exists
-  $self->mongo_connection->_mongo_collection( $self->name )->drop;
+  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   #my $bulk = $self->mongo_connection->_mongo_collection( $self->name )->initialize_ordered_bulk_op;
 
