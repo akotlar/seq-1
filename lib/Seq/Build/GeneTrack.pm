@@ -15,8 +15,6 @@ use namespace::autoclean;
 
 use Seq::Gene;
 
-use DDP;
-
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 

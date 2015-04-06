@@ -23,8 +23,6 @@ use Seq::Build::GenomeSizedTrackStr;
 use Seq::BDBManager;
 use Seq::MongoManager;
 
-use DDP;
-
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
 

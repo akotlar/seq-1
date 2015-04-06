@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 package Seq::BDBManager;
-# ABSTRACT: Manages mongo db connections
+# ABSTRACT: Manages BerkeleyDB connections
 # VERSION
 
 use Moose 2;
