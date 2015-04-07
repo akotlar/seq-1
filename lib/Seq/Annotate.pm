@@ -20,6 +20,7 @@ use YAML::XS qw/ LoadFile /;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
+use Seq::BDBManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
@@ -51,6 +52,24 @@ has _mongo_connection => (
   builder => '_build_mongo_connection',
 );
 
+has bdb_gene => (
+  is => 'ro',
+  isa => 'ArrayRef[Seq::BDBManager]',
+  builder => '_build_bdb_gene',
+  traits  => ['Array'],
+  handles => { _all_bdb_gene => 'elements', },
+  lazy => 1,
+);
+
+has bdb_snp => (
+  is => 'ro',
+  isa => 'ArrayRef[Seq::BDBManager]',
+  builder => '_build_bdb_snp',
+  traits  => ['Array'],
+  handles => { _all_bdb_snp => 'elements', },
+  lazy => 1,
+);
+
 has _header => (
   is      => 'ro',
   isa     => 'ArrayRef',
@@ -59,6 +78,41 @@ has _header => (
   traits  => ['Array'],
   handles => { all_header => 'elements' },
 );
+
+sub _get_bdb_file {
+  my ($self, $name ) = @_;
+  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my $file = File::Spec->catfile( $dir, $name );
+  return $file;
+}
+
+sub _build_bdb_gene {
+  my $self = shift;
+  my @array = ( );
+  for my $gene_track ( $self->all_gene_tracks ) {
+    my $db_name = join ".", $gene_track->name, $gene_track->type, 'db';
+    push @array, Seq::BDBManager->new(
+      {
+        filename => $self->_get_bdb_file($db_name),
+      }
+    );
+  }
+  return \@array;
+}
+
+sub _build_bdb_snp {
+  my $self = shift;
+  my @array = ( );
+  for my $snp_track ( $self->all_snp_tracks ) {
+    my $db_name = join ".", $snp_track->name, $snp_track->type, 'db';
+    push @array, Seq::BDBManager->new(
+      {
+        filename => $self->_get_bdb_file($db_name),
+      }
+    );
+  }
+  return \@array;
+}
 
 sub _build_mongo_connection {
   state $check = compile(Object);
@@ -132,6 +186,7 @@ sub _load_genome_sized_track {
   return $obj;
 }
 
+
 sub get_ref_annotation {
   state $check = compile( Object, Str, Int );
   my ( $self, $chr, $pos ) = $check->(@_);
@@ -171,20 +226,32 @@ sub get_ref_annotation {
   }
 
   if ($gan) {
-    for my $gene_track ( $self->all_gene_tracks ) {
-      push @gene_data,
-        $self->_mongo_connection->_mongo_collection( $gene_track->name )
-        ->find( { abs_pos => $abs_pos } )->all;
+    for my $gene_dbs ( $self->_all_bdb_gene ) {
+      push @gene_data, $gene_dbs->db_get( $abs_pos );
     }
   }
 
   if ($snp) {
-    for my $snp_track ( $self->all_snp_tracks ) {
-      push @snp_data,
-        $self->_mongo_connection->_mongo_collection( $snp_track->name )
-        ->find( { abs_pos => $abs_pos } )->all;
+    for my $snp_dbs ( $self->_all_bdb_snp ) {
+      push @snp_data, $snp_dbs->db_get( $abs_pos );
     }
   }
+
+  # if ($gan) {
+  #   for my $gene_track ( $self->all_gene_tracks ) {
+  #     push @gene_data,
+  #       $self->_mongo_connection->_mongo_collection( $gene_track->name )
+  #       ->find( { abs_pos => $abs_pos } )->all;
+  #   }
+  # }
+  #
+  # if ($snp) {
+  #   for my $snp_track ( $self->all_snp_tracks ) {
+  #     push @snp_data,
+  #       $self->_mongo_connection->_mongo_collection( $snp_track->name )
+  #       ->find( { abs_pos => $abs_pos } )->all;
+  #   }
+  # }
 
   $record{gene_data} = \@gene_data if @gene_data;
   $record{snp_data}  = \@snp_data  if @snp_data;

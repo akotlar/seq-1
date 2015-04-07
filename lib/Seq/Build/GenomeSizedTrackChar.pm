@@ -50,12 +50,6 @@ sub insert_score {
     and reftype( $self->score2char ) eq 'CODE';
 
   my $char_score = $self->score2char->($score);
-
-  # say "insert score ($score) at pos ($pos) into "
-  #   . $self->name
-  #   . " got "
-  #   . sprintf("%d", $char_score);
-
   my $inserted_char = $self->insert_char( $pos, $char_score );
   return $inserted_char;
 }

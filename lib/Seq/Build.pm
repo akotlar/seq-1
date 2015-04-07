@@ -20,9 +20,8 @@ use Seq::Build::GeneTrack;
 use Seq::Build::TxTrack;
 use Seq::Build::GenomeSizedTrackChar;
 use Seq::Build::GenomeSizedTrackStr;
+use Seq::BDBManager;
 use Seq::MongoManager;
-
-use DDP;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
@@ -76,10 +75,20 @@ sub build_assembly {
   $self->build_conserv_scores_index;
 }
 
+sub save_bdb {
+  my ($self, $name ) = @_;
+  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my $file = File::Spec->catfile( $dir, $name );
+
+  path($dir)->mkpath unless -f $dir;
+
+  return $file;
+}
+
 sub save_sites {
   my ( $self, $href, $name ) = @_;
 
-  my $dir = File::Spec->canonpath( $self->genome_index_dir );
+  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
   path($dir)->mkpath unless -f $dir;
@@ -112,6 +121,9 @@ sub build_snp_sites {
       # create a file name for loading / saving track data
       my $snp_track_file_name = join( '.', $snp_track->name, $snp_track->type, 'dat' );
 
+      # create file for bdb
+      my $snp_track_bdb = join( '.', $snp_track->name, $snp_track->type, 'db' );
+
       # is there evidence for having done this before?
       my $sites_aref = $self->load_sites($snp_track_file_name);
 
@@ -121,13 +133,18 @@ sub build_snp_sites {
         $record->{genome_track_str} = $self->genome_str_track;
         $record->{genome_index_dir} = $self->genome_index_dir;
         $record->{genome_name}      = $self->genome_name;
-        $record->{mongo_connection} = Seq::MongoManager->new(
+        # $record->{mongo_connection} = Seq::MongoManager->new(
+        #   {
+        #     default_database => $self->genome_name,
+        #     client_options   => {
+        #       host => $self->mongo_addr,
+        #       port => $self->port,
+        #     },
+        #   }
+        # );
+        $record->{bdb_connection}   = Seq::BDBManager->new(
           {
-            default_database => $self->genome_name,
-            client_options   => {
-              host => $self->mongo_addr,
-              port => $self->port,
-            },
+            filename => $self->save_bdb($snp_track_bdb),
           }
         );
         my $snp_db = Seq::Build::SnpTrack->new($record);
@@ -149,18 +166,25 @@ sub build_transcript_seq {
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
+    my $gene_track_seq_db = join( '.', $gene_track->name, $gene_track->type, 'seq.db' );
+
     my $record = $gene_track->as_href;
     $record->{genome_track_str} = $self->genome_str_track;
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
     $record->{name}             = $gene_track->name . '_tx';
-    $record->{mongo_connection} = Seq::MongoManager->new(
+    # $record->{mongo_connection} = Seq::MongoManager->new(
+    #   {
+    #     default_database => $self->genome_name,
+    #     client_options   => {
+    #       host => $self->mongo_addr,
+    #       port => $self->port,
+    #     },
+    #   }
+    # );
+    $record->{bdb_connection} = Seq::BDBManager->new(
       {
-        default_database => $self->genome_name,
-        client_options   => {
-          host => $self->mongo_addr,
-          port => $self->port,
-        },
+        filename => $self->save_bdb( $gene_track_seq_db ),
       }
     );
     my $gene_db = Seq::Build::TxTrack->new($record);
@@ -178,6 +202,9 @@ sub build_gene_sites {
     # create a file name for loading / saving track data
     my $gene_track_file_name = join( '.', $gene_track->name, $gene_track->type, 'dat' );
 
+    # create a file for bdb
+    my $gene_track_db = join( '.', $gene_track->name, $gene_track->type, 'db' );
+
     # try to load data
     my $sites_href = $self->load_sites($gene_track_file_name);
 
@@ -187,13 +214,18 @@ sub build_gene_sites {
       $record->{genome_track_str} = $self->genome_str_track;
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
-      $record->{mongo_connection} = Seq::MongoManager->new(
+      # $record->{mongo_connection} = Seq::MongoManager->new(
+      #   {
+      #     default_database => $self->genome_name,
+      #     client_options   => {
+      #       host => $self->mongo_addr,
+      #       port => $self->port,
+      #     },
+      #   }
+      # );
+      $record->{bdb_connection}   = Seq::BDBManager->new(
         {
-          default_database => $self->genome_name,
-          client_options   => {
-            host => $self->mongo_addr,
-            port => $self->port,
-          },
+          filename => $self->save_bdb( $gene_track_db ),
         }
       );
       my $gene_db = Seq::Build::GeneTrack->new($record);

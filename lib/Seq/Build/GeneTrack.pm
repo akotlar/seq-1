@@ -15,8 +15,6 @@ use namespace::autoclean;
 
 use Seq::Gene;
 
-use DDP;
-
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
@@ -24,7 +22,7 @@ sub build_gene_db {
   my $self = shift;
 
   # defensively drop anything if the collection already exists
-  $self->mongo_connection->_mongo_collection( $self->name )->drop;
+  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -81,20 +79,24 @@ sub build_gene_db {
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
       # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-      $self->insert($site_href);
-      $self->execute if $self->counter > $self->bulk_insert_threshold;
+      # $self->insert($site_href);
+      # $self->execute if $self->counter > $self->bulk_insert_threshold;
+      $self->db_put( $site_href->{abs_pos}, $site_href );
       $flank_exon_sites{ $site->abs_pos }++;
     }
+    # $self->execute if $self->counter;
 
     # get exon annotations
     my @exon_sites = $gene->all_transcript_sites;
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
       # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-      $self->insert($site_href);
-      $self->execute if $self->counter > $self->bulk_insert_threshold;
+      # $self->insert($site_href);
+      # $self->execute if $self->counter > $self->bulk_insert_threshold;
+      $self->db_put( $site_href->{abs_pos}, $site_href );
       $exon_sites{ $site->abs_pos }++;
     }
+    # $self->execute if $self->counter
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
   my $sites_href = {

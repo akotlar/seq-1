@@ -23,7 +23,7 @@ sub insert_transcript_seq {
   my $self = shift;
 
   # defensively drop anything if the collection already exists
-  $self->mongo_connection->_mongo_collection( $self->name )->drop;
+  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -73,10 +73,11 @@ sub insert_transcript_seq {
                 transcript_abs_position => $gene->transcript_abs_position,
                 peptide_seq => $gene->peptide,
               };
-    $self->insert($record_href);
-    $self->execute if $self->counter > $self->bulk_insert_threshold;
+    $self->db_put( $record_href->{transcript_id}, $record_href );
+    #$self->insert($record_href);
+    #$self->execute if $self->counter > $self->bulk_insert_threshold;
   }
-  $self->execute if $self->counter;
+  #$self->execute if $self->counter;
 }
 
 __PACKAGE__->meta->make_immutable;

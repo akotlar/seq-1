@@ -27,3 +27,4 @@ test*
 /sandbox/
 /t/*.sh
 /t/archive
+*.db

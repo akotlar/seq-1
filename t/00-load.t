@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::More;
 
-plan tests => 23;
+plan tests => 24;
 
 BEGIN {
   use_ok('Seq')                              || print "Bail out!\n";
@@ -15,6 +15,7 @@ BEGIN {
   use_ok('Seq::Role::Serialize')             || print "Bail out!\n";
   use_ok('Seq::Config::GenomeSizedTrack')    || print "Bail out!\n";
   use_ok('Seq::Config::SparseTrack')         || print "Bail out!\n";
+  use_ok('Seq::BDBManager')                  || print "Bail out!\n";
   use_ok('Seq::Fetch')                       || print "Bail out!\n";
   use_ok('Seq::Fetch::Files')                || print "Bail out!\n";
   use_ok('Seq::Fetch::Sql')                  || print "Bail out!\n";

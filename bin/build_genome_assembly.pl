@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use lib './lib';
-use Coro;
+# use Coro;
 use Carp qw/ croak /;
 use Getopt::Long;
 use Modern::Perl qw/ 2013 /;
@@ -75,10 +75,11 @@ my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
   $assembly->build_gene_sites;
   say "done with building genes";
   $assembly->build_transcript_seq;
-  say "done with building transcripts";
+  say "done with building transcript sequences";
   $assembly->build_conserv_scores_index;
   say "done with building conserv scores";
   $assembly->build_genome_index;
+  say "done building genome index";
 }
 
 __END__

@@ -22,7 +22,7 @@ sub build_snp_db {
   my $self = shift;
 
   # defensively drop anything if the collection already exists
-  $self->mongo_connection->_mongo_collection( $self->name )->drop;
+  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   #my $bulk = $self->mongo_connection->_mongo_collection( $self->name )->initialize_ordered_bulk_op;
 
@@ -85,12 +85,13 @@ sub build_snp_db {
 
         my $site_href = $snp_site->as_href;
 
-        $self->insert($site_href);
-        $self->execute if $self->counter > $self->bulk_insert_threshold;
+        # $self->insert($site_href);
+        # $self->execute if $self->counter > $self->bulk_insert_threshold;
+        $self->db_put( $site_href->{abs_pos}, $site_href );
       }
     }
   }
-  $self->execute if $self->counter;
+  # $self->execute if $self->counter;
   return \@snp_sites;
 }
 
