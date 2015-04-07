@@ -186,14 +186,13 @@ sub _load_genome_sized_track {
   return $obj;
 }
 
-
 sub get_ref_annotation {
-  state $check = compile( Object, Str, Int );
-  my ( $self, $chr, $pos ) = $check->(@_);
+  state $check = compile( Object, Int );
+  my ( $self, $abs_pos ) = $check->(@_);
 
   my %record;
 
-  my $abs_pos   = $self->get_abs_pos( $chr, $pos );
+  # my $abs_pos   = $self->get_abs_pos( $chr, $pos );
   my $site_code = $self->_genome->get_base($abs_pos);
   my $base      = $self->_genome->get_idx_base($site_code);
   my $gan       = ( $self->_genome->get_idx_in_gan($site_code) ) ? 1 : 0;
@@ -201,8 +200,8 @@ sub get_ref_annotation {
   my $exon      = ( $self->_genome->get_idx_in_exon($site_code) ) ? 1 : 0;
   my $snp       = ( $self->_genome->get_idx_in_snp($site_code) ) ? 1 : 0;
 
-  $record{chr}       = $chr;
-  $record{rel_pos}   = $pos;
+  # $record{chr}       = $chr;
+  # $record{rel_pos}   = $pos;
   $record{abs_pos}   = $abs_pos;
   $record{site_code} = $site_code;
   $record{ref_base}  = $base;
@@ -261,10 +260,10 @@ sub get_ref_annotation {
 
 # indels will be handled in a separate method
 sub get_snp_annotation {
-  state $check = compile( Object, Str, Int, Str );
-  my ( $self, $chr, $pos, $new_genotype ) = $check->(@_);
+  state $check = compile( Object, Int, Str );
+  my ( $self, $abs_pos, $new_genotype ) = $check->(@_);
 
-  my $ref_site_annotation = $self->get_ref_annotation( $chr, $pos );
+  my $ref_site_annotation = $self->get_ref_annotation( $abs_pos );
 
   # gene site annotations
   my $gene_aref //= $ref_site_annotation->{gene_data};
@@ -379,10 +378,9 @@ sub _build_header {
   }
   map { push @alt_features, $_ } keys %snp_features;
 
-  my @features = qw( chr rel_pos ref_base genomic_annotation_code annotation_type
+  my @features = qw/ chr pos ref_base genomic_annotation_code annotation_type
     codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
-    ref_aa_residue ref_base
-    ref_codon_seq site_type strand transcript_id );
+    ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id /;
 
   push @features, @alt_features;
 
