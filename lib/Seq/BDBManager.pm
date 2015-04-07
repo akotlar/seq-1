@@ -19,7 +19,7 @@ use Hash::Merge qw/ merge _hashify _merge_hashes /;
 
 # use DDP;
 
-enum bdb_types => [qw/ hash btree /];
+enum bdb_type => [qw/ hash btree /];
 
 with 'Seq::Role::IO';
 
@@ -38,10 +38,11 @@ has _db => (
   builder => '_build_db',
 );
 
-has _db_type => (
+has db_type => (
   is => 'ro',
-  isa => 'Str',
+  isa => 'bdb_type',
   default => 'hash',
+  required => 1,
 );
 
 has _hash_merge => (
