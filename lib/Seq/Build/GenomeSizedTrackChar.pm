@@ -93,6 +93,7 @@ sub write_char_seq {
 sub build_score_idx {
   my $self = shift;
 
+  my $chr_len_href     = $self->chr_len;
   my $local_files_aref = $self->local_files;
   my $local_dir        = File::Spec->canonpath( $self->local_dir );
 
@@ -100,11 +101,25 @@ sub build_score_idx {
     my $file       = $local_files_aref->[$i];
     my $local_file = File::Spec->catfile( $local_dir, $file );
     my $fh         = $self->get_read_fh($local_file);
+    my ( $last_pos, $last_chr, $abs_pos ) = ( 0, 0, 0 );
     while ( my $line = $fh->getline() ) {
       chomp $line;
       my ( $chr, $pos, $score ) = split( "\t", $line );
-      my $abs_pos = $self->get_abs_pos( $chr, $pos );
+      if ($chr eq $last_chr) {
+        $abs_pos += $pos - $last_pos;
+        $last_pos = $pos;
+      }
+      else {
+        my $offset //= $chr_len_href->{$chr};
+        if (defined $offset) {
+          $abs_pos = $offset + $pos;
+        }
+        else {
+          confess "unrecognized chr: $chr in line: $line of $file";
+        }
+      }
       $self->insert_score( $abs_pos, $score );
+      $last_chr = $chr;
     }
   }
 }
@@ -124,7 +139,7 @@ sub build_genome_idx {
   for ( my $pos = 0; $pos < $self->genome_length; $pos++ ) {
 
     # all absolute bases are zero-indexed
-    my $this_base = uc $genome_str->get_base( $pos, 1 );
+    my $this_base = $genome_str->get_base( $pos, 1 );
     my ( $in_gan, $in_gene, $in_exon, $in_snp ) = ( 0, 0, 0, 0 );
 
     # $in_gan -> means is this site annotated in the MongoDb gene track
