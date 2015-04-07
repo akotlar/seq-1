@@ -70,6 +70,14 @@ has bdb_snp => (
   lazy => 1,
 );
 
+has bdb_seq => (
+  is => 'ro',
+  isa => 'ArrayRef[Seq::BDBManager]',
+  builder => '_build_bdb_tx',
+  traits  => ['Array'],
+  handles => { _all_bdb_seq => 'elements', },
+  lazy => 1,
+);
 has _header => (
   is      => 'ro',
   isa     => 'ArrayRef',
@@ -105,6 +113,20 @@ sub _build_bdb_snp {
   my @array = ( );
   for my $snp_track ( $self->all_snp_tracks ) {
     my $db_name = join ".", $snp_track->name, $snp_track->type, 'db';
+    push @array, Seq::BDBManager->new(
+      {
+        filename => $self->_get_bdb_file($db_name),
+      }
+    );
+  }
+  return \@array;
+}
+
+sub _build_bdb_tx {
+  my $self = shift;
+  my @array = ( );
+  for my $gene_track ( $self->all_snp_tracks ) {
+    my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'db';
     push @array, Seq::BDBManager->new(
       {
         filename => $self->_get_bdb_file($db_name),
@@ -386,6 +408,76 @@ sub _build_header {
 
   return \@features;
 }
+
+sub annotate_dels {
+  state $check = compile( Object, HashRef );
+  my ( $self, $sites_href ) = $check->(@_);
+  my (@annotations, @contiguous_sites, $last_abs_pos);
+
+  # $site_href is defined as %site{ abs_pos } = [ chr, pos ]
+
+  for my $abs_pos (sort {$a <=> $b} keys %$sites_href) {
+    if ( $last_abs_pos + 1 == $abs_pos) {
+      push @contiguous_sites, $abs_pos;
+      $last_abs_pos = $abs_pos;
+    }
+    else {
+
+      # annotate site
+      my $record = $self->_annotate_del_sites( \@contiguous_sites );
+
+      # arbitrarily assign the 1st del site as the one we'll report
+      ($record->{chr}, $record->{pos}) = @{ $sites_href->{ $contiguous_sites[0] } };
+
+      # save annotations
+      push @annotations, $record;
+      @contiguous_sites = ( );
+    }
+  }
+  return \@annotations;
+}
+
+# data for tx_sites:
+# hash{ abs_pos } = (
+    # coding_start => $gene->coding_start,
+    # coding_end => $gene->coding_end,
+    # exon_starts => $gene->exon_starts,
+    # exon_ends => $gene->exon_ends,
+    # transcript_start => $gene->transcript_start,
+    # transcript_end => $gene->transcript_end,
+    # transcript_id => $gene->transcript_id,
+    # transcript_seq => $gene->transcript_seq,
+    # transcript_annotation => $gene->transcript_annotation,
+    # transcript_abs_position => $gene->transcript_abs_position,
+    # peptide_seq => $gene->peptide,
+# );
+
+sub _annotate_del_sites {
+  state $check = compile( Object, ArrayRef );
+  my ( $self, $site_aref ) = $check->(@_);
+  my (@tx_hrefs, @records);
+
+  for my $abs_pos (@$site_aref) {
+    # get a seq::site::gene record munged with seq::site::snp
+
+    my $record = $self->get_ref_annotation( $abs_pos );
+
+    for my $gene_data ( @{ $record->{gene_data} } ) {
+      my $tx_id = $gene_data->{transcript_id};
+
+      for my $bdb_seq ($self->_all_bdb_seq) {
+        my $tx_href = $bdb_seq->db_get( $tx_id );
+        if ( defined $tx_href ) {
+          push @tx_hrefs, $tx_href;
+        }
+      }
+    }
+    for my $tx_href (@tx_hrefs) {
+      # substring...
+    }
+  }
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

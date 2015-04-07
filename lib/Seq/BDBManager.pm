@@ -82,7 +82,7 @@ sub _build_hash_merge {
 sub _build_db {
   my $self = shift;
   my (%hash, $db);
-  if ($self->_db_type eq 'hash') {
+  if ($self->db_type eq 'hash') {
     $db = tie %hash, 'DB_File', $self->filename, O_RDWR|O_CREAT, 0666, $DB_HASH
       or confess 'Cannot open file: ' . $self->filename . ": $!\n";
   }

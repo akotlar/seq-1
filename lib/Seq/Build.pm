@@ -53,6 +53,7 @@ sub _build_genome_str_track {
           local_dir   => $gst->local_dir,
           local_files => $gst->local_files,
           genome_chrs => $gst->genome_chrs,
+          genome_index_dir => $self->genome_index_dir,
         }
       );
     }
