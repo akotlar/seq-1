@@ -74,6 +74,7 @@ my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
   say "done with building snps";
   $assembly->build_gene_sites;
   say "done with building genes";
+  $assembly->build_transcript_seq;
   say "done with building transcript sequences";
   $assembly->build_conserv_scores_index;
   say "done with building conserv scores";

@@ -87,8 +87,7 @@ sub write_char_seq {
 sub build_score_idx {
   my $self = shift;
 
-  my $chr_len_href = $self->chr_len;
-
+  my $chr_len_href     = $self->chr_len;
   my $local_files_aref = $self->local_files;
   my $local_dir        = File::Spec->canonpath( $self->local_dir );
 
@@ -97,10 +96,9 @@ sub build_score_idx {
     my $local_file = File::Spec->catfile( $local_dir, $file );
     my $fh         = $self->get_read_fh($local_file);
     my ( $last_pos, $last_chr, $abs_pos ) = ( 0, 0, 0 );
-    while (my $line = $fh->getline()) {
+    while ( my $line = $fh->getline() ) {
       chomp $line;
       my ( $chr, $pos, $score ) = split( "\t", $line );
-      # say join " ", $chr, $pos, $last_pos, $abs_pos, $score;
       if ($chr eq $last_chr) {
         $abs_pos += $pos - $last_pos;
         $last_pos = $pos;
