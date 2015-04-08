@@ -46,11 +46,13 @@ use DDP;
 #
 # variables
 #
-my ( $help, $out_ext, %snpfile_sites, $padding, $config_file, $twobit_genome );
+my ( $help, $out_ext, %snpfile_sites, $twobit_genome );
 
 # defaults
 my $location       = 'sandbox';
 my $twobit2fa_prog = 'twoBitToFa';
+my $config_file = 't/hg38_build_test.yml';
+my $padding = 0;
 
 GetOptions(
   'c|config=s'        => \$config_file,
@@ -66,8 +68,6 @@ if ($help) {
   Pod::Usage::pod2usage(1);
   exit;
 }
-
-print $out_ext;
 
 unless ( defined $out_ext
   and defined $twobit2fa_prog
@@ -103,7 +103,7 @@ my $dsn = "DBI:mysql:host=genome-mysql.cse.ucsc.edu;database=$genome";
 my $dbh = DBI->connect( $dsn, "genome", "" ) or croak "cannot connect to $dsn";
 
 # change dir to directory where we'll download data
-chdir $location or croak "cannot change into $location";
+chdir $location or make_path($location) and chdir $location or croak "cannot change into $location";
 
 # get abs path to 2bit file
 #   going to assume twoBitToFa is in path

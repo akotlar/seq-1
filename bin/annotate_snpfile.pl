@@ -37,7 +37,8 @@ if ($help) {
 }
 
 unless ( defined $yaml_config
-  and defined $db_location )
+  and defined $db_location
+  and defined $out_file )
 {
   Pod::Usage::pod2usage();
 }
@@ -67,8 +68,8 @@ annotate_snpfile - annotates a snpfile using a given genome assembly specified
 in a configuration file
 
 =head1 SYNOPSIS
-
-annotate_snpfile.pl --snp <snpfile> --config <file> --locaiton <path>
+ 
+annotate_snpfile.pl --snp <snpfile> --config <file> --location <path> --out <path>
 
 =head1 DESCRIPTION
 
@@ -92,6 +93,11 @@ used by the Seq Package to build the binary genome without any alteration.
 =item B<-l>, B<--location>
 
 Location: This is the base directory for the location of the binary index.
+
+=item B<-o>, B<--out>
+
+Output directory: This is the output director.
+
 
 =back
 
