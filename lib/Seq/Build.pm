@@ -88,7 +88,7 @@ sub save_bdb {
 }
 
 sub save_sites {
-  my ( $self, $href, $name ) = @_;
+  my ( $self, $data_ref, $name ) = @_;
 
   my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
@@ -96,7 +96,7 @@ sub save_sites {
   path($dir)->mkpath unless -f $dir;
   my $fh = $self->get_write_fh($file);
 
-  return print { $fh } encode_json( $href );
+  return print { $fh } encode_json( $data_ref );
 }
 
 sub load_sites {
