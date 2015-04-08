@@ -166,29 +166,46 @@ sub build_transcript_seq {
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
+
+    # create a file name for loading / saving track data
+    my $gene_track_file_name = join( '.', $gene_track->name, $gene_track->type, 'seq.dat' );
+
+    # create file for bdb
     my $gene_track_seq_db = join( '.', $gene_track->name, $gene_track->type, 'seq.db' );
 
-    my $record = $gene_track->as_href;
-    $record->{genome_track_str} = $self->genome_str_track;
-    $record->{genome_index_dir} = $self->genome_index_dir;
-    $record->{genome_name}      = $self->genome_name;
-    $record->{name}             = $gene_track->name . '_tx';
-    # $record->{mongo_connection} = Seq::MongoManager->new(
-    #   {
-    #     default_database => $self->genome_name,
-    #     client_options   => {
-    #       host => $self->mongo_addr,
-    #       port => $self->port,
-    #     },
-    #   }
-    # );
-    $record->{bdb_connection} = Seq::BDBManager->new(
-      {
-        filename => $self->save_bdb( $gene_track_seq_db ),
-      }
-    );
-    my $gene_db = Seq::Build::TxTrack->new($record);
-    $gene_db->insert_transcript_seq;
+    # is there evidence for having done this before?
+    my $done_sref = $self->load_sites($gene_track_file_name);
+
+
+    unless ($done_sref) {
+      my $record = $gene_track->as_href;
+      $record->{genome_track_str} = $self->genome_str_track;
+      $record->{genome_index_dir} = $self->genome_index_dir;
+      $record->{genome_name}      = $self->genome_name;
+      $record->{name}             = $gene_track->name . '_tx';
+      # $record->{mongo_connection} = Seq::MongoManager->new(
+      #   {
+      #     default_database => $self->genome_name,
+      #     client_options   => {
+      #       host => $self->mongo_addr,
+      #       port => $self->port,
+      #     },
+      #   }
+      # );
+      $record->{bdb_connection} = Seq::BDBManager->new(
+        {
+          filename => $self->save_bdb( $gene_track_seq_db ),
+        }
+      );
+      my $gene_db = Seq::Build::TxTrack->new($record);
+      $gene_db->insert_transcript_seq;
+    }
+    my $href = { 'done with gene sequence track' => 1 };
+
+    # save the gene track data
+    unless ( $self->save_sites( $href, $gene_track_file_name ) ) {
+      croak "error saving snp sites for:  $gene_track_file_name\n";
+    }
   }
 }
 

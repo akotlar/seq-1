@@ -56,9 +56,24 @@ sub insert_score {
 }
 
 override '_build_char_seq' => sub {
-  my $self     = shift;
-  my $char_seq = pack( "C", '0' ) x $self->genome_length;
-  return \$char_seq;;
+  my $self = shift;
+
+  my $file        = join( ".", $self->name, 'gene_region.dat' );
+  my $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
+  my $dat_file    = File::Spec->catfile( $index_dir, $file );
+
+  if (-s $dat_file && -s $dat_file == $self->genome_length) {
+    my $fh = $self->get_read_fh($dat_file);
+    binmode $fh;
+    my $char_seq;
+    my $genome_length = -s $dat_file;
+    read $fh, $char_seq, $genome_length;
+    return \$char_seq;
+  }
+  else {
+    my $char_seq = pack( "C", '0' ) x $self->genome_length;
+    return \$char_seq;
+  }
 };
 
 sub write_char_seq {
@@ -166,21 +181,28 @@ sub set_gene_regions {
   confess "set_gene_regions() requires an array reference of transcript coordinates\n"
     unless reftype($tx_starts_href) eq "HASH";
 
-  my @sorted_tx_starts = sort { $a <=> $b } keys %$tx_starts_href;
+  my $file        = join( ".", $self->name, 'gene_region.dat' );
+  my $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
+  my $dat_file    = File::Spec->catfile( $index_dir, $file );
 
-  # pick the 1st start site
-  my $current_pos = 0;
+  # if there's a dat file, then we loaded that at build time otherwise we'll
+  # need to build things from scratch
+  unless ( -s $dat_file ) {
 
-  # recall the char string will be initialized to Zero's already so we only
-  # need to consider when we are in a gene region
-  for my $tx_start ( sort { $a <=> $b } keys %$tx_starts_href ) {
-    my $max_start = ( $current_pos > $tx_start ) ? $current_pos : $tx_start;
-    my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
-    my $furthest_stop = shift @tx_stops;
-    for (my $i = $max_start; $i <= $furthest_stop; $i++) {
-      $current_pos = $i;
-      $self->insert_char( $current_pos, '1' );
+    # recall the char string will be initialized to Zero's already so we only
+    # need to consider when we are in a gene region
+    my $current_pos = 0;
+    for my $tx_start ( sort { $a <=> $b } keys %$tx_starts_href ) {
+      my $max_start = ( $current_pos > $tx_start ) ? $current_pos : $tx_start;
+      my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+      my $furthest_stop = shift @tx_stops;
+      for (my $i = $max_start; $i <= $furthest_stop; $i++) {
+        $current_pos = $i;
+        $self->insert_char( $current_pos, '1' );
+      }
     }
+    my $fh = $self->get_write_bin_fh($dat_file);
+    print { $fh } ${$self->char_seq};
   }
 }
 
