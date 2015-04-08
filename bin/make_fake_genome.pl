@@ -27,9 +27,11 @@ use 5.10.0;
 use strict;
 use warnings;
 use DBI;
+use Data::Dumper;
 use Carp qw/ croak /;
 use Getopt::Long;
 use File::Spec;
+use File::Path qw/ make_path /;
 use Path::Tiny;
 use IO::File;
 use IO::Compress::Gzip qw/ gzip $GzipError /;
@@ -109,7 +111,7 @@ my $dsn = "DBI:mysql:host=genome-mysql.cse.ucsc.edu;database=$genome";
 my $dbh = DBI->connect( $dsn, "genome", "" ) or croak "cannot connect to $dsn";
 
 # change dir to directory where we'll download data
-chdir $location or make_path($location) and chdir $location or croak "cannot change into $location";
+chdir $location or path($location)->mkpath and chdir $location or croak "cannot change into $location";
 
 # get abs path to 2bit file
 #   going to assume twoBitToFa is in path
@@ -247,6 +249,8 @@ chdir $out_dirs{raw} or croak "cannot change dir $out_dirs{raw}\n";
 }
 
 # print fake conservation data - aboult half of the bases will have scores
+# TODO: kotlar: is $i + 1 correct? we are all 0 indexed and UCSC is 0 indexed as well?
+# https://genome.ucsc.edu/FAQ/FAQtracks.html
 for my $chr (@$chrs_aref) {
   for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
     say { $out_fhs{phastCons} } join( "\t", $chr, ( $i + 1 ), rand(1) )
@@ -257,12 +261,25 @@ for my $chr (@$chrs_aref) {
 }
 
 # print fake haploinsufficiency data - about 70% of genes have scores
-# TODO: remove dependency on knowlege of geneSymbol key?
+# pretends we have genome-wide haploinsufficiency data @ snv resolution
+# TODO: what to do about promoter sequences? 
 {
   for my $chr (sort keys %found_chr)
   {
-      say {$out_fhs{haploIns}} join("\t", $found_chr{$chr}{geneSymbol}, rand(1) )
-        if rand(1) > 0.25;
+      say "\n\nWe found the gene symbol: $chr"; # . $found_chr{$chr}->{geneSymbol} ."\n";
+
+      #at the moment %founcchr{$chr} is a 1 length 1D array
+      #but $chr_length{$chr} is a scalar
+      for my $geneRecord ( @{ $found_chr{$chr} } )
+      {
+          for (my $i = 0; $i < $chr_len{$chr}; $i++) 
+          {
+            say { $out_fhs{haploIns} } join( "\t", $chr, $i, rand(1) )
+              if rand(1) > 0.25;
+          }
+      }
+     # say {$out_fhs{haploIns}} join("\t", $found_chr{$chr}{geneSymbol}, rand(1) )
+     #   if rand(1) > 0.25;
   } 
 }
 # print fake snp data - about 1% of sites will be snps
