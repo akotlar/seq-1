@@ -190,18 +190,21 @@ sub annotate_snpfile {
     my $type          = $fields[ $header{Type} ];
     my $all_alleles   = $fields[ $header{Alleles} ];
     my $allele_counts = $fields[ $header{Allele_Counts} ];
+    my $abs_pos       = $annotator->get_abs_pos( $chr, $pos );
 
     # get carrier ids for variant
     my @carriers = $self->_get_minor_allele_carriers( \@fields, \%ids, $ref_allele );
 
     if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
       my $method = lc 'set_' . $type . '_site';
-      $self->$method( $annotator->get_abs_pos( $chr, $pos ) => [ $chr, $pos ] );
+      $self->$method( $abs_pos => [ $chr, $pos ] );
       # get annotation for snp sites
       next unless uc $type eq 'SNP';
       for my $allele ( split( /,/, $all_alleles ) ) {
         next if $allele eq $ref_allele;
-        my $record_href = $annotator->get_snp_annotation( $chr, $pos, $allele );
+        my $record_href = $annotator->get_snp_annotation( $abs_pos, $allele );
+        $record_href->{chr} = $chr;
+        $record_href->{pos} = $pos;
         my @record = map { $record_href->{$_} } @header;
         $csv_writer->print( $self->_out_fh, \@record ) or $csv_writer->error_diag;
       }

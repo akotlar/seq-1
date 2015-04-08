@@ -19,6 +19,8 @@ use Hash::Merge qw/ merge _hashify _merge_hashes /;
 
 # use DDP;
 
+enum bdb_type => [qw/ hash btree /];
+
 with 'Seq::Role::IO';
 
 my $i = 1;
@@ -34,6 +36,13 @@ has _db => (
   isa => 'DB_File',
   lazy => 1,
   builder => '_build_db',
+);
+
+has db_type => (
+  is => 'ro',
+  isa => 'bdb_type',
+  default => 'hash',
+  required => 1,
 );
 
 has _hash_merge => (
@@ -72,9 +81,15 @@ sub _build_hash_merge {
 
 sub _build_db {
   my $self = shift;
-  my %hash;
-  my $db = tie %hash, 'DB_File', $self->filename, O_RDWR|O_CREAT, 0666, $DB_HASH
-    or confess 'Cannot open file: ' . $self->filename . ": $!\n";
+  my (%hash, $db);
+  if ($self->db_type eq 'hash') {
+    $db = tie %hash, 'DB_File', $self->filename, O_RDWR|O_CREAT, 0666, $DB_HASH
+      or confess 'Cannot open file: ' . $self->filename . ": $!\n";
+  }
+  else {
+    $db = tie %hash, 'DB_File', $self->filename, O_RDWR|O_CREAT, 0666, $DB_BTREE
+      or confess 'Cannot open file: ' . $self->filename . ": $!\n";
+  }
   return $db;
 }
 

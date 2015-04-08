@@ -9,6 +9,8 @@ package Seq::Role::Genome;
 
 use Moose::Role;
 
+# requires qw/ genome_length exists_chr_len /;
+
 use Carp;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;

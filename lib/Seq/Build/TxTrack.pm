@@ -66,13 +66,19 @@ sub insert_transcript_seq {
     my $gene = Seq::Gene->new( \%gene_data );
     $gene->set_alt_names(%alt_names);
 
-    # get intronic flanking site annotations
-    my $record_href = { transcript_id => $gene->transcript_id,
-                transcript_seq => $gene->transcript_seq,
-                transcript_annotation => $gene->transcript_annotation,
-                transcript_abs_position => $gene->transcript_abs_position,
-                peptide_seq => $gene->peptide,
-              };
+    my $record_href = {
+      coding_start => $gene->coding_start,
+      coding_end => $gene->coding_end,
+      exon_starts => $gene->exon_starts,
+      exon_ends => $gene->exon_ends,
+      transcript_start => $gene->transcript_start,
+      transcript_end => $gene->transcript_end,
+      transcript_id => $gene->transcript_id,
+      transcript_seq => $gene->transcript_seq,
+      transcript_annotation => $gene->transcript_annotation,
+      transcript_abs_position => $gene->transcript_abs_position,
+      peptide_seq => $gene->peptide,
+    };
     $self->db_put( $record_href->{transcript_id}, $record_href );
     #$self->insert($record_href);
     #$self->execute if $self->counter > $self->bulk_insert_threshold;
