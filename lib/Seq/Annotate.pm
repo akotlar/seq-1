@@ -53,30 +53,30 @@ has _mongo_connection => (
 );
 
 has bdb_gene => (
-  is => 'ro',
-  isa => 'ArrayRef[Seq::BDBManager]',
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::BDBManager]',
   builder => '_build_bdb_gene',
   traits  => ['Array'],
   handles => { _all_bdb_gene => 'elements', },
-  lazy => 1,
+  lazy    => 1,
 );
 
 has bdb_snp => (
-  is => 'ro',
-  isa => 'ArrayRef[Seq::BDBManager]',
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::BDBManager]',
   builder => '_build_bdb_snp',
   traits  => ['Array'],
   handles => { _all_bdb_snp => 'elements', },
-  lazy => 1,
+  lazy    => 1,
 );
 
 has bdb_seq => (
-  is => 'ro',
-  isa => 'ArrayRef[Seq::BDBManager]',
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::BDBManager]',
   builder => '_build_bdb_tx',
   traits  => ['Array'],
   handles => { _all_bdb_seq => 'elements', },
-  lazy => 1,
+  lazy    => 1,
 );
 has _header => (
   is      => 'ro',
@@ -88,50 +88,38 @@ has _header => (
 );
 
 sub _get_bdb_file {
-  my ($self, $name ) = @_;
-  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my ( $self, $name ) = @_;
+  my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
   return $file;
 }
 
 sub _build_bdb_gene {
-  my $self = shift;
-  my @array = ( );
+  my $self  = shift;
+  my @array = ();
   for my $gene_track ( $self->all_gene_tracks ) {
     my $db_name = join ".", $gene_track->name, $gene_track->type, 'db';
-    push @array, Seq::BDBManager->new(
-      {
-        filename => $self->_get_bdb_file($db_name),
-      }
-    );
+    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
   }
   return \@array;
 }
 
 sub _build_bdb_snp {
-  my $self = shift;
-  my @array = ( );
+  my $self  = shift;
+  my @array = ();
   for my $snp_track ( $self->all_snp_tracks ) {
     my $db_name = join ".", $snp_track->name, $snp_track->type, 'db';
-    push @array, Seq::BDBManager->new(
-      {
-        filename => $self->_get_bdb_file($db_name),
-      }
-    );
+    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
   }
   return \@array;
 }
 
 sub _build_bdb_tx {
-  my $self = shift;
-  my @array = ( );
+  my $self  = shift;
+  my @array = ();
   for my $gene_track ( $self->all_snp_tracks ) {
     my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'db';
-    push @array, Seq::BDBManager->new(
-      {
-        filename => $self->_get_bdb_file($db_name),
-      }
-    );
+    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
   }
   return \@array;
 }
@@ -248,13 +236,13 @@ sub get_ref_annotation {
 
   if ($gan) {
     for my $gene_dbs ( $self->_all_bdb_gene ) {
-      push @gene_data, $gene_dbs->db_get( $abs_pos );
+      push @gene_data, $gene_dbs->db_get($abs_pos);
     }
   }
 
   if ($snp) {
     for my $snp_dbs ( $self->_all_bdb_snp ) {
-      push @snp_data, $snp_dbs->db_get( $abs_pos );
+      push @snp_data, $snp_dbs->db_get($abs_pos);
     }
   }
 
@@ -285,7 +273,7 @@ sub get_snp_annotation {
   state $check = compile( Object, Int, Str );
   my ( $self, $abs_pos, $new_genotype ) = $check->(@_);
 
-  my $ref_site_annotation = $self->get_ref_annotation( $abs_pos );
+  my $ref_site_annotation = $self->get_ref_annotation($abs_pos);
 
   # gene site annotations
   my $gene_aref //= $ref_site_annotation->{gene_data};
@@ -412,12 +400,12 @@ sub _build_header {
 sub annotate_dels {
   state $check = compile( Object, HashRef );
   my ( $self, $sites_href ) = $check->(@_);
-  my (@annotations, @contiguous_sites, $last_abs_pos);
+  my ( @annotations, @contiguous_sites, $last_abs_pos );
 
   # $site_href is defined as %site{ abs_pos } = [ chr, pos ]
 
-  for my $abs_pos (sort {$a <=> $b} keys %$sites_href) {
-    if ( $last_abs_pos + 1 == $abs_pos) {
+  for my $abs_pos ( sort { $a <=> $b } keys %$sites_href ) {
+    if ( $last_abs_pos + 1 == $abs_pos ) {
       push @contiguous_sites, $abs_pos;
       $last_abs_pos = $abs_pos;
     }
@@ -427,11 +415,11 @@ sub annotate_dels {
       my $record = $self->_annotate_del_sites( \@contiguous_sites );
 
       # arbitrarily assign the 1st del site as the one we'll report
-      ($record->{chr}, $record->{pos}) = @{ $sites_href->{ $contiguous_sites[0] } };
+      ( $record->{chr}, $record->{pos} ) = @{ $sites_href->{ $contiguous_sites[0] } };
 
       # save annotations
       push @annotations, $record;
-      @contiguous_sites = ( );
+      @contiguous_sites = ();
     }
   }
   return \@annotations;
@@ -439,34 +427,34 @@ sub annotate_dels {
 
 # data for tx_sites:
 # hash{ abs_pos } = (
-    # coding_start => $gene->coding_start,
-    # coding_end => $gene->coding_end,
-    # exon_starts => $gene->exon_starts,
-    # exon_ends => $gene->exon_ends,
-    # transcript_start => $gene->transcript_start,
-    # transcript_end => $gene->transcript_end,
-    # transcript_id => $gene->transcript_id,
-    # transcript_seq => $gene->transcript_seq,
-    # transcript_annotation => $gene->transcript_annotation,
-    # transcript_abs_position => $gene->transcript_abs_position,
-    # peptide_seq => $gene->peptide,
+# coding_start => $gene->coding_start,
+# coding_end => $gene->coding_end,
+# exon_starts => $gene->exon_starts,
+# exon_ends => $gene->exon_ends,
+# transcript_start => $gene->transcript_start,
+# transcript_end => $gene->transcript_end,
+# transcript_id => $gene->transcript_id,
+# transcript_seq => $gene->transcript_seq,
+# transcript_annotation => $gene->transcript_annotation,
+# transcript_abs_position => $gene->transcript_abs_position,
+# peptide_seq => $gene->peptide,
 # );
 
 sub _annotate_del_sites {
   state $check = compile( Object, ArrayRef );
   my ( $self, $site_aref ) = $check->(@_);
-  my (@tx_hrefs, @records);
+  my ( @tx_hrefs, @records );
 
   for my $abs_pos (@$site_aref) {
     # get a seq::site::gene record munged with seq::site::snp
 
-    my $record = $self->get_ref_annotation( $abs_pos );
+    my $record = $self->get_ref_annotation($abs_pos);
 
     for my $gene_data ( @{ $record->{gene_data} } ) {
       my $tx_id = $gene_data->{transcript_id};
 
-      for my $bdb_seq ($self->_all_bdb_seq) {
-        my $tx_href = $bdb_seq->db_get( $tx_id );
+      for my $bdb_seq ( $self->_all_bdb_seq ) {
+        my $tx_href = $bdb_seq->db_get($tx_id);
         if ( defined $tx_href ) {
           push @tx_hrefs, $tx_href;
         }

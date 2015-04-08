@@ -9,10 +9,9 @@ use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
-use Log::Any::Adapter ('File', 'build.log');
+use Log::Any::Adapter ( 'File', 'build.log' );
 
 use Seq::Build;
-
 
 my ( $yaml_config, $db_location, $verbose, $help );
 

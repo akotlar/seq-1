@@ -65,7 +65,7 @@ has alt_names => (
   is      => 'rw',
   isa     => 'HashRef',
   traits  => ['Hash'],
-  default => sub { { } },
+  default => sub { {} },
   handles => {
     all_alt_names => 'kv',
     get_alt_names => 'get',
@@ -133,9 +133,9 @@ has peptide => (
 );
 
 has transcript_sites => (
-  is => 'ro',
+  is      => 'ro',
   isa     => 'ArrayRef[Seq::Site::Gene]',
-  default => sub { [ ] },
+  default => sub { [] },
   traits  => ['Array'],
   handles => {
     all_transcript_sites => 'elements',
@@ -144,9 +144,9 @@ has transcript_sites => (
 );
 
 has flanking_sites => (
-  is => 'ro',
+  is      => 'ro',
   isa     => 'ArrayRef[Seq::Site::Gene]',
-  default => sub { [ ] },
+  default => sub { [] },
   traits  => ['Array'],
   handles => {
     all_flanking_sites => 'elements',
@@ -317,11 +317,14 @@ sub _build_transcript_sites {
   my $last_codon_number = 0;
   my @sites;
 
-  if ($self->no_transcript_error) {
-    $self->_logger->info( join(" ", $self->transcript_id, $self->chr, $self->strand ));
+  if ( $self->no_transcript_error ) {
+    $self->_logger->info( join( " ", $self->transcript_id, $self->chr, $self->strand ) );
   }
   else {
-    $self->_logger->warn( join(" ", $self->transcript_id, $self->chr, $self->strand, $self->all_transcript_errors ));
+    $self->_logger->warn(
+      join( " ",
+        $self->transcript_id, $self->chr, $self->strand, $self->all_transcript_errors )
+    );
   }
   for ( my $i = 0; $i < ( $self->all_transcript_abs_position ); $i++ ) {
     my (
@@ -367,13 +370,14 @@ sub _build_transcript_sites {
     my $site = Seq::Site::Gene->new( \%gene_site );
 
     # build peptide
-    if ($site->codon_number) {
-      $self->add_aa_residue( $site->ref_aa_residue ) if ($last_codon_number != $site->codon_number);
+    if ( $site->codon_number ) {
+      $self->add_aa_residue( $site->ref_aa_residue )
+        if ( $last_codon_number != $site->codon_number );
     }
 
     $last_codon_number = $site->codon_number if $site->codon_number;
 
-    $self->add_transcript_site( $site );
+    $self->add_transcript_site($site);
   }
 }
 

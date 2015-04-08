@@ -58,11 +58,11 @@ sub insert_score {
 override '_build_char_seq' => sub {
   my $self = shift;
 
-  my $file        = join( ".", $self->name, 'gene_region.dat' );
-  my $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
-  my $dat_file    = File::Spec->catfile( $index_dir, $file );
+  my $file      = join( ".", $self->name, 'gene_region.dat' );
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  my $dat_file  = File::Spec->catfile( $index_dir, $file );
 
-  if (-s $dat_file && -s $dat_file == $self->genome_length) {
+  if ( -s $dat_file && -s $dat_file == $self->genome_length ) {
     my $fh = $self->get_read_fh($dat_file);
     binmode $fh;
     my $char_seq;
@@ -112,13 +112,13 @@ sub build_score_idx {
     while ( my $line = $fh->getline() ) {
       chomp $line;
       my ( $chr, $pos, $score ) = split( "\t", $line );
-      if ($chr eq $last_chr) {
+      if ( $chr eq $last_chr ) {
         $abs_pos += $pos - $last_pos;
         $last_pos = $pos;
       }
       else {
         my $offset //= $chr_len_href->{$chr};
-        if (defined $offset) {
+        if ( defined $offset ) {
           $abs_pos = $offset + $pos;
         }
         else {
@@ -151,7 +151,7 @@ sub build_genome_idx {
 
     # $in_gan -> means is this site annotated in the MongoDb gene track
     # e.g., 5'UTR, Coding, intronic splice site donor, etc.
-    $in_gan = 1 if exists $exon_href->{$pos} || exists $flank_exon_href->{$pos};
+    $in_gan  = 1 if exists $exon_href->{$pos} || exists $flank_exon_href->{$pos};
     $in_gene = $self->get_base($pos);
     $in_exon = 1 if exists $exon_href->{$pos};
     $in_snp  = 1 if exists $snp_href->{$pos};
@@ -181,9 +181,9 @@ sub set_gene_regions {
   confess "set_gene_regions() requires an array reference of transcript coordinates\n"
     unless reftype($tx_starts_href) eq "HASH";
 
-  my $file        = join( ".", $self->name, 'gene_region.dat' );
-  my $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
-  my $dat_file    = File::Spec->catfile( $index_dir, $file );
+  my $file      = join( ".", $self->name, 'gene_region.dat' );
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  my $dat_file  = File::Spec->catfile( $index_dir, $file );
 
   # if there's a dat file, then we loaded that at build time otherwise we'll
   # need to build things from scratch
@@ -196,13 +196,13 @@ sub set_gene_regions {
       my $max_start = ( $current_pos > $tx_start ) ? $current_pos : $tx_start;
       my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
       my $furthest_stop = shift @tx_stops;
-      for (my $i = $max_start; $i <= $furthest_stop; $i++) {
+      for ( my $i = $max_start; $i <= $furthest_stop; $i++ ) {
         $current_pos = $i;
         $self->insert_char( $current_pos, '1' );
       }
     }
     my $fh = $self->get_write_bin_fh($dat_file);
-    print { $fh } ${$self->char_seq};
+    print {$fh} ${ $self->char_seq };
   }
 }
 

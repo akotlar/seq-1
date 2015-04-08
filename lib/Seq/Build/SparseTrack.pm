@@ -41,10 +41,10 @@ has genome_track_str => (
 # );
 
 has bdb_connection => (
-  is => 'ro',
-  isa => 'Seq::BDBManager',
+  is       => 'ro',
+  isa      => 'Seq::BDBManager',
   required => 1,
-  handles => [ 'db_put', 'db_get' ],
+  handles  => [ 'db_put', 'db_get' ],
 );
 
 has counter => (

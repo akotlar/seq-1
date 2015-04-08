@@ -32,7 +32,7 @@ GetOptions(
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
   'o|out=s'      => \$out_file,
-  'chr=s'      => \$wanted_chr,
+  'chr=s'        => \$wanted_chr,
   'f|from=n'     => \$pos_from,
   't|to=n'       => \$pos_to,
 );
@@ -46,7 +46,8 @@ unless ( $yaml_config
   and defined $wanted_chr
   and defined $pos_from
   and defined $pos_to
-  and -d $db_location ) {
+  and -d $db_location )
+{
   Pod::Usage::pod2usage();
 }
 
@@ -76,7 +77,7 @@ chdir($db_location) || die "cannot change to $db_location: $!";
 # load configuration file
 my $assembly = Seq::Annotate->new_with_config( { configfile => $yaml_config } );
 
-for my $i ($pos_from .. $pos_to) {
+for my $i ( $pos_from .. $pos_to ) {
   my $href = $assembly->get_ref_annotation( $wanted_chr, $i );
   p $href;
 }

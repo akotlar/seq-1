@@ -59,9 +59,9 @@ sub build_genome {
   my $genome_file  = File::Spec->catfile( $dir, $genome_name );
 
   if ( -s $chr_len_file && -s $genome_file ) {
-    $self->add_seq( ${ retrieve( $genome_file ) } );
-    my $chr_len_href = retrieve( $chr_len_file );
-    map { $self->set_chr_len( $_ => $chr_len_href->{$_} ) } keys %$chr_len_href
+    $self->add_seq( ${ retrieve($genome_file) } );
+    my $chr_len_href = retrieve($chr_len_file);
+    map { $self->set_chr_len( $_ => $chr_len_href->{$_} ) } keys %$chr_len_href;
   }
   else {
     for ( my $i = 0; $i < @local_files; $i++ ) {
@@ -92,8 +92,8 @@ sub build_genome {
         }
       }
     }
-    store($self->chr_len, $chr_len_file);
-    store(\$self->genome_seq, $genome_file);
+    store( $self->chr_len,     $chr_len_file );
+    store( \$self->genome_seq, $genome_file );
   }
 }
 

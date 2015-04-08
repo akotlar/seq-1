@@ -70,7 +70,6 @@ has codon_number => (
   predicate => 'has_codon_site_pos',
 );
 
-
 has codon_position => (
   is        => 'ro',
   isa       => 'Maybe[Int]',

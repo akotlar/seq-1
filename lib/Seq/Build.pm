@@ -48,11 +48,11 @@ sub _build_genome_str_track {
     if ( $gst->type eq 'genome' ) {
       return Seq::Build::GenomeSizedTrackStr->new(
         {
-          name        => $gst->name,
-          type        => $gst->type,
-          local_dir   => $gst->local_dir,
-          local_files => $gst->local_files,
-          genome_chrs => $gst->genome_chrs,
+          name             => $gst->name,
+          type             => $gst->type,
+          local_dir        => $gst->local_dir,
+          local_files      => $gst->local_files,
+          genome_chrs      => $gst->genome_chrs,
           genome_index_dir => $self->genome_index_dir,
         }
       );
@@ -61,13 +61,13 @@ sub _build_genome_str_track {
 }
 
 sub BUILD {
-#before qw/ build_snp_sites build_gene_sites build_conserv_scores_index / => sub {
+  #before qw/ build_snp_sites build_gene_sites build_conserv_scores_index / => sub {
   my $self = shift;
   unless ( $self->is_initialized ) {
     $self->build_genome;
     $self->initalized;
   }
-};
+}
 
 sub build_assembly {
   my $self = shift;
@@ -76,8 +76,8 @@ sub build_assembly {
 }
 
 sub save_bdb {
-  my ($self, $name ) = @_;
-  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my ( $self, $name ) = @_;
+  my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
   path($dir)->mkpath unless -f $dir;
@@ -88,7 +88,7 @@ sub save_bdb {
 sub save_sites {
   my ( $self, $href, $name ) = @_;
 
-  my $dir  = File::Spec->canonpath( $self->genome_index_dir );
+  my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
   path($dir)->mkpath unless -f $dir;
@@ -142,11 +142,8 @@ sub build_snp_sites {
         #     },
         #   }
         # );
-        $record->{bdb_connection}   = Seq::BDBManager->new(
-          {
-            filename => $self->save_bdb($snp_track_bdb),
-          }
-        );
+        $record->{bdb_connection} =
+          Seq::BDBManager->new( { filename => $self->save_bdb($snp_track_bdb), } );
         my $snp_db = Seq::Build::SnpTrack->new($record);
         $sites_aref = $snp_db->build_snp_db;
 
@@ -166,16 +163,15 @@ sub build_transcript_seq {
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
-
     # create a file name for loading / saving track data
-    my $gene_track_file_name = join( '.', $gene_track->name, $gene_track->type, 'seq.dat' );
+    my $gene_track_file_name =
+      join( '.', $gene_track->name, $gene_track->type, 'seq.dat' );
 
     # create file for bdb
     my $gene_track_seq_db = join( '.', $gene_track->name, $gene_track->type, 'seq.db' );
 
     # is there evidence for having done this before?
     my $done_sref = $self->load_sites($gene_track_file_name);
-
 
     unless ($done_sref) {
       my $record = $gene_track->as_href;
@@ -192,11 +188,8 @@ sub build_transcript_seq {
       #     },
       #   }
       # );
-      $record->{bdb_connection} = Seq::BDBManager->new(
-        {
-          filename => $self->save_bdb( $gene_track_seq_db ),
-        }
-      );
+      $record->{bdb_connection} =
+        Seq::BDBManager->new( { filename => $self->save_bdb($gene_track_seq_db), } );
       my $gene_db = Seq::Build::TxTrack->new($record);
       $gene_db->insert_transcript_seq;
     }
@@ -240,11 +233,8 @@ sub build_gene_sites {
       #     },
       #   }
       # );
-      $record->{bdb_connection}   = Seq::BDBManager->new(
-        {
-          filename => $self->save_bdb( $gene_track_db ),
-        }
-      );
+      $record->{bdb_connection} =
+        Seq::BDBManager->new( { filename => $self->save_bdb($gene_track_db), } );
       my $gene_db = Seq::Build::GeneTrack->new($record);
       $sites_href = $gene_db->build_gene_db;
 

@@ -69,7 +69,8 @@ sub build_gene_db {
     #   on alt_names attributes and will increase the db size; may just drop the
     #   keys without data in the future but it's running now so will hold off
     #   for the time being.
-    my %alt_names = map { $_ => ($data{$_}) ? $data{$_} : 'NA' if exists $data{$_} } ( $self->all_features );
+    my %alt_names = map { $_ => ( $data{$_} ) ? $data{$_} : 'NA' if exists $data{$_} }
+      ( $self->all_features );
 
     my $gene = Seq::Gene->new( \%gene_data );
     $gene->set_alt_names(%alt_names);
