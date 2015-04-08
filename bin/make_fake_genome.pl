@@ -50,7 +50,7 @@ my ( $help, $out_ext, %snpfile_sites, $twobit_genome );
 # defaults
 my $location       = 'sandbox';
 my $twobit2fa_prog = 'twoBitToFa';
-my $config_file = 't/hg38_build_test.yml';
+my $config_file = 'config/hg38_local.yml';
 my $padding = 0;
 my $gene_count     = 1;
 
