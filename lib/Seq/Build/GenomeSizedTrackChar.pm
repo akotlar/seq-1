@@ -14,7 +14,6 @@ use File::Path;
 use File::Spec;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
-use Storable;
 use YAML::XS qw/ Dump /;
 
 extends 'Seq::GenomeSizedTrackChar';
@@ -134,6 +133,8 @@ sub build_score_idx {
 sub build_genome_idx {
   my ( $self, $genome_str, $exon_href, $flank_exon_href, $snp_href ) = @_;
 
+  say ">>> in build_genome_idx";
+
   confess "expected genome object to be able to get_abs_pos() and get_base()"
     unless ( $genome_str->meta->has_method('get_abs_pos')
     and $genome_str->meta->has_method('get_base') );
@@ -142,6 +143,12 @@ sub build_genome_idx {
     unless reftype($exon_href) eq "HASH"
     and reftype($flank_exon_href) eq "HASH"
     and reftype($snp_href) eq "HASH";
+
+  # prepare file for writing
+  my $file        = join( ".", $self->name, $self->type, 'idx' );
+  my $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
+  my $target_file = File::Spec->catfile( $index_dir, $file );
+  my $fh          = $self->get_write_bin_fh($target_file);
 
   for ( my $pos = 0; $pos < $self->genome_length; $pos++ ) {
 
@@ -158,14 +165,22 @@ sub build_genome_idx {
 
     my $site_code =
       $self->get_idx_code( $this_base, $in_gan, $in_gene, $in_exon, $in_snp );
+
     if ( defined $site_code ) {
-      $self->insert_char( $pos, $site_code );
+      print {$fh} $site_code;
     }
     else {
       confess "fatal error at base: $pos ($this_base)\n"
         . "in_gan: $in_gan, in_gene: $in_gene, in_exon: $in_exon, in_snp: $in_snp";
     }
   }
+
+  # write chromosome offsets
+  $file        = join( ".", $self->name, $self->type, 'yml' );
+  $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
+  $target_file = File::Spec->catfile( $index_dir, $file );
+  $fh          = $self->get_write_bin_fh($target_file);
+  print {$fh} Dump( $self->chr_len );
 }
 
 sub set_gene_regions {

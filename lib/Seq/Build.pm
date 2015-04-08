@@ -288,6 +288,7 @@ sub build_conserv_scores_index {
 sub build_genome_index {
   my $self = shift;
 
+  say ">>> in build_genome_index";
   my $snp_sites = $self->build_snp_sites;
   my ( $flank_exon_sites, $exon_sites, $transcript_starts ) = $self->build_gene_sites;
 
@@ -312,10 +313,9 @@ sub build_genome_index {
   $assembly->set_gene_regions($transcript_starts);
 
   # use gene, snp tracks, and genic/intergenic regions to build coded genome
+  # the build_genome_idx now writes all needed files within the sub
   $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
     $flank_exon_sites, $snp_sites );
-  $assembly->write_char_seq;
-  $assembly->clear_char_seq;
 }
 
 __PACKAGE__->meta->make_immutable;
