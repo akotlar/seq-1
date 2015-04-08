@@ -160,7 +160,7 @@ sub build_snp_sites {
       map { $snp_sites{$_}++ } @$sites_aref;
     }
   }
-  $self->_logger->info( 'in build_snp_sites' );
+  $self->_logger->info( 'leaving build_snp_sites' );
   return \%snp_sites;
 }
 
@@ -208,7 +208,7 @@ sub build_transcript_seq {
       croak "error saving snp sites for:  $gene_track_file_name\n";
     }
   }
-  $self->_logger->info( 'in build_transcript_seq' );
+  $self->_logger->info( 'leaving build_transcript_seq' );
 }
 
 sub build_gene_sites {
@@ -265,7 +265,7 @@ sub build_gene_sites {
       }
     }
   }
-  $self->_logger->info( 'done with build_gene_sites' );
+  $self->_logger->info( 'leaving build_gene_sites' );
   return ( \%flank_exon_sites, \%exon_sites, \%transcript_starts );
 }
 
@@ -298,6 +298,7 @@ sub build_conserv_scores_index {
       $score_track->clear_char_seq;
     }
   }
+  $self->_logger->info( 'leaving build_conserv_scores_index' );
 }
 
 sub build_genome_index {
@@ -334,7 +335,7 @@ sub build_genome_index {
   # the build_genome_idx now writes all needed files within the sub
   $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
     $flank_exon_sites, $snp_sites );
-  $self->_logger->info( 'done with build_genome_index' );
+  $self->_logger->info( 'leaving build_genome_index' );
 }
 
 __PACKAGE__->meta->make_immutable;
