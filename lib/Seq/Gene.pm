@@ -13,6 +13,8 @@ use namespace::autoclean;
 
 use Seq::Site::Gene;
 
+with 'MooX::Role::Logger';
+
 # has features of a gene and will run through the sequence
 # build features will be implmented in Seq::Build::Gene that can build GeneSite
 # objects
@@ -61,8 +63,9 @@ has transcript_id => ( is => 'rw', isa => 'Str', required => 1, );
 
 has alt_names => (
   is      => 'rw',
-  isa     => 'HashRef[Str]',
+  isa     => 'HashRef',
   traits  => ['Hash'],
+  default => sub { {} },
   handles => {
     all_alt_names => 'kv',
     get_alt_names => 'get',
@@ -111,6 +114,44 @@ has transcript_error => (
   isa     => 'ArrayRef',
   lazy    => 1,
   builder => '_build_transcript_error',
+  traits  => ['Array'],
+  handles => {
+    no_transcript_error   => 'is_empty',
+    all_transcript_errors => 'elements',
+  },
+);
+
+has peptide => (
+  is      => 'ro',
+  isa     => 'Str',
+  default => q{},
+  traits  => ['String'],
+  handles => {
+    len_aa_residue => 'length',
+    add_aa_residue => 'append',
+  },
+);
+
+has transcript_sites => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::Site::Gene]',
+  default => sub { [] },
+  traits  => ['Array'],
+  handles => {
+    all_transcript_sites => 'elements',
+    add_transcript_site  => 'push',
+  },
+);
+
+has flanking_sites => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::Site::Gene]',
+  default => sub { [] },
+  traits  => ['Array'],
+  handles => {
+    all_flanking_sites => 'elements',
+    add_flanking_sites => 'push',
+  },
 );
 
 sub BUILD {
@@ -122,31 +163,33 @@ sub BUILD {
     and $self->genome_track->meta->has_method('get_base') )
   {
 
-    # - get_abs_pos( chr, pos ) expects position to be a positive number
-    #   so it is -indexed but returnes the zero-index position
+    # get_abs_pos( chr, pos ) expects a 1-indexed relative genome position
+    # but returnes the zero-index absolute position
     my $abs_position_offset = $self->get_abs_pos( $self->chr, 1 );
 
-    # - change all relative bp position to absolute positions and change to a
-    #   Zero indexed genome (i.e., this is why everything has '-1' taken
-    #   from it.
-    $self->transcript_start( $abs_position_offset + $self->transcript_start - 1 );
-    $self->transcript_end( $abs_position_offset + $self->transcript_end - 1 );
-    $self->coding_start( $abs_position_offset + $self->coding_start - 1 );
-    $self->coding_end( $abs_position_offset + $self->coding_end - 1 );
+    # the UCSC mysql tables are zero-indexed relative genome positions
+    $self->transcript_start( $abs_position_offset + $self->transcript_start );
+    $self->transcript_end( $abs_position_offset + $self->transcript_end );
+    $self->coding_start( $abs_position_offset + $self->coding_start );
+    $self->coding_end( $abs_position_offset + $self->coding_end );
 
     for ( my $i = 0; $i < scalar( $self->all_exon_starts ); $i++ ) {
       # set values for exon starts
-      my $abs_pos = $self->get_exon_starts($i) + $abs_position_offset - 1;
+      my $abs_pos = $self->get_exon_starts($i) + $abs_position_offset;
       $self->set_exon_starts( $i, $abs_pos );
 
       # set values for exon stops
-      $abs_pos = $self->get_exon_ends($i) + $abs_position_offset - 1;
+      $abs_pos = $self->get_exon_ends($i) + $abs_position_offset;
       $self->set_exon_ends( $i, $abs_pos );
     }
   }
   else {
     confess "Cannot use genome object because it does not have get_abs_pos() method";
   }
+
+  # the by-product of _build_transcript_sites is to build the peptide
+  $self->_build_transcript_sites;
+  $self->_build_flanking_sites;
 }
 
 sub _build_transcript_error {
@@ -176,7 +219,7 @@ sub _build_transcript_error {
     }
 
     # check stop codon
-    if ( $self->transcript_annotation !~ m/(TAA|TAG|TGA)[3]+\Z/ ) {
+    if ( $self->transcript_annotation !~ m/(TAA|TAG|TGA)[3]*\Z/ ) {
       push @errors, 'transcript does not end with stop codon';
     }
   }
@@ -264,17 +307,25 @@ sub _build_transcript_annotation {
   return $seq;
 }
 
-sub get_transcript_sites {
+sub _build_transcript_sites {
   my $self              = shift;
   my @exon_starts       = $self->all_exon_starts;
   my @exon_ends         = $self->all_exon_ends;
   my $coding_start      = $self->coding_start;
   my $coding_end        = $self->coding_end;
   my $coding_base_count = 0;
+  my $last_codon_number = 0;
   my @sites;
 
-  say join( "\t", "transcript: ", $self->transcript_seq );
-  say join( "\t", "tran_ann:  ",  $self->transcript_annotation );
+  if ( $self->no_transcript_error ) {
+    $self->_logger->info( join( " ", $self->transcript_id, $self->chr, $self->strand ) );
+  }
+  else {
+    $self->_logger->warn(
+      join( " ",
+        $self->transcript_id, $self->chr, $self->strand, $self->all_transcript_errors )
+    );
+  }
   for ( my $i = 0; $i < ( $self->all_transcript_abs_position ); $i++ ) {
     my (
       $annotation_type, $codon_seq, $codon_number,
@@ -292,7 +343,7 @@ sub get_transcript_sites {
     if ( $site_annotation =~ m/[ACGT]/ ) {
       $gene_site{site_type}      = 'Coding';
       $gene_site{codon_number}   = 1 + int( ( $coding_base_count / 3 ) );
-      $gene_site{codon_position} = 1 + $coding_base_count % 3;
+      $gene_site{codon_position} = $coding_base_count % 3;
       my $codon_start = $i - $gene_site{codon_position};
       my $codon_end   = $codon_start + 2;
 
@@ -314,14 +365,23 @@ sub get_transcript_sites {
     else {
       confess "unknown site code $site_annotation";
     }
-    #p %gene_site if $gene_site{site_type} eq 'Coding' and $coding_base_count < 9;
-    #exit if $coding_base_count > 9;
-    push @sites, Seq::Site::Gene->new( \%gene_site );
+
+    # get annotation
+    my $site = Seq::Site::Gene->new( \%gene_site );
+
+    # build peptide
+    if ( $site->codon_number ) {
+      $self->add_aa_residue( $site->ref_aa_residue )
+        if ( $last_codon_number != $site->codon_number );
+    }
+
+    $last_codon_number = $site->codon_number if $site->codon_number;
+
+    $self->add_transcript_site($site);
   }
-  return @sites;
 }
 
-sub get_flanking_sites {
+sub _build_flanking_sites {
 
   # Annotate splice donor/acceptor bp
   #  - i.e., bp within 6 bp of exon start / stop
@@ -362,8 +422,9 @@ sub get_flanking_sites {
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
-        push @sites, Seq::Site::Gene->new( \%gene_site );
+        $self->add_flanking_sites( Seq::Site::Gene->new( \%gene_site ) );
       }
+
       # flanking sites at end of exon
       if ( $exon_ends[$i] + $n - 1 > $coding_start
         && $exon_ends[$i] + $n - 1 < $coding_end )
@@ -377,11 +438,10 @@ sub get_flanking_sites {
         $gene_site{error_code}    = $self->transcript_error;
         $gene_site{transcript_id} = $self->transcript_id;
         $gene_site{strand}        = $self->strand;
-        push @sites, Seq::Site::Gene->new( \%gene_site );
+        $self->add_flanking_sites( Seq::Site::Gene->new( \%gene_site ) );
       }
     }
   }
-  return @sites;
 }
 
 __PACKAGE__->meta->make_immutable;

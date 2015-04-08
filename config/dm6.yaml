@@ -18,7 +18,7 @@ sparse_tracks:
     local_file: refGene.txt.gz
     name: refGene
     sql_statement: 'SELECT * FROM dm6.refGene'
-    entry_names:
+    features:
       - name
       - name2
 genome_sized_tracks:

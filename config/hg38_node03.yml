@@ -40,7 +40,7 @@ genome_chrs:
   - chrY
 genome_db_dir: sandbox
 genome_index_dir: ./hg38/index
-host: 127.0.0.1
+host: 192.168.15.103
 port: 27107
 
 # sparse tracks
@@ -53,6 +53,7 @@ sparse_tracks:
     # for gene sparse tracks the 'features' key holds extra names the gene may
     # be called
     features:
+      - proteinID
       - mRNA
       - spID
       - spDisplayID
@@ -69,9 +70,19 @@ sparse_tracks:
     # for snp sparse tracks the 'features' key holds extra annotation
     # information
     features:
+      - alleleFreqCount
       - alleles
-      - maf
-
+      - alleleFreqs
+  - type: snp
+    local_dir: ./hg38/raw/snp/
+    local_file: clinvar.txt.gz
+    name: clinvar
+    sql_statement: SELECT _snp_fields FROM Clinvar
+    features:
+      - ClinicalSignificance
+      - Cytogenic
+      - PhenotypeID
+      - ReviewStatus
 # genome sized tracks: genome, phyloP, phastCons
 genome_sized_tracks:
   - name: hg38

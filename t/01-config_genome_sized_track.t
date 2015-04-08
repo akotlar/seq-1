@@ -2,13 +2,25 @@
 use 5.10.0;
 use strict;
 use warnings;
-use Test::More;
-use File::Copy;
-use Scalar::Util qw( blessed );
+
 use DDP;
+use File::Copy;
 use Lingua::EN::Inflect qw( A PL_N );
+use Path::Tiny;
+use Scalar::Util qw( blessed );
+use Test::More;
 
 plan tests => 60;
+
+# set test genome
+my $hg38_node03_config = path('./config/hg38_node03.yml')->absolute->stringify;
+my $hg38_local_config  = path('./config/hg38_local.yml')->absolute->stringify;
+
+# setup testing enviroment
+{
+  make_path('./sandbox') unless -d './sandbox';
+  chdir("./sandbox");
+}
 
 my $package = "Seq::Config::GenomeSizedTrack";
 

@@ -14,16 +14,27 @@ use Scalar::Util qw/ reftype /;
 
 enum SparseTrackType => [ 'gene', 'snp' ];
 
-my @snp_table_fields = qw( chrom chromStart chromEnd name
-  alleleFreqCount alleles alleleFreqs );
-my @gene_table_fields = qw( chrom strand txStart txEnd cdsStart cdsEnd
-  exonCount exonStarts exonEnds proteinID
-  alignID );
+# ideally, we'd have 2 sort of sparse tracks - 1) genes, 2) snps / positions of interest
+
+my @snp_track_fields = qw( chrom chromStart chromEnd name );
+my @gene_track_fields =
+  qw( chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds name );
+
+# my @snp_table_fields = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs
+#    );
+# my @gene_table_fields = qw(
+#    );
+# my @clinvar_table_fields = qw(chrom chromStart chromEnd SNPID );
+
+#
+# TODO: change YAML file so that
+# are sparse track 'features'
+#
 
 # track information
 has name => ( is => 'ro', isa => 'Str',             required => 1, );
 has type => ( is => 'ro', isa => 'SparseTrackType', required => 1, );
-has sql_statement => ( is => 'rw', isa => 'Str', );
+has sql_statement => ( is => 'ro', isa => 'Str', );
 has features => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
@@ -41,8 +52,10 @@ around 'sql_statement' => sub {
   my $self = shift;
 
   my $new_stmt;
-  my $snp_table_fields_str = join( ", ", @snp_table_fields );
-  my $gene_table_fields_str = join( ", ", @gene_table_fields, @{ $self->features } );
+
+  my $gene_table_fields_str = join( ", ", @gene_track_fields, @{ $self->features } );
+  my $snp_table_fields_str  = join( ", ", @snp_track_fields,  @{ $self->features } );
+
   if ( $self->$orig(@_) =~ m/\_snp\_fields/ ) {
     ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/;
   }
@@ -54,11 +67,27 @@ around 'sql_statement' => sub {
 };
 
 sub snp_fields_aref {
-  return \@snp_table_fields;
+  my $self = shift;
+  if ( $self->type eq 'snp' ) {
+    my @out_array;
+    push @out_array, @snp_track_fields, @{ $self->features };
+    return \@out_array;
+  }
+  else {
+    return;
+  }
 }
 
 sub gene_fields_aref {
-  return \@gene_table_fields;
+  my $self = shift;
+  if ( $self->type eq 'gene' ) {
+    my @out_array;
+    push @out_array, @gene_track_fields, @{ $self->features };
+    return \@out_array;
+  }
+  else {
+    return;
+  }
 }
 
 sub as_href {

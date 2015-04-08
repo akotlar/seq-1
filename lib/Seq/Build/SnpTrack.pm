@@ -11,70 +11,44 @@ use Moose 2;
 use Carp qw/ confess /;
 use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
-use MongoDB;
 use namespace::autoclean;
 
-use Seq::Build::GenomeSizedTrackStr;
 use Seq::Site::Snp;
 
-extends 'Seq::Config::SparseTrack';
+extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
-
-has genome_index_dir => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
-
-has genome_name => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
-
-has genome_track_str => (
-  is       => 'ro',
-  isa      => 'Seq::Build::GenomeSizedTrackStr',
-  required => 1,
-  handles  => [ 'get_abs_pos', 'get_base', ],
-);
-
-has mongo_connection => (
-  is       => 'ro',
-  isa      => 'Seq::MongoManager',
-  required => 1,
-);
 
 sub build_snp_db {
   my $self = shift;
 
   # defensively drop anything if the collection already exists
-  $self->mongo_connection->_mongo_collection( $self->name )->drop;
+  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
+
+  #my $bulk = $self->mongo_connection->_mongo_collection( $self->name )->initialize_ordered_bulk_op;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
 
-  # output
-  my $out_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path($out_dir);
-  my $out_file_name =
-    join( ".", $self->genome_name, $self->name, $self->type, 'json' );
-  my $out_file_path = File::Spec->catfile( $out_dir, $out_file_name );
-  my $out_fh = $self->get_write_fh($out_file_path);
+  my ( %header, @snp_sites, @insert_data );
+  while ( my $line = $in_fh->getline ) {
 
-  my ( %header, @snp_sites );
-  my $prn_counter = 0;
-  while (<$in_fh>) {
-    chomp $_;
-    my @fields = split( /\t/, $_ );
+    # taint check
+    chomp $line;
+    my $clean_line = $self->clean_line($line);
+    next unless $clean_line;
+    my @fields = split( /\t/, $clean_line );
+
     if ( $. == 1 ) {
       map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
       next;
     }
     my %data = map { $_ => $fields[ $header{$_} ] } @{ $self->snp_fields_aref };
     my ( $allele_freq_count, @alleles, @allele_freqs, $min_allele_freq );
+
+    # skip sites on alt chromosome builds
+    next unless $self->exists_chr_len( $data{chrom} );
 
     if ( $data{alleleFreqCount} ) {
       @alleles      = split( /,/, $data{alleles} );
@@ -97,20 +71,27 @@ sub build_snp_db {
           }
         );
 
-        if ($min_allele_freq) {
-          $snp_site->set_snp_feature(
-            maf     => $min_allele_freq,
-            alleles => join( ",", @alleles )
-          );
-        }
+        my %feature_hash = map { $_ => $data{$_} } ( $self->all_features );
+
+        # this is a total hack - MAF might be nice to have but doesn't fit into the
+        # present framework well since it's not a 'feature' we retrieve but rather
+        # it's calculated... since you get about the same infor with alleleFreqs
+        # I'm not really sure it's even needed.
+        $feature_hash{maf} = $min_allele_freq if ($min_allele_freq);
+
+        $snp_site->set_snp_feature(%feature_hash);
+
         push @snp_sites, $abs_pos;
 
         my $site_href = $snp_site->as_href;
-        $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
+
+        # $self->insert($site_href);
+        # $self->execute if $self->counter > $self->bulk_insert_threshold;
+        $self->db_put( $site_href->{abs_pos}, $site_href );
       }
     }
   }
-  print {$out_fh} "]";
+  # $self->execute if $self->counter;
   return \@snp_sites;
 }
 

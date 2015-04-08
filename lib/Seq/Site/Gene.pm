@@ -62,7 +62,7 @@ has strand => (
   predicate => 'has_strand',
 );
 
-# bp position within the codon
+# amino acid residue # from start of transcript
 has codon_number => (
   is        => 'ro',
   isa       => 'Maybe[Int]',
@@ -70,7 +70,6 @@ has codon_number => (
   predicate => 'has_codon_site_pos',
 );
 
-# amino acid residue # from start of transcript
 has codon_position => (
   is        => 'ro',
   isa       => 'Maybe[Int]',
@@ -137,13 +136,11 @@ sub as_href {
 
   for my $attr (@attributes) {
     my $empty_attr = "no_" . $attr;
-    if ( $self->$attr ) {
-      if ( $self->meta->has_method($empty_attr) ) {
-        $hash{$attr} = $self->$attr unless $self->$empty_attr;
-      }
-      else {
-        $hash{$attr} = $self->$attr;
-      }
+    if ( $self->meta->has_method($empty_attr) ) {
+      $hash{$attr} = $self->$attr unless $self->$empty_attr;
+    }
+    elsif ( defined $self->$attr ) {
+      $hash{$attr} = $self->$attr;
     }
   }
   return \%hash;

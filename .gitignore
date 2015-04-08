@@ -19,8 +19,12 @@ nytprof.out
 .tidyall.d
 
 # test files
+hg38.2bit
+twoBitToFa
+nytprof
 tmp*
 test*
 /sandbox/
 /t/*.sh
 /t/archive
+*.db

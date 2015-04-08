@@ -20,6 +20,7 @@ use YAML::XS qw/ LoadFile /;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
+use Seq::BDBManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
@@ -51,6 +52,32 @@ has _mongo_connection => (
   builder => '_build_mongo_connection',
 );
 
+has bdb_gene => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::BDBManager]',
+  builder => '_build_bdb_gene',
+  traits  => ['Array'],
+  handles => { _all_bdb_gene => 'elements', },
+  lazy    => 1,
+);
+
+has bdb_snp => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::BDBManager]',
+  builder => '_build_bdb_snp',
+  traits  => ['Array'],
+  handles => { _all_bdb_snp => 'elements', },
+  lazy    => 1,
+);
+
+has bdb_seq => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::BDBManager]',
+  builder => '_build_bdb_tx',
+  traits  => ['Array'],
+  handles => { _all_bdb_seq => 'elements', },
+  lazy    => 1,
+);
 has _header => (
   is      => 'ro',
   isa     => 'ArrayRef',
@@ -59,6 +86,43 @@ has _header => (
   traits  => ['Array'],
   handles => { all_header => 'elements' },
 );
+
+sub _get_bdb_file {
+  my ( $self, $name ) = @_;
+  my $dir = File::Spec->canonpath( $self->genome_index_dir );
+  my $file = File::Spec->catfile( $dir, $name );
+  return $file;
+}
+
+sub _build_bdb_gene {
+  my $self  = shift;
+  my @array = ();
+  for my $gene_track ( $self->all_gene_tracks ) {
+    my $db_name = join ".", $gene_track->name, $gene_track->type, 'db';
+    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
+  }
+  return \@array;
+}
+
+sub _build_bdb_snp {
+  my $self  = shift;
+  my @array = ();
+  for my $snp_track ( $self->all_snp_tracks ) {
+    my $db_name = join ".", $snp_track->name, $snp_track->type, 'db';
+    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
+  }
+  return \@array;
+}
+
+sub _build_bdb_tx {
+  my $self  = shift;
+  my @array = ();
+  for my $gene_track ( $self->all_snp_tracks ) {
+    my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'db';
+    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
+  }
+  return \@array;
+}
 
 sub _build_mongo_connection {
   state $check = compile(Object);
@@ -133,12 +197,12 @@ sub _load_genome_sized_track {
 }
 
 sub get_ref_annotation {
-  state $check = compile( Object, Str, Int );
-  my ( $self, $chr, $pos ) = $check->(@_);
+  state $check = compile( Object, Int );
+  my ( $self, $abs_pos ) = $check->(@_);
 
   my %record;
 
-  my $abs_pos   = $self->get_abs_pos( $chr, $pos );
+  # my $abs_pos   = $self->get_abs_pos( $chr, $pos );
   my $site_code = $self->_genome->get_base($abs_pos);
   my $base      = $self->_genome->get_idx_base($site_code);
   my $gan       = ( $self->_genome->get_idx_in_gan($site_code) ) ? 1 : 0;
@@ -146,8 +210,8 @@ sub get_ref_annotation {
   my $exon      = ( $self->_genome->get_idx_in_exon($site_code) ) ? 1 : 0;
   my $snp       = ( $self->_genome->get_idx_in_snp($site_code) ) ? 1 : 0;
 
-  $record{chr}       = $chr;
-  $record{rel_pos}   = $pos;
+  # $record{chr}       = $chr;
+  # $record{rel_pos}   = $pos;
   $record{abs_pos}   = $abs_pos;
   $record{site_code} = $site_code;
   $record{ref_base}  = $base;
@@ -171,20 +235,32 @@ sub get_ref_annotation {
   }
 
   if ($gan) {
-    for my $gene_track ( $self->all_gene_tracks ) {
-      push @gene_data,
-        $self->_mongo_connection->_mongo_collection( $gene_track->name )
-        ->find( { abs_pos => $abs_pos } )->all;
+    for my $gene_dbs ( $self->_all_bdb_gene ) {
+      push @gene_data, $gene_dbs->db_get($abs_pos);
     }
   }
 
   if ($snp) {
-    for my $snp_track ( $self->all_snp_tracks ) {
-      push @snp_data,
-        $self->_mongo_connection->_mongo_collection( $snp_track->name )
-        ->find( { abs_pos => $abs_pos } )->all;
+    for my $snp_dbs ( $self->_all_bdb_snp ) {
+      push @snp_data, $snp_dbs->db_get($abs_pos);
     }
   }
+
+  # if ($gan) {
+  #   for my $gene_track ( $self->all_gene_tracks ) {
+  #     push @gene_data,
+  #       $self->_mongo_connection->_mongo_collection( $gene_track->name )
+  #       ->find( { abs_pos => $abs_pos } )->all;
+  #   }
+  # }
+  #
+  # if ($snp) {
+  #   for my $snp_track ( $self->all_snp_tracks ) {
+  #     push @snp_data,
+  #       $self->_mongo_connection->_mongo_collection( $snp_track->name )
+  #       ->find( { abs_pos => $abs_pos } )->all;
+  #   }
+  # }
 
   $record{gene_data} = \@gene_data if @gene_data;
   $record{snp_data}  = \@snp_data  if @snp_data;
@@ -194,10 +270,10 @@ sub get_ref_annotation {
 
 # indels will be handled in a separate method
 sub get_snp_annotation {
-  state $check = compile( Object, Str, Int, Str );
-  my ( $self, $chr, $pos, $new_genotype ) = $check->(@_);
+  state $check = compile( Object, Int, Str );
+  my ( $self, $abs_pos, $new_genotype ) = $check->(@_);
 
-  my $ref_site_annotation = $self->get_ref_annotation( $chr, $pos );
+  my $ref_site_annotation = $self->get_ref_annotation($abs_pos);
 
   # gene site annotations
   my $gene_aref //= $ref_site_annotation->{gene_data};
@@ -227,7 +303,7 @@ sub get_snp_annotation {
       if ( exists $snp_site_annotation{$attr} ) {
         if ( $snp_site_annotation{$attr} ne $san->{$attr} ) {
           $snp_site_annotation{$attr} =
-            $self->_join_data( $snp_site_annotation{$attr}, $san->{$attr});
+            $self->_join_data( $snp_site_annotation{$attr}, $san->{$attr} );
         }
       }
       else {
@@ -258,14 +334,17 @@ sub get_snp_annotation {
 }
 
 sub _join_data {
-  my ($self, $old_val, $new_val) = @_;
+  my ( $self, $old_val, $new_val ) = @_;
   my $type = reftype($old_val);
-  if ( $type eq 'Array' && $type ) {
-    unless ( grep {/$new_val/} @$old_val ) {
-      push @{ $old_val }, $new_val;
-      return $old_val;
+  if ($type) {
+    if ( $type eq 'Array' ) {
+      unless ( grep { /$new_val/ } @$old_val ) {
+        push @{$old_val}, $new_val;
+        return $old_val;
+      }
     }
-  } else {
+  }
+  else {
     my @new_array;
     push @new_array, $old_val, $new_val;
     return \@new_array;
@@ -275,9 +354,9 @@ sub _join_data {
 sub _mung_output {
   my ( $self, $href ) = @_;
   my %hash;
-
   for my $attrib ( keys %$href ) {
-    if ( reftype( $href->{$attrib} ) && reftype( $href->{$attrib} ) eq 'Array' ) {
+    my $ref = reftype( $href->{$attrib} );
+    if ( $ref && $ref eq 'Array' ) {
       $hash{$attrib} = join( ";", @{ $href->{$attrib} } );
     }
     else {
@@ -300,19 +379,93 @@ sub _build_header {
 
   for my $snp_track ( $self->all_snp_tracks ) {
     my @snp_features = $snp_track->all_features;
-    map { $snp_features{"snp_features.$_"}++ } @snp_features;
+
+    # this is a total hack got allow me to calcuate a single MAF for the snp
+    # that's not already a value we retrieve and, therefore, doesn't fit in the
+    # framework well
+    push @snp_features, 'maf';
+    map { $snp_features{"snp_feature.$_"}++ } @snp_features;
   }
   map { push @alt_features, $_ } keys %snp_features;
 
-  my @features = qw( chr rel_pos ref_base genomic_annotation_code annotation_type
+  my @features = qw/ chr pos ref_base genomic_annotation_code annotation_type
     codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
-    ref_aa_residue ref_base
-    ref_codon_seq site_type strand transcript_id );
+    ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id /;
 
   push @features, @alt_features;
 
   return \@features;
 }
+
+sub annotate_dels {
+  state $check = compile( Object, HashRef );
+  my ( $self, $sites_href ) = $check->(@_);
+  my ( @annotations, @contiguous_sites, $last_abs_pos );
+
+  # $site_href is defined as %site{ abs_pos } = [ chr, pos ]
+
+  for my $abs_pos ( sort { $a <=> $b } keys %$sites_href ) {
+    if ( $last_abs_pos + 1 == $abs_pos ) {
+      push @contiguous_sites, $abs_pos;
+      $last_abs_pos = $abs_pos;
+    }
+    else {
+
+      # annotate site
+      my $record = $self->_annotate_del_sites( \@contiguous_sites );
+
+      # arbitrarily assign the 1st del site as the one we'll report
+      ( $record->{chr}, $record->{pos} ) = @{ $sites_href->{ $contiguous_sites[0] } };
+
+      # save annotations
+      push @annotations, $record;
+      @contiguous_sites = ();
+    }
+  }
+  return \@annotations;
+}
+
+# data for tx_sites:
+# hash{ abs_pos } = (
+# coding_start => $gene->coding_start,
+# coding_end => $gene->coding_end,
+# exon_starts => $gene->exon_starts,
+# exon_ends => $gene->exon_ends,
+# transcript_start => $gene->transcript_start,
+# transcript_end => $gene->transcript_end,
+# transcript_id => $gene->transcript_id,
+# transcript_seq => $gene->transcript_seq,
+# transcript_annotation => $gene->transcript_annotation,
+# transcript_abs_position => $gene->transcript_abs_position,
+# peptide_seq => $gene->peptide,
+# );
+
+sub _annotate_del_sites {
+  state $check = compile( Object, ArrayRef );
+  my ( $self, $site_aref ) = $check->(@_);
+  my ( @tx_hrefs, @records );
+
+  for my $abs_pos (@$site_aref) {
+    # get a seq::site::gene record munged with seq::site::snp
+
+    my $record = $self->get_ref_annotation($abs_pos);
+
+    for my $gene_data ( @{ $record->{gene_data} } ) {
+      my $tx_id = $gene_data->{transcript_id};
+
+      for my $bdb_seq ( $self->_all_bdb_seq ) {
+        my $tx_href = $bdb_seq->db_get($tx_id);
+        if ( defined $tx_href ) {
+          push @tx_hrefs, $tx_href;
+        }
+      }
+    }
+    for my $tx_href (@tx_hrefs) {
+      # substring...
+    }
+  }
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;

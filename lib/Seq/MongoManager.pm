@@ -20,7 +20,7 @@ has default_database => (
 has client_options => (
   is      => 'ro',
   isa     => 'HashRef',
-  default => sub { { host => "mongodb://localhost" } }
+  default => sub { { host => "mongodb://127.0.0.1" } }
 );
 
 sub _build__mongo_default_database { return $_[0]->default_database }

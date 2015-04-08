@@ -47,11 +47,19 @@ has annotation_type => (
   builder => '_set_annotation_type',
 );
 
+# we need to call the various methods to get them to populate
+# TODO: consider changing serilization to rely on a sub routine of
+#       prepopulated attributes, which might be a bit faster.
+sub BUILD {
+  my $self = shift;
+  $self->annotation_type;
+}
+
 sub _set_new_codon_seq {
   my $self      = shift;
   my $new_codon = $self->ref_codon_seq;
   if ($new_codon) {
-    substr( $new_codon, ( $self->codon_position - 1 ), 1, $self->minor_allele );
+    substr( $new_codon, ( $self->codon_position ), 1, $self->minor_allele );
     return $new_codon;
   }
   else {

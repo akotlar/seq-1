@@ -10,6 +10,8 @@ use Moose;
 use namespace::autoclean;
 use Time::localtime;
 
+use DDP;
+
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
 
@@ -55,27 +57,41 @@ sub get_sql_aref {
   my $dbh = $self->dbh;
 
   # prepare and execute mysql command
+  p $track_statement;
   my $sth = $dbh->prepare($track_statement) or die $dbh->errstr;
   my $rc = $sth->execute or die $dbh->errstr;
 
   # retrieve data
   my @sql_data;
+  my $line_cnt = 0;
   while ( my @row = $sth->fetchrow_array ) {
-    my @clean_row = map {
-      if ( !defined($_) ) {
-        "NA";
-      }
-      elsif ( $_ eq "" ) {
-        "NA";
-      }
-      else {
-        $_;
-      }
-    } @row;
-    push @sql_data, \@row;
+    if ( $line_cnt == 0 ) {
+      push @sql_data, $sth->{NAME};
+    }
+    else {
+      my $clean_row_aref = $self->_clean_row( \@row );
+      push @sql_data, $clean_row_aref;
+    }
+    $line_cnt++;
   }
   $dbh->disconnect;
   return \@sql_data;
+}
+
+sub _clean_row {
+  my ( $self, $aref ) = @_;
+
+  my @clean_array;
+  for my $ele (@$aref) {
+    if ( !defined($ele) ) {
+      $ele = "NA";
+    }
+    elsif ( $ele eq "" ) {
+      $ele = "NA";
+    }
+    push @clean_array, $ele;
+  }
+  return \@clean_array;
 }
 
 sub write_sql_data {

@@ -69,12 +69,10 @@ my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
 
 #linear
 {
-  $assembly->build_snp_sites;
-  say "done with building snps";
-  $assembly->build_gene_sites;
-  say "done with building genes";
-  $assembly->build_genome_index;
-  say "done building genome index";
+  $assembly->build_transcript_seq;
+  say "done with building transcript sequences";
+  $assembly->build_conserv_scores_index;
+  say "done with building conserv scores";
 }
 
 __END__

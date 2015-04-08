@@ -13,13 +13,14 @@ use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
 
+use DDP;
+
 use Seq;
 
-if ( $ENV{PERL_MONGODB_DEBUG} ) {
-  Log::Any::Adapter->set('Stdout');
-}
+Log::Any::Adapter->set('Stdout');
 
 my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file );
+my ( $wanted_chr, $pos_from, $pos_to );
 
 #
 # usage
@@ -31,6 +32,9 @@ GetOptions(
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
   'o|out=s'      => \$out_file,
+  'chr=s'        => \$wanted_chr,
+  'f|from=n'     => \$pos_from,
+  't|to=n'       => \$pos_to,
 );
 
 if ($help) {
@@ -38,11 +42,11 @@ if ($help) {
   exit;
 }
 
-
 unless ( $yaml_config
-  and -d $db_location
-  and -f $snpfile
-  and $out_file )
+  and defined $wanted_chr
+  and defined $pos_from
+  and defined $pos_to
+  and -d $db_location )
 {
   Pod::Usage::pod2usage();
 }
@@ -51,20 +55,32 @@ croak "expected '$yaml_config' to be a file" unless -f $yaml_config;
 
 # need to give absolute path to avoid placing it in an odd location (e.g., where
 # the genome is located)
-$out_file = path($out_file)->absolute->stringify;
+#$out_file = path($out_file)->absolute->stringify;
 
-say
-  qq{ snpfile => $snpfile, configfile => $yaml_config, db_dir => $db_location, out_file => $out_file };
-my $annotate_instance = Seq->new(
-  {
-    snpfile    => $snpfile,
-    configfile => $yaml_config,
-    db_dir     => $db_location,
-    out_file   => $out_file
-  }
-);
+# clean up position
+$pos_from =~ s/\_|\,//g;
+$pos_to =~ s/\_|\,//g;
 
-$annotate_instance->annotate_snpfile;
+# sanity check position
+if ( $pos_from >= $pos_to ) {
+  say "Error: 'from' ('$pos_from') is greater than 'to' ('$pos_to')\n";
+  exit;
+}
+
+# get absolute paths for files
+$db_location = path($db_location)->absolute;
+$yaml_config = path($yaml_config)->absolute;
+
+# change to the root dir of the database
+chdir($db_location) || die "cannot change to $db_location: $!";
+
+# load configuration file
+my $assembly = Seq::Annotate->new_with_config( { configfile => $yaml_config } );
+
+for my $i ( $pos_from .. $pos_to ) {
+  my $href = $assembly->get_ref_annotation( $wanted_chr, $i );
+  p $href;
+}
 
 __END__
 
@@ -74,13 +90,8 @@ annotate_snpfile - annotates a snpfile using a given genome assembly specified
 in a configuration file
 
 =head1 SYNOPSIS
-<<<<<<< HEAD
- 
-annotate_snpfile.pl --snp <snpfile> --config <file> --location <path> --out <path>
-=======
 
 annotate_snpfile.pl --config <assembly config> --snp <snpfile> --locaiton <path> --out <file_ext>
->>>>>>> e5fe5671c1e0bd3bc2b05bd21630b043d8375524
 
 =head1 DESCRIPTION
 
@@ -104,11 +115,6 @@ used by the Seq Package to build the binary genome without any alteration.
 =item B<-l>, B<--location>
 
 Location: This is the base directory for the location of the binary index.
-
-=item B<-o>, B<--out>
-
-Output directory: This is the output director.
-
 
 =back
 

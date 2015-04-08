@@ -54,11 +54,10 @@ sub get_config_from_file {
   my $fh = $class->get_read_fh($file);
   my $cleaned_txt;
 
-  while (<$fh>) {
-    chomp $_;
-    my $clean_line = $class->clean_line($_);
+  while ( my $line = $fh->getline ) {
+    chomp $line;
+    my $clean_line = $class->clean_line($line);
     $cleaned_txt .= $clean_line . "\n" if ($clean_line);
-
   }
   return Load($cleaned_txt);
 }

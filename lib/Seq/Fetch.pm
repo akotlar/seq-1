@@ -84,11 +84,7 @@ sub BUILDARGS {
       $genome_track->{genome_index_dir} = $href->{genome_index_dir};
       push @{ $new_hash{genome_sized_tracks} }, Seq::Fetch::Files->new($genome_track);
     }
-    for my $attrib (
-      qw( genome_name genome_description genome_chrs
-      genome_raw_dir )
-      )
-    {
+    for my $attrib (qw/ genome_name genome_description genome_chrs genome_raw_dir /) {
       $new_hash{$attrib} //= $href->{$attrib} || "";
     }
     return $class->SUPER::BUILDARGS( \%new_hash );
