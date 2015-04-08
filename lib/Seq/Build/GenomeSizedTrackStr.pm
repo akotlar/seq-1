@@ -12,16 +12,15 @@ use Carp qw/ confess /;
 use File::Path;
 use File::Spec;
 use namespace::autoclean;
-use Storable;
+use YAML qw/ Dump LoadFile /;
 
 extends 'Seq::Config::GenomeSizedTrack';
-with 'Seq::Role::IO', 'Seq::Role::Genome';
+with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
 
 # str_seq stores a string in a single scalar
 has genome_seq => (
-  is      => 'rw',
+  is      => 'ro',
   writer  => undef,
-  default => sub { '' },
   isa     => 'Str',
   traits  => ['String'],
   handles => {
@@ -32,6 +31,7 @@ has genome_seq => (
     get_base      => 'substr', # zero-indexed
   },
   lazy => 1,
+  builder => '_build_str_genome',
 );
 
 # stores the 1-indexed length of each chromosome
@@ -46,8 +46,16 @@ has chr_len => (
   },
 );
 
-sub build_genome {
+sub BUILD {
+  my $self = shift;
+  $self->_logger->info( join "\t", 'genome length', $self->genome_length );
+}
+
+sub _build_str_genome {
   my $self        = shift;
+
+  $self->_logger->info( 'in _build_str_genome' );
+
   my $local_dir   = File::Spec->canonpath( $self->local_dir );
   my @local_files = $self->all_local_files;
   my @genome_chrs = $self->all_genome_chrs;
@@ -57,13 +65,26 @@ sub build_genome {
   my $genome_name  = join ".", $self->name, $self->type, 'str', 'dat';
   my $chr_len_file = File::Spec->catfile( $dir, $chr_len_name );
   my $genome_file  = File::Spec->catfile( $dir, $genome_name );
+  my $genome_file_size = -s $genome_file;
+  my $genome_str   = '';
 
-  if ( -s $chr_len_file && -s $genome_file ) {
-    $self->add_seq( ${ retrieve($genome_file) } );
-    my $chr_len_href = retrieve($chr_len_file);
+  if ( -s $chr_len_file && $genome_file_size ) {
+
+    my $fh = $self->get_read_fh( $genome_file );
+    read $fh, $genome_str, $genome_file_size;
+
+    $self->_logger->info( 'read genome string' );
+
+    my $chr_len_href = LoadFile($chr_len_file);
     map { $self->set_chr_len( $_ => $chr_len_href->{$_} ) } keys %$chr_len_href;
+
+    $self->_logger->info( 'read chrome length offsets' );
+
   }
   else {
+
+    $self->_logger->info( 'no previous genome detected; building genome string' );
+
     for ( my $i = 0; $i < @local_files; $i++ ) {
       my $file        = $local_files[$i];
       my $chr         = $genome_chrs[$i];
@@ -75,14 +96,14 @@ sub build_genome {
         . " same order but found $file with $chr\n"
         unless $chr eq $file_fields[0];
 
-      $self->set_chr_len( $chr => $self->seq_length );
+      $self->set_chr_len( $chr => length $genome_str );
 
       while ( my $line = $in_fh->getline() ) {
         chomp $line;
         $line =~ s/\s+//g;
         next if ( $line =~ m/\A>/ );
         if ( $line =~ m/(\A[ATCGNatcgn]+)\Z/ ) {
-          $self->add_seq( uc $1 );
+          $genome_str .= uc $1;
         }
         else {
           confess join( "\n",
@@ -92,9 +113,14 @@ sub build_genome {
         }
       }
     }
-    store( $self->chr_len,     $chr_len_file );
-    store( \$self->genome_seq, $genome_file );
+
+    my $fh = $self->get_write_fh($genome_file);
+    print {$fh} $genome_str;
+
+    $fh = $self->get_write_fh($chr_len_file);
+    print {$fh} Dump( $self->chr_len );
   }
+  return $genome_str;
 }
 
 __PACKAGE__->meta->make_immutable;

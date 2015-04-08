@@ -23,24 +23,27 @@ use Seq::Build::GenomeSizedTrackStr;
 use Seq::BDBManager;
 use Seq::MongoManager;
 
+
+use DDP;
+
 extends 'Seq::Assembly';
-with 'Seq::Role::IO';
+with 'Seq::Role::IO', 'MooX::Role::Logger';;
 
 has genome_str_track => (
   is      => 'ro',
   isa     => 'Seq::Build::GenomeSizedTrackStr',
-  handles => [ 'get_abs_pos', 'get_base', 'build_genome', 'genome_length', ],
+  handles => [ 'get_abs_pos', 'get_base', 'genome_length', ],
   lazy    => 1,
   builder => '_build_genome_str_track',
 );
 
-has is_initialized => (
-  is      => 'ro',
-  isa     => 'Bool',
-  traits  => ['Bool'],
-  default => 0,
-  handles => { initalized => 'set', },
-);
+# has is_initialized => (
+#   is      => 'ro',
+#   isa     => 'Bool',
+#   traits  => ['Bool'],
+#   default => 0,
+#   handles => { initalized => 'set', },
+# );
 
 sub _build_genome_str_track {
   my $self = shift;
@@ -60,14 +63,13 @@ sub _build_genome_str_track {
   }
 }
 
-sub BUILD {
-  #before qw/ build_snp_sites build_gene_sites build_conserv_scores_index / => sub {
-  my $self = shift;
-  unless ( $self->is_initialized ) {
-    $self->build_genome;
-    $self->initalized;
-  }
-}
+# sub BUILD {
+#   #before qw/ build_snp_sites build_gene_sites build_conserv_scores_index / => sub {
+#   my $self = shift;
+#   unless ( $self->is_initialized ) {
+#     $self->initalized;
+#   }
+# }
 
 sub build_assembly {
   my $self = shift;
@@ -114,6 +116,9 @@ sub load_sites {
 sub build_snp_sites {
   my $self = shift;
   # build snp tracks
+
+  $self->_logger->info( 'in build_snp_sites' );
+
   my %snp_sites;
   if ( $self->snp_tracks ) {
     for my $snp_track ( $self->all_snp_tracks ) {
@@ -155,11 +160,14 @@ sub build_snp_sites {
       map { $snp_sites{$_}++ } @$sites_aref;
     }
   }
+  $self->_logger->info( 'in build_snp_sites' );
   return \%snp_sites;
 }
 
 sub build_transcript_seq {
   my $self = shift;
+
+  $self->_logger->info( 'in build_transcript_seq' );
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
@@ -200,12 +208,16 @@ sub build_transcript_seq {
       croak "error saving snp sites for:  $gene_track_file_name\n";
     }
   }
+  $self->_logger->info( 'in build_transcript_seq' );
 }
 
 sub build_gene_sites {
   my $self = shift;
   # build gene tracks - these are gene annotation tracks downloaded from UCSC
   # e.g., knownGene
+
+  $self->_logger->info( 'in build_gene_sites' );
+
   my ( %flank_exon_sites, %exon_sites, %transcript_starts );
   for my $gene_track ( $self->all_gene_tracks ) {
 
@@ -253,11 +265,14 @@ sub build_gene_sites {
       }
     }
   }
+  $self->_logger->info( 'done with build_gene_sites' );
   return ( \%flank_exon_sites, \%exon_sites, \%transcript_starts );
 }
 
 sub build_conserv_scores_index {
   my $self = shift;
+
+  $self->_logger->info( 'in build_conserv_scores_index' );
 
   # make chr_len hash for binary genome
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
@@ -288,12 +303,15 @@ sub build_conserv_scores_index {
 sub build_genome_index {
   my $self = shift;
 
-  say ">>> in build_genome_index";
+  $self->_logger->info( 'in build_genome_index' );
+
   my $snp_sites = $self->build_snp_sites;
   my ( $flank_exon_sites, $exon_sites, $transcript_starts ) = $self->build_gene_sites;
 
   # make chromosome start offsets for binary genome
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
+
+  p %chr_len;
 
   # make another genomesized track to deal with the in/outside of genes
   # and ultimately write over those 0's and 1's to store the genome assembly
@@ -316,6 +334,7 @@ sub build_genome_index {
   # the build_genome_idx now writes all needed files within the sub
   $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
     $flank_exon_sites, $snp_sites );
+  $self->_logger->info( 'done with build_genome_index' );
 }
 
 __PACKAGE__->meta->make_immutable;

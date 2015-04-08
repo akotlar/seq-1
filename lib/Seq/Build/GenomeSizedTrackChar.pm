@@ -17,7 +17,7 @@ use Scalar::Util qw/ reftype /;
 use YAML::XS qw/ Dump /;
 
 extends 'Seq::GenomeSizedTrackChar';
-with 'Seq::Role::IO', 'Seq::Role::Genome';
+with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
 
 sub insert_char {
   my $self = shift;
@@ -167,7 +167,7 @@ sub build_genome_idx {
       $self->get_idx_code( $this_base, $in_gan, $in_gene, $in_exon, $in_snp );
 
     if ( defined $site_code ) {
-      print {$fh} $site_code;
+      print {$fh} pack ('C', $site_code);
     }
     else {
       confess "fatal error at base: $pos ($this_base)\n"
