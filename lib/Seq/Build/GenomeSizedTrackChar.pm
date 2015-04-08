@@ -14,6 +14,7 @@ use File::Path;
 use File::Spec;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
+use Storable;
 use YAML::XS qw/ Dump /;
 
 extends 'Seq::GenomeSizedTrackChar';
@@ -56,11 +57,8 @@ sub insert_score {
 
 override '_build_char_seq' => sub {
   my $self     = shift;
-  my $char_seq = "";
-  for ( my $pos = 0; $pos < $self->genome_length; $pos++ ) {
-    $char_seq .= pack( 'C', 0 );
-  }
-  return \$char_seq;
+  my $char_seq = pack( "C", '0' ) x $self->genome_length;
+  return \$char_seq;;
 };
 
 sub write_char_seq {
@@ -138,8 +136,7 @@ sub build_genome_idx {
 
     # $in_gan -> means is this site annotated in the MongoDb gene track
     # e.g., 5'UTR, Coding, intronic splice site donor, etc.
-    $in_gan = 1
-      if exists $exon_href->{$pos} || exists $flank_exon_href->{$pos};
+    $in_gan = 1 if exists $exon_href->{$pos} || exists $flank_exon_href->{$pos};
     $in_gene = $self->get_base($pos);
     $in_exon = 1 if exists $exon_href->{$pos};
     $in_snp  = 1 if exists $snp_href->{$pos};
@@ -171,36 +168,18 @@ sub set_gene_regions {
 
   my @sorted_tx_starts = sort { $a <=> $b } keys %$tx_starts_href;
 
-  # variables
-  my ( $i, $tx_start, $tx_stop ) = ( 0, 0, 0 );
-
   # pick the 1st start site
-  $tx_start = $sorted_tx_starts[$i];
-  $i++;
-  my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
-  $tx_stop = shift @tx_stops;
+  my $current_pos = 0;
 
   # recall the char string will be initialized to Zero's already so we only
   # need to consider when we are in a gene region
-  for ( my $pos = 0; $pos < $self->genome_length; $pos++ ) {
-    if ( $pos > ( $tx_start - 1 ) && $pos < ( $tx_stop - 1 ) ) {
-      $self->insert_char( $pos, '1' );
-    }
-    elsif ( $pos == ( $tx_stop - 1 ) ) {
-
-      # end of coding portion of genome?
-      if ( $i < scalar @sorted_tx_starts ) {
-        $self->insert_char( $pos, '1' );
-
-        # pick a new tx start and stop with a stop beyond the present position
-        while ( ( $tx_stop - 1 ) <= $pos ) {
-          $tx_start = $sorted_tx_starts[$i];
-          $i++;
-          my @new_tx_stops =
-            sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
-          $tx_stop = shift @new_tx_stops;
-        }
-      }
+  for my $tx_start ( sort { $a <=> $b } keys %$tx_starts_href ) {
+    my $max_start = ( $current_pos > $tx_start ) ? $current_pos : $tx_start;
+    my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+    my $furthest_stop = shift @tx_stops;
+    for (my $i = $max_start; $i <= $furthest_stop; $i++) {
+      $current_pos = $i;
+      $self->insert_char( $current_pos, '1' );
     }
   }
 }
