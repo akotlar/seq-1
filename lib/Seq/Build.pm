@@ -9,11 +9,11 @@ package Seq::Build;
 use Moose 2;
 
 use Carp qw/ croak /;
+use Cpanel::JSON::XS;
 use MongoDB;
 use namespace::autoclean;
 use Path::Tiny;
 use Scalar::Util qw/ reftype /;
-use Storable;
 
 use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
@@ -94,8 +94,9 @@ sub save_sites {
   my $file = File::Spec->catfile( $dir, $name );
 
   path($dir)->mkpath unless -f $dir;
+  my $fh = $self->get_write_fh($file);
 
-  return store( $href, $file );
+  return print { $fh } encode_json( $href );
 }
 
 sub load_sites {
@@ -106,7 +107,10 @@ sub load_sites {
 
   # do we find a file a non-zero file? Retrieve that data else undef.
   if ( -s $file ) {
-    return retrieve($file);
+    my $fh = $self->get_read_fh($file);
+    local $/;
+    my $json_txt = <$fh>;
+    return decode_json($json_txt);
   }
   else {
     return;
