@@ -104,11 +104,11 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 	fgets(sss, 4095, filelist);
-	int		len = strlen(sss);
+	int len = strlen(sss);
 
   // keep reading unless we hit a blank line
 	while (len > 2) {
-		char           *token;
+		char   *token;
 		token = strtok(sss, " \n\t");
 
     // open the file with what we want to add
@@ -124,34 +124,47 @@ main(int argc, char *argv[])
 			printf("\n Found a mask of %d which is impossible [1...255 is possible range] \n", this_add);
 			exit(2);
 		}
+
 		fgets(sss, 4095, thisfile);
-		int		len2 = strlen(sss);
+		int len2 = strlen(sss);
+
+		long genome_size = (long)3500000000;
+		char *genome_buffer;
+
+		this_buffer = (char *)malloc(sizeof(char) * (genome_size + 1));
+		if (!this_buffer) {
+			printf("\n Failed to allocate memory for temp genome buffer \n");
+			exit(1);
+		}
 
     // now read the file - format: Start\tStop\n
 		while (len2 > 2) {
-			char           *token2;
-			long		start    , stop;
+			char *token2;
+			long  site;
 			token2 = strtok(sss, " \n\t");
-			start = atol(token2);
-			if ((start < 0) || (start > genome_size)) {
+			site = atol(token2);
+
+			// sanity check
+			if ((site < 0) || (site > genome_size)) {
 				printf("\n Found a start position of %ld in a genome of size %ld \n", start, genome_size);
 				exit(3);
 			}
-			token2 = strtok(NULL, " \n\n");
-			stop = atol(token2);
-			if ((start < 0) || (start > genome_size) || (stop < start)) {
-				printf("\n Found a start position of %ld and a stop position of %ld in a genome of size %ld \n", start, stop, genome_size);
-				exit(3);
-			}
 
-      // add the value between the start and stop
-			for (i = start; i <= stop; i++)
-				genome_buffer[i] += this_add;
+			// save the site in 'this_buffer'
+			this_buffer[site] = 1;
+
 			sss[0] = '\0';
 			if (!feof(thisfile))
 				fgets(sss, 4095, thisfile);
 			len2 = strlen(sss);
 		}
+
+		// add sites that are present in 'this_buffer'
+		for (int i = 0; i <= genome_size; i++)
+			if (this_buffer[i] == 1 )
+				genome_buffer[i] += this_add;
+
+		free(this_buffer);
 		fclose(thisfile);
 		sss[0] = '\0';
 
