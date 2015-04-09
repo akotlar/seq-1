@@ -83,8 +83,7 @@ main(int argc, char *argv[])
 	for (i = 0; i < 256; i++)
 		char_mask[i] = 4;
 
-  // Now, we set a few specific characters to values that are meaningful to us
-  // and this also takes care of the uc vs. lc issue
+  // Now, we set a few specific characters to values that are meaningful to us and this also takes care of the uc vs. lc issue
 	char_mask['A'] = 0;
 	char_mask['a'] = 0;
 	char_mask['C'] = 1;
@@ -129,7 +128,7 @@ main(int argc, char *argv[])
 		int len2 = strlen(sss);
 
 		long genome_size = (long)3500000000;
-		char *genome_buffer;
+		char *this_buffer;
 
 		this_buffer = (char *)malloc(sizeof(char) * (genome_size + 1));
 		if (!this_buffer) {
