@@ -298,8 +298,6 @@ sub build_conserv_scores_index {
         }
       );
       $score_track->build_score_idx;
-      $score_track->write_char_seq;
-      $score_track->clear_char_seq;
     }
   }
   $self->_logger->info( 'leaving build_conserv_scores_index' );
@@ -333,13 +331,13 @@ sub build_genome_index {
   );
 
   # set genic/intergenic regions
-  $assembly->set_gene_regions($transcript_starts);
+  $assembly->write_gene_regions($transcript_starts);
 
   # use gene, snp tracks, and genic/intergenic regions to build coded genome
   # the build_genome_idx now writes all needed files within the sub
-  $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
-    $flank_exon_sites, $snp_sites );
-  $self->_logger->info( 'leaving build_genome_index' );
+  # $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
+  #   $flank_exon_sites, $snp_sites );
+  # $self->_logger->info( 'leaving build_genome_index' );
 }
 
 __PACKAGE__->meta->make_immutable;
