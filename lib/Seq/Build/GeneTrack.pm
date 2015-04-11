@@ -30,14 +30,14 @@ sub build_gene_db {
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
 
   # flanking sites
-  my $gan_name   = join( ".", $self->name, 'gan', 'dat' );
-  my $gan_file   = File::Spec->catfile( $index_dir, $gan_name );
-  my $gan_fh     = $self->get_write_fh($gan_file);
+  my $gan_name = join( ".", $self->name, 'gan', 'dat' );
+  my $gan_file = File::Spec->catfile( $index_dir, $gan_name );
+  my $gan_fh = $self->get_write_fh($gan_file);
 
   # exon sites
-  my $ex_name   = join(".", $self->name, 'exon', 'dat');
-  my $ex_file   = File::Spec->catfile( $index_dir, $ex_name );
-  my $ex_fh     = $self->get_write_fh( $ex_file );
+  my $ex_name = join( ".", $self->name, 'exon', 'dat' );
+  my $ex_file = File::Spec->catfile( $index_dir, $ex_name );
+  my $ex_fh = $self->get_write_fh($ex_file);
 
   my %ucsc_table_lu = (
     name       => 'transcript_id',
@@ -50,11 +50,11 @@ sub build_gene_db {
     txEnd      => 'transcript_end',
     txStart    => 'transcript_start',
   );
-  my ( %header, %exon_sites, %flank_exon_sites, %transcript_start_sites );
+  my ( %header, @fl_sites, @ex_sites, %transcript_start_sites );
 
-  while (<$in_fh>) {
-    chomp $_;
-    my @fields = split( /\t/, $_ );
+  while ( my $line = $in_fh->getline ) {
+    chomp $line;
+    my @fields = split( /\t/, $line );
     if ( $. == 1 ) {
       map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
       next;
@@ -95,7 +95,7 @@ sub build_gene_db {
     }
 
     # flanking sites need only be written to gan file
-    print {$gan_fh} join "\n", @{ $self->_get_range_list( \@fl_sites )};
+    print {$gan_fh} join "\n", @{ $self->_get_range_list( \@fl_sites ) };
 
     # get exon annotations
     my @exon_sites = $gene->all_transcript_sites;
@@ -107,37 +107,15 @@ sub build_gene_db {
     }
 
     # exonic annotations need to be written to both gan and exon files
-    print {$ex_fh} join "\n", @{ $self->_get_range_list( \@ex_sites )};
-    print {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites )};
+    print {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) };
+    print {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) };
 
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
 
   # write gene boundary information - for genic/intergenic
-  $self->_write_gene_regions(\%transcript_start_sites);
-  %transcript_start_sites = ( );
-}
-
-sub _get_range_list {
-  my ( $self, $site_aref ) = @_;
-  my @s_aref = sort {$a <=> $b } @$site_aref;
-  my $last_site = 0;
-  my @sites;
-  for my ($i = 0; $i < @s_aref; $i++) {
-    if ($i == 0 ) {
-      push @sites, $s_aref[$i];
-    }
-    elsif ( $last_site + 1 != $s_aref[$i]) {
-      push @sites, $last_site;
-    }
-    $last_site = $s_aref[$i];
-  }
-  push @sites, $last_site;
-  my @ranges;
-  for (my $i = 0; $i @sites; $i += 2 ) {
-    push @ranges, join("\t", $sites[$i], $sites[$i+1]);
-  }
-  return \@ranges;
+  $self->_write_gene_regions( \%transcript_start_sites );
+  %transcript_start_sites = ();
 }
 
 sub _write_gene_regions {
@@ -153,7 +131,8 @@ sub _write_gene_regions {
 
   # Build the file unless it already exists, but log what we're doing.
   if ( -s $dat_file ) {
-    $self->_logger->info( join " ", 'found', $dat_file, 'no need to write_gene_regions' );
+    $self->_logger->info( join " ", 'found', $dat_file,
+      'no need to write_gene_regions' );
   }
   else {
     my $fh        = $self->get_write_fh($dat_file);
@@ -162,7 +141,7 @@ sub _write_gene_regions {
       my $max_start = ( $last_stop > $tx_start ) ? ( $last_stop + 1 ) : $tx_start;
       my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
       my $furthest_stop = shift @tx_stops;
-      say {$fh} join("\t", $max_start, $furthest_stop);
+      say {$fh} join( "\t", $max_start, $furthest_stop );
       $last_stop = $furthest_stop;
     }
   }

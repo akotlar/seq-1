@@ -45,8 +45,8 @@ has features => (
 
 # file information
 has genome_index_dir => ( is => 'ro', isa => 'Str', );
-has local_dir  => ( is => 'ro', isa => 'Str', required => 1, );
-has local_file => ( is => 'ro', isa => 'Str', required => 1, );
+has local_dir        => ( is => 'ro', isa => 'Str', required => 1, );
+has local_file       => ( is => 'ro', isa => 'Str', required => 1, );
 
 around 'sql_statement' => sub {
   my $orig = shift;

@@ -30,9 +30,9 @@ sub build_snp_db {
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
 
   # flanking sites
-  my $snp_name   = join( ".", $self->name, 'snp', 'dat' );
-  my $snp_file   = File::Spec->catfile( $index_dir, $snp_name );
-  my $snp_fh     = $self->get_write_fh($snp_file);
+  my $snp_name = join( ".", $self->name, 'snp', 'dat' );
+  my $snp_file = File::Spec->catfile( $index_dir, $snp_name );
+  my $snp_fh = $self->get_write_fh($snp_file);
 
   my ( %header, @snp_sites, @insert_data );
   while ( my $line = $in_fh->getline ) {
@@ -90,19 +90,14 @@ sub build_snp_db {
 
         $self->db_put( $abs_pos, $site_href );
 
-        print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites )}
+        print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) }
           if $self->counter > $self->bulk_insert_threshold;
       }
     }
   }
-  print {$ex_fh} join "\n", @{ $self->_get_snp_list( \@snp_sites )}
+  print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) }
     if $self->counter;
 }
-
-sub _get_snp_list {
-  # TODO: write me
-}
-
 
 __PACKAGE__->meta->make_immutable;
 

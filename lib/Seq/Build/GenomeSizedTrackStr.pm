@@ -29,7 +29,7 @@ has genome_seq => (
     genome_length => 'length',
     get_base      => 'substr', # zero-indexed
   },
-  lazy => 1,
+  lazy    => 1,
   builder => '_build_str_genome',
 );
 
@@ -51,38 +51,38 @@ sub BUILD {
 }
 
 sub _build_str_genome {
-  my $self        = shift;
+  my $self = shift;
 
-  $self->_logger->info( 'in _build_str_genome' );
+  $self->_logger->info('in _build_str_genome');
 
   my $local_dir   = File::Spec->canonpath( $self->local_dir );
   my @local_files = $self->all_local_files;
   my @genome_chrs = $self->all_genome_chrs;
 
-  my $dir          = File::Spec->canonpath( $self->genome_index_dir );
-  my $chr_len_name = join ".", $self->name, $self->type, 'chr_len', 'dat';
-  my $genome_name  = join ".", $self->name, $self->type, 'str', 'dat';
-  my $chr_len_file = File::Spec->catfile( $dir, $chr_len_name );
-  my $genome_file  = File::Spec->catfile( $dir, $genome_name );
+  my $dir              = File::Spec->canonpath( $self->genome_index_dir );
+  my $chr_len_name     = join ".", $self->name, $self->type, 'chr_len', 'dat';
+  my $genome_name      = join ".", $self->name, $self->type, 'str', 'dat';
+  my $chr_len_file     = File::Spec->catfile( $dir, $chr_len_name );
+  my $genome_file      = File::Spec->catfile( $dir, $genome_name );
   my $genome_file_size = -s $genome_file;
-  my $genome_str   = '';
+  my $genome_str       = '';
 
   if ( -s $chr_len_file && $genome_file_size ) {
 
-    my $fh = $self->get_read_fh( $genome_file );
+    my $fh = $self->get_read_fh($genome_file);
     read $fh, $genome_str, $genome_file_size;
 
-    $self->_logger->info( 'read genome string' );
+    $self->_logger->info('read genome string');
 
     my $chr_len_href = LoadFile($chr_len_file);
     map { $self->set_chr_len( $_ => $chr_len_href->{$_} ) } keys %$chr_len_href;
 
-    $self->_logger->info( 'read chrome length offsets' );
+    $self->_logger->info('read chrome length offsets');
 
   }
   else {
 
-    $self->_logger->info( 'no previous genome detected; building genome string' );
+    $self->_logger->info('no previous genome detected; building genome string');
 
     for ( my $i = 0; $i < @local_files; $i++ ) {
       my $file        = $local_files[$i];

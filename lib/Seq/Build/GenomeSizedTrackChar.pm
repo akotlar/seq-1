@@ -57,7 +57,7 @@ sub insert_score {
 override '_build_char_seq' => sub {
   my $self = shift;
 
-  if ($self->type eq 'score') {
+  if ( $self->type eq 'score' ) {
     my $char_seq = pack( "C", '0' ) x $self->genome_length;
     return \$char_seq;
   }
@@ -70,26 +70,26 @@ override '_build_char_seq' => sub {
 sub build_score_idx {
   my $self = shift;
 
-  $self->_logger->info( 'in build_score_idx' );
+  $self->_logger->info('in build_score_idx');
 
   my $chr_len_href     = $self->chr_len;
   my $local_files_aref = $self->local_files;
   my $local_dir        = File::Spec->canonpath( $self->local_dir );
 
-    # prepare file for output
+  # prepare file for output
   my $file        = join( ".", $self->name, $self->type, 'idx' );
   my $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
   my $target_file = File::Spec->catfile( $index_dir, $file );
   my $out_fh      = $self->get_write_bin_fh($target_file);
 
-  my $char_zero   = pack ('C', '0');
+  my $char_zero = pack( 'C', '0' );
   my @tmp;
 
   for my $i ( 0 .. $#{$local_files_aref} ) {
     my $file       = $local_files_aref->[$i];
     my $local_file = File::Spec->catfile( $local_dir, $file );
     my $in_fh      = $self->get_read_fh($local_file);
-    my ( $last_pos, $last_chr, $abs_pos, $last_abs_pos ) = ( 0, 0, 0, 0);
+    my ( $last_pos, $last_chr, $abs_pos, $last_abs_pos ) = ( 0, 0, 0, 0 );
     while ( my $line = $in_fh->getline() ) {
       chomp $line;
       my ( $chr, $pos, $score ) = split( "\t", $line );
@@ -100,7 +100,7 @@ sub build_score_idx {
       else {
         my $offset //= $chr_len_href->{$chr};
         if ( defined $offset ) {
-          $abs_pos = $offset + $pos;
+          $abs_pos  = $offset + $pos;
           $last_pos = $pos;
           $last_chr = $chr;
         }
@@ -108,32 +108,32 @@ sub build_score_idx {
           confess "unrecognized chr: $chr in line: $line of $file";
         }
       }
-      my $diff = $abs_pos - ( $last_abs_pos + 1);
+      my $diff = $abs_pos - ( $last_abs_pos + 1 );
 
-      unless ($last_abs_pos + 1 == $abs_pos ) {
-        for (my $i = $last_abs_pos + 1; $i < $abs_pos; $i++ ){
+      unless ( $last_abs_pos + 1 == $abs_pos ) {
+        for ( my $i = $last_abs_pos + 1; $i < $abs_pos; $i++ ) {
           print {$out_fh} $char_zero;
         }
       }
-      print {$out_fh} pack('C', $self->score2char->($score));
+      print {$out_fh} pack( 'C', $self->score2char->($score) );
 
       # $self->insert_score( $abs_pos, $score );
       $last_abs_pos = $abs_pos;
-      $last_chr = $chr;
+      $last_chr     = $chr;
     }
-    for (my $i = $abs_pos; $i < $self->genome_length; $i++) {
+    for ( my $i = $abs_pos; $i < $self->genome_length; $i++ ) {
       print {$out_fh} $char_zero;
     }
-    close ($in_fh);
+    close($in_fh);
   }
-  close ($out_fh);
-  $self->_logger->info( 'leaving build_score_idx' );
+  close($out_fh);
+  $self->_logger->info('leaving build_score_idx');
 }
 
 sub build_genome_idx {
   my ( $self, $genome_str, $exon_href, $flank_exon_href, $snp_href ) = @_;
 
-  $self->_logger->info( 'in build_genome_idx' );
+  $self->_logger->info('in build_genome_idx');
 
   confess "expected genome object to be able to get_abs_pos() and get_base()"
     unless ( $genome_str->meta->has_method('get_abs_pos')
@@ -152,18 +152,14 @@ sub build_genome_idx {
 
   # TODO: call genome hasher
 
-  }
-
   # write chromosome offsets
   $file        = join( ".", $self->name, $self->type, 'yml' );
   $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
   $target_file = File::Spec->catfile( $index_dir, $file );
   $fh          = $self->get_write_bin_fh($target_file);
   print {$fh} Dump( $self->chr_len );
-  $self->_logger->info( 'leaving build_genome_idx' );
+  $self->_logger->info('leaving build_genome_idx');
 }
-
-
 
 __PACKAGE__->meta->make_immutable;
 

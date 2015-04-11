@@ -28,3 +28,4 @@ test*
 /t/*.sh
 /t/archive
 *.db
+/bin/genome_hasher

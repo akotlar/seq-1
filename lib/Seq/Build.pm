@@ -23,11 +23,10 @@ use Seq::Build::GenomeSizedTrackStr;
 use Seq::BDBManager;
 use Seq::MongoManager;
 
-
 use DDP;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::IO', 'MooX::Role::Logger';;
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
 has genome_str_track => (
   is      => 'ro',
@@ -96,7 +95,7 @@ sub save_sites {
   path($dir)->mkpath unless -f $dir;
   my $fh = $self->get_write_fh($file);
 
-  return print { $fh } encode_json( $data_ref );
+  return print {$fh} encode_json($data_ref);
 }
 
 sub load_sites {
@@ -121,7 +120,7 @@ sub build_snp_sites {
   my $self = shift;
   # build snp tracks
 
-  $self->_logger->info( 'in build_snp_sites' );
+  $self->_logger->info('in build_snp_sites');
 
   my %snp_sites;
   if ( $self->snp_tracks ) {
@@ -155,14 +154,14 @@ sub build_snp_sites {
       map { $snp_sites{$_}++ } @$sites_aref;
     }
   }
-  $self->_logger->info( 'leaving build_snp_sites' );
+  $self->_logger->info('leaving build_snp_sites');
   return \%snp_sites;
 }
 
 sub build_transcript_seq {
   my $self = shift;
 
-  $self->_logger->info( 'in build_transcript_seq' );
+  $self->_logger->info('in build_transcript_seq');
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
@@ -194,7 +193,7 @@ sub build_transcript_seq {
       croak "error saving snp sites for:  $gene_track_file_name\n";
     }
   }
-  $self->_logger->info( 'leaving build_transcript_seq' );
+  $self->_logger->info('leaving build_transcript_seq');
 }
 
 sub build_gene_sites {
@@ -202,7 +201,7 @@ sub build_gene_sites {
   # build gene tracks - these are gene annotation tracks downloaded from UCSC
   # e.g., knownGene
 
-  $self->_logger->info( 'in build_gene_sites' );
+  $self->_logger->info('in build_gene_sites');
 
   my ( %flank_exon_sites, %exon_sites, %transcript_starts );
   for my $gene_track ( $self->all_gene_tracks ) {
@@ -251,14 +250,14 @@ sub build_gene_sites {
       }
     }
   }
-  $self->_logger->info( 'leaving build_gene_sites' );
+  $self->_logger->info('leaving build_gene_sites');
   return ( \%flank_exon_sites, \%exon_sites, \%transcript_starts );
 }
 
 sub build_conserv_scores_index {
   my $self = shift;
 
-  $self->_logger->info( 'in build_conserv_scores_index' );
+  $self->_logger->info('in build_conserv_scores_index');
 
   # make chr_len hash for binary genome
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
@@ -282,13 +281,13 @@ sub build_conserv_scores_index {
       $score_track->build_score_idx;
     }
   }
-  $self->_logger->info( 'leaving build_conserv_scores_index' );
+  $self->_logger->info('leaving build_conserv_scores_index');
 }
 
 sub build_genome_index {
   my $self = shift;
 
-  $self->_logger->info( 'in build_genome_index' );
+  $self->_logger->info('in build_genome_index');
 
   my $snp_sites = $self->build_snp_sites;
   my ( $flank_exon_sites, $exon_sites, $transcript_starts ) = $self->build_gene_sites;

@@ -214,7 +214,7 @@ for my $chr (@$chrs_aref) {
 
       # save 0-index sequence
       push @{ $found_chr{ $data{chrom} } }, \%data;
-      $chr_len{$chr} = $data{txEnd} - $data{txStart} + 2 * $padding;
+      $chr_len{$chr} += $data{txEnd} - $data{txStart} + 2 * $padding;
 
       # check length of sequence is correct after processing
       croak "expected lengths to match"

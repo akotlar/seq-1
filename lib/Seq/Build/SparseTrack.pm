@@ -8,7 +8,6 @@ package Seq::Build::SparseTrack;
 
 use Moose 2;
 
-
 use namespace::autoclean;
 
 use Seq::Build::GenomeSizedTrackStr;
@@ -61,24 +60,28 @@ has bulk_insert_threshold => (
 
 sub _get_range_list {
   my ( $self, $site_aref ) = @_;
-  my @s_aref = sort {$a <=> $b } @$site_aref;
+
+  # sort the array in ascending numerical order
+  my @s_aref = sort { $a <=> $b } @$site_aref;
+
+  # start and stop sites are initially undef since it's concievable that a
+  # region starts at zero for some reason
+  my ( $start, $stop );
   my $last_site = 0;
-  my @sites;
-  for my ($i = 0; $i < @s_aref; $i++) {
-    if ($i == 0 ) {
-      push @sites, $s_aref[$i];
-    }
-    elsif ( $last_site + 1 != $s_aref[$i]) {
-      push @sites, $last_site;
+  my @pairs;
+
+  for ( my $i = 0; $i < @s_aref; $i++ ) {
+    $start = $s_aref[$i] unless defined $start;
+    $stop = $last_site if ( $last_site + 1 != $s_aref[$i] );
+    if ( defined $stop ) {
+      push @pairs, join( "\t", $start, $stop );
+      $start = $s_aref[$i];
+      $stop  = undef;
     }
     $last_site = $s_aref[$i];
   }
-  push @sites, $last_site;
-  my @ranges;
-  for (my $i = 0; $i @sites; $i += 2 ) {
-    push @ranges, join("\t", $sites[$i], $sites[$i+1]);
-  }
-  return \@ranges;
+  push @pairs, join( "\t", $start, $last_site );
+  return \@pairs;
 }
 
 __PACKAGE__->meta->make_immutable;

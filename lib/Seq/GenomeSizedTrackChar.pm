@@ -58,7 +58,7 @@ has score2char => (
 );
 
 sub _build_char_seq {
-  my ( $self ) = @_;
+  my ($self) = @_;
   my $genome_seq = '';
   return \$genome_seq;
 }
