@@ -9,11 +9,11 @@ package Seq::Build;
 use Moose 2;
 
 use Carp qw/ croak /;
-use MongoDB;
+use Cpanel::JSON::XS;
+
 use namespace::autoclean;
 use Path::Tiny;
 use Scalar::Util qw/ reftype /;
-use Storable;
 
 use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
@@ -88,14 +88,15 @@ sub save_bdb {
 }
 
 sub save_sites {
-  my ( $self, $href, $name ) = @_;
+  my ( $self, $data_ref, $name ) = @_;
 
   my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
   path($dir)->mkpath unless -f $dir;
+  my $fh = $self->get_write_fh($file);
 
-  return store( $href, $file );
+  return print { $fh } encode_json( $data_ref );
 }
 
 sub load_sites {
@@ -106,7 +107,10 @@ sub load_sites {
 
   # do we find a file a non-zero file? Retrieve that data else undef.
   if ( -s $file ) {
-    return retrieve($file);
+    my $fh = $self->get_read_fh($file);
+    local $/;
+    my $json_txt = <$fh>;
+    return decode_json($json_txt);
   }
   else {
     return;
@@ -138,15 +142,6 @@ sub build_snp_sites {
         $record->{genome_track_str} = $self->genome_str_track;
         $record->{genome_index_dir} = $self->genome_index_dir;
         $record->{genome_name}      = $self->genome_name;
-        # $record->{mongo_connection} = Seq::MongoManager->new(
-        #   {
-        #     default_database => $self->genome_name,
-        #     client_options   => {
-        #       host => $self->mongo_addr,
-        #       port => $self->port,
-        #     },
-        #   }
-        # );
         $record->{bdb_connection} =
           Seq::BDBManager->new( { filename => $self->save_bdb($snp_track_bdb), } );
         my $snp_db = Seq::Build::SnpTrack->new($record);
@@ -187,15 +182,6 @@ sub build_transcript_seq {
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
       $record->{name}             = $gene_track->name . '_tx';
-      # $record->{mongo_connection} = Seq::MongoManager->new(
-      #   {
-      #     default_database => $self->genome_name,
-      #     client_options   => {
-      #       host => $self->mongo_addr,
-      #       port => $self->port,
-      #     },
-      #   }
-      # );
       $record->{bdb_connection} =
         Seq::BDBManager->new( { filename => $self->save_bdb($gene_track_seq_db), } );
       my $gene_db = Seq::Build::TxTrack->new($record);
@@ -294,8 +280,6 @@ sub build_conserv_scores_index {
         }
       );
       $score_track->build_score_idx;
-      $score_track->write_char_seq;
-      $score_track->clear_char_seq;
     }
   }
   $self->_logger->info( 'leaving build_conserv_scores_index' );
@@ -329,13 +313,13 @@ sub build_genome_index {
   );
 
   # set genic/intergenic regions
-  $assembly->set_gene_regions($transcript_starts);
+  $assembly->write_gene_regions($transcript_starts);
 
   # use gene, snp tracks, and genic/intergenic regions to build coded genome
   # the build_genome_idx now writes all needed files within the sub
-  $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
-    $flank_exon_sites, $snp_sites );
-  $self->_logger->info( 'leaving build_genome_index' );
+  # $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
+  #   $flank_exon_sites, $snp_sites );
+  # $self->_logger->info( 'leaving build_genome_index' );
 }
 
 __PACKAGE__->meta->make_immutable;

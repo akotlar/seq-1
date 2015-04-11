@@ -11,7 +11,6 @@ use Moose 2;
 
 use Carp qw/ croak /;
 use File::Spec;
-use MongoDB;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use Type::Params qw/ compile /;
@@ -221,7 +220,7 @@ sub get_ref_annotation {
       $record{genomic_annotation_code} = 'Exonic';
     }
     else {
-      $record{genomic_annotation_code} = 'Introinc';
+      $record{genomic_annotation_code} = 'Intronic';
     }
   }
   else {
@@ -271,7 +270,7 @@ sub get_ref_annotation {
 # indels will be handled in a separate method
 sub get_snp_annotation {
   state $check = compile( Object, Int, Str );
-  my ( $self, $abs_pos, $new_genotype ) = $check->(@_);
+  my ( $self, $abs_pos, $new_base ) = $check->(@_);
 
   my $ref_site_annotation = $self->get_ref_annotation($abs_pos);
 
@@ -279,7 +278,7 @@ sub get_snp_annotation {
   my $gene_aref //= $ref_site_annotation->{gene_data};
   my %gene_site_annotation;
   for my $gene_site (@$gene_aref) {
-    $gene_site->{minor_allele} = $new_genotype;
+    $gene_site->{minor_allele} = $new_base;
     my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs;
     for my $attr ( keys %$gan ) {
       if ( exists $gene_site_annotation{$attr} ) {

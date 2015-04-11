@@ -17,11 +17,12 @@ enum GenomeSizedTrackType => [ 'genome', 'score', ];
 
 my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp );
 {
-  my @bases      = qw( A C G T N );
-  my @annotation = qw( 0 1 );
-  my @in_exon    = qw( 0 1 );
-  my @in_gene    = qw( 0 1 );
-  my @in_snp     = qw( 0 1 );
+  # need values to be powers of 2 to use bitwise or cleaverness in c...
+  my @bases      = qw\ A C G T N \;
+  my @annotation = qw\ 0 8 \;
+  my @in_exon    = qw\ 0 16 \;
+  my @in_gene    = qw\ 0 32 \;
+  my @in_snp     = qw\ 0 64 \;
   my @char       = ( 0 .. 255 );
   my $i          = 0;
 
@@ -113,12 +114,12 @@ sub get_idx_code {
   my $self = shift;
   my ( $base, $in_gan, $in_gene, $in_exon, $in_snp ) = @_;
 
-  confess "get_idx_code() expects base, in_gan, in_gene, in_exon, and in_snp"
-    unless $base =~ m/[ACGTN]/
-    and defined $in_gan
-    and defined $in_gene
-    and defined $in_exon
-    and defined $in_snp;
+  # confess "get_idx_code() expects base, in_gan, in_gene, in_exon, and in_snp"
+  #   unless $base =~ m/[ACGTN]/
+  #   and defined $in_gan
+  #   and defined $in_gene
+  #   and defined $in_exon
+  #   and defined $in_snp;
 
   my $code //= $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
   return $code;
