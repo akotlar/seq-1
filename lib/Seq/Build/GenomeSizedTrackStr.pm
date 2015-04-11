@@ -27,7 +27,6 @@ has genome_seq => (
     add_seq       => 'append',
     clear_genome  => 'clear',
     genome_length => 'length',
-    seq_length    => 'length',
     get_base      => 'substr', # zero-indexed
   },
   lazy => 1,

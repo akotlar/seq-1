@@ -16,18 +16,28 @@ use namespace::autoclean;
 use Seq::Gene;
 
 extends 'Seq::Build::SparseTrack';
-with 'Seq::Role::IO';
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
 sub build_gene_db {
   my $self = shift;
-
-  # defensively drop anything if the collection already exists
-  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
+
+  # output
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+
+  # flanking sites
+  my $gan_name   = join( ".", $self->name, 'gan', 'dat' );
+  my $gan_file   = File::Spec->catfile( $index_dir, $gan_name );
+  my $gan_fh     = $self->get_write_fh($gan_file);
+
+  # exon sites
+  my $ex_name   = join(".", $self->name, 'exon', 'dat');
+  my $ex_file   = File::Spec->catfile( $index_dir, $ex_name );
+  my $ex_fh     = $self->get_write_fh( $ex_file );
 
   my %ucsc_table_lu = (
     name       => 'transcript_id',
@@ -65,10 +75,10 @@ sub build_gene_db {
     #   - the basic problem is that the type constraint on alt_names wants
     #   the hash to contain strings; without the ($data{$_}) ? $data{$_} : 'NA'
     #   there were some keys with blank values
-    #   - this feels like a bit of a hack to accomidate the type constraint
-    #   on alt_names attributes and will increase the db size; may just drop the
-    #   keys without data in the future but it's running now so will hold off
-    #   for the time being.
+    #   - this feels like a hack to accomidate the type constraint on alt_names
+    #   attributes and will increase the db size; may just drop the keys without
+    #   data in the future but it's running now so will hold off for the time
+    #   being.
     my %alt_names = map { $_ => ( $data{$_} ) ? $data{$_} : 'NA' if exists $data{$_} }
       ( $self->all_features );
 
@@ -79,33 +89,83 @@ sub build_gene_db {
     my @flank_exon_sites = $gene->all_flanking_sites;
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
-      # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-      # $self->insert($site_href);
-      # $self->execute if $self->counter > $self->bulk_insert_threshold;
-      $self->db_put( $site_href->{abs_pos}, $site_href );
-      $flank_exon_sites{ $site->abs_pos }++;
+      my $abs_pos   = $site_href->{abs_pos};
+      $self->db_put( $abs_pos, $site_href );
+      push @fl_sites, $abs_pos;
     }
-    # $self->execute if $self->counter;
+
+    # flanking sites need only be written to gan file
+    print {$gan_fh} join "\n", @{ $self->_get_range_list( \@fl_sites )};
 
     # get exon annotations
     my @exon_sites = $gene->all_transcript_sites;
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
-      # $self->mongo_connection->_mongo_collection( $self->name )->insert($site_href);
-      # $self->insert($site_href);
-      # $self->execute if $self->counter > $self->bulk_insert_threshold;
-      $self->db_put( $site_href->{abs_pos}, $site_href );
-      $exon_sites{ $site->abs_pos }++;
+      my $abs_pos   = $site_href->{abs_pos};
+      $self->db_put( $abs_pos, $site_href );
+      push @ex_sites, $abs_pos;
     }
-    # $self->execute if $self->counter
+
+    # exonic annotations need to be written to both gan and exon files
+    print {$ex_fh} join "\n", @{ $self->_get_range_list( \@ex_sites )};
+    print {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites )};
+
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }
-  my $sites_href = {
-    flank_exon_sites       => \%flank_exon_sites,
-    exon_sites             => \%exon_sites,
-    transcript_start_sites => \%transcript_start_sites,
-  };
-  return ($sites_href);
+
+  # write gene boundary information - for genic/intergenic
+  $self->_write_gene_regions(\%transcript_start_sites);
+  %transcript_start_sites = ( );
+}
+
+sub _get_range_list {
+  my ( $self, $site_aref ) = @_;
+  my @s_aref = sort {$a <=> $b } @$site_aref;
+  my $last_site = 0;
+  my @sites;
+  for my ($i = 0; $i < @s_aref; $i++) {
+    if ($i == 0 ) {
+      push @sites, $s_aref[$i];
+    }
+    elsif ( $last_site + 1 != $s_aref[$i]) {
+      push @sites, $last_site;
+    }
+    $last_site = $s_aref[$i];
+  }
+  push @sites, $last_site;
+  my @ranges;
+  for (my $i = 0; $i @sites; $i += 2 ) {
+    push @ranges, join("\t", $sites[$i], $sites[$i+1]);
+  }
+  return \@ranges;
+}
+
+sub _write_gene_regions {
+  my ( $self, $tx_starts_href ) = @_;
+
+  # note: - tx = transcript
+  #       - the $tx_starts_href is a hash with keys that are
+  #         tx start sites and values are arrays of end values
+
+  my $file      = join( ".", $self->name, 'gene_region.dat' );
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  my $dat_file  = File::Spec->catfile( $index_dir, $file );
+
+  # Build the file unless it already exists, but log what we're doing.
+  if ( -s $dat_file ) {
+    $self->_logger->info( join " ", 'found', $dat_file, 'no need to write_gene_regions' );
+  }
+  else {
+    my $fh        = $self->get_write_fh($dat_file);
+    my $last_stop = 0;
+    for my $tx_start ( sort { $a <=> $b } keys %$tx_starts_href ) {
+      my $max_start = ( $last_stop > $tx_start ) ? ( $last_stop + 1 ) : $tx_start;
+      my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
+      my $furthest_stop = shift @tx_stops;
+      say {$fh} join("\t", $max_start, $furthest_stop);
+      $last_stop = $furthest_stop;
+    }
+  }
 }
 
 __PACKAGE__->meta->make_immutable;

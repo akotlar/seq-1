@@ -58,16 +58,17 @@ has score2char => (
 );
 
 sub _build_char_seq {
-  my ( $self, $genome_seq ) = @_;
+  my ( $self ) = @_;
+  my $genome_seq = '';
   return \$genome_seq;
 }
 
 sub get_base {
   my ( $self, $pos ) = @_;
-  state $seq_len = $self->genome_length;
+  state $genome_length = $self->genome_length;
 
-  confess "get_base() expects a position between 0 and  $seq_len, got $pos."
-    unless $pos >= 0 and $pos < $seq_len;
+  confess "get_base() expects a position between 0 and $genome_length, got $pos."
+    unless $pos >= 0 and $pos < $genome_length;
 
   # position here is not adjusted for the Zero versus 1 index issue
   return unpack( 'C', substr( ${ $self->char_seq }, $pos, 1 ) );

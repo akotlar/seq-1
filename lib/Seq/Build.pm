@@ -10,7 +10,7 @@ use Moose 2;
 
 use Carp qw/ croak /;
 use Cpanel::JSON::XS;
-use MongoDB;
+
 use namespace::autoclean;
 use Path::Tiny;
 use Scalar::Util qw/ reftype /;
@@ -142,15 +142,6 @@ sub build_snp_sites {
         $record->{genome_track_str} = $self->genome_str_track;
         $record->{genome_index_dir} = $self->genome_index_dir;
         $record->{genome_name}      = $self->genome_name;
-        # $record->{mongo_connection} = Seq::MongoManager->new(
-        #   {
-        #     default_database => $self->genome_name,
-        #     client_options   => {
-        #       host => $self->mongo_addr,
-        #       port => $self->port,
-        #     },
-        #   }
-        # );
         $record->{bdb_connection} =
           Seq::BDBManager->new( { filename => $self->save_bdb($snp_track_bdb), } );
         my $snp_db = Seq::Build::SnpTrack->new($record);
@@ -191,15 +182,6 @@ sub build_transcript_seq {
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
       $record->{name}             = $gene_track->name . '_tx';
-      # $record->{mongo_connection} = Seq::MongoManager->new(
-      #   {
-      #     default_database => $self->genome_name,
-      #     client_options   => {
-      #       host => $self->mongo_addr,
-      #       port => $self->port,
-      #     },
-      #   }
-      # );
       $record->{bdb_connection} =
         Seq::BDBManager->new( { filename => $self->save_bdb($gene_track_seq_db), } );
       my $gene_db = Seq::Build::TxTrack->new($record);

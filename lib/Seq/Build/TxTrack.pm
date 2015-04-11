@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 package Seq::Build::TxTrack;
-# ABSTRACT: Builds Gene Tracks and places into MongoDB instance.
+# ABSTRACT: Builds Gene Tracks and places into BerkeleyDB instance.
 # VERSION
 
 use Moose 2;
@@ -80,10 +80,7 @@ sub insert_transcript_seq {
       peptide_seq             => $gene->peptide,
     };
     $self->db_put( $record_href->{transcript_id}, $record_href );
-    #$self->insert($record_href);
-    #$self->execute if $self->counter > $self->bulk_insert_threshold;
   }
-  #$self->execute if $self->counter;
 }
 
 __PACKAGE__->meta->make_immutable;
