@@ -8,9 +8,8 @@ package Seq::Build::SnpTrack;
 
 use Moose 2;
 
-use Carp qw/ confess /;
-use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
+use File::Spec;
 use namespace::autoclean;
 
 use Seq::Site::Snp;
@@ -28,11 +27,18 @@ sub build_snp_db {
 
   # output
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  make_path( $index_dir ) unless -f $index_dir;
 
-  # flanking sites
+  # snp sites
   my $snp_name = join( ".", $self->name, 'snp', 'dat' );
   my $snp_file = File::Spec->catfile( $index_dir, $snp_name );
+
+  # check to see if we need to make the site range file
+  return if $self->_has_site_range_file( $snp_file );
+
+  # 1st line needs to be value that should be added to encoded genome for these sites
   my $snp_fh = $self->get_write_fh($snp_file);
+  say { $snp_fh } $self->in_snp_val;
 
   my ( %header, @snp_sites, @insert_data );
   while ( my $line = $in_fh->getline ) {
@@ -54,10 +60,10 @@ sub build_snp_db {
     next unless $self->exists_chr_len( $data{chrom} );
 
     if ( $data{alleleFreqCount} ) {
-      @alleles      = split( /,/, $data{alleles} );
-      @allele_freqs = split( /,/, $data{alleleFreqs} );
+      @alleles           = split( /,/, $data{alleles} );
+      @allele_freqs      = split( /,/, $data{alleleFreqs} );
       my @s_allele_freqs = sort { $b <=> $a } @allele_freqs;
-      $min_allele_freq = sprintf( "%0.6f", 1 - $s_allele_freqs[0] );
+      $min_allele_freq   = sprintf( "%0.6f", 1 - $s_allele_freqs[0] );
     }
 
     if ( $data{name} =~ m/^rs(\d+)/ ) {

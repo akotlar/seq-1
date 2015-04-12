@@ -10,11 +10,10 @@ package Seq::Build::GenomeSizedTrackChar;
 use Moose 2;
 
 use Carp qw/ confess /;
-use File::Path;
+use File::Path qw/ make_path /;
 use File::Spec;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
-use YAML::XS qw/ Dump /;
 
 extends 'Seq::GenomeSizedTrackChar';
 with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
@@ -31,11 +30,11 @@ sub insert_char {
   confess "insert_char expects pos value between 0 and $seq_len, got $pos"
     unless ( $pos >= 0 and $pos < $seq_len );
 
-  # inserted character is a byproduct of a successful substr event
-  my $inserted_char =
+  # substr returns the substituted part of the string
+  my $prev_char =
     substr( ${ $self->char_seq }, $pos, 1, pack( 'C', $char ) );
 
-  return $inserted_char;
+  return $prev_char;
 }
 
 sub insert_score {
@@ -49,14 +48,19 @@ sub insert_score {
     unless $self->meta->find_method_by_name('score2char')
     and reftype( $self->score2char ) eq 'CODE';
 
-  my $char_score = $self->score2char->($score);
-  my $inserted_char = $self->insert_char( $pos, $char_score );
-  return $inserted_char;
+  my $char = $self->score2char->($score);
+
+  # substr returns the substituted part of the string
+  my $prev_char =
+    substr( ${ $self->char_seq }, $pos, 1, pack( 'C', $char ) );
+
+  return $prev_char;
 }
 
 override '_build_char_seq' => sub {
   my $self = shift;
 
+  # only need this for the score tracks since we're encoding the genome with C
   if ( $self->type eq 'score' ) {
     my $char_seq = pack( "C", '0' ) x $self->genome_length;
     return \$char_seq;
@@ -67,6 +71,9 @@ override '_build_char_seq' => sub {
   }
 };
 
+
+# the expecation of build_score_idx is the scores are in chromosomal order
+#   i.e., the order in the YAML file and that positions are in order
 sub build_score_idx {
   my $self = shift;
 
@@ -128,37 +135,6 @@ sub build_score_idx {
   }
   close($out_fh);
   $self->_logger->info('leaving build_score_idx');
-}
-
-sub build_genome_idx {
-  my ( $self, $genome_str, $exon_href, $flank_exon_href, $snp_href ) = @_;
-
-  $self->_logger->info('in build_genome_idx');
-
-  confess "expected genome object to be able to get_abs_pos() and get_base()"
-    unless ( $genome_str->meta->has_method('get_abs_pos')
-    and $genome_str->meta->has_method('get_base') );
-
-  confess "build_idx() expected a 3 hashes - exon, flanking exon, and snp sites"
-    unless reftype($exon_href) eq "HASH"
-    and reftype($flank_exon_href) eq "HASH"
-    and reftype($snp_href) eq "HASH";
-
-  # prepare file for output
-  my $file        = join( ".", $self->name, $self->type, 'idx' );
-  my $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
-  my $target_file = File::Spec->catfile( $index_dir, $file );
-  my $fh          = $self->get_write_bin_fh($target_file);
-
-  # TODO: call genome hasher
-
-  # write chromosome offsets
-  $file        = join( ".", $self->name, $self->type, 'yml' );
-  $index_dir   = File::Spec->canonpath( $self->genome_index_dir );
-  $target_file = File::Spec->catfile( $index_dir, $file );
-  $fh          = $self->get_write_bin_fh($target_file);
-  print {$fh} Dump( $self->chr_len );
-  $self->_logger->info('leaving build_genome_idx');
 }
 
 __PACKAGE__->meta->make_immutable;

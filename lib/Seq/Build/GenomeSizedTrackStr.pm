@@ -12,7 +12,7 @@ use Carp qw/ confess /;
 use File::Path;
 use File::Spec;
 use namespace::autoclean;
-use YAML qw/ Dump LoadFile /;
+use YAML::XS qw/ Dump LoadFile /;
 
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
@@ -69,16 +69,14 @@ sub _build_str_genome {
 
   if ( -s $chr_len_file && $genome_file_size ) {
 
+    $self->_logger->info('about to read genome string');
+
     my $fh = $self->get_read_fh($genome_file);
     read $fh, $genome_str, $genome_file_size;
-
-    $self->_logger->info('read genome string');
-
     my $chr_len_href = LoadFile($chr_len_file);
     map { $self->set_chr_len( $_ => $chr_len_href->{$_} ) } keys %$chr_len_href;
 
     $self->_logger->info('read chrome length offsets');
-
   }
   else {
 

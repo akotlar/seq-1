@@ -8,7 +8,6 @@ package Seq::Build::TxTrack;
 
 use Moose 2;
 
-use Carp qw/ confess /;
 use File::Path qw/ make_path /;
 use namespace::autoclean;
 

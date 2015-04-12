@@ -14,6 +14,8 @@ use Seq::Build::GenomeSizedTrackStr;
 
 extends 'Seq::Config::SparseTrack';
 
+with 'MooX::Role::Logger';
+
 has genome_index_dir => (
   is       => 'ro',
   isa      => 'Str',
@@ -30,7 +32,8 @@ has genome_track_str => (
   is       => 'ro',
   isa      => 'Seq::Build::GenomeSizedTrackStr',
   required => 1,
-  handles  => [ 'get_abs_pos', 'get_base', 'exists_chr_len', 'genome_length' ],
+  handles  => [ 'get_abs_pos', 'get_base', 'exists_chr_len', 'genome_length',
+                'in_gan_val',  'in_exon_val', 'in_gene_val', 'in_snp_val' ],
 );
 
 has bdb_connection => (
@@ -57,6 +60,18 @@ has bulk_insert_threshold => (
   isa     => 'Num',
   default => 10_000,
 );
+
+sub _has_site_range_file {
+  my ($self, $file);
+  if ( -s $file ) {
+    $self->_logger->info( join " ", 'found', $file, 'skipping build' );
+    return 1;
+  }
+  else {
+    $self->_logger->info( join " ", 'did not find', $file, 'proceeding with build' );
+    return;
+  }
+}
 
 sub _get_range_list {
   my ( $self, $site_aref ) = @_;
