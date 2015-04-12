@@ -15,8 +15,8 @@ enum SparseTrackType => [ 'gene', 'snp' ];
 
 my @snp_track_fields  = qw( chrom chromStart chromEnd name );
 my @gene_track_fields = qw( chrom     strand    txStart   txEnd
-                            cdsStart  cdsEnd    exonCount exonStarts
-                            exonEnds  name );
+  cdsStart  cdsEnd    exonCount exonStarts
+  exonEnds  name );
 
 # track information
 has name => ( is => 'ro', isa => 'Str',             required => 1, );

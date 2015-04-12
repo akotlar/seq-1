@@ -27,7 +27,7 @@ sub build_gene_db {
 
   # output
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path( $index_dir ) unless -f $index_dir;
+  make_path($index_dir) unless -f $index_dir;
 
   # flanking site range file
   my $gan_name = join( ".", $self->name, 'gan', 'dat' );
@@ -38,14 +38,15 @@ sub build_gene_db {
   my $ex_file = File::Spec->catfile( $index_dir, $ex_name );
 
   # check if we've already build site range files
-  return if ( $self->_has_site_range_file( $gan_file )
-    && $self->_has_site_range_file( $ex_file ));
+  return
+    if ( $self->_has_site_range_file($gan_file)
+    && $self->_has_site_range_file($ex_file) );
 
   # 1st line needs to be value that should be added to encoded genome for these sites
   my $gan_fh = $self->get_write_fh($gan_file);
-  say { $gan_fh } $self->in_gan_val;
+  say {$gan_fh} $self->in_gan_val;
   my $ex_fh = $self->get_write_fh($ex_file);
-  say { $ex_fh } $self->in_exon_val;
+  say {$ex_fh} $self->in_exon_val;
 
   my %ucsc_table_lu = (
     name       => 'transcript_id',
@@ -144,7 +145,7 @@ sub _write_gene_regions {
   }
   else {
     my $fh = $self->get_write_fh($dat_file);
-    say { $fh } $self->in_gene_val;
+    say {$fh} $self->in_gene_val;
     my $last_stop = 0;
     for my $tx_start ( sort { $a <=> $b } keys %$tx_starts_href ) {
       my $max_start = ( $last_stop > $tx_start ) ? ( $last_stop + 1 ) : $tx_start;

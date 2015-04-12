@@ -71,7 +71,6 @@ override '_build_char_seq' => sub {
   }
 };
 
-
 # the expecation of build_score_idx is the scores are in chromosomal order
 #   i.e., the order in the YAML file and that positions are in order
 sub build_score_idx {

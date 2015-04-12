@@ -37,8 +37,8 @@ has genome_str_track => (
 );
 
 has genome_hasher => (
-  is => 'ro',
-  isa => 'Str',
+  is      => 'ro',
+  isa     => 'Str',
   default => '~/software/Seq/bin/genome_hasher',
 );
 
@@ -65,7 +65,7 @@ sub _save_bdb {
   my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
-  make_path( $dir ) unless -f $dir;
+  make_path($dir) unless -f $dir;
 
   return $file;
 }
@@ -194,14 +194,14 @@ sub build_genome_index {
 
   # prepare index dir
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path( $index_dir ) unless -f $index_dir;
+  make_path($index_dir) unless -f $index_dir;
 
   # prepare idx file and file list needed to make indexed genome
   my $idx_name       = join( ".", $self->name, $self->type, 'idx' );
   my $file_list_name = join( ".", $self->name, $self->type, 'list' );
   my $idx_file       = File::Spec->catfile( $index_dir, $idx_name );
   my $file_list_file = File::Spec->catfile( $index_dir, $file_list_name );
-  my $file_list_fh   = get_write_fh( $file_list_file );
+  my $file_list_fh   = get_write_fh($file_list_file);
 
   $self->_logger->info('writing genome file list');
 
@@ -220,9 +220,9 @@ sub build_genome_index {
   }
 
   for my $gene_track ( $self->all_gene_tracks ) {
-    say { $file_list_fh } join( ".", $gene_track->name, 'gan', 'dat' );
-    say { $file_list_fh } join( ".", $gene_track->name, 'exon', 'dat' );
-    say { $file_list_fh } join( ".", $gene_track->name, 'gene_region', 'dat' );
+    say {$file_list_fh} join( ".", $gene_track->name, 'gan',         'dat' );
+    say {$file_list_fh} join( ".", $gene_track->name, 'exon',        'dat' );
+    say {$file_list_fh} join( ".", $gene_track->name, 'gene_region', 'dat' );
   }
 
   my $cmd = qq{ $genome_hasher $genome_str_file $file_list_name $idx_file };

@@ -14,12 +14,12 @@ use namespace::autoclean;
 enum GenomeSizedTrackType => [ 'genome', 'score', ];
 
 my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp );
-my %base_char_2_txt = ( '0' => 'A', '1' => 'C', '2' => 'G', '3' => 'T', '4' => 'N');
+my %base_char_2_txt = ( '0' => 'A', '1' => 'C', '2' => 'G', '3' => 'T', '4' => 'N' );
 my @base_chars = qw/ 0 1 2 3 4 /;
-my @in_gan     = qw/ 0 8 /;  # is gene annotated
-my @in_exon    = qw/ 0 16 /;
-my @in_gene    = qw/ 0 32 /;
-my @in_snp     = qw/ 0 64 /;
+my @in_gan  = qw/ 0 8 /; # is gene annotated
+my @in_exon = qw/ 0 16 /;
+my @in_gene = qw/ 0 32 /;
+my @in_snp  = qw/ 0 64 /;
 
 foreach my $base_char (@base_chars) {
   foreach my $gan (@in_gan) {
@@ -27,7 +27,7 @@ foreach my $base_char (@base_chars) {
       foreach my $exon (@in_exon) {
         foreach my $snp (@in_snp) {
           my $char_code = $base_char + $gan + $gene + $exon + $snp;
-          my $txt_base = $base_char_2_txt{ $base_char };
+          my $txt_base  = $base_char_2_txt{$base_char};
           $idx_codes{$txt_base}{$gan}{$gene}{$exon}{$snp} = $char_code;
           $idx_base{$char_code} = $txt_base;
           $idx_in_gan{$char_code}  = $txt_base if $gan;
@@ -39,7 +39,6 @@ foreach my $base_char (@base_chars) {
     }
   }
 }
-
 
 # basic features
 has name => ( is => 'ro', isa => 'Str', required => 1, );
