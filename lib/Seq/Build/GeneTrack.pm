@@ -20,6 +20,8 @@ with 'Seq::Role::IO';
 sub build_gene_db {
   my $self = shift;
 
+  $self->_logger->info('starting to build gene site db');
+
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
@@ -127,6 +129,8 @@ sub build_gene_db {
   # write gene boundary information - for genic/intergenic
   $self->_write_gene_regions( \%transcript_start_sites );
   %transcript_start_sites = ();
+
+  $self->_logger->info('finished building gene site db');
 }
 
 sub _write_gene_regions {

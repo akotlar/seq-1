@@ -53,7 +53,7 @@ sub BUILD {
 sub _build_str_genome {
   my $self = shift;
 
-  $self->_logger->info('in _build_str_genome');
+  $self->_logger->info('starting to build string genome');
 
   my $local_dir   = File::Spec->canonpath( $self->local_dir );
   my @local_files = $self->all_local_files;
@@ -117,6 +117,7 @@ sub _build_str_genome {
     $fh = $self->get_write_fh($chr_len_file);
     print {$fh} Dump( $self->chr_len );
   }
+  $self->_logger->info('finished building string genome');
   return $genome_str;
 }
 

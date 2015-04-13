@@ -20,6 +20,8 @@ with 'Seq::Role::IO';
 sub build_snp_db {
   my $self = shift;
 
+  $self->_logger->info('started building gene site db');
+
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
@@ -96,14 +98,24 @@ sub build_snp_db {
 
         $self->db_put( $abs_pos, $site_href );
 
-        print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) }
-          if $self->counter > $self->bulk_insert_threshold;
+        if ( $self->counter > $self->bulk_insert_threshold ) {
+          print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
+          @snp_sites = ();
+          $self->reset_counter;
+        }
+
       }
     }
     $self->inc_counter;
   }
-  print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) }
-    if $self->counter;
+
+  if ( $self->counter ) {
+    print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
+    @snp_sites = ();
+    $self->reset_counter;
+  }
+
+  $self->_logger->info('finished building snp site db');
 }
 
 __PACKAGE__->meta->make_immutable;
