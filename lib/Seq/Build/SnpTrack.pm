@@ -100,6 +100,7 @@ sub build_snp_db {
           if $self->counter > $self->bulk_insert_threshold;
       }
     }
+    $self->inc_counter;
   }
   print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) }
     if $self->counter;

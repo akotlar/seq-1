@@ -38,7 +38,7 @@ use List::Util qw/ shuffle /;
 use Pod::Usage;
 use Scalar::Util qw/ looks_like_number /;
 use YAML::XS qw/ LoadFile /;
-use YAML qw/ Dump /;
+use YAML::XS qw/ Dump /;
 
 use DDP;
 

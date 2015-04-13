@@ -53,7 +53,7 @@ my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
 # threads
 # {
 #   my @coros;
-#   for my $method (qw/ build_snp_sites build_gene_sites build_transcript_seq build_conserv_scores_index/) {
+#   for my $method (qw/ build_snp_sites build_gene_sites build_transcript_db build_conserv_scores_index/) {
 #     my $coro = async {
 #       my $result;
 #       unless ( $assembly->$method ) {
@@ -69,7 +69,7 @@ my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
 
 #linear
 {
-  $assembly->build_transcript_seq;
+  $assembly->build_transcript_db;
   say "done with building transcript sequences";
   $assembly->build_conserv_scores_index;
   say "done with building conserv scores";

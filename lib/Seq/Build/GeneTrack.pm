@@ -59,7 +59,7 @@ sub build_gene_db {
     txEnd      => 'transcript_end',
     txStart    => 'transcript_start',
   );
-  my ( %header, @fl_sites, @ex_sites, %transcript_start_sites );
+  my ( %header, %transcript_start_sites );
 
   while ( my $line = $in_fh->getline ) {
     chomp $line;
@@ -94,6 +94,8 @@ sub build_gene_db {
     my $gene = Seq::Gene->new( \%gene_data );
     $gene->set_alt_names(%alt_names);
 
+    my (@fl_sites, @ex_sites) = ();
+
     # get intronic flanking site annotations
     my @flank_exon_sites = $gene->all_flanking_sites;
     for my $site (@flank_exon_sites) {
@@ -104,7 +106,7 @@ sub build_gene_db {
     }
 
     # flanking sites need only be written to gan file
-    print {$gan_fh} join "\n", @{ $self->_get_range_list( \@fl_sites ) };
+    say {$gan_fh} join "\n", @{ $self->_get_range_list( \@fl_sites ) } if @fl_sites;
 
     # get exon annotations
     my @exon_sites = $gene->all_transcript_sites;
@@ -116,8 +118,8 @@ sub build_gene_db {
     }
 
     # exonic annotations need to be written to both gan and exon files
-    print {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) };
-    print {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) };
+    say {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) };
+    say {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) };
 
     push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
   }

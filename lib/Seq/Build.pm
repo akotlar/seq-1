@@ -89,7 +89,7 @@ sub build_snp_sites {
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
       $record->{bdb_connection} =
-        Seq::BDBManager->new( { filename => $self->save_bdb($snp_track_bdb), } );
+        Seq::BDBManager->new( { filename => $self->_save_bdb($snp_track_bdb), } );
 
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db;
@@ -98,7 +98,7 @@ sub build_snp_sites {
   $self->_logger->info('finished building snp tracks');
 }
 
-sub build_transcript_seq {
+sub build_transcript_db {
   my $self = shift;
 
   $self->_logger->info('begining to build transcripts');
@@ -117,7 +117,7 @@ sub build_transcript_seq {
     $record->{genome_name}      = $self->genome_name;
     $record->{name}             = $gene_track->name . '_tx';
     $record->{bdb_connection} =
-      Seq::BDBManager->new( { filename => $self->save_bdb($gene_track_seq_db), } );
+      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_seq_db), } );
 
     my $gene_db = Seq::Build::TxTrack->new($record);
     $gene_db->insert_transcript_seq;
@@ -145,7 +145,7 @@ sub build_gene_sites {
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
     $record->{bdb_connection} =
-      Seq::BDBManager->new( { filename => $self->save_bdb($gene_track_db), } );
+      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_db), } );
 
     my $gene_db = Seq::Build::GeneTrack->new($record);
     $gene_db->build_gene_db;
@@ -197,11 +197,13 @@ sub build_genome_index {
   make_path($index_dir) unless -f $index_dir;
 
   # prepare idx file and file list needed to make indexed genome
-  my $idx_name       = join( ".", $self->name, $self->type, 'idx' );
-  my $file_list_name = join( ".", $self->name, $self->type, 'list' );
+  my $idx_name       = join( ".", $self->genome_name, 'genome', 'idx' );
+  my $file_list_name = join( ".", $self->genome_name, 'genome', 'list' );
   my $idx_file       = File::Spec->catfile( $index_dir, $idx_name );
   my $file_list_file = File::Spec->catfile( $index_dir, $file_list_name );
-  my $file_list_fh   = get_write_fh($file_list_file);
+  my $file_list_fh   = $self->get_write_fh($file_list_file);
+
+  my @file_list_files;
 
   $self->_logger->info('writing genome file list');
 
@@ -210,22 +212,28 @@ sub build_genome_index {
   # and that off to genome_hasher and check that something was
 
   # input files
-  my $genome_str_name = join ".", $self->name, $self->type, 'str', 'dat';
+  my $genome_str_name = join ".", $self->genome_name, 'genome', 'str', 'dat';
   my $genome_str_file = File::Spec->catfile( $index_dir, $genome_str_name );
 
   if ( $self->snp_tracks ) {
     for my $snp_track ( $self->all_snp_tracks ) {
-      say {$file_list_fh} join( ".", $snp_track->name, 'snp', 'dat' );
+      my $snp_name = join( ".", $snp_track->name, 'snp', 'dat' );
+      push @file_list_files, File::Spec->catfile( $index_dir, $snp_name );;
     }
   }
 
   for my $gene_track ( $self->all_gene_tracks ) {
-    say {$file_list_fh} join( ".", $gene_track->name, 'gan',         'dat' );
-    say {$file_list_fh} join( ".", $gene_track->name, 'exon',        'dat' );
-    say {$file_list_fh} join( ".", $gene_track->name, 'gene_region', 'dat' );
+    my $gan_name         = join( ".", $gene_track->name, 'gan',         'dat' );
+    my $exon_name        = join( ".", $gene_track->name, 'exon',        'dat' );
+    my $gene_region_name = join( ".", $gene_track->name, 'gene_region', 'dat' );
+    push @file_list_files, File::Spec->catfile( $index_dir, $gan_name );
+    push @file_list_files, File::Spec->catfile( $index_dir, $exon_name );
+    push @file_list_files, File::Spec->catfile( $index_dir, $gene_region_name );
   }
 
-  my $cmd = qq{ $genome_hasher $genome_str_file $file_list_name $idx_file };
+  say { $file_list_fh } join "\n", @file_list_files;
+
+  my $cmd = qq{ $genome_hasher $genome_str_file $file_list_file $idx_file };
 
   $self->_logger->info("running command: $cmd");
 
@@ -233,11 +241,13 @@ sub build_genome_index {
 
   croak "error encoding genome with $genome_hasher: $exit_code" if $exit_code;
 
+  croak "error making encoded genome - did not find $idx_file " unless -f $idx_file;
+
   # make chromosome start offsets for binary genome
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
 
   # write chromosome offsets
-  my $chr_offset_name = join( ".", $self->name, $self->type, 'yml' );
+  my $chr_offset_name = join( ".", $self->genome_name, 'genome', 'yml' );
   my $chr_offset_file = File::Spec->catfile( $index_dir, $chr_offset_name );
   my $chr_offset_fh = $self->get_write_bin_fh($chr_offset_file);
 

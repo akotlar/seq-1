@@ -14,6 +14,7 @@ use File::Path qw/ make_path /;
 use File::Spec;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
+use YAML::XS qw/ Dump /;
 
 extends 'Seq::GenomeSizedTrackChar';
 with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
@@ -134,6 +135,12 @@ sub build_score_idx {
   }
   close($out_fh);
   $self->_logger->info('leaving build_score_idx');
+
+  # save chromosome offsets
+  my $chr_offset_name = join( ".", $self->name, $self->type, 'yml' );
+  my $chr_offset_file = File::Spec->catfile( $index_dir, $chr_offset_name );
+  my $chr_offset_fh = $self->get_write_bin_fh($chr_offset_file);
+  print { $chr_offset_fh } Dump( $self->chr_len );
 }
 
 __PACKAGE__->meta->make_immutable;

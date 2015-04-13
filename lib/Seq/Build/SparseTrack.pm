@@ -64,7 +64,7 @@ has bulk_insert_threshold => (
 );
 
 sub _has_site_range_file {
-  my ( $self, $file );
+  my ( $self, $file ) = @_;
   if ( -s $file ) {
     $self->_logger->info( join " ", 'found', $file, 'skipping build' );
     return 1;
@@ -76,26 +76,29 @@ sub _has_site_range_file {
 }
 
 sub _get_range_list {
-  my ( $self, $site_aref ) = @_;
+  my ( $self, $sites_aref ) = @_;
 
-  # sort the array in ascending numerical order
-  my @s_aref = sort { $a <=> $b } @$site_aref;
+  # make sites unique
+  my %sites = map { $_ => 1 } @$sites_aref;
+
+  # sort sites
+  my @s_sites = sort { $a <=> $b } keys %sites;
 
   # start and stop sites are initially undef since it's concievable that a
   # region starts at zero for some reason
   my ( $start, $stop );
-  my $last_site = 0;
+  my $last_site;
   my @pairs;
 
-  for ( my $i = 0; $i < @s_aref; $i++ ) {
-    $start = $s_aref[$i] unless defined $start;
-    $stop = $last_site if ( $last_site + 1 != $s_aref[$i] );
+  for ( my $i = 0; $i < @s_sites; $i++ ) {
+    $start = $s_sites[$i] unless defined $start;
+    $stop = $last_site if ( $last_site && $last_site + 1 != $s_sites[$i] );
     if ( defined $stop ) {
       push @pairs, join( "\t", $start, $stop );
-      $start = $s_aref[$i];
+      $start = $s_sites[$i];
       $stop  = undef;
     }
-    $last_site = $s_aref[$i];
+    $last_site = $s_sites[$i];
   }
   push @pairs, join( "\t", $start, $last_site );
   return \@pairs;
