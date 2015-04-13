@@ -77,7 +77,7 @@ override '_build_char_seq' => sub {
 sub build_score_idx {
   my $self = shift;
 
-  $self->_logger->info('in build_score_idx');
+  $self->_logger->info( "begining to build encoded score for: " . $self->name );
 
   my $chr_len_href     = $self->chr_len;
   my $local_files_aref = $self->local_files;
@@ -134,13 +134,14 @@ sub build_score_idx {
     close($in_fh);
   }
   close($out_fh);
-  $self->_logger->info('leaving build_score_idx');
 
   # save chromosome offsets
   my $chr_offset_name = join( ".", $self->name, $self->type, 'yml' );
   my $chr_offset_file = File::Spec->catfile( $index_dir, $chr_offset_name );
   my $chr_offset_fh = $self->get_write_bin_fh($chr_offset_file);
-  print { $chr_offset_fh } Dump( $self->chr_len );
+  print {$chr_offset_fh} Dump( $self->chr_len );
+
+  $self->_logger->info( "finished building encoded score for: " . $self->name );
 }
 
 __PACKAGE__->meta->make_immutable;

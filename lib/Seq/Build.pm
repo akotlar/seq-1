@@ -218,7 +218,7 @@ sub build_genome_index {
   if ( $self->snp_tracks ) {
     for my $snp_track ( $self->all_snp_tracks ) {
       my $snp_name = join( ".", $snp_track->name, 'snp', 'dat' );
-      push @file_list_files, File::Spec->catfile( $index_dir, $snp_name );;
+      push @file_list_files, File::Spec->catfile( $index_dir, $snp_name );
     }
   }
 
@@ -231,7 +231,7 @@ sub build_genome_index {
     push @file_list_files, File::Spec->catfile( $index_dir, $gene_region_name );
   }
 
-  say { $file_list_fh } join "\n", @file_list_files;
+  say {$file_list_fh} join "\n", @file_list_files;
 
   my $cmd = qq{ $genome_hasher $genome_str_file $file_list_file $idx_file };
 

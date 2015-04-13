@@ -94,7 +94,7 @@ sub build_gene_db {
     my $gene = Seq::Gene->new( \%gene_data );
     $gene->set_alt_names(%alt_names);
 
-    my (@fl_sites, @ex_sites) = ();
+    my ( @fl_sites, @ex_sites ) = ();
 
     # get intronic flanking site annotations
     my @flank_exon_sites = $gene->all_flanking_sites;
