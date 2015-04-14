@@ -145,7 +145,7 @@ genome_sized_tracks:
     type: score
     local_dir: ./hg38/raw/phastCons
     local_files:
-      - phastCons.txt.gz
+      - hg38.phastCons7way.wigFix.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phastCons7way/
     remote_files:
       - hg38.phastCons7way.wigFix.gz
@@ -162,7 +162,7 @@ genome_sized_tracks:
     type: score
     local_dir: ./hg38/raw/phyloP
     local_files:
-      - phyloP.txt.gz
+      - hg38.phyloP7way.wigFix.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP7way/
     remote_files:
       - hg38.phyloP7way.wigFix.gz

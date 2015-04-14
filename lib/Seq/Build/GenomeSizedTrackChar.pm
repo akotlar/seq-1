@@ -22,7 +22,7 @@ with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
 sub insert_char {
   my $self = shift;
   my ( $pos, $char ) = @_;
-  my $seq_len = $self->genome_length;
+  state $seq_len = $self->genome_length;
 
   confess "insert_char expects insert value and absolute position"
     unless defined $char and defined $pos;
@@ -96,43 +96,28 @@ sub build_score_idx {
     my $file       = $local_files_aref->[$i];
     my $local_file = File::Spec->catfile( $local_dir, $file );
     my $in_fh      = $self->get_read_fh($local_file);
-    my ( $last_pos, $last_chr, $abs_pos, $last_abs_pos ) = ( 0, 0, 0, 0 );
+    my ($chr, $rel_pos, $step, $abs_pos, $offset);
     while ( my $line = $in_fh->getline() ) {
       chomp $line;
-      my ( $chr, $pos, $score ) = split( "\t", $line );
-      if ( $chr eq $last_chr ) {
-        $abs_pos += $pos - $last_pos;
-        $last_pos = $pos;
+      if ($line =~ m/\AfixedStep\schrom=([\w\d]+)\sstart=(\d+)\sstep=(\d)/) {
+        $chr = $1;
+        $rel_pos = $2;
+        $step =$3; # not really needed
+        $offset //= $chr_len_href->{$chr};
+        $abs_pos = (defined $offset) ? $offset + $rel_pos : -9;
+        say join " ", 'new range:', $chr, $rel_pos, $abs_pos;
       }
       else {
-        my $offset //= $chr_len_href->{$chr};
-        if ( defined $offset ) {
-          $abs_pos  = $offset + $pos;
-          $last_pos = $pos;
-          $last_chr = $chr;
-        }
-        else {
-          confess "unrecognized chr: $chr in line: $line of $file";
-        }
+        next unless defined $offset; # skip sites that are in odd chrs
+        my $char      = $self->score2char->($line);
+        say join "\t", $abs_pos, $line, sprintf("%d", $char);
+        my $prev_char = substr ${ $self->char_seq }, $abs_pos, 1, pack( 'C', $char );
+        $abs_pos += $step;
       }
-      my $diff = $abs_pos - ( $last_abs_pos + 1 );
-
-      unless ( $last_abs_pos + 1 == $abs_pos ) {
-        for ( my $i = $last_abs_pos + 1; $i < $abs_pos; $i++ ) {
-          print {$out_fh} $char_zero;
-        }
-      }
-      print {$out_fh} pack( 'C', $self->score2char->($score) );
-
-      # $self->insert_score( $abs_pos, $score );
-      $last_abs_pos = $abs_pos;
-      $last_chr     = $chr;
-    }
-    for ( my $i = $abs_pos; $i < $self->genome_length; $i++ ) {
-      print {$out_fh} $char_zero;
     }
     close($in_fh);
   }
+  print {$out_fh} ${ $self->char_seq };
   close($out_fh);
 
   # save chromosome offsets
