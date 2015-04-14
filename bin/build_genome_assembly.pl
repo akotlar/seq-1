@@ -19,12 +19,13 @@ use Seq::Build;
 my ( $yaml_config, $build_type, $db_location, $verbose, $help );
 
 # cmd to method
-my %cmd_2_method = ( genome => 'build_genome_index',
-  conserv => 'build_conserv_scores_index',
+my %cmd_2_method = (
+  genome        => 'build_genome_index',
+  conserv       => 'build_conserv_scores_index',
   transcript_db => 'build_transcript_db',
-  snp_db => 'build_snp_sites',
+  snp_db        => 'build_snp_sites',
+  gene_db       => 'build_gene_sites',
 );
-
 
 # usage
 GetOptions(
@@ -40,10 +41,9 @@ if ($help) {
   exit;
 }
 
-my $method //= $cmd_2_method{ $build_type };
+my $method //= $cmd_2_method{$build_type};
 
-unless (
-      defined $yaml_config
+unless ( defined $yaml_config
   and defined $db_location
   and defined $method )
 {
@@ -90,12 +90,12 @@ build_genome_assembly - builds a binary genome assembly
 build_genome_assembly
   --config <file>
   --locaiton <path>
-  --type <'genome', 'conserv', 'transcript_db', 'snp_db'>
+  --type <'genome', 'conserv', 'transcript_db', 'snp_db', 'gene_db'>
 
 =head1 DESCRIPTION
 
-C<build_genome_assembly.pl> takes a yaml configuration file and reads raw genomic data
-that has been previously downloaded into the 'raw' folder to create the binary
+C<build_genome_assembly.pl> takes a yaml configuration file and reads raw genomic
+data that has been previously downloaded into the 'raw' folder to create the binary
 index of the genome and assocated annotations in the mongodb instance.
 
 =head1 OPTIONS
@@ -104,7 +104,7 @@ index of the genome and assocated annotations in the mongodb instance.
 
 =item B<-t>, B<--type>
 
-Type: A general command to start building; genome, conserv, transcript_db,
+Type: A general command to start building; genome, conserv, transcript_db, gene_db
 or snp_db.
 
 =item B<-c>, B<--config>
