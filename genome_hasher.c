@@ -11,9 +11,7 @@
  * received a copy of the GNU Lesser General Public License along with this
  * library; if not, write to the Free Software Foundation, Inc., 59 Temple
  * Place, Suite 330, Boston, MA  02111-1307  USA
- */
-
-/*
+ *
  * Name: genome_hasher.c
  * Compile: gcc -Wall -Wextra -O3 -lm -lz genome_hasher.c -o ./bin/genome_hasher
  * Description: Encodes a genome using a user specified scheme
