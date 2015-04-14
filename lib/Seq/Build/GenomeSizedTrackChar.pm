@@ -105,12 +105,12 @@ sub build_score_idx {
         $step =$3; # not really needed
         $offset //= $chr_len_href->{$chr};
         $abs_pos = (defined $offset) ? $offset + $rel_pos : -9;
-        say join " ", 'new range:', $chr, $rel_pos, $abs_pos;
+        $self->_logger->info( join " ", 'new range:', $chr, $rel_pos, $abs_pos );
       }
       else {
         next unless defined $offset; # skip sites that are in odd chrs
         my $char      = $self->score2char->($line);
-        say join "\t", $abs_pos, $line, sprintf("%d", $char);
+        #say join "\t", $abs_pos, $line, sprintf("%d", $char);
         my $prev_char = substr ${ $self->char_seq }, $abs_pos, 1, pack( 'C', $char );
         $abs_pos += $step;
       }
