@@ -18,9 +18,15 @@ use Seq::Build;
 
 my ( $yaml_config, $build_type, $db_location, $verbose, $help );
 
-#
+# cmd to method
+my %cmd_2_method = ( genome => 'build_genome_index',
+  conserv => 'build_conserv_scores_index',
+  transcript_db => 'build_transcript_db',
+  snp_db => 'build_snp_sites',
+);
+
+
 # usage
-#
 GetOptions(
   'c|config=s'   => \$yaml_config,
   'l|location=s' => \$db_location,
@@ -34,14 +40,12 @@ if ($help) {
   exit;
 }
 
+my $method //= $cmd_2_method{ $build_type };
+
 unless (
       defined $yaml_config
   and defined $db_location
-  and $build_type
-  and ($build_type eq 'conserv'
-    or $build_type eq 'genome'
-    or $build_type eq 'transcript_db' )
-  )
+  and defined $method )
 {
   Pod::Usage::pod2usage();
 }
@@ -63,39 +67,16 @@ my $config_href = LoadFile($yaml_config);
 say qq{ configfile => $yaml_config, db_dir => $db_location };
 my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
 
-if ( $build_type eq 'genome' && $config_href ) {
+if ( $method and $config_href ) {
 
   # set log file
-  my $log_name = join '.', 'build', $config_href->{genome_name}, 'genome', 'log';
+  my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type, 'log';
   my $log_file = path($db_location)->child($log_name)->absolute->stringify;
   Log::Any::Adapter->set( 'File', $log_file );
 
   # build encoded genome, gene and snp site databases
-  $assembly->build_genome_index;
-  say "done encoding genome";
-}
-elsif ( $build_type eq 'conserv' && $config_href ) {
-
-  # set log file
-  my $log_name = join '.', 'build', $config_href->{genome_name}, 'conserv', 'log';
-  my $log_file = path($db_location)->child($log_name)->absolute->stringify;
-  Log::Any::Adapter->set( 'File', $log_file );
-
-  # build conservation scores
-  $assembly->build_conserv_scores_index;
-  say "done with building conserv scores";
-}
-elsif ( $build_type eq 'transcript_db' && $config_href ) {
-
-  # set log file
-  my $log_name = join '.', 'build', $config_href->{genome_name}, 'transcript_db',
-    'log';
-  my $log_file = path($db_location)->child($log_name)->absolute->stringify;
-  Log::Any::Adapter->set( 'File', $log_file );
-
-  # build transcript database
-  $assembly->build_transcript_db;
-  say "done with building transcript sequences";
+  $assembly->$method;
+  say "done: $build_type";
 }
 
 __END__
@@ -109,7 +90,7 @@ build_genome_assembly - builds a binary genome assembly
 build_genome_assembly
   --config <file>
   --locaiton <path>
-  --type <'genome', 'conserv', 'transcript_db'>
+  --type <'genome', 'conserv', 'transcript_db', 'snp_db'>
 
 =head1 DESCRIPTION
 
@@ -123,8 +104,8 @@ index of the genome and assocated annotations in the mongodb instance.
 
 =item B<-t>, B<--type>
 
-Type: Either 'genome' or 'extra' refering to the basic genome plus, snp and gene
-tracks, or the conservation scores and transcript db.
+Type: A general command to start building; genome, conserv, transcript_db,
+or snp_db.
 
 =item B<-c>, B<--config>
 

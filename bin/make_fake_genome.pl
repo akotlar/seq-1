@@ -261,7 +261,7 @@ my @snp_fields =
   qw/ chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs /;
 say { $out_fhs{snp} } join( "\t", @snp_fields );
 my @clinvar_fields =
-  qw/ chrom chromStart chromEnd name ClinicalSignificance ReviewStatus PhenotypeID Cytogenic/;
+  qw/ chrom chromStart chromEnd name ClinicalSignificance ReviewStatus PhenotypeID Cytogeneic/;
 say { $out_fhs{clinvar} } join( "\t", @clinvar_fields );
 
 my @alleles = qw( A C G T I D );
