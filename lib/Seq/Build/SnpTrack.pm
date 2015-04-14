@@ -99,7 +99,7 @@ sub build_snp_db {
         $self->db_put( $abs_pos, $site_href );
 
         if ( $self->counter > $self->bulk_insert_threshold ) {
-          print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
+          say {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
           @snp_sites = ();
           $self->reset_counter;
         }
@@ -110,7 +110,7 @@ sub build_snp_db {
   }
 
   if ( $self->counter ) {
-    print {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
+    say {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
     @snp_sites = ();
     $self->reset_counter;
   }
