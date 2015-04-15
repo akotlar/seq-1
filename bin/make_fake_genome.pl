@@ -40,7 +40,7 @@ use List::Util qw/ shuffle /;
 use Pod::Usage;
 use Scalar::Util qw/ looks_like_number /;
 use YAML::XS qw/ LoadFile /;
-use YAML qw/ Dump /;
+use YAML::XS qw/ Dump /;
 
 use DDP;
 
@@ -221,7 +221,7 @@ for my $chr (@$chrs_aref) {
 
       # save 0-index sequence
       push @{ $found_chr{ $data{chrom} } }, \%data;
-      $chr_len{$chr} = $data{txEnd} - $data{txStart} + 2 * $padding;
+      $chr_len{$chr} += $data{txEnd} - $data{txStart} + 2 * $padding;
 
       # check length of sequence is correct after processing
       croak "expected lengths to match"
@@ -291,7 +291,7 @@ my @snp_fields =
   qw/ chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs /;
 say { $out_fhs{snp} } join( "\t", @snp_fields );
 my @clinvar_fields =
-  qw/ chrom chromStart chromEnd name ClinicalSignificance ReviewStatus PhenotypeID Cytogenic/;
+  qw/ chrom chromStart chromEnd name ClinicalSignificance ReviewStatus PhenotypeID Cytogeneic/;
 say { $out_fhs{clinvar} } join( "\t", @clinvar_fields );
 
 my @alleles = qw( A C G T I D );

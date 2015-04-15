@@ -78,7 +78,8 @@ chdir($db_location) || die "cannot change to $db_location: $!";
 my $assembly = Seq::Annotate->new_with_config( { configfile => $yaml_config } );
 
 for my $i ( $pos_from .. $pos_to ) {
-  my $href = $assembly->get_ref_annotation( $wanted_chr, $i );
+  my $abs_pos = $assembly->get_abs_pos( $wanted_chr, $i );
+  my $href = $assembly->get_ref_annotation($abs_pos);
   p $href;
 }
 

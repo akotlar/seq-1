@@ -8,12 +8,13 @@ package Seq::Build::SparseTrack;
 
 use Moose 2;
 
-use MongoDB;
 use namespace::autoclean;
 
 use Seq::Build::GenomeSizedTrackStr;
 
 extends 'Seq::Config::SparseTrack';
+
+with 'MooX::Role::Logger';
 
 has genome_index_dir => (
   is       => 'ro',
@@ -31,14 +32,11 @@ has genome_track_str => (
   is       => 'ro',
   isa      => 'Seq::Build::GenomeSizedTrackStr',
   required => 1,
-  handles  => [ 'get_abs_pos', 'get_base', 'exists_chr_len' ],
+  handles  => [
+    'get_abs_pos', 'get_base',    'exists_chr_len', 'genome_length',
+    'in_gan_val',  'in_exon_val', 'in_gene_val',    'in_snp_val'
+  ],
 );
-
-# has mongo_connection => (
-#   is       => 'ro',
-#   isa      => 'Seq::MongoManager',
-#   required => 1,
-# );
 
 has bdb_connection => (
   is       => 'ro',
@@ -59,38 +57,52 @@ has counter => (
   }
 );
 
-# has bulk_insert_threshold => (
-#   is      => 'ro',
-#   isa     => 'Num',
-#   default => 10_000,
-# );
-#
-# has _mongo_bulk_handler => (
-#   is      => 'rw',
-#   isa     => 'MongoDB::BulkWrite',
-#   clearer => '_clear_mongo_bulk_handler',
-#   builder => '_build_mongo_bulk_handler',
-#   handles => [ 'insert', 'execute' ],
-#   lazy    => 1,
-# );
-#
-# sub _build_mongo_bulk_handler {
-#   my $self = shift;
-#   return $self->mongo_connection->_mongo_collection( $self->name )
-#     ->initialize_ordered_bulk_op;
-# }
-#
-# after insert => sub {
-#   my $self = shift;
-#   $self->inc_counter;
-# };
-#
-# after execute => sub {
-#   my $self = shift;
-#   $self->reset_counter;
-#   $self->_clear_mongo_bulk_handler;
-#   $self->_build_mongo_bulk_handler;
-# };
+has bulk_insert_threshold => (
+  is      => 'ro',
+  isa     => 'Num',
+  default => 10_000,
+);
+
+sub _has_site_range_file {
+  my ( $self, $file ) = @_;
+  if ( -s $file ) {
+    $self->_logger->info( join " ", 'found', $file, 'skipping build' );
+    return 1;
+  }
+  else {
+    $self->_logger->info( join " ", 'did not find', $file, 'proceeding with build' );
+    return;
+  }
+}
+
+sub _get_range_list {
+  my ( $self, $sites_aref ) = @_;
+
+  # make sites unique
+  my %sites = map { $_ => 1 } @$sites_aref;
+
+  # sort sites
+  my @s_sites = sort { $a <=> $b } keys %sites;
+
+  # start and stop sites are initially undef since it's concievable that a
+  # region starts at zero for some reason
+  my ( $start, $stop );
+  my $last_site;
+  my @pairs;
+
+  for ( my $i = 0; $i < @s_sites; $i++ ) {
+    $start = $s_sites[$i] unless defined $start;
+    $stop = $last_site if ( $last_site && $last_site + 1 != $s_sites[$i] );
+    if ( defined $stop ) {
+      push @pairs, join( "\t", $start, $stop );
+      $start = $s_sites[$i];
+      $stop  = undef;
+    }
+    $last_site = $s_sites[$i];
+  }
+  push @pairs, join( "\t", $start, $last_site );
+  return \@pairs;
+}
 
 __PACKAGE__->meta->make_immutable;
 

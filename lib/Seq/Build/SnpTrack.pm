@@ -8,9 +8,8 @@ package Seq::Build::SnpTrack;
 
 use Moose 2;
 
-use Carp qw/ confess /;
-use Cpanel::JSON::XS;
 use File::Path qw/ make_path /;
+use File::Spec;
 use namespace::autoclean;
 
 use Seq::Site::Snp;
@@ -21,15 +20,27 @@ with 'Seq::Role::IO';
 sub build_snp_db {
   my $self = shift;
 
-  # defensively drop anything if the collection already exists
-  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
-
-  #my $bulk = $self->mongo_connection->_mongo_collection( $self->name )->initialize_ordered_bulk_op;
+  $self->_logger->info('started building gene site db');
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
+
+  # output
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  make_path($index_dir) unless -f $index_dir;
+
+  # snp sites
+  my $snp_name = join( ".", $self->name, 'snp', 'dat' );
+  my $snp_file = File::Spec->catfile( $index_dir, $snp_name );
+
+  # check to see if we need to make the site range file
+  return if $self->_has_site_range_file($snp_file);
+
+  # 1st line needs to be value that should be added to encoded genome for these sites
+  my $snp_fh = $self->get_write_fh($snp_file);
+  say {$snp_fh} $self->in_snp_val;
 
   my ( %header, @snp_sites, @insert_data );
   while ( my $line = $in_fh->getline ) {
@@ -85,14 +96,26 @@ sub build_snp_db {
 
         my $site_href = $snp_site->as_href;
 
-        # $self->insert($site_href);
-        # $self->execute if $self->counter > $self->bulk_insert_threshold;
-        $self->db_put( $site_href->{abs_pos}, $site_href );
+        $self->db_put( $abs_pos, $site_href );
+
+        if ( $self->counter > $self->bulk_insert_threshold ) {
+          say {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
+          @snp_sites = ();
+          $self->reset_counter;
+        }
+
       }
     }
+    $self->inc_counter;
   }
-  # $self->execute if $self->counter;
-  return \@snp_sites;
+
+  if ( $self->counter ) {
+    say {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
+    @snp_sites = ();
+    $self->reset_counter;
+  }
+
+  $self->_logger->info('finished building snp site db');
 }
 
 __PACKAGE__->meta->make_immutable;

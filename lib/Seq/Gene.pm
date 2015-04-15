@@ -76,7 +76,7 @@ has alt_names => (
 has transcript_seq => (
   is      => 'rw',
   isa     => 'Str',
-  builder => '_build_transcript_seq',
+  builder => '_build_transcript_db',
   lazy    => 1,
   traits  => ['String'],
   handles => {
@@ -245,7 +245,7 @@ sub _build_transcript_abs_position {
 }
 
 # give the sequence with respect to the direction of transcription / coding
-sub _build_transcript_seq {
+sub _build_transcript_db {
 
   my $self        = shift;
   my @exon_starts = $self->all_exon_starts;

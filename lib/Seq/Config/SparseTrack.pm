@@ -10,26 +10,13 @@ use Moose 2;
 use Moose::Util::TypeConstraints;
 
 use namespace::autoclean;
-use Scalar::Util qw/ reftype /;
 
 enum SparseTrackType => [ 'gene', 'snp' ];
 
-# ideally, we'd have 2 sort of sparse tracks - 1) genes, 2) snps / positions of interest
-
-my @snp_track_fields = qw( chrom chromStart chromEnd name );
-my @gene_track_fields =
-  qw( chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds name );
-
-# my @snp_table_fields = qw( chrom chromStart chromEnd name alleleFreqCount alleles alleleFreqs
-#    );
-# my @gene_table_fields = qw(
-#    );
-# my @clinvar_table_fields = qw(chrom chromStart chromEnd SNPID );
-
-#
-# TODO: change YAML file so that
-# are sparse track 'features'
-#
+my @snp_track_fields  = qw( chrom chromStart chromEnd name );
+my @gene_track_fields = qw( chrom     strand    txStart   txEnd
+  cdsStart  cdsEnd    exonCount exonStarts
+  exonEnds  name );
 
 # track information
 has name => ( is => 'ro', isa => 'Str',             required => 1, );
@@ -44,8 +31,9 @@ has features => (
 );
 
 # file information
-has local_dir  => ( is => 'ro', isa => 'Str', required => 1, );
-has local_file => ( is => 'ro', isa => 'Str', required => 1, );
+has genome_index_dir => ( is => 'ro', isa => 'Str', );
+has local_dir        => ( is => 'ro', isa => 'Str', required => 1, );
+has local_file       => ( is => 'ro', isa => 'Str', required => 1, );
 
 around 'sql_statement' => sub {
   my $orig = shift;

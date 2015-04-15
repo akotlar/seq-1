@@ -9,18 +9,29 @@ use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
-use Log::Any::Adapter ( 'File', 'build.log' );
+use Log::Any::Adapter;
+use YAML::XS qw/ LoadFile /;
+
+use DDP;
 
 use Seq::Build;
 
-my ( $yaml_config, $db_location, $verbose, $help );
+my ( $yaml_config, $build_type, $db_location, $verbose, $help );
 
-#
+# cmd to method
+my %cmd_2_method = (
+  genome        => 'build_genome_index',
+  conserv       => 'build_conserv_scores_index',
+  transcript_db => 'build_transcript_db',
+  snp_db        => 'build_snp_sites',
+  gene_db       => 'build_gene_sites',
+);
+
 # usage
-#
 GetOptions(
   'c|config=s'   => \$yaml_config,
   'l|location=s' => \$db_location,
+  't|type=s'     => \$build_type,
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
 );
@@ -30,8 +41,11 @@ if ($help) {
   exit;
 }
 
+my $method //= $cmd_2_method{$build_type};
+
 unless ( defined $yaml_config
-  and defined $db_location )
+  and defined $db_location
+  and defined $method )
 {
   Pod::Usage::pod2usage();
 }
@@ -47,34 +61,22 @@ else {
   croak "expected location of db to be a directory instead got: $db_location\n";
 }
 
+# read config file to determine genome name for log and check validity
+my $config_href = LoadFile($yaml_config);
+
 say qq{ configfile => $yaml_config, db_dir => $db_location };
 my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
 
-# threads
-# {
-#   my @coros;
-#   for my $method (qw/ build_snp_sites build_gene_sites build_transcript_seq build_conserv_scores_index/) {
-#     my $coro = async {
-#       my $result;
-#       unless ( $assembly->$method ) {
-#         $result = "done with $method";
-#       }
-#       return $result;
-#     };
-#     push @coros, $coro;
-#   }
-#   $_->join for @coros;
-#   $assembly->build_genome_index;
-# }
+if ( $method and $config_href ) {
 
-#linear
-{
-  $assembly->build_snp_sites;
-  say "done with building snps";
-  $assembly->build_gene_sites;
-  say "done with building genes";
-  $assembly->build_genome_index;
-  say "done building genome index";
+  # set log file
+  my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type, 'log';
+  my $log_file = path($db_location)->child($log_name)->absolute->stringify;
+  Log::Any::Adapter->set( 'File', $log_file );
+
+  # build encoded genome, gene and snp site databases
+  $assembly->$method;
+  say "done: $build_type";
 }
 
 __END__
@@ -85,17 +87,25 @@ build_genome_assembly - builds a binary genome assembly
 
 =head1 SYNOPSIS
 
-build_genome_assembly --config <file> --locaiton <path>
+build_genome_assembly
+  --config <file>
+  --locaiton <path>
+  --type <'genome', 'conserv', 'transcript_db', 'snp_db', 'gene_db'>
 
 =head1 DESCRIPTION
 
-C<build_genome_assembly.pl> takes a yaml configuration file and reads raw genomic data
-that has been previously downloaded into the 'raw' folder to create the binary
+C<build_genome_assembly.pl> takes a yaml configuration file and reads raw genomic
+data that has been previously downloaded into the 'raw' folder to create the binary
 index of the genome and assocated annotations in the mongodb instance.
 
 =head1 OPTIONS
 
 =over 8
+
+=item B<-t>, B<--type>
+
+Type: A general command to start building; genome, conserv, transcript_db, gene_db
+or snp_db.
 
 =item B<-c>, B<--config>
 

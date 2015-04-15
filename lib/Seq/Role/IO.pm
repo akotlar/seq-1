@@ -9,7 +9,7 @@ package Seq::Role::IO;
 
 use Moose::Role;
 
-use Carp qw/ confess croak /;
+use Carp qw/ confess /;
 use IO::File;
 use IO::Compress::Gzip qw/ $GzipError /;
 use IO::Uncompress::Gunzip qw/ $GunzipError /;
@@ -18,23 +18,6 @@ use IO::Uncompress::Gunzip qw/ $GunzipError /;
 # one could change the taint checking characters allowed but this is the simpliest
 # one that worked; wanted it precompiled to improve the speed of checking
 my $taint_check_regex = qr{\A([\,\.\-\=\:\/\t\s\w\d]+)\Z};
-
-sub get_write_fh {
-  my ( $class, $file ) = @_;
-
-  croak "\nError: get_fh() expected a filename\n" unless $file;
-
-  my $fh;
-  if ( $file =~ m/\.gz\Z/ ) {
-    $fh = IO::Compress::Gzip->new($file)
-      || croak "gzip failed: $GzipError\n";
-  }
-  else {
-    $fh = IO::File->new( $file, 'w' )
-      || confess "\nError: unable to open file ($file) for writing: $!\n";
-  }
-  return $fh;
-}
 
 sub get_read_fh {
   my ( $class, $file ) = @_;
@@ -47,6 +30,23 @@ sub get_read_fh {
   else {
     $fh = IO::File->new( $file, 'r' )
       || confess "\nError: unable to open file ($file) for reading: $!\n";
+  }
+  return $fh;
+}
+
+sub get_write_fh {
+  my ( $class, $file ) = @_;
+
+  confess "\nError: get_fh() expected a filename\n" unless $file;
+
+  my $fh;
+  if ( $file =~ m/\.gz\Z/ ) {
+    $fh = IO::Compress::Gzip->new($file)
+      || confess "gzip failed: $GzipError\n";
+  }
+  else {
+    $fh = IO::File->new( $file, 'w' )
+      || confess "\nError: unable to open file ($file) for writing: $!\n";
   }
   return $fh;
 }
@@ -68,9 +68,6 @@ sub clean_line {
   if ( $line =~ m/$taint_check_regex/ ) {
     return $1;
   }
-  # else {
-  #   warn "ignoring: $line";
-  # }
   return;
 }
 

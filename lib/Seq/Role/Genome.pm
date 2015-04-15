@@ -12,12 +12,12 @@ use Moose::Role;
 # requires qw/ genome_length exists_chr_len /;
 
 use Carp;
-use Type::Params qw/ compile /;
-use Types::Standard qw/ :types /;
+# use Type::Params qw/ compile /;
+# use Types::Standard qw/ :types /;
 
 sub get_abs_pos {
-  state $check = compile( Object, Str, Int );
-  my ( $class, $chr, $pos ) = $check->(@_);
+  # state $check = compile( Object, Str, Int );
+  my ( $class, $chr, $pos ) = @_;
 
   confess "get_abs_pos() requires method exists_chr_len()"
     unless $class->meta->find_method_by_name('exists_chr_len');

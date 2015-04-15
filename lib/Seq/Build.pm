@@ -9,11 +9,11 @@ package Seq::Build;
 use Moose 2;
 
 use Carp qw/ croak /;
-use MongoDB;
+use File::Path qw/ make_path /;
+use File::Spec;
 use namespace::autoclean;
-use Path::Tiny;
 use Scalar::Util qw/ reftype /;
-use Storable;
+use YAML::XS qw/ Dump /;
 
 use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
@@ -23,23 +23,23 @@ use Seq::Build::GenomeSizedTrackStr;
 use Seq::BDBManager;
 use Seq::MongoManager;
 
+use DDP;
+
 extends 'Seq::Assembly';
-with 'Seq::Role::IO';
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
 has genome_str_track => (
   is      => 'ro',
   isa     => 'Seq::Build::GenomeSizedTrackStr',
-  handles => [ 'get_abs_pos', 'get_base', 'build_genome', 'genome_length', ],
+  handles => [ 'get_abs_pos', 'get_base', 'genome_length', ],
   lazy    => 1,
   builder => '_build_genome_str_track',
 );
 
-has is_initialized => (
+has genome_hasher => (
   is      => 'ro',
-  isa     => 'Bool',
-  traits  => ['Bool'],
-  default => 0,
-  handles => { initalized => 'set', },
+  isa     => 'Str',
+  default => '~/software/Seq/bin/genome_hasher',
 );
 
 sub _build_genome_str_track {
@@ -60,204 +60,103 @@ sub _build_genome_str_track {
   }
 }
 
-sub BUILD {
-  #before qw/ build_snp_sites build_gene_sites build_conserv_scores_index / => sub {
-  my $self = shift;
-  unless ( $self->is_initialized ) {
-    $self->build_genome;
-    $self->initalized;
-  }
-}
-
-sub build_assembly {
-  my $self = shift;
-  $self->build_genome_index;
-  $self->build_conserv_scores_index;
-}
-
-sub save_bdb {
+sub _save_bdb {
   my ( $self, $name ) = @_;
   my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
-  path($dir)->mkpath unless -f $dir;
+  make_path($dir) unless -f $dir;
 
   return $file;
 }
 
-sub save_sites {
-  my ( $self, $href, $name ) = @_;
-
-  my $dir = File::Spec->canonpath( $self->genome_index_dir );
-  my $file = File::Spec->catfile( $dir, $name );
-
-  path($dir)->mkpath unless -f $dir;
-
-  return store( $href, $file );
-}
-
-sub load_sites {
-  my ( $self, $name ) = @_;
-
-  my $dir = File::Spec->canonpath( $self->genome_index_dir );
-  my $file = File::Spec->catfile( $dir, $name );
-
-  # do we find a file a non-zero file? Retrieve that data else undef.
-  if ( -s $file ) {
-    return retrieve($file);
-  }
-  else {
-    return;
-  }
-}
-
 sub build_snp_sites {
   my $self = shift;
-  # build snp tracks
+
+  $self->_logger->info('begining to build snp tracks');
   my %snp_sites;
   if ( $self->snp_tracks ) {
     for my $snp_track ( $self->all_snp_tracks ) {
 
-      # create a file name for loading / saving track data
-      my $snp_track_file_name = join( '.', $snp_track->name, $snp_track->type, 'dat' );
-
       # create file for bdb
       my $snp_track_bdb = join( '.', $snp_track->name, $snp_track->type, 'db' );
 
-      # is there evidence for having done this before?
-      my $sites_aref = $self->load_sites($snp_track_file_name);
+      # extract keys from snp_track for creation of Seq::Build::SnpTrack
+      my $record = $snp_track->as_href;
 
-      # build the track if we didn't load anything
-      unless ($sites_aref) {
-        my $record = $snp_track->as_href;
-        $record->{genome_track_str} = $self->genome_str_track;
-        $record->{genome_index_dir} = $self->genome_index_dir;
-        $record->{genome_name}      = $self->genome_name;
-        # $record->{mongo_connection} = Seq::MongoManager->new(
-        #   {
-        #     default_database => $self->genome_name,
-        #     client_options   => {
-        #       host => $self->mongo_addr,
-        #       port => $self->port,
-        #     },
-        #   }
-        # );
-        $record->{bdb_connection} =
-          Seq::BDBManager->new( { filename => $self->save_bdb($snp_track_bdb), } );
-        my $snp_db = Seq::Build::SnpTrack->new($record);
-        $sites_aref = $snp_db->build_snp_db;
+      # add additional keys to the hashref for Seq::Build::SnpTrack
+      $record->{genome_track_str} = $self->genome_str_track;
+      $record->{genome_index_dir} = $self->genome_index_dir;
+      $record->{genome_name}      = $self->genome_name;
+      $record->{bdb_connection} =
+        Seq::BDBManager->new( { filename => $self->_save_bdb($snp_track_bdb), } );
 
-        # save the gene track data
-        unless ( $self->save_sites( $sites_aref, $snp_track_file_name ) ) {
-          croak "error saving snp sites for:  $snp_track_file_name\n";
-        }
-      }
-      map { $snp_sites{$_}++ } @$sites_aref;
+      my $snp_db = Seq::Build::SnpTrack->new($record);
+      $snp_db->build_snp_db;
     }
   }
-  return \%snp_sites;
+  $self->_logger->info('finished building snp tracks');
 }
 
-sub build_transcript_seq {
+sub build_transcript_db {
   my $self = shift;
 
-  for my $gene_track ( $self->all_gene_tracks ) {
+  $self->_logger->info('begining to build transcripts');
 
-    # create a file name for loading / saving track data
-    my $gene_track_file_name =
-      join( '.', $gene_track->name, $gene_track->type, 'seq.dat' );
+  for my $gene_track ( $self->all_gene_tracks ) {
 
     # create file for bdb
     my $gene_track_seq_db = join( '.', $gene_track->name, $gene_track->type, 'seq.db' );
 
-    # is there evidence for having done this before?
-    my $done_sref = $self->load_sites($gene_track_file_name);
+    # extract keys from snp_track for creation of Seq::Build::TxTrack
+    my $record = $gene_track->as_href;
 
-    unless ($done_sref) {
-      my $record = $gene_track->as_href;
-      $record->{genome_track_str} = $self->genome_str_track;
-      $record->{genome_index_dir} = $self->genome_index_dir;
-      $record->{genome_name}      = $self->genome_name;
-      $record->{name}             = $gene_track->name . '_tx';
-      # $record->{mongo_connection} = Seq::MongoManager->new(
-      #   {
-      #     default_database => $self->genome_name,
-      #     client_options   => {
-      #       host => $self->mongo_addr,
-      #       port => $self->port,
-      #     },
-      #   }
-      # );
-      $record->{bdb_connection} =
-        Seq::BDBManager->new( { filename => $self->save_bdb($gene_track_seq_db), } );
-      my $gene_db = Seq::Build::TxTrack->new($record);
-      $gene_db->insert_transcript_seq;
-    }
-    my $href = { 'done with gene sequence track' => 1 };
+    # add additional keys to the hashref for Seq::Build::TxTrack
+    $record->{genome_track_str} = $self->genome_str_track;
+    $record->{genome_index_dir} = $self->genome_index_dir;
+    $record->{genome_name}      = $self->genome_name;
+    $record->{name}             = $gene_track->name . '_tx';
+    $record->{bdb_connection} =
+      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_seq_db), } );
 
-    # save the gene track data
-    unless ( $self->save_sites( $href, $gene_track_file_name ) ) {
-      croak "error saving snp sites for:  $gene_track_file_name\n";
-    }
+    my $gene_db = Seq::Build::TxTrack->new($record);
+    $gene_db->insert_transcript_seq;
   }
+  $self->_logger->info('finished building transcripts');
 }
 
 sub build_gene_sites {
   my $self = shift;
   # build gene tracks - these are gene annotation tracks downloaded from UCSC
   # e.g., knownGene
-  my ( %flank_exon_sites, %exon_sites, %transcript_starts );
-  for my $gene_track ( $self->all_gene_tracks ) {
 
-    # create a file name for loading / saving track data
-    my $gene_track_file_name = join( '.', $gene_track->name, $gene_track->type, 'dat' );
+  $self->_logger->info('begining to build gene track');
+
+  for my $gene_track ( $self->all_gene_tracks ) {
 
     # create a file for bdb
     my $gene_track_db = join( '.', $gene_track->name, $gene_track->type, 'db' );
 
-    # try to load data
-    my $sites_href = $self->load_sites($gene_track_file_name);
+    # extract keys to the hashref for Seq::Build::GeneTrack
+    my $record = $gene_track->as_href;
 
-    # build the track if we didn't load anything
-    unless ($sites_href) {
-      my $record = $gene_track->as_href;
-      $record->{genome_track_str} = $self->genome_str_track;
-      $record->{genome_index_dir} = $self->genome_index_dir;
-      $record->{genome_name}      = $self->genome_name;
-      # $record->{mongo_connection} = Seq::MongoManager->new(
-      #   {
-      #     default_database => $self->genome_name,
-      #     client_options   => {
-      #       host => $self->mongo_addr,
-      #       port => $self->port,
-      #     },
-      #   }
-      # );
-      $record->{bdb_connection} =
-        Seq::BDBManager->new( { filename => $self->save_bdb($gene_track_db), } );
-      my $gene_db = Seq::Build::GeneTrack->new($record);
-      $sites_href = $gene_db->build_gene_db;
+    # extra keys from snp_track for creation of Seq::Build::GeneTrack
+    $record->{genome_track_str} = $self->genome_str_track;
+    $record->{genome_index_dir} = $self->genome_index_dir;
+    $record->{genome_name}      = $self->genome_name;
+    $record->{bdb_connection} =
+      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_db), } );
 
-      # save the gene track data
-      unless ( $self->save_sites( $sites_href, $gene_track_file_name ) ) {
-        croak "error saving snp sites for:  $gene_track_file_name\n";
-      }
-    }
-
-    # merge all gene track data into one master record
-    map { $flank_exon_sites{$_}++ } ( keys %{ $sites_href->{flank_exon_sites} } );
-    map { $exon_sites{$_}++ }       ( keys %{ $sites_href->{exon_sites} } );
-    for my $tx_start ( keys %{ $sites_href->{transcript_start_sites} } ) {
-      for my $tx_stops ( @{ $sites_href->{transcript_start_sites}{$tx_start} } ) {
-        push @{ $transcript_starts{$tx_start} }, $tx_stops;
-      }
-    }
+    my $gene_db = Seq::Build::GeneTrack->new($record);
+    $gene_db->build_gene_db;
   }
-  return ( \%flank_exon_sites, \%exon_sites, \%transcript_starts );
+  $self->_logger->info('finished building gene track');
 }
 
 sub build_conserv_scores_index {
   my $self = shift;
+
+  $self->_logger->info('begining to build conservation scores');
 
   # make chr_len hash for binary genome
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
@@ -279,43 +178,83 @@ sub build_conserv_scores_index {
         }
       );
       $score_track->build_score_idx;
-      $score_track->write_char_seq;
-      $score_track->clear_char_seq;
     }
   }
+  $self->_logger->info('finished building conservation scores');
 }
 
 sub build_genome_index {
   my $self = shift;
 
-  say ">>> in build_genome_index";
-  my $snp_sites = $self->build_snp_sites;
-  my ( $flank_exon_sites, $exon_sites, $transcript_starts ) = $self->build_gene_sites;
+  my $genome_hasher = File::Spec->canonpath( $self->genome_hasher );
+
+  $self->build_snp_sites;
+
+  $self->build_gene_sites;
+
+  # prepare index dir
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  make_path($index_dir) unless -f $index_dir;
+
+  # prepare idx file and file list needed to make indexed genome
+  my $idx_name       = join( ".", $self->genome_name, 'genome', 'idx' );
+  my $file_list_name = join( ".", $self->genome_name, 'genome', 'list' );
+  my $idx_file       = File::Spec->catfile( $index_dir, $idx_name );
+  my $file_list_file = File::Spec->catfile( $index_dir, $file_list_name );
+  my $file_list_fh   = $self->get_write_fh($file_list_file);
+
+  my @file_list_files;
+
+  $self->_logger->info('writing genome file list');
+
+  # cycle through all snp and gene tracks and check that we have a file for them
+  # in the index dir; write a file with all of them plus the sequence file
+  # and that off to genome_hasher and check that something was
+
+  # input files
+  my $genome_str_name = join ".", $self->genome_name, 'genome', 'str', 'dat';
+  my $genome_str_file = File::Spec->catfile( $index_dir, $genome_str_name );
+
+  if ( $self->snp_tracks ) {
+    for my $snp_track ( $self->all_snp_tracks ) {
+      my $snp_name = join( ".", $snp_track->name, 'snp', 'dat' );
+      push @file_list_files, File::Spec->catfile( $index_dir, $snp_name );
+    }
+  }
+
+  for my $gene_track ( $self->all_gene_tracks ) {
+    my $gan_name         = join( ".", $gene_track->name, 'gan',         'dat' );
+    my $exon_name        = join( ".", $gene_track->name, 'exon',        'dat' );
+    my $gene_region_name = join( ".", $gene_track->name, 'gene_region', 'dat' );
+    push @file_list_files, File::Spec->catfile( $index_dir, $gan_name );
+    push @file_list_files, File::Spec->catfile( $index_dir, $exon_name );
+    push @file_list_files, File::Spec->catfile( $index_dir, $gene_region_name );
+  }
+
+  say {$file_list_fh} join "\n", @file_list_files;
+
+  my $cmd = qq{ $genome_hasher $genome_str_file $file_list_file $idx_file };
+
+  $self->_logger->info("running command: $cmd");
+
+  my $exit_code = system $cmd;
+
+  croak "error encoding genome with $genome_hasher: $exit_code" if $exit_code;
+
+  croak "error making encoded genome - did not find $idx_file " unless -f $idx_file;
 
   # make chromosome start offsets for binary genome
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
 
-  # make another genomesized track to deal with the in/outside of genes
-  # and ultimately write over those 0's and 1's to store the genome assembly
-  # idx codes...
-  my $assembly = Seq::Build::GenomeSizedTrackChar->new(
-    {
-      genome_length    => $self->genome_length,
-      genome_index_dir => $self->genome_index_dir,
-      genome_chrs      => $self->genome_chrs,
-      name             => $self->genome_name,
-      type             => 'genome',
-      chr_len          => \%chr_len,
-    }
-  );
+  # write chromosome offsets
+  my $chr_offset_name = join( ".", $self->genome_name, 'genome', 'yml' );
+  my $chr_offset_file = File::Spec->catfile( $index_dir, $chr_offset_name );
+  my $chr_offset_fh = $self->get_write_bin_fh($chr_offset_file);
 
-  # set genic/intergenic regions
-  $assembly->set_gene_regions($transcript_starts);
+  print {$chr_offset_fh} Dump( \%chr_len );
 
-  # use gene, snp tracks, and genic/intergenic regions to build coded genome
-  # the build_genome_idx now writes all needed files within the sub
-  $assembly->build_genome_idx( $self->genome_str_track, $exon_sites,
-    $flank_exon_sites, $snp_sites );
+  $self->_logger->info('finished building genome index');
+
 }
 
 __PACKAGE__->meta->make_immutable;
