@@ -88,9 +88,10 @@ sub build_snp_sites {
       $record->{genome_track_str} = $self->genome_str_track;
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
+      $record->{no_bdb_insert}    = $self->no_bdb_insert,
       $record->{bdb_connection} =
-        Seq::BDBManager->new( { filename => $self->_save_bdb($snp_track_bdb), } );
-
+        Seq::BDBManager->new( { filename => $self->_save_bdb($snp_track_bdb),
+        no_bdb_insert => $self->no_bdb_insert,} );
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db;
     }
@@ -116,8 +117,10 @@ sub build_transcript_db {
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
     $record->{name}             = $gene_track->name . '_tx';
+    $record->{no_bdb_insert}    = $self->no_bdb_insert,
     $record->{bdb_connection} =
-      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_seq_db), } );
+      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_seq_db),
+      no_bdb_insert => $self->no_bdb_insert,} );
 
     my $gene_db = Seq::Build::TxTrack->new($record);
     $gene_db->insert_transcript_seq;
@@ -145,7 +148,9 @@ sub build_gene_sites {
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
     $record->{bdb_connection} =
-      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_db), } );
+      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_db),
+      no_bdb_insert => $self->no_bdb_insert,
+      } );
 
     my $gene_db = Seq::Build::GeneTrack->new($record);
     $gene_db->build_gene_db;

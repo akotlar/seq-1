@@ -59,6 +59,13 @@ has gene_tracks => (
     add_gene_track  => 'push',
   },
 );
+
+has no_bdb_insert => (
+  is => 'ro',
+  isa => 'Bool',
+  default => 0,
+);
+
 has host => (
   is      => 'ro',
   isa     => 'Str',
@@ -114,8 +121,8 @@ sub BUILDARGS {
       push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
     }
     for my $attrib (
-      qw/ genome_name genome_description genome_chrs
-      genome_index_dir genome_db_dir host port /
+      qw/ genome_name genome_description genome_chrs genome_index_dir genome_db_dir
+        host port no_bdb_insert /
       )
     {
       $hash{$attrib} = $href->{$attrib};

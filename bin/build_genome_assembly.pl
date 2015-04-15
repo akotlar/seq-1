@@ -16,7 +16,7 @@ use DDP;
 
 use Seq::Build;
 
-my ( $yaml_config, $build_type, $db_location, $verbose, $help );
+my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help );
 
 # cmd to method
 my %cmd_2_method = (
@@ -33,6 +33,7 @@ GetOptions(
   'l|location=s' => \$db_location,
   't|type=s'     => \$build_type,
   'v|verbose'    => \$verbose,
+  'n|no_bdb'     => \$no_bdb,
   'h|help'       => \$help,
 );
 
@@ -65,7 +66,7 @@ else {
 my $config_href = LoadFile($yaml_config);
 
 say qq{ configfile => $yaml_config, db_dir => $db_location };
-my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config } );
+my $assembly = Seq::Build->new_with_config( { configfile => $yaml_config, no_bdb_insert => $no_bdb } );
 
 if ( $method and $config_href ) {
 

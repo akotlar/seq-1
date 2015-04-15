@@ -39,6 +39,10 @@ sub build_gene_db {
   my $ex_name = join( ".", $self->name, 'exon', 'dat' );
   my $ex_file = File::Spec->catfile( $index_dir, $ex_name );
 
+  # gene region files
+  my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
+  my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
+
   # check if we've already build site range files
   return
     if ( $self->_has_site_range_file($gan_file)
@@ -49,6 +53,8 @@ sub build_gene_db {
   say {$gan_fh} $self->in_gan_val;
   my $ex_fh = $self->get_write_fh($ex_file);
   say {$ex_fh} $self->in_exon_val;
+  my $gene_region_fh = $self->get_write_fh($gene_region_file);
+  say {$gene_region_fh} $self->in_gene_val;
 
   my %ucsc_table_lu = (
     name       => 'transcript_id',
@@ -122,45 +128,9 @@ sub build_gene_db {
     # exonic annotations need to be written to both gan and exon files
     say {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) };
     say {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) };
-
-    push @{ $transcript_start_sites{ $gene->transcript_start } }, $gene->transcript_end;
+    say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
   }
-
-  # write gene boundary information - for genic/intergenic
-  $self->_write_gene_regions( \%transcript_start_sites );
-  %transcript_start_sites = ();
-
   $self->_logger->info('finished building gene site db');
-}
-
-sub _write_gene_regions {
-  my ( $self, $tx_starts_href ) = @_;
-
-  # note: - tx = transcript
-  #       - the $tx_starts_href is a hash with keys that are
-  #         tx start sites and values are arrays of end values
-
-  my $file      = join( ".", $self->name, 'gene_region', 'dat' );
-  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-  my $dat_file  = File::Spec->catfile( $index_dir, $file );
-
-  # Build the file unless it already exists, but log what we're doing.
-  if ( -s $dat_file ) {
-    $self->_logger->info( join " ", 'found', $dat_file,
-      'no need to write_gene_regions' );
-  }
-  else {
-    my $fh = $self->get_write_fh($dat_file);
-    say {$fh} $self->in_gene_val;
-    my $last_stop = 0;
-    for my $tx_start ( sort { $a <=> $b } keys %$tx_starts_href ) {
-      my $max_start = ( $last_stop > $tx_start ) ? ( $last_stop + 1 ) : $tx_start;
-      my @tx_stops = sort { $b <=> $a } @{ $tx_starts_href->{$tx_start} };
-      my $furthest_stop = shift @tx_stops;
-      say {$fh} join( "\t", $max_start, $furthest_stop );
-      $last_stop = $furthest_stop;
-    }
-  }
 }
 
 __PACKAGE__->meta->make_immutable;

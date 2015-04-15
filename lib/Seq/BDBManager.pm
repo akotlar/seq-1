@@ -52,6 +52,12 @@ has _hash_merge => (
   handles => ['merge'],
 );
 
+has no_bdb_insert => (
+  is => 'ro',
+  isa => 'Bool',
+  default => 0,
+);
+
 sub _build_hash_merge {
   my $self       = shift;
   my $merge_name = 'merge_behavior_' . $i;
@@ -104,6 +110,8 @@ sub _build_db {
 sub db_put {
   state $check = compile( Object, Str, HashRef );
   my ( $self, $key, $href ) = $check->(@_);
+
+  return if $self->no_bdb_insert;
 
   # check key
   my $old_href = $self->db_get($key);
