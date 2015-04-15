@@ -29,6 +29,16 @@ sub insert_transcript_seq {
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
 
+  # genome output
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  make_path($index_dir) unless -f $index_dir;
+
+  # gene region files
+  my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
+  my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
+  my $gene_region_fh = $self->get_write_fh($gene_region_file);
+  say {$gene_region_fh} $self->in_gene_val;
+
   my %ucsc_table_lu = (
     name       => 'transcript_id',
     chrom      => 'chr',
@@ -78,7 +88,10 @@ sub insert_transcript_seq {
       transcript_abs_position => $gene->transcript_abs_position,
       peptide_seq             => $gene->peptide,
     };
+
     $self->db_put( $record_href->{transcript_id}, $record_href );
+
+    say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
   }
 }
 

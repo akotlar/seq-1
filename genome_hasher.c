@@ -182,15 +182,25 @@ int main(int argc, char *argv[])
   	  start = atol(token2);
   	  if( (start < 0) || (start > genome_size))
   	  {
-	      printf("\n Found a start position of %ld in a genome of size %ld \n",start,genome_size);
+	      printf("\n ERROR: start: %ld is incompatable with genome size: %ld \n",
+          start, genome_size);
 	      exit(3);
 	    }
   	  token2 = strtok(NULL," \n\n");
   	  stop = atol(token2);
-  	  if( (start < 0) || (start > genome_size) || (stop < start) )
-  	  {
-	      printf("\n Found a start position of %ld and a stop position of %ld in a genome of size %ld \n",start,stop,genome_size);
-	      exit(3);
+      if( (stop < 0) || (stop > genome_size) )
+      {
+        printf("\n ERROR: start: %ld, stop: %ld incompatable with genome size: %ld \n",
+          start, stop, genome_size);
+        exit(3);
+      }
+
+      // transcripts coming from the negative strand need their start/stop flipped
+      if ( stop < start) )
+      {
+        long tmp = stop;
+        stop = start;
+        start = tmp;
       }
   	  for(i=start;i<=stop;i++)
   	    genome_buffer[i] = genome_buffer[i] | cadd;
