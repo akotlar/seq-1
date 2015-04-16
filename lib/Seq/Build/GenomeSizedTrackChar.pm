@@ -58,23 +58,23 @@ sub insert_score {
   return $prev_char;
 }
 
-override '_build_char_seq' => sub {
-  my $self = shift;
-
-  # only need this for the score tracks since we're encoding the genome with C
-  if ( $self->type eq 'score' ) {
-    my $char_seq = pack( "C", '0' ) x $self->genome_length;
-    return \$char_seq;
-  }
-  else {
-    my $char_seq = '';
-    return \$char_seq;
-  }
-};
+# override '_build_char_seq' => sub {
+#   my $self = shift;
+#
+#   # only need this for the score tracks since we're encoding the genome with C
+#   if ( $self->type eq 'score' ) {
+#     my $char_seq = pack( "C", '0' ) x $self->genome_length;
+#     return \$char_seq;
+#   }
+#   else {
+#     my $char_seq = '';
+#     return \$char_seq;
+#   }
+# };
 
 # the expecation of build_score_idx is the scores are in chromosomal order
 #   i.e., the order in the YAML file and that positions are in order
-sub build_score_idx {
+sub old_build_score_idx {
   my $self = shift;
 
   $self->_logger->info( "begining to build encoded score for: " . $self->name );

@@ -13,7 +13,7 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Name: genome_scorer.c
- * Compile: gcc -Wall -Wextra -O3 -lm -lz genome_hasher.c -o ./bin/genome_hasher
+ * Compile: gcc -Wall -Wextra -O3 -lm -lz genome_scorer.c -o ./bin/genome_scorer
  * Description: Encodes a genome using a user specified scheme
  *  Input:  genome_size offset_file (YAML) wigFix_file Max Min R outputfile
  *            Max and Min are the range of the scores

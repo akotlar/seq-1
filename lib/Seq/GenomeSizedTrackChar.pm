@@ -35,32 +35,15 @@ has chr_len => (
 
 # stores the 0-indexed length of each chromosome
 has char_seq => (
-  is        => 'rw',
-  lazy      => 1,
-  builder   => '_build_char_seq',
+  is        => 'ro',
   isa       => 'ScalarRef',
-  clearer   => 'clear_char_seq',
-  predicate => 'has_char_seq',
 );
 
 # holds a subroutine that converts chars to a score for the track, which is
 #   used to decode the score
-has char2score => (
-  is  => 'ro',
-  isa => 'CodeRef',
-);
-
-# holds a subroutine that converts scores to a char for the track, which is
-#   used to encode the scores
-has score2char => (
-  is  => 'ro',
-  isa => 'CodeRef',
-);
-
-sub _build_char_seq {
-  my ($self) = @_;
-  my $genome_seq = '';
-  return \$genome_seq;
+sub char2score {
+  my ($self, $char ) = shift;
+  return ((($char - 1) / $self->score_beta) + $self->score_min)
 }
 
 sub get_base {
@@ -99,36 +82,26 @@ sub BUILDARGS {
     my %hash;
     if ( $href->{type} eq "score" ) {
       if ( $href->{name} eq "phastCons" ) {
-        $hash{score2char} = sub {
-          my $score = shift;
-          return ( int( $score * 254 ) + 1 );
-        };
-        $hash{char2score} = sub {
-          my $score = shift;
-          return ( $score - 1 ) / 254;
-        };
+        $hash{score_R}   = 254;
+        $hash{score_min} = 0;
+        $hash{score_max} = 1;
       }
       elsif ( $href->{name} eq "phyloP" ) {
-        $hash{score2char} = sub {
-          my $score = shift;
-          return ( int( $score * ( 127 / 30 ) ) + 128 );
-        };
-        $hash{char2score} = sub {
-          my $score = shift;
-          return ( $score - 128 ) / ( 127 / 30 );
-        };
+        $hash{score_R}   = 127;
+        $hash{score_min} = -30;
+        $hash{score_max} = 30;
       }
     }
 
-    # add remaining values to hash
-    # if char2score or score2char are set
-    # then the defaults will be overridden
+    # if score_R, score_min, or score_max are set by the caller then the
+    # following will override it 
     for my $attr ( keys %$href ) {
       $hash{$attr} = $href->{$attr};
     }
     return $class->SUPER::BUILDARGS( \%hash );
   }
 }
+
 
 __PACKAGE__->meta->make_immutable;
 
