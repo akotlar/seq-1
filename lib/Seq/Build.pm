@@ -43,8 +43,8 @@ has genome_hasher => (
 );
 
 has genome_scorer => (
-  is => 'ro',
-  isa => 'Str',
+  is      => 'ro',
+  isa     => 'Str',
   default => '~/software/Seq/bin/genome_scorer',
 );
 
@@ -95,9 +95,12 @@ sub build_snp_sites {
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
       $record->{no_bdb_insert}    = $self->no_bdb_insert,
-      $record->{bdb_connection} =
-        Seq::BDBManager->new( { filename => $self->_save_bdb($snp_track_bdb),
-        no_bdb_insert => $self->no_bdb_insert,} );
+        $record->{bdb_connection} = Seq::BDBManager->new(
+        {
+          filename      => $self->_save_bdb($snp_track_bdb),
+          no_bdb_insert => $self->no_bdb_insert,
+        }
+        );
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db;
     }
@@ -124,9 +127,12 @@ sub build_transcript_db {
     $record->{genome_name}      = $self->genome_name;
     $record->{name}             = $gene_track->name . '_tx';
     $record->{no_bdb_insert}    = $self->no_bdb_insert,
-    $record->{bdb_connection} =
-      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_seq_db),
-      no_bdb_insert => $self->no_bdb_insert,} );
+      $record->{bdb_connection} = Seq::BDBManager->new(
+      {
+        filename      => $self->_save_bdb($gene_track_seq_db),
+        no_bdb_insert => $self->no_bdb_insert,
+      }
+      );
 
     my $gene_db = Seq::Build::TxTrack->new($record);
     $gene_db->insert_transcript_seq;
@@ -153,10 +159,12 @@ sub build_gene_sites {
     $record->{genome_track_str} = $self->genome_str_track;
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
-    $record->{bdb_connection} =
-      Seq::BDBManager->new( { filename => $self->_save_bdb($gene_track_db),
-      no_bdb_insert => $self->no_bdb_insert,
-      } );
+    $record->{bdb_connection}   = Seq::BDBManager->new(
+      {
+        filename      => $self->_save_bdb($gene_track_db),
+        no_bdb_insert => $self->no_bdb_insert,
+      }
+    );
 
     my $gene_db = Seq::Build::GeneTrack->new($record);
     $gene_db->build_gene_db;
@@ -187,7 +195,7 @@ sub build_conserv_scores_index {
       # write chromosome offsets
       my $chr_offset_name = join( ".", $gst->name, 'chr_len', 'yml' );
       my $chr_offset_file = File::Spec->catfile( $index_dir, $chr_offset_name );
-      my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
+      my $chr_offset_fh = $self->get_write_fh($chr_offset_file);
       print {$chr_offset_fh} Dump( \%chr_len );
 
       # set idx file
@@ -195,7 +203,7 @@ sub build_conserv_scores_index {
       my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
 
       # find file
-      my $local_dir  = File::Spec->canonpath( $gst->local_dir );
+      my $local_dir = File::Spec->canonpath( $gst->local_dir );
       my $local_file = File::Spec->catfile( $local_dir, $gst->first_local_file );
 
       croak "expected file to be a wigFix file" unless $local_file =~ m/wigFix/;

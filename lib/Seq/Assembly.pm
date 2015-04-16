@@ -61,8 +61,8 @@ has gene_tracks => (
 );
 
 has no_bdb_insert => (
-  is => 'ro',
-  isa => 'Bool',
+  is      => 'ro',
+  isa     => 'Bool',
   default => 0,
 );
 
@@ -122,7 +122,7 @@ sub BUILDARGS {
     }
     for my $attrib (
       qw/ genome_name genome_description genome_chrs genome_index_dir genome_db_dir
-        host port no_bdb_insert /
+      host port no_bdb_insert /
       )
     {
       $hash{$attrib} = $href->{$attrib};

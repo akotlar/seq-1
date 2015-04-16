@@ -35,15 +35,15 @@ has chr_len => (
 
 # stores the 0-indexed length of each chromosome
 has char_seq => (
-  is        => 'ro',
-  isa       => 'ScalarRef',
+  is  => 'ro',
+  isa => 'ScalarRef',
 );
 
 # holds a subroutine that converts chars to a score for the track, which is
 #   used to decode the score
 sub char2score {
-  my ($self, $char ) = shift;
-  return ((($char - 1) / $self->score_beta) + $self->score_min)
+  my ( $self, $char ) = shift;
+  return ( ( ( $char - 1 ) / $self->score_beta ) + $self->score_min );
 }
 
 sub get_base {
@@ -94,14 +94,13 @@ sub BUILDARGS {
     }
 
     # if score_R, score_min, or score_max are set by the caller then the
-    # following will override it 
+    # following will override it
     for my $attr ( keys %$href ) {
       $hash{$attr} = $href->{$attr};
     }
     return $class->SUPER::BUILDARGS( \%hash );
   }
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

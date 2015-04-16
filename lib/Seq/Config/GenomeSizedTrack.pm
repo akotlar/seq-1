@@ -21,7 +21,7 @@ my @in_exon = qw/ 0 16 /;
 my @in_gene = qw/ 0 32 /;
 my @in_snp  = qw/ 0 64 /;
 
-foreach my $base_char (keys %base_char_2_txt) {
+foreach my $base_char ( keys %base_char_2_txt ) {
   foreach my $gan (@in_gan) {
     foreach my $gene (@in_gene) {
       foreach my $exon (@in_exon) {
@@ -66,7 +66,8 @@ has local_files      => (
   is      => 'ro',
   isa     => 'ArrayRef[Str]',
   traits  => ['Array'],
-  handles => { all_local_files => 'elements',
+  handles => {
+    all_local_files  => 'elements',
     first_local_file => 'shift',
   },
 );
@@ -96,30 +97,30 @@ has proc_clean_cmds => (
 
 # for conservation scores
 has score_min => (
-  is => 'ro',
+  is  => 'ro',
   isa => 'Num',
 );
 
 has score_max => (
-  is => 'ro',
+  is  => 'ro',
   isa => 'Num',
 );
 
 has score_R => (
-  is => 'ro',
+  is  => 'ro',
   isa => 'Num'
 );
 
 has score_beta => (
-  is => 'ro',
-  isa => 'Num',
-  lazy => 1,
+  is      => 'ro',
+  isa     => 'Num',
+  lazy    => 1,
   builder => '_build_score_beta',
 );
 
 sub _build_score_beta {
   my $self = shift;
-  return (($self->score_R - 1) / ($self->score_max - $self->score_min));
+  return ( ( $self->score_R - 1 ) / ( $self->score_max - $self->score_min ) );
 }
 
 sub _build_next_chr {

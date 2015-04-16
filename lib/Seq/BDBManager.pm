@@ -53,8 +53,8 @@ has _hash_merge => (
 );
 
 has no_bdb_insert => (
-  is => 'ro',
-  isa => 'Bool',
+  is      => 'ro',
+  isa     => 'Bool',
   default => 0,
 );
 

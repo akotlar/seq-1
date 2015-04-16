@@ -126,8 +126,8 @@ sub build_gene_db {
     }
 
     # exonic annotations need to be written to both gan and exon files
-    say {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) };
-    say {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) };
+    say {$ex_fh} join "\n",          @{ $self->_get_range_list( \@ex_sites ) };
+    say {$gan_fh} join "\n",         @{ $self->_get_range_list( \@ex_sites ) };
     say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
   }
   $self->_logger->info('finished building gene site db');
