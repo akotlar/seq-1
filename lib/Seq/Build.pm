@@ -124,7 +124,7 @@ sub build_transcript_db {
     $record->{genome_track_str} = $self->genome_str_track;
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
-    $record->{name}             = $gene_track->name . '_tx';
+    $record->{name}             = $gene_track->name;
     $record->{no_bdb_insert}    = $self->no_bdb_insert,
       $record->{bdb_connection} = Seq::BDBManager->new(
       {

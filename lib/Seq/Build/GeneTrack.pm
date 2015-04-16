@@ -40,8 +40,8 @@ sub build_gene_db {
   my $ex_file = File::Spec->catfile( $index_dir, $ex_name );
 
   # gene region files
-  my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
-  my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
+  # my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
+  # my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
 
   # check if we've already build site range files
   return
@@ -53,8 +53,8 @@ sub build_gene_db {
   say {$gan_fh} $self->in_gan_val;
   my $ex_fh = $self->get_write_fh($ex_file);
   say {$ex_fh} $self->in_exon_val;
-  my $gene_region_fh = $self->get_write_fh($gene_region_file);
-  say {$gene_region_fh} $self->in_gene_val;
+  # my $gene_region_fh = $self->get_write_fh($gene_region_file);
+  # say {$gene_region_fh} $self->in_gene_val;
 
   my %ucsc_table_lu = (
     name       => 'transcript_id',
@@ -128,7 +128,7 @@ sub build_gene_db {
     # exonic annotations need to be written to both gan and exon files
     say {$ex_fh} join "\n",          @{ $self->_get_range_list( \@ex_sites ) };
     say {$gan_fh} join "\n",         @{ $self->_get_range_list( \@ex_sites ) };
-    say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
+    # say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
   }
   $self->_logger->info('finished building gene site db');
 }
