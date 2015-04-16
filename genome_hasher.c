@@ -78,10 +78,10 @@ int main(int argc, char *argv[])
   }
 
   if((reffile=gzopen(argv[1],"r"))==(gzFile)NULL)
-    {
-    printf("\n Can not open file %s for reading\n",sss);
-    exit(1);
-    }
+  {
+  printf("\n Can not open file %s for reading\n",sss);
+  exit(1);
+  }
 
   printf("\n About to read genome \n\n");
 
@@ -104,17 +104,17 @@ int main(int argc, char *argv[])
 
   // set all char's to the 4 or 'N' code except for ACTG or actg (see below)
   for(i=0;i<256;i++)
-    char_mask[i] = 4;
+    char_mask[i] = 0;
 
   // set other characters to appropriate score
-  char_mask['A'] = 0;
-  char_mask['a'] = 0;
-  char_mask['C'] = 1;
-  char_mask['c'] = 1;
-  char_mask['G'] = 2;
-  char_mask['g'] = 2;
-  char_mask['T'] = 3;
-  char_mask['t'] = 3;
+  char_mask['A'] = 1;
+  char_mask['a'] = 1;
+  char_mask['C'] = 2;
+  char_mask['c'] = 2;
+  char_mask['G'] = 3;
+  char_mask['g'] = 3;
+  char_mask['T'] = 4;
+  char_mask['t'] = 4;
 
   // set genome buffer to appropriate code
   for(i=0;i<genome_size;i++)

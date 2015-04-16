@@ -14,14 +14,13 @@ use namespace::autoclean;
 enum GenomeSizedTrackType => [ 'genome', 'score', ];
 
 my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp );
-my %base_char_2_txt = ( '0' => 'A', '1' => 'C', '2' => 'G', '3' => 'T', '4' => 'N' );
-my @base_chars = qw/ 0 1 2 3 4 /;
+my %base_char_2_txt = ( '0' => 'N', '1' => 'A', '2' => 'C', '3' => 'G', '4' => 'T' );
 my @in_gan  = qw/ 0 8 /; # is gene annotated
 my @in_exon = qw/ 0 16 /;
 my @in_gene = qw/ 0 32 /;
 my @in_snp  = qw/ 0 64 /;
 
-foreach my $base_char (@base_chars) {
+foreach my $base_char (keys %base_char_2_txt) {
   foreach my $gan (@in_gan) {
     foreach my $gene (@in_gene) {
       foreach my $exon (@in_exon) {
