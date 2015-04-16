@@ -38,13 +38,13 @@ has genome_str_track => (
 has genome_hasher => (
   is      => 'ro',
   isa     => 'Str',
-  default => '~/software/Seq/bin/genome_hasher',
+  default => 'genome_hasher',
 );
 
 has genome_scorer => (
   is      => 'ro',
   isa     => 'Str',
-  default => '~/software/Seq/bin/genome_scorer',
+  default => 'genome_scorer',
 );
 
 sub _build_genome_str_track {

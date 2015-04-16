@@ -122,7 +122,7 @@ sub BUILDARGS {
     }
     for my $attrib (
       qw/ genome_name genome_description genome_chrs genome_index_dir genome_db_dir
-      host port no_bdb_insert /
+      host port no_bdb_insert genome_hasher genome_scorer /
       )
     {
       $hash{$attrib} = $href->{$attrib};
