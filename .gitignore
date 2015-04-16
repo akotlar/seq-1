@@ -29,3 +29,5 @@ test*
 /t/archive
 *.db
 /bin/genome_hasher
+/bin/genome_scorer
+/ex
