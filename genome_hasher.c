@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
       }
 
       // transcripts coming from the negative strand need their start/stop flipped
-      if ( stop < start) )
+      if ( stop < start )
       {
         long tmp = stop;
         stop = start;
