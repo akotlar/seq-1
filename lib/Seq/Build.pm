@@ -18,7 +18,6 @@ use YAML::XS qw/ Dump /;
 use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
 use Seq::Build::TxTrack;
-use Seq::Build::GenomeSizedTrackChar;
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::BDBManager;
 use Seq::MongoManager;
