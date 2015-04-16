@@ -38,7 +38,7 @@ GetOptions(
   'n|no_bdb'     => \$no_bdb,
   'h|help'       => \$help,
   'hasher=s'     => \$genome_hasher_bin,
-  'scoer=s'      => \$genome_scorer_bin,
+  'scorer=s'     => \$genome_scorer_bin,
 );
 
 if ($help) {
@@ -56,8 +56,8 @@ unless ( defined $yaml_config
 }
 
 # get absolute path for YAML file and db_location
-$yaml_config = path($yaml_config)->absolute->stringify;
-$db_location = path($db_location)->absolute->stringify;
+$yaml_config       = path($yaml_config)->absolute->stringify;
+$db_location       = path($db_location)->absolute->stringify;
 $genome_hasher_bin = path($genome_hasher_bin)->absolute->stringify;
 $genome_scorer_bin = path($genome_scorer_bin)->absolute->stringify;
 
@@ -71,11 +71,14 @@ else {
 # read config file to determine genome name for log and check validity
 my $config_href = LoadFile($yaml_config);
 
-my $builder_options_href = { configfile => $yaml_config, no_bdb_insert => $no_bdb,
-  genome_scorer => $genome_scorer_bin, genome_hasher => $genome_hasher_bin
+my $builder_options_href = {
+  configfile    => $yaml_config,
+  no_bdb_insert => $no_bdb,
+  genome_scorer => $genome_scorer_bin,
+  genome_hasher => $genome_hasher_bin
 };
 
-my $builder = Seq::Build->new_with_config( $builder_options_href );
+my $builder = Seq::Build->new_with_config($builder_options_href);
 
 if ( $method and $config_href ) {
 
