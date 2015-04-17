@@ -90,6 +90,10 @@ sub _get_bdb_file {
   my ( $self, $name ) = @_;
   my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
+
+  croak "ERROR: expected file: '$file' does not exist." unless -f $file;
+  croak "ERROR: expected file: '$file' is empty."       unless $file;
+
   return $file;
 }
 
