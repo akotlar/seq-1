@@ -24,7 +24,7 @@ use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::IO';
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
 has _genome => (
   is       => 'ro',
@@ -32,7 +32,7 @@ has _genome => (
   required => 1,
   lazy     => 1,
   builder  => '_load_genome',
-  handles  => ['get_abs_pos']
+  handles  => ['get_abs_pos', 'char_genome_length' ]
 );
 
 has _genome_score => (
@@ -157,6 +157,11 @@ sub _load_scores {
   return \@score_tracks;
 }
 
+sub BUILD {
+  my $self = shift;
+  $self->_logger->info("genome loaded: " . $self->char_genome_length);
+}
+
 sub _load_genome_sized_track {
   state $check = compile( Object, Object );
   my ( $self, $gst ) = $check->(@_);
@@ -177,6 +182,11 @@ sub _load_genome_sized_track {
   # read genome
   my $seq           = '';
   my $genome_length = -s $idx_file;
+
+  # error check the idx_file
+  croak "ERROR: expected file: '$idx_file' does not exist." unless -f $idx_file;
+  croak "ERROR: expected file: '$idx_file' is empty."       unless $genome_length;
+
   read $idx_fh, $seq, $genome_length;
 
   # read yml chr offsets

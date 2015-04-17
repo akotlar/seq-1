@@ -28,8 +28,8 @@ has chr_len => (
   isa     => 'HashRef[Str]',
   traits  => ['Hash'],
   handles => {
-    exists_chr_len => 'exists',
-    get_chr_len    => 'get',
+    exists_chr_len     => 'exists',
+    char_genome_length => 'get',
   },
 );
 

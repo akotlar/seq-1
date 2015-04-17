@@ -192,13 +192,13 @@ sub build_conserv_scores_index {
       my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
 
       # write chromosome offsets
-      my $chr_offset_name = join( ".", $gst->name, 'chr_len', 'yml' );
+      my $chr_offset_name = join( ".", $gst->name, $gst->type, 'yml' );
       my $chr_offset_file = File::Spec->catfile( $index_dir, $chr_offset_name );
       my $chr_offset_fh = $self->get_write_fh($chr_offset_file);
       print {$chr_offset_fh} Dump( \%chr_len );
 
       # set idx file
-      my $idx_name = join( ".", $gst->name, 'idx' );
+      my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
       my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
 
       # find file

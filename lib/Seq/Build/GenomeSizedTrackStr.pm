@@ -40,7 +40,7 @@ has chr_len => (
   traits  => ['Hash'],
   handles => {
     exists_chr_len => 'exists',
-    get_chr_len    => 'get',
+    char_genome_length    => 'get',
     set_chr_len    => 'set',
   },
 );
