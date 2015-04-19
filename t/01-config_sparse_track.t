@@ -5,9 +5,9 @@ use warnings;
 
 use DDP;
 use File::Copy;
-use Lingua::EN::Inflect qw( A PL_N );
+use Lingua::EN::Inflect qw/ A PL_N /;
 use Path::Tiny;
-use Scalar::Util qw( blessed );
+use Scalar::Util qw/ blessed /;
 use Test::More;
 
 plan tests => 40;
@@ -37,15 +37,12 @@ ok( $package->can('meta'), "$package has a meta() method" )
 # check read-only attribute have read but no write methods
 has_ro_attr( $package, $_ )
   for (
-  qw( local_dir local_file
-  name type features sql_statement )
+  qw/ local_dir local_file
+  name type features sql_statement /
   );
 
 # check type constraints - Str
-for my $attr_name (
-  qw( local_dir local_file
-  name sql_statement )
-  )
+for my $attr_name ( qw/ local_dir local_file name sql_statement / )
 {
   my $attr = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
@@ -53,7 +50,7 @@ for my $attr_name (
 }
 
 # check type constraints - SparseTrackType
-for my $attr_name (qw( type )) {
+for my $attr_name (qw/ type /) {
   my $attr = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name,
@@ -62,53 +59,61 @@ for my $attr_name (qw( type )) {
 
 {
   # check snp sparse track
-my @features = qw( alleleFreqCount alleles alleleFreqs );
-my $st = $package->new( {
-  name => 'snp141',
-  type => 'snp',
-  sql_statement => 'SELECT _snp_fields FROM hg38.snp141',
-  features => \@features,
-  local_dir => './hg38/raw/snp',
-  local_file => 'snp141.txt.gz',
-});
+  my @features = qw/ alleleFreqCount alleles alleleFreqs /;
+  my $st       = $package->new(
+    {
+      name          => 'snp141',
+      type          => 'snp',
+      sql_statement => 'SELECT _snp_fields FROM hg38.snp141',
+      features      => \@features,
+      local_dir     => './hg38/raw/snp',
+      local_file    => 'snp141.txt.gz',
+    }
+  );
 
-my $sql_stmt = q{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141};
-is( $sql_stmt, $st->sql_statement, 'Sql statement' );
+  my $sql_stmt =
+    q{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141};
+  is( $sql_stmt, $st->sql_statement, 'Sql statement' );
 
-my @all_snp_fields = qw( chrom chromStart chromEnd name );
-push @all_snp_fields, @features;
+  my @all_snp_fields = qw/ chrom chromStart chromEnd name /;
+  push @all_snp_fields, @features;
 
-is_deeply( \@all_snp_fields, $st->snp_fields_aref, 'Got Snp Fields Aref' );
+  is_deeply( \@all_snp_fields, $st->snp_fields_aref, 'Got Snp Fields Aref' );
 
-is( undef, $st->gene_fields_aref, 'Got Gene Fields Aref');
+  is( undef, $st->gene_fields_aref, 'Got Gene Fields Aref' );
 
-my @got_features = $st->all_features;
-is_deeply(\@features, \@got_features, 'got features');
+  my @got_features = $st->all_features;
+  is_deeply( \@features, \@got_features, 'got features' );
 }
 
 {
   # check gene sparse track
-  my @features = qw( mRNA spID spDisplayID geneSymbol refseq protAcc description rfamAcc );
-  my $st = $package->new( {
-    name => 'knownGene',
-    type => 'gene',
-    sql_statement => 'SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name',
-    features => \@features,
-    local_dir => './hg38/raw/gene',
-    local_file => 'knownGene.txt.gz',
-  });
-  my $sql_stmt = q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd, exonCount, exonStarts, exonEnds, alignID, mRNA, spID, spDisplayID, geneSymbol, refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name};
+  my @features =
+    qw/ mRNA spID spDisplayID geneSymbol refseq protAcc description rfamAcc /;
+  my $st = $package->new(
+    {
+      name => 'knownGene',
+      type => 'gene',
+      sql_statement =>
+        'SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name',
+      features   => \@features,
+      local_dir  => './hg38/raw/gene',
+      local_file => 'knownGene.txt.gz',
+    }
+  );
+  my $sql_stmt =
+    q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd, exonCount, exonStarts, exonEnds, name, mRNA, spID, spDisplayID, geneSymbol, refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name};
   is( $sql_stmt, $st->sql_statement, 'Sql statement' );
 
-  my @all_gene_fields = qw( chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds alignID );
+  my @all_gene_fields = qw/ chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds name /;
   push @all_gene_fields, @features;
 
   is_deeply( \@all_gene_fields, $st->gene_fields_aref, 'Got Gene Fields Aref' );
 
-  is( undef, $st->snp_fields_aref, 'Got Snp Fields Aref');
+  is( undef, $st->snp_fields_aref, 'Got Snp Fields Aref' );
 
   my @got_features = $st->all_features;
-  is_deeply(\@features, \@got_features, 'got features');
+  is_deeply( \@features, \@got_features, 'got features' );
 }
 
 sub check_isa {

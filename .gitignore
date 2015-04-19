@@ -31,3 +31,4 @@ test*
 /bin/genome_hasher
 /bin/genome_scorer
 /ex
+/real_hg38
