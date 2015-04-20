@@ -3,11 +3,9 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use DDP;
 use File::Copy;
 use Lingua::EN::Inflect qw/ A PL_N /;
 use Path::Tiny;
-use Scalar::Util qw/ blessed /;
 use Test::More;
 
 plan tests => 40;
@@ -36,10 +34,7 @@ ok( $package->can('meta'), "$package has a meta() method" )
 
 # check read-only attribute have read but no write methods
 has_ro_attr( $package, $_ )
-  for (
-  qw/ local_dir local_file
-  name type features sql_statement /
-  );
+  for ( qw/ local_dir local_file name type features sql_statement / );
 
 # check type constraints - Str
 for my $attr_name ( qw/ local_dir local_file name sql_statement / )
@@ -90,6 +85,7 @@ for my $attr_name (qw/ type /) {
   # check gene sparse track
   my @features =
     qw/ mRNA spID spDisplayID geneSymbol refseq protAcc description rfamAcc /;
+  
   my $st = $package->new(
     {
       name => 'knownGene',
@@ -101,11 +97,14 @@ for my $attr_name (qw/ type /) {
       local_file => 'knownGene.txt.gz',
     }
   );
+  
   my $sql_stmt =
     q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd, exonCount, exonStarts, exonEnds, name, mRNA, spID, spDisplayID, geneSymbol, refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name};
+  
   is( $sql_stmt, $st->sql_statement, 'Sql statement' );
 
   my @all_gene_fields = qw/ chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds name /;
+  
   push @all_gene_fields, @features;
 
   is_deeply( \@all_gene_fields, $st->gene_fields_aref, 'Got Gene Fields Aref' );
@@ -113,6 +112,7 @@ for my $attr_name (qw/ type /) {
   is( undef, $st->snp_fields_aref, 'Got Snp Fields Aref' );
 
   my @got_features = $st->all_features;
+
   is_deeply( \@features, \@got_features, 'got features' );
 }
 
