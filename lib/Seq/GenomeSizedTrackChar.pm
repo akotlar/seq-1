@@ -15,6 +15,8 @@ use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use YAML::XS;
 
+use DDP;
+
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome';
 
@@ -43,6 +45,11 @@ has char_seq => (
 #   used to decode the score
 sub char2score {
   my ( $self, $char ) = shift;
+
+  p $self;
+
+  p $char;
+
   return ( ( ( $char - 1 ) / $self->score_beta ) + $self->score_min );
 }
 
@@ -62,14 +69,14 @@ sub get_score {
 
   confess "get_score() requires absolute genomic position (0-index)"
     unless defined $pos;
-  confess "get_score() expects score2char() to be a coderef"
-    unless $self->meta->has_method('char2score')
-    and reftype( $self->char2score ) eq 'CODE';
+  # confess "get_score() expects score2char() to be a coderef"
+  #   unless $self->meta->has_method('char2score')
+  #   and reftype( $self->char2score ) eq 'CODE';
   confess "get_score() called on non-score track"
     unless $self->type eq 'score';
 
   my $char = $self->get_base($pos);
-  return sprintf( "%.03f", $self->char2score->($char) );
+  return sprintf( "%.03f", $self->char2score($char) );
 }
 
 sub BUILDARGS {
