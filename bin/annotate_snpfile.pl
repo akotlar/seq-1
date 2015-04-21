@@ -12,12 +12,9 @@ use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
+use YAML::XS qw/ LoadFile /;
 
 use Seq;
-
-if ( $ENV{PERL_MONGODB_DEBUG} ) {
-  Log::Any::Adapter->set('Stdout');
-}
 
 my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file );
 
@@ -52,8 +49,14 @@ croak "expected '$yaml_config' to be a file" unless -f $yaml_config;
 # the genome is located)
 $out_file = path($out_file)->absolute->stringify;
 
-say
-  qq{ snpfile => $snpfile, configfile => $yaml_config, db_dir => $db_location, out_file => $out_file };
+# read config file to determine genome name for log and check validity
+my $config_href = LoadFile($yaml_config);
+
+# set log file
+my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
+my $log_file = path(".")->child($log_name)->absolute->stringify;
+Log::Any::Adapter->set( 'File', $log_file );
+
 my $annotate_instance = Seq->new(
   {
     snpfile    => $snpfile,

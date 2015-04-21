@@ -12,7 +12,7 @@ use Moose::Util::TypeConstraints;
 use Carp;
 use Cpanel::JSON::XS;
 use DB_File;
-use Storable qw/ freeze decode_json /;
+use Storable qw/ freeze thaw /;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 use Hash::Merge qw/ merge _hashify _merge_hashes /;
@@ -151,10 +151,10 @@ sub db_put {
     #$self->_db->put( $key, encode_json($new_href) );
 
     # save merged hash using my own merging technique
-    $self->_db->put( $key, encode_json($href) );
+    $self->_db->put( $key, freeze($href) );
   }
   else {
-    $self->_db->put( $key, encode_json($href) );
+    $self->_db->put( $key, freeze($href) );
   }
 }
 
@@ -164,7 +164,7 @@ sub db_get {
 
   my $val;
   if ( $self->_db->get( $key, $val ) == 0 ) {
-    return decode_json($val);
+    return thaw($val);
   }
   else {
     return;

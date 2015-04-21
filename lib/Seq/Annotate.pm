@@ -32,7 +32,7 @@ has _genome => (
   required => 1,
   lazy     => 1,
   builder  => '_load_genome',
-  handles  => ['get_abs_pos', 'char_genome_length' ]
+  handles  => ['get_abs_pos', 'char_genome_length', 'genome_length' ]
 );
 
 has _genome_score => (
@@ -163,7 +163,7 @@ sub _load_scores {
 
 sub BUILD {
   my $self = shift;
-  $self->_logger->info("genome loaded: " . $self->char_genome_length);
+  $self->_logger->info("genome loaded: " . $self->genome_length);
 }
 
 sub _load_genome_sized_track {
