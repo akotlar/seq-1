@@ -151,10 +151,14 @@ sub annotate_snpfile {
 
   croak "specify a snpfile to annotate\n" unless $self->snpfile;
 
+  say "about to load annotation data";
+
   # setup
   my $abs_snpfile = path( $self->snpfile )->absolute->stringify;
   my $snpfile_fh  = $self->get_read_fh($abs_snpfile);
   my $annotator   = $self->_get_annotator;
+
+  say "loaded annotation data";
 
   # for writing data
   my $csv_writer = Text::CSV_XS->new(
@@ -163,6 +167,8 @@ sub annotate_snpfile {
   # write header
   my @header = $annotator->all_header;
   $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
+
+  say "about to process snp data";
 
   # process snpdata
   my ( %header, %ids );
@@ -203,6 +209,7 @@ sub annotate_snpfile {
       for my $allele ( split( /,/, $all_alleles ) ) {
         next if $allele eq $ref_allele;
         my $record_href = $annotator->get_snp_annotation( $abs_pos, $allele );
+        p $record_href;
         $record_href->{chr} = $chr;
         $record_href->{pos} = $pos;
         my @record = map { $record_href->{$_} } @header;

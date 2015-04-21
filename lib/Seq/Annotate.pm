@@ -206,6 +206,8 @@ sub _load_genome_sized_track {
       char_seq      => \$seq,
     }
   );
+
+  $self->_logger->info("read genome-sized track ($genome_length) from $idx_file");
   return $obj;
 }
 
