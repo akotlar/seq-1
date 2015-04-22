@@ -122,7 +122,7 @@ sub db_put {
     # merge hashes
     p $old_href;
 
-    for my $key (keys %$old_href) {
+    for my $key ( keys %$old_href ) {
       my $new_val //= $href->{$key};
 
       # is there a new value? if so, should we merge (i.e., is it not identical
@@ -131,9 +131,9 @@ sub db_put {
         my $old_val = $old_href->{$key};
 
         # if there's a difference then merge
-        if ($new_val ne $old_val) {
-          my @old_vals = split(/\;/, $old_val);
-          $href->{$key} = join (";", $new_val, @old_vals);
+        if ( $new_val ne $old_val ) {
+          my @old_vals = split( /\;/, $old_val );
+          $href->{$key} = join( ";", $new_val, @old_vals );
         }
       }
       else {

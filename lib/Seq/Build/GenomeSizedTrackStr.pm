@@ -39,9 +39,9 @@ has chr_len => (
   isa     => 'HashRef[Str]',
   traits  => ['Hash'],
   handles => {
-    exists_chr_len => 'exists',
-    char_genome_length    => 'get',
-    set_chr_len    => 'set',
+    exists_chr_len     => 'exists',
+    char_genome_length => 'get',
+    set_chr_len        => 'set',
   },
 );
 

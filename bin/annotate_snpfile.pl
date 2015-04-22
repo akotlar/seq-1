@@ -8,7 +8,6 @@ use lib './lib';
 use Carp;
 use Getopt::Long;
 use File::Spec;
-use File::Path;
 # use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw/ compile /;
@@ -18,7 +17,8 @@ use YAML::XS qw/ LoadFile /;
 
 use Seq;
 
-my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file );
+my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file, $force,
+  $debug );
 
 #
 # usage
@@ -30,6 +30,8 @@ GetOptions(
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
   'o|out=s'      => \$out_file,
+  'f|force'      => \$force,
+  'd|debug'      => \$debug,
 );
 
 if ($help) {
@@ -46,40 +48,49 @@ unless ( $yaml_config
 }
 
 # sanity check
-unless (-d $db_location ) {
-  croak "ERROR: Expected '$db_location' to be a directory.";
+unless ( -d $db_location ) {
+  say "ERROR: Expected '$db_location' to be a directory.";
+  exit;
 }
 unless ( -f $snpfile ) {
-  croak "ERROR: Expected '$snpfile' to be a file.";
+  say "ERROR: Expected '$snpfile' to be a file.";
+  exit;
 }
 unless ( -f $yaml_config ) {
-  croak "ERROR: Expected '$yaml_config' to be a file.";
+  say "ERROR: Expected '$yaml_config' to be a file.";
+  exit;
 }
-unless ( -f $out_file ) {
-  croak "ERROR: '$out_file' already exists.";
+if ( -f $out_file && !$force ) {
+  say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
+  exit;
 }
 
 # get absolute path
-$out_file = File::Spec->rel2abs( $out_file ); # path($out_file)->absolute->stringify;
+$out_file = File::Spec->rel2abs($out_file); # path($out_file)->absolute->stringify;
+say "writing annotation data here: $out_file" if $verbose;
 
-# read config file to determine genome name for log and check validity
-my $config_href = LoadFile( $yaml_config )
-  || croak "ERROR: Cannot read YAML file - $yaml_config\n";
+# read config file to determine genome name for loging and to check validity of config
+my $config_href = LoadFile($yaml_config)
+  || die "ERROR: Cannot read YAML file - $yaml_config: $!\n";
 
 # set log file
 my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
-my $log_file = File::Spec->rel2abs(".", $log_name);
+my $log_file = File::Spec->rel2abs( ".", $log_name );
+say "writing log file here: $log_file" if $verbose;
 Log::Any::Adapter->set( 'File', $log_file );
 
+# create the annotator
 my $annotate_instance = Seq->new(
   {
     snpfile    => $snpfile,
     configfile => $yaml_config,
     db_dir     => $db_location,
-    out_file   => $out_file
+    out_file   => $out_file,
+    debug      => $debug,
   }
 );
 
+# annotate the snp file
 $annotate_instance->annotate_snpfile;
 
 __END__

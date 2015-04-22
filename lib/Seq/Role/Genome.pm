@@ -26,8 +26,9 @@ sub get_abs_pos {
   #   unless $class->meta->find_method_by_name('genome_length');
 
   confess "can't find chr: $chr in build" unless $class->exists_chr_len($chr);
-  confess sprintf ("ERROR: get_abs_pos() chr (%s) and pos (%d) should be within %d",
-    $chr, $pos, $class->genome_length) unless $pos >= 1 and $pos < $class->genome_length;
+  confess sprintf( "ERROR: get_abs_pos() chr (%s) and pos (%d) should be within %d",
+    $chr, $pos, $class->genome_length )
+    unless $pos >= 1 and $pos < $class->genome_length;
 
   # grab the next chromosome start site, but if there is not next chromosome
   # then we're at the end of the genome so get the length of the genome; these

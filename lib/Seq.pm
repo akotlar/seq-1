@@ -11,7 +11,7 @@ use Moose 2;
 
 use Carp qw/ croak /;
 use namespace::autoclean;
-use Path::Tiny;
+use File::Spec;
 use Text::CSV_XS;
 use Seq::Annotate;
 
@@ -40,6 +40,12 @@ has db_dir => (
 has out_file => (
   is  => 'ro',
   isa => 'Str',
+);
+
+has debug => (
+  is      => 'ro',
+  isa     => 'Bool',
+  default => 0,
 );
 
 has _out_fh => (
@@ -107,27 +113,28 @@ my @allowed_genotype_codes = [qw( A C G T K M R S W Y D E H N )];
 
 # IPUAC ambiguity simplify representing genotypes
 my %IUPAC_codes = (
-  K => [qw( G T )],
-  M => [qw( A C )],
-  R => [qw( A G )],
-  S => [qw( C G )],
-  W => [qw( A T )],
-  Y => [qw( C T )],
-  A => [qw( A )],
-  C => [qw( C )],
-  G => [qw( G )],
-  T => [qw( T )],
-  # these indel codes are not technically IUPAC but part of the snpfile spec
-  D => [qw( '-' )],
-  E => [qw( '-' )],
-  H => [qw( '+' )],
+  K => [ 'G', 'T' ],
+  M => [ 'A', 'C' ],
+  R => [ 'A', 'G' ],
+  S => [ 'C', 'G' ],
+  W => [ 'A', 'T' ],
+  Y => [ 'C', 'T' ],
+  A => ['A'],
+  C => ['C'],
+  G => ['G'],
+  T => ['T'],
+  # the following indel codes are not technically IUPAC but part of the snpfile spec
+  D => ['-'],
+  E => ['-'],
+  H => ['+'],
   N => [],
 );
 
 sub _build_out_fh {
   my $self = shift;
   if ( $self->out_file ) {
-    my $out_file = path( $self->out_file )->absolute->stringify;
+    my $out_file = File::Spec->rel2abs( $self->out_file );
+    # my $out_file = path( $self->out_file )->absolute->stringify;
     return $self->get_write_bin_fh($out_file);
   }
   else {
@@ -137,8 +144,10 @@ sub _build_out_fh {
 
 sub _get_annotator {
   my $self           = shift;
-  my $abs_configfile = path( $self->configfile )->absolute;
-  my $abs_db_dir     = path( $self->db_dir )->absolute;
+  my $abs_configfile = File::Spec->rel2abs( $self->configfile );
+  my $abs_db_dir     = File::Spec->rel2abs( $self->db_dir );
+  #my $abs_configfile = path( $self->configfile )->absolute;
+  #my $abs_db_dir     = path( $self->db_dir )->absolute;
 
   # change to the root dir of the database
   chdir($abs_db_dir) || die "cannot change to $abs_db_dir: $!";
@@ -151,14 +160,17 @@ sub annotate_snpfile {
 
   croak "specify a snpfile to annotate\n" unless $self->snpfile;
 
-  say "about to load annotation data";
+  say "about to load annotation data" if $debug;
+  $self->_logger->info("about to load annotation data");
 
   # setup
-  my $abs_snpfile = path( $self->snpfile )->absolute->stringify;
-  my $snpfile_fh  = $self->get_read_fh($abs_snpfile);
-  my $annotator   = $self->_get_annotator;
+  my $abs_snpfile = File::Spec->rel2abs( $self->snpfile );
+  #my $abs_snpfile = path( $self->snpfile )->absolute->stringify;
+  my $snpfile_fh = $self->get_read_fh($abs_snpfile);
+  my $annotator  = $self->_get_annotator;
 
-  say "loaded annotation data";
+  say "loaded annotation data" if $verbose;
+  $self->_logger->info("loaded annotation data");
 
   # for writing data
   my $csv_writer = Text::CSV_XS->new(
@@ -183,11 +195,14 @@ sub annotate_snpfile {
 
     my @fields = split( /\t/, $clean_line );
 
+    # for snpfile, define columns for expected header fields and ids
     if ( $. == 1 ) {
       %header = map { $fields[$_] => $_ } ( 0 .. 5 );
-      p %header;
-      %ids    = map { $fields[$_] => $_ if defined $fields[$_] } ( 6 .. $#fields );
-      p %ids;
+      p %header if $self->debug;
+      for my $i ( 6 .. $#fields ) {
+        $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
+      }
+      p %ids if $self->debug;
       next;
     }
 
@@ -200,34 +215,46 @@ sub annotate_snpfile {
     my $allele_counts = $fields[ $header{Allele_Counts} ];
     my $abs_pos       = $annotator->get_abs_pos( $chr, $pos );
 
-    say join " ", $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts;
-    p $abs_pos;
-
     # get carrier ids for variant
-    my @carriers = $self->_get_minor_allele_carriers( \@fields, \%ids, $ref_allele );
+    my ( $het_ids_aref, $hom_ids_aref ) =
+      $self->_get_minor_allele_carriers( \@fields, \%ids, $ref_allele );
 
-    p @carriers;
+    if ( $self->debug ) {
+      say join " ", $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts,
+        'abs_pos:', $abs_pos;
+      say "het_ids:";
+      p $het_ids_aref;
+      say "hom_ids";
+      p $hom_ids_aref;
+    }
 
     if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
       my $method = lc 'set_' . $type . '_site';
 
-      p $method;
+      p $method if $self->debug;
       $self->$method( $abs_pos => [ $chr, $pos ] );
 
       # get annotation for snp sites
       next unless uc $type eq 'SNP';
       for my $allele ( split( /,/, $all_alleles ) ) {
-        p $allele;
+        p $allele if $self->debug;
         next if $allele eq $ref_allele;
         my $record_href = $annotator->get_snp_annotation( $abs_pos, $allele );
-        p $record_href;
-        $record_href->{chr} = $chr;
-        $record_href->{pos} = $pos;
+        $record_href->{chr}               = $chr;
+        $record_href->{pos}               = $pos;
+        $record_href->{heterozygotes_ids} = (@$het_ids_aref)
+          ? join ";", @$het_ids_aref
+          : 'NA';
+        $record_href->{homozygote_ids} = (@$hom_ids_aref) ? join ";", @$het_ids_aref : 'NA';
         my @record = map { $record_href->{$_} } @header;
+
+        if ( $self->debug ) {
+          p $record_href;
+          p @record;
+        }
         $csv_writer->print( $self->_out_fh, \@record ) or $csv_writer->error_diag;
       }
     }
-    say "got here";
   }
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
@@ -240,19 +267,31 @@ sub annotate_snpfile {
 
 sub _get_minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $ref_allele ) = @_;
-  my @carriers;
 
-  p @carriers;
+  my ( @het_ids, @hom_ids ) = ();
 
   for my $id ( keys %$ids_href ) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
     my $id_prob = $fields_aref->[ $ids_href->{$id} + 1 ];
 
-    push @carriers, $id if $id_geno ne $ref_allele && $id_geno ne 'N';
-  }
+    # skip homozygote reference && N's
+    next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
-  p @carriers;
-  return \@carriers;
+    # non-ref homozygotes - recall D and I are for insertions and deletions
+    #   and they are not part of IUPAC but snpfile spec
+    push @hom_ids, $id if ( $id_geno =~ m/[ACGTDI]+/ );
+
+    # non-ref heterozygotes - recall E and H are for het insertions and deletions
+    #   and they are not part of IUPAC but snpfile spec
+    push @het_ids, $id if ( $id_geno =~ m/[KMRSWYEH]+/ );
+  }
+  if ( $self->debug ) {
+    say "het_ids";
+    p @het_ids;
+    say "hom_ids";
+    p @hom_ids;
+  }
+  return \@het_ids, \@hom_ids;
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -34,15 +34,16 @@ has _genome => (
   required => 1,
   lazy     => 1,
   builder  => '_load_genome',
-  handles  => ['get_abs_pos', 'char_genome_length', 'genome_length' ]
+  handles  => [ 'get_abs_pos', 'char_genome_length', 'genome_length' ]
 );
 
 has _genome_scores => (
   is      => 'ro',
   isa     => 'ArrayRef[Seq::GenomeSizedTrackChar]',
   traits  => ['Array'],
-  handles => { _all_genome_scores => 'elements',
-               count_genome_scores => 'count',
+  handles => {
+    _all_genome_scores  => 'elements',
+    count_genome_scores => 'count',
   },
   lazy    => 1,
   builder => '_load_scores',
@@ -96,7 +97,7 @@ sub _get_bdb_file {
   my $file = File::Spec->catfile( $dir, $name );
 
   croak "ERROR: expected file: '$file' does not exist." unless -f $file;
-  croak "ERROR: expected file: '$file' is empty."       unless $file;
+  croak "ERROR: expected file: '$file' is empty." unless $file;
 
   return $file;
 }
@@ -167,9 +168,9 @@ sub _load_scores {
 
 sub BUILD {
   my $self = shift;
-  $self->_logger->info("finished loading genome of size " . $self->genome_length);
-  $self->_logger->info("finished loading " . $self->count_genome_scores
-    . " genome score track(s)");
+  $self->_logger->info( "finished loading genome of size " . $self->genome_length );
+  $self->_logger->info(
+    "finished loading " . $self->count_genome_scores . " genome score track(s)" );
 }
 
 sub _load_genome_sized_track {
@@ -195,7 +196,7 @@ sub _load_genome_sized_track {
 
   # error check the idx_file
   croak "ERROR: expected file: '$idx_file' does not exist." unless -f $idx_file;
-  croak "ERROR: expected file: '$idx_file' is empty."       unless $genome_length;
+  croak "ERROR: expected file: '$idx_file' is empty." unless $genome_length;
 
   read $idx_fh, $seq, $genome_length;
 
@@ -220,8 +221,6 @@ sub _load_genome_sized_track {
 sub get_ref_annotation {
   state $check = compile( Object, Int );
   my ( $self, $abs_pos ) = $check->(@_);
-
-  say "in get_ref_annotation";
 
   my %record;
 
@@ -256,7 +255,7 @@ sub get_ref_annotation {
   for my $gs ( $self->_all_genome_scores ) {
     my $name  = $gs->name;
     my $score = $gs->get_score($abs_pos);
-    $record{ $name } = $score;
+    $record{$name} = $score;
   }
 
   if ($gan) {
@@ -298,12 +297,11 @@ sub get_snp_annotation {
   state $check = compile( Object, Int, Str );
   my ( $self, $abs_pos, $new_base ) = $check->(@_);
 
-  say "about to get ref annotation: $abs_pos";
+  say "about to get ref annotation: $abs_pos" if $self->debug;
 
   my $ref_site_annotation = $self->get_ref_annotation($abs_pos);
 
-  p $ref_site_annotation;
-
+  p $ref_site_annotation if $self->debug;
 
   # gene site annotations
   my $gene_aref //= $ref_site_annotation->{gene_data};

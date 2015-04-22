@@ -121,13 +121,11 @@ has _score_beta => (
 );
 
 has _score_lu => (
-  is => 'ro',
-  isa => 'HashRef',
-  traits => ['Hash'],
-  lazy => 1,
-  handles => {
-    get_score_lu => 'get',
-  },
+  is      => 'ro',
+  isa     => 'HashRef',
+  traits  => ['Hash'],
+  lazy    => 1,
+  handles => { get_score_lu => 'get', },
   builder => '_build_score_lu',
 );
 
@@ -138,7 +136,9 @@ sub _build_score_lu {
   p $self->score_max;
   p $self->_score_beta;
 
-  my %score_lu = map { $_ => ( ( ( $_ - 1 ) / $self->_score_beta ) + $self->score_min ) } ( 1 .. 256 );
+  my %score_lu =
+    map { $_ => ( ( ( $_ - 1 ) / $self->_score_beta ) + $self->score_min ) }
+    ( 1 .. 256 );
   $score_lu{'0'} = 'NA';
 
   p %score_lu;

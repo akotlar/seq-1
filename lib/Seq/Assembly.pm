@@ -85,6 +85,12 @@ has mongo_addr => (
   builder => '_build_mongo_addr',
 );
 
+has debug => (
+  is      => 'ro',
+  isa     => 'Bool',
+  default => 0,
+);
+
 sub _build_mongo_addr {
   my $self = shift;
 
@@ -122,7 +128,7 @@ sub BUILDARGS {
     }
     for my $attrib (
       qw/ genome_name genome_description genome_chrs genome_index_dir genome_db_dir
-      host port no_bdb_insert genome_hasher genome_scorer /
+      host port no_bdb_insert genome_hasher genome_scorer debug /
       )
     {
       $hash{$attrib} = $href->{$attrib};

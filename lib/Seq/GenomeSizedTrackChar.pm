@@ -62,14 +62,14 @@ sub get_base {
 sub get_score {
   my ( $self, $pos ) = @_;
 
-  #say "in get_score with $pos";
-
-  confess "get_score() requires absolute genomic position (0-index)" unless defined $pos;
+  confess "get_score() requires absolute genomic position (0-index)"
+    unless defined $pos;
   confess "get_score() called on non-score track" unless $self->type eq 'score';
 
-  my $char = $self->get_base($pos);
-  #printf "char score is %d\n", $char;
-  return sprintf( "%.03f", $self->get_score_lu($char) );
+  my $char            = $self->get_base($pos);
+  my $score           = $self->get_score_lu($char);
+  my $formatted_score = ( $score eq 'NA' ) ? $score : sprintf( "%0.3f", $score );
+  return $formatted_score;
 }
 
 sub BUILDARGS {
