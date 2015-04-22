@@ -36,21 +36,32 @@ if ($help) {
 }
 
 unless ( $yaml_config
-  and -d $db_location
-  and -f $snpfile
+  and $db_location
+  and $snpfile
   and $out_file )
 {
   Pod::Usage::pod2usage();
 }
 
-croak "expected '$yaml_config' to be a file" unless -f $yaml_config;
+# sanity check
+if ( !-d $db_location ) {
+  croak "ERROR: Expected '$db_location' to be a directory.";
+} 
+if ( !-f $snpfile ) {
+  croak "ERROR: Expected '$snpfile' to be a file.";
+}
+if ( !-f $yaml_config ) {
+  croak "ERROR: Expected '$yaml_config' to be a file.";
+}
+if ( !-f $out_file ) {
+  croak "ERROR: '$out_file' already exists.";
+}
 
-# need to give absolute path to avoid placing it in an odd location (e.g., where
-# the genome is located)
 $out_file = path($out_file)->absolute->stringify;
 
 # read config file to determine genome name for log and check validity
-my $config_href = LoadFile($yaml_config);
+my $config_href = LoadFile($yaml_config) 
+  || croak "ERROR: Cannot read YAML file - $yaml_config\n";
 
 # set log file
 my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';

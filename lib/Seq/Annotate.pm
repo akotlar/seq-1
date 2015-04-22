@@ -250,11 +250,7 @@ sub get_ref_annotation {
     $record{genomic_annotation_code} = 'Intergenic';
   }
 
-  p %record;
-
   my ( @gene_data, @snp_data, %conserv_scores );
-
-  p $self;
 
   for my $gs ( @{ $self->_genome_scores } ) {
     my $name  = $gs->name;
@@ -262,23 +258,17 @@ sub get_ref_annotation {
     $record{ $name } = $score;
   }
 
-  p %record;
-
   if ($gan) {
     for my $gene_dbs ( $self->_all_bdb_gene ) {
       push @gene_data, $gene_dbs->db_get($abs_pos);
     }
   }
 
-  p @gene_data;
-
   if ($snp) {
     for my $snp_dbs ( $self->_all_bdb_snp ) {
       push @snp_data, $snp_dbs->db_get($abs_pos);
     }
   }
-
-  p @snp_data;
 
   # if ($gan) {
   #   for my $gene_track ( $self->all_gene_tracks ) {

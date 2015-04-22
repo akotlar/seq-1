@@ -234,6 +234,7 @@ sub annotate_snpfile {
   my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
 
   # TODO: decide how to return data or do we just print it out...
+  #   - print conservation scores...
   return;
 }
 

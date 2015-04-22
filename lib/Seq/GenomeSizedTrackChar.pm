@@ -45,9 +45,6 @@ has char_seq => (
 #   used to decode the score
 sub char2score {
   my ( $self, $char ) = shift;
-
-  p $char;
-
   return ( ( ( $char - 1 ) / $self->score_beta ) + $self->score_min );
 }
 
@@ -65,14 +62,13 @@ sub get_base {
 sub get_score {
   my ( $self, $pos ) = @_;
 
-  say "in get_score with $pos";
+  #say "in get_score with $pos";
 
   confess "get_score() requires absolute genomic position (0-index)" unless defined $pos;
   confess "get_score() called on non-score track" unless $self->type eq 'score';
 
   my $char = $self->get_base($pos);
-
-  printf "char score is %d\n", $char;
+  #printf "char score is %d\n", $char;
   return sprintf( "%.03f", $self->get_score_lu($char) );
 }
 
