@@ -41,7 +41,7 @@ has _genome_scores => (
   is      => 'ro',
   isa     => 'ArrayRef[Seq::GenomeSizedTrackChar]',
   traits  => ['Array'],
-  handles => { _all_genome_scores => 'elements', 
+  handles => { _all_genome_scores => 'elements',
                count_genome_scores => 'count',
   },
   lazy    => 1,
@@ -167,8 +167,9 @@ sub _load_scores {
 
 sub BUILD {
   my $self = shift;
-  say "loaded genome of size " . $self->genome_length;
-  say "loaded " . $self->count_genome_scores . " genome score tracks";
+  $self->_logger->info("finished loading genome of size " . $self->genome_length);
+  $self->_logger->info("finished loading " . $self->count_genome_scores
+    . " genome score track(s)");
 }
 
 sub _load_genome_sized_track {
@@ -252,7 +253,7 @@ sub get_ref_annotation {
 
   my ( @gene_data, @snp_data, %conserv_scores );
 
-  for my $gs ( @{ $self->_genome_scores } ) {
+  for my $gs ( $self->_all_genome_scores ) {
     my $name  = $gs->name;
     my $score = $gs->get_score($abs_pos);
     $record{ $name } = $score;
@@ -420,6 +421,11 @@ sub _build_header {
   my @features = qw/ chr pos ref_base genomic_annotation_code annotation_type
     codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
     ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id /;
+
+  # add genome score track names
+  for my $gs ( $self->_all_genome_scores ) {
+    push @features, $gs->name;
+  }
 
   push @features, @alt_features;
 

@@ -7,7 +7,9 @@ use warnings;
 use lib './lib';
 use Carp;
 use Getopt::Long;
-use Path::Tiny;
+use File::Spec;
+use File::Path;
+# use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
@@ -44,28 +46,29 @@ unless ( $yaml_config
 }
 
 # sanity check
-if ( !-d $db_location ) {
+unless (-d $db_location ) {
   croak "ERROR: Expected '$db_location' to be a directory.";
-} 
-if ( !-f $snpfile ) {
+}
+unless ( -f $snpfile ) {
   croak "ERROR: Expected '$snpfile' to be a file.";
 }
-if ( !-f $yaml_config ) {
+unless ( -f $yaml_config ) {
   croak "ERROR: Expected '$yaml_config' to be a file.";
 }
-if ( !-f $out_file ) {
+unless ( -f $out_file ) {
   croak "ERROR: '$out_file' already exists.";
 }
 
-$out_file = path($out_file)->absolute->stringify;
+# get absolute path
+$out_file = File::Spec->rel2abs( $out_file ); # path($out_file)->absolute->stringify;
 
 # read config file to determine genome name for log and check validity
-my $config_href = LoadFile($yaml_config) 
+my $config_href = LoadFile( $yaml_config )
   || croak "ERROR: Cannot read YAML file - $yaml_config\n";
 
 # set log file
 my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
-my $log_file = path(".")->child($log_name)->absolute->stringify;
+my $log_file = File::Spec->rel2abs(".", $log_name);
 Log::Any::Adapter->set( 'File', $log_file );
 
 my $annotate_instance = Seq->new(
