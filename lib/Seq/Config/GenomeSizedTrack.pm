@@ -12,6 +12,8 @@ use Moose::Util::TypeConstraints;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
+use DDP;
+
 enum GenomeSizedTrackType => [ 'genome', 'score', ];
 
 my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp );
@@ -111,12 +113,37 @@ has score_R => (
   isa => 'Num'
 );
 
-has score_beta => (
+has _score_beta => (
   is      => 'ro',
   isa     => 'Num',
   lazy    => 1,
   builder => '_build_score_beta',
 );
+
+has _score_lu => (
+  is => 'ro',
+  isa => 'HashRef',
+  traits => ['Hash'],
+  lazy => 1,
+  handles => {
+    get_score_lu => 'get',
+  },
+  builder => '_build_score_lu',
+);
+
+sub _build_score_lu {
+  my $self = shift;
+  p $self->score_R;
+  p $self->score_min;
+  p $self->score_max;
+  p $self->_score_beta;
+
+  my %score_lu = map { $_ => ( ( ( $_ - 1 ) / $self->_score_beta ) + $self->score_min ) } ( 0 .. 256 );
+
+  p %score_lu;
+  return \%score_lu;
+}
+
 
 sub _build_score_beta {
   my $self = shift;

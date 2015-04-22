@@ -17,6 +17,8 @@ use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
+use DDP;
+
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
 use Seq::BDBManager;
@@ -35,11 +37,13 @@ has _genome => (
   handles  => ['get_abs_pos', 'char_genome_length', 'genome_length' ]
 );
 
-has _genome_score => (
+has _genome_scores => (
   is      => 'ro',
   isa     => 'ArrayRef[Seq::GenomeSizedTrackChar]',
   traits  => ['Array'],
-  handles => { _all_genome_scores => 'elements', },
+  handles => { _all_genome_scores => 'elements', 
+               count_genome_scores => 'count',
+  },
   lazy    => 1,
   builder => '_load_scores',
 );
@@ -163,7 +167,8 @@ sub _load_scores {
 
 sub BUILD {
   my $self = shift;
-  $self->_logger->info("genome loaded: " . $self->genome_length);
+  say "loaded genome of size " . $self->genome_length;
+  say "loaded " . $self->count_genome_scores . " genome score tracks";
 }
 
 sub _load_genome_sized_track {
@@ -215,6 +220,8 @@ sub get_ref_annotation {
   state $check = compile( Object, Int );
   my ( $self, $abs_pos ) = $check->(@_);
 
+  say "in get_ref_annotation";
+
   my %record;
 
   # my $abs_pos   = $self->get_abs_pos( $chr, $pos );
@@ -243,11 +250,19 @@ sub get_ref_annotation {
     $record{genomic_annotation_code} = 'Intergenic';
   }
 
+  p %record;
+
   my ( @gene_data, @snp_data, %conserv_scores );
 
-  for my $gst ( $self->_all_genome_scores ) {
-    $record{ $gst->name } = $gst->get_score($abs_pos);
+  p $self;
+
+  for my $gs ( @{ $self->_genome_scores } ) {
+    my $name  = $gs->name;
+    my $score = $gs->get_score($abs_pos);
+    $record{ $name } = $score;
   }
+
+  p %record;
 
   if ($gan) {
     for my $gene_dbs ( $self->_all_bdb_gene ) {
@@ -255,11 +270,15 @@ sub get_ref_annotation {
     }
   }
 
+  p @gene_data;
+
   if ($snp) {
     for my $snp_dbs ( $self->_all_bdb_snp ) {
       push @snp_data, $snp_dbs->db_get($abs_pos);
     }
   }
+
+  p @snp_data;
 
   # if ($gan) {
   #   for my $gene_track ( $self->all_gene_tracks ) {
@@ -288,7 +307,12 @@ sub get_snp_annotation {
   state $check = compile( Object, Int, Str );
   my ( $self, $abs_pos, $new_base ) = $check->(@_);
 
+  say "about to get ref annotation: $abs_pos";
+
   my $ref_site_annotation = $self->get_ref_annotation($abs_pos);
+
+  p $ref_site_annotation;
+
 
   # gene site annotations
   my $gene_aref //= $ref_site_annotation->{gene_data};
