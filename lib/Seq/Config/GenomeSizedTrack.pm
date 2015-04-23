@@ -138,7 +138,7 @@ sub _build_score_lu {
 
   my %score_lu =
     map { $_ => ( ( ( $_ - 1 ) / $self->_score_beta ) + $self->score_min ) }
-    ( 1 .. 256 );
+    ( 1 .. 254 );
   $score_lu{'0'} = 'NA';
 
   p %score_lu;
