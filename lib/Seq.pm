@@ -160,8 +160,8 @@ sub annotate_snpfile {
 
   croak "specify a snpfile to annotate\n" unless $self->snpfile;
 
-  say "about to load annotation data" if $debug;
-  $self->_logger->info("about to load annotation data");
+  say "about to load annotation data" if $self->debug;
+  # $self->_logger->info("about to load annotation data");
 
   # setup
   my $abs_snpfile = File::Spec->rel2abs( $self->snpfile );
@@ -169,8 +169,8 @@ sub annotate_snpfile {
   my $snpfile_fh = $self->get_read_fh($abs_snpfile);
   my $annotator  = $self->_get_annotator;
 
-  say "loaded annotation data" if $verbose;
-  $self->_logger->info("loaded annotation data");
+  say "loaded annotation data" if $self->debug;
+  # $self->_logger->info("loaded annotation data");
 
   # for writing data
   my $csv_writer = Text::CSV_XS->new(
@@ -178,6 +178,7 @@ sub annotate_snpfile {
 
   # write header
   my @header = $annotator->all_header;
+  push @header, 'heterozygotes_ids', 'homozygote_ids';
   $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
   say "about to process snp data";
@@ -246,7 +247,16 @@ sub annotate_snpfile {
           ? join ";", @$het_ids_aref
           : 'NA';
         $record_href->{homozygote_ids} = (@$hom_ids_aref) ? join ";", @$het_ids_aref : 'NA';
-        my @record = map { $record_href->{$_} } @header;
+        #my @record = map { $record_href->{$_} } @header;
+        my @record;
+        for my $attr (@header) {
+           if (ref $record_href->{$attr} eq 'ARRAY') {
+             push @record, join ";", @{ $record_href->{$attr} };
+           }
+           else {
+             push @record, $record_href->{$attr};
+           }
+         }
 
         if ( $self->debug ) {
           p $record_href;

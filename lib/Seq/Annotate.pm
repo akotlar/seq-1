@@ -341,10 +341,15 @@ sub get_snp_annotation {
   }
   my $record = $ref_site_annotation;
   $record->{gene_site_annotation} = \%gene_site_annotation;
+  p %gene_site_annotation;
   $record->{snp_site_annotation}  = \%snp_site_annotation;
+  p %snp_site_annotation;
 
   my $gene_ann = $self->_mung_output( \%gene_site_annotation );
+  p $gene_ann;
   my $snp_ann  = $self->_mung_output( \%snp_site_annotation );
+  p $snp_ann;
+
   map { $record->{$_} = $gene_ann->{$_} } keys %$gene_ann;
   map { $record->{$_} = $snp_ann->{$_} } keys %$snp_ann;
 
@@ -418,7 +423,7 @@ sub _build_header {
 
   my @features = qw/ chr pos ref_base genomic_annotation_code annotation_type
     codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
-    ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id /;
+    ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id snp_id /;
 
   # add genome score track names
   for my $gs ( $self->_all_genome_scores ) {

@@ -235,7 +235,7 @@ sub BUILDARGS {
         $hash{score_max} = 1;
       }
       elsif ( $href->{name} eq "phyloP" ) {
-        $hash{score_R}   = 127;
+        $hash{score_R}   = 254;
         $hash{score_min} = -30;
         $hash{score_max} = 30;
       }
