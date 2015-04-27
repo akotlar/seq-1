@@ -178,7 +178,7 @@ sub annotate_snpfile {
 
   # write header
   my @header = $annotator->all_header;
-  push @header, 'heterozygotes_ids', 'homozygote_ids';
+  push @header, 'heterozygotes_ids', 'homozygote_ids', 'chr', 'pos', 'type', 'alleles', 'allele_counts';
   $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
   say "about to process snp data";
@@ -236,13 +236,16 @@ sub annotate_snpfile {
       $self->$method( $abs_pos => [ $chr, $pos ] );
 
       # get annotation for snp sites
-      next unless uc $type eq 'SNP';
+      next unless $type eq 'SNP';
       for my $allele ( split( /,/, $all_alleles ) ) {
         p $allele if $self->debug;
         next if $allele eq $ref_allele;
         my $record_href = $annotator->get_snp_annotation( $abs_pos, $allele );
         $record_href->{chr}               = $chr;
         $record_href->{pos}               = $pos;
+        $record_href->{type}              = $type;
+        $record_href->{alleles}           = $all_alleles;
+        $record_href->{allele_counts}     = $allele_counts;
         $record_href->{heterozygotes_ids} = (@$het_ids_aref)
           ? join ";", @$het_ids_aref
           : 'NA';
