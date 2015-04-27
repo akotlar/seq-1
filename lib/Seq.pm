@@ -146,8 +146,6 @@ sub _get_annotator {
   my $self           = shift;
   my $abs_configfile = File::Spec->rel2abs( $self->configfile );
   my $abs_db_dir     = File::Spec->rel2abs( $self->db_dir );
-  #my $abs_configfile = path( $self->configfile )->absolute;
-  #my $abs_db_dir     = path( $self->db_dir )->absolute;
 
   # change to the root dir of the database
   chdir($abs_db_dir) || die "cannot change to $abs_db_dir: $!";

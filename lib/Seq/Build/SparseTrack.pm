@@ -40,7 +40,7 @@ has genome_track_str => (
 
 has bdb_connection => (
   is       => 'ro',
-  isa      => 'Seq::BDBManager',
+  isa      => 'Seq::KCManager',
   required => 1,
   handles  => [ 'db_put', 'db_get' ],
 );
