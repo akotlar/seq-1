@@ -92,7 +92,7 @@ in a configuration file
 
 =head1 SYNOPSIS
 
-annotate_snpfile.pl --config <assembly config> --snp <snpfile> --locaiton <path> --out <file_ext>
+annotate_ref_site.pl --config <yaml config> --location <path/to/db> --chr <chr> --from <pos> --to <pos>
 
 =head1 DESCRIPTION
 

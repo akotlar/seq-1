@@ -15,6 +15,8 @@ use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use YAML::XS;
 
+use DDP;
+
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome';
 
@@ -28,39 +30,22 @@ has chr_len => (
   isa     => 'HashRef[Str]',
   traits  => ['Hash'],
   handles => {
-    exists_chr_len => 'exists',
-    get_chr_len    => 'get',
+    exists_chr_len     => 'exists',
+    char_genome_length => 'get',
   },
 );
 
 # stores the 0-indexed length of each chromosome
 has char_seq => (
-  is        => 'rw',
-  lazy      => 1,
-  builder   => '_build_char_seq',
-  isa       => 'ScalarRef',
-  clearer   => 'clear_char_seq',
-  predicate => 'has_char_seq',
+  is  => 'ro',
+  isa => 'ScalarRef',
 );
 
 # holds a subroutine that converts chars to a score for the track, which is
 #   used to decode the score
-has char2score => (
-  is  => 'ro',
-  isa => 'CodeRef',
-);
-
-# holds a subroutine that converts scores to a char for the track, which is
-#   used to encode the scores
-has score2char => (
-  is  => 'ro',
-  isa => 'CodeRef',
-);
-
-sub _build_char_seq {
-  my ($self) = @_;
-  my $genome_seq = '';
-  return \$genome_seq;
+sub char2score {
+  my ( $self, $char ) = shift;
+  return ( ( ( $char - 1 ) / $self->score_beta ) + $self->score_min );
 }
 
 sub get_base {
@@ -79,14 +64,12 @@ sub get_score {
 
   confess "get_score() requires absolute genomic position (0-index)"
     unless defined $pos;
-  confess "get_score() expects score2char() to be a coderef"
-    unless $self->meta->has_method('char2score')
-    and reftype( $self->char2score ) eq 'CODE';
-  confess "get_score() called on non-score track"
-    unless $self->type eq 'score';
+  confess "get_score() called on non-score track" unless $self->type eq 'score';
 
-  my $char = $self->get_base($pos);
-  return sprintf( "%.03f", $self->char2score->($char) );
+  my $char            = $self->get_base($pos);
+  my $score           = $self->get_score_lu($char);
+  my $formatted_score = ( $score eq 'NA' ) ? $score : sprintf( "%0.3f", $score );
+  return $formatted_score;
 }
 
 sub BUILDARGS {
@@ -99,30 +82,19 @@ sub BUILDARGS {
     my %hash;
     if ( $href->{type} eq "score" ) {
       if ( $href->{name} eq "phastCons" ) {
-        $hash{score2char} = sub {
-          my $score = shift;
-          return ( int( $score * 254 ) + 1 );
-        };
-        $hash{char2score} = sub {
-          my $score = shift;
-          return ( $score - 1 ) / 254;
-        };
+        $hash{score_R}   = 254;
+        $hash{score_min} = 0;
+        $hash{score_max} = 1;
       }
       elsif ( $href->{name} eq "phyloP" ) {
-        $hash{score2char} = sub {
-          my $score = shift;
-          return ( int( $score * ( 127 / 30 ) ) + 128 );
-        };
-        $hash{char2score} = sub {
-          my $score = shift;
-          return ( $score - 128 ) / ( 127 / 30 );
-        };
+        $hash{score_R}   = 254;
+        $hash{score_min} = -30;
+        $hash{score_max} = 30;
       }
     }
 
-    # add remaining values to hash
-    # if char2score or score2char are set
-    # then the defaults will be overridden
+    # if score_R, score_min, or score_max are set by the caller then the
+    # following will override it
     for my $attr ( keys %$href ) {
       $hash{$attr} = $href->{$attr};
     }

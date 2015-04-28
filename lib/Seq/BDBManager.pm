@@ -16,6 +16,7 @@ use Storable qw/ freeze thaw /;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 use Hash::Merge qw/ merge _hashify _merge_hashes /;
+use Cpanel::JSON::XS;
 
 # use DDP;
 
@@ -50,6 +51,12 @@ has _hash_merge => (
   isa     => 'Hash::Merge',
   builder => '_build_hash_merge',
   handles => ['merge'],
+);
+
+has no_bdb_insert => (
+  is      => 'ro',
+  isa     => 'Bool',
+  default => 0,
 );
 
 sub _build_hash_merge {
@@ -105,20 +112,46 @@ sub db_put {
   state $check = compile( Object, Str, HashRef );
   my ( $self, $key, $href ) = $check->(@_);
 
+  return if $self->no_bdb_insert;
+
   # check key
   my $old_href = $self->db_get($key);
 
   # is there data for the key?
   if ( defined $old_href ) {
     # merge hashes
-    # p $old_href;
+    p $old_href;
 
-    my $new_href = $self->merge( $old_href, $href );
+    for my $key ( keys %$old_href ) {
+      my $new_val //= $href->{$key};
 
+      # is there a new value? if so, should we merge (i.e., is it not identical
+      # to what's already stored? )
+      if ($new_val) {
+        my $old_val = $old_href->{$key};
+
+        # if there's a difference then merge
+        if ( $new_val ne $old_val ) {
+          my @old_vals = split( /\;/, $old_val );
+          $href->{$key} = join( ";", $new_val, @old_vals );
+        }
+      }
+      else {
+        # deal with the case where the key wasn't in the originally saved data
+        $href->{$key} = $old_href->{$key};
+      }
+    }
+
+    p $href;
+
+    # my $new_href = $self->merge( $old_href, $href );
     # p $new_href;
 
-    # save merged hash
-    $self->_db->put( $key, freeze($new_href) );
+    # save merged hash - using hash merge
+    #$self->_db->put( $key, encode_json($new_href) );
+
+    # save merged hash using my own merging technique
+    $self->_db->put( $key, freeze($href) );
   }
   else {
     $self->_db->put( $key, freeze($href) );

@@ -133,3 +133,55 @@ genome_sized_tracks:
     proc_clean_cmds:
       - gzip phyloP.txt
 ```
+
+Seq Dependencies:
+
+		==> ack --perl "use " | perl -nlE \
+		'{ if ($_ =~ m/\:use ([\w\d.:]+)/) { $modules{$1}++; }}
+		END{ print join "\n", sort keys %modules; }' | grep -v Seq
+
+		5.10.0
+		Carp
+		Cpanel::JSON::XS
+		Cwd
+		DBD::Mock
+		DBI
+		DB_File
+		DDP
+		ExtUtils::MakeMaker
+		File::Copy
+		File::Path
+		File::Spec
+		Getopt::Long
+		Hash::Merge
+		IO::Compress::Gzip
+		IO::File
+		IO::Uncompress::Gunzip
+		Lingua::EN::Inflect
+		List::Util
+		Log::Any::Adapter
+		Modern::Perl
+		Moose
+		Moose::Role
+		Moose::Util::TypeConstraints
+		MooseX::Types::Path::Tiny
+		Path::Tiny
+		Pod::Usage
+		Scalar::Util
+		Storable
+		Test::Exception
+		Test::More
+		Text::CSV_XS
+		Time::localtime
+		Try::Tiny
+		Type::Params
+		Types::Standard
+		YAML
+		YAML::XS
+		autodie
+		bigint
+		constant
+		lib
+		namespace::autoclean
+		strict
+		warnings
