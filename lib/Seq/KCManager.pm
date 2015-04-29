@@ -10,7 +10,7 @@ use Moose 2;
 use Moose::Util::TypeConstraints;
 
 use Carp;
-use Cpanel::JSON::XS;
+# use Cpanel::JSON::XS;
 use KyotoCabinet;
 use Storable qw/ freeze thaw /;
 use Type::Params qw/ compile /;
@@ -20,7 +20,7 @@ use Cpanel::JSON::XS;
 
 enum db_type => [qw/ hash btree /];
 
-use DDP;
+# use DDP;
 
 with 'Seq::Role::IO';
 
@@ -116,8 +116,9 @@ sub db_put {
 
   # is there data for the key?
   if ( defined $old_href ) {
+
     # merge hashes
-    p $old_href;
+    # p $old_href;
 
     for my $key ( keys %$old_href ) {
       my $new_val //= $href->{$key};
@@ -138,8 +139,6 @@ sub db_put {
         $href->{$key} = $old_href->{$key};
       }
     }
-
-    p $href;
 
     # my $new_href = $self->merge( $old_href, $href );
     # p $new_href;
@@ -162,7 +161,7 @@ sub db_get {
 
   my $val = $self->_db->get( $key );
   if (defined $val) {
-    return thaw($val);
+    return thaw( $val );
   }
   else {
     return;
