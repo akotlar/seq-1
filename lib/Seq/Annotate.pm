@@ -18,6 +18,7 @@ use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
 use DDP;
+use Data::Dumper;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
@@ -185,6 +186,7 @@ sub _load_genome_sized_track {
   my $idx_dir = $self->genome_index_dir;
 
   my $genome_idx_Aref = $self->load_genome_sequence($idx_name, $self->genome_index_dir);
+
   # yml file
   my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
   my $yml_file = File::Spec->catfile( $idx_dir, $yml_name );
@@ -199,7 +201,7 @@ sub _load_genome_sized_track {
       genome_chrs   => $self->genome_chrs,
       genome_length => $genome_idx_Aref->[1],
       chr_len       => $chr_len_href,
-      char_seq      => $genome_idx_Aref->[0],
+      char_seq      => $genome_idx_Aref->[0]
     }
   );
 

@@ -8,7 +8,7 @@ package Seq::GenomeSizedTrackChar;
 
 use Moose 2;
 
-use Carp qw/ confess croak /;
+#use Carp qw/ confess croak /;
 use File::Path;
 use File::Spec;
 use namespace::autoclean;
@@ -75,10 +75,14 @@ sub get_score {
 sub BUILDARGS {
   my $class = shift;
   my $href  = $_[0];
+
+  p $href;
+  print "\nIN\n";
   if ( scalar @_ > 1 || reftype($href) ne "HASH" ) {
     confess "Error: $class expects hash reference.\n";
   }
   else {
+    print 'IN ELSE';
     my %hash;
     if ( $href->{type} eq "score" ) 
     {
