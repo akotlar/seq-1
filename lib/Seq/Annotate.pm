@@ -49,6 +49,18 @@ has _genome => (
   ]
 );
 
+has _index => (
+  is       => 'ro',
+  isa      => 'Seq::GenomeSizedTrackChar',
+  required => 1,
+  lazy     => 1,
+  builder  => '_load_genome',
+  handles  => [ 
+    'genome_length','get_base','get_idx_base','get_idx_in_gan',
+    'get_idx_in_gene','get_idx_in_exon','get_idx_in_snp'
+  ]
+);
+
 has _genome_scores => (
   is      => 'ro',
   isa     => 'ArrayRef[Seq::GenomeSizedTrackChar]',
@@ -191,11 +203,12 @@ sub _load_genome_sized_track {
 
   # idx file
   my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
+  my $idx_dir = $self->genome_index_dir;
 
-  my ($genome_seq_sref, $genome_size) = $self->load_genome_sequence($idx_name);
+  my $genome_idx_Aref = $self->load_genome_sequence($idx_name, $self->genome_index_dir);
   # yml file
   my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
-  my $yml_file = File::Spec->catfile( $index_dir, $yml_name );
+  my $yml_file = File::Spec->catfile( $idx_dir, $yml_name );
   
   # read yml chr offsets
   my $chr_len_href = LoadFile($yml_file);
@@ -205,13 +218,13 @@ sub _load_genome_sized_track {
       name          => $gst->name,
       type          => $gst->type,
       genome_chrs   => $self->genome_chrs,
-      genome_length => $genome_length,
+      genome_length => $genome_idx_Aref->[1],
       chr_len       => $chr_len_href,
-      char_seq      => $self->load_genome_sequence($idx_name),
+      char_seq      => $genome_idx_Aref->[0],
     }
   );
 
-  $self->_logger->info("read genome-sized track ($genome_length) from $idx_file");
+  $self->_logger->info("read genome-sized track (".$genome_idx_Aref->[1].") from $idx_name");
   return $obj;
 }
 
