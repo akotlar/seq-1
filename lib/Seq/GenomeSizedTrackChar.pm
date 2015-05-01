@@ -80,7 +80,8 @@ sub BUILDARGS {
   }
   else {
     my %hash;
-    if ( $href->{type} eq "score" ) {
+    if ( $href->{type} eq "score" ) 
+    {
       if ( $href->{name} eq "phastCons" ) {
         $hash{score_R}   = 254;
         $hash{score_min} = 0;
@@ -91,14 +92,13 @@ sub BUILDARGS {
         $hash{score_min} = -30;
         $hash{score_max} = 30;
       }
+      # if score_R, score_min, or score_max are set by the caller then the
+      # following will override it
+      for my $attr ( keys %$href ) {
+        $hash{$attr} = $href->{$attr};
+      }
+      return $class->SUPER::BUILDARGS( \%hash );
     }
-
-    # if score_R, score_min, or score_max are set by the caller then the
-    # following will override it
-    for my $attr ( keys %$href ) {
-      $hash{$attr} = $href->{$attr};
-    }
-    return $class->SUPER::BUILDARGS( \%hash );
   }
 }
 
