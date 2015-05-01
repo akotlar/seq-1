@@ -26,30 +26,9 @@ use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::IO', 'MooX::Role::Logger';
-
-has 'SeqHref' =>
-( is      => 'rw',
-  isa     => 'HashRef',
-  default => sub{
-    my $seqHref :shared = shared_clone( {} );
-    return $seqHref;
-  },
-);
+with 'Seq::Role::IO', 'Seq::Role::AnnotatorDataStore', 'MooX::Role::Logger';
 
 has _genome => (
-  is       => 'ro',
-  isa      => 'Seq::GenomeSizedTrackChar',
-  required => 1,
-  lazy     => 1,
-  builder  => '_load_genome',
-  handles  => [ 
-    'genome_length','get_base','get_idx_base','get_idx_in_gan',
-    'get_idx_in_gene','get_idx_in_exon','get_idx_in_snp'
-  ]
-);
-
-has _index => (
   is       => 'ro',
   isa      => 'Seq::GenomeSizedTrackChar',
   required => 1,
