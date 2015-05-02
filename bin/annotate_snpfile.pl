@@ -85,18 +85,6 @@ my $log_file = File::Spec->rel2abs( ".", $log_name );
 say "writing log file here: $log_file" if $verbose;
 Log::Any::Adapter->set( 'File', $log_file );
 
-my $annotate_instance = Seq->new(
-    {
-      snpfile    => $snpfile,
-      configfile => $yaml_config,
-      db_dir     => $db_location,
-      out_file   => $out_file . "1",
-      debug      => $debug,
-    }
-    
-  );
-   $annotate_instance->annotate_snpfile;
-   
 # create the annotator
 my $normalQueue = threads->new(sub
   {
@@ -116,40 +104,69 @@ my $normalQueue = threads->new(sub
 
 my $normalQueue2 = threads->new(sub
   {
-#    my $annotate_instance2 = Seq->new(
-#     {
-#       snpfile    => $snpfile,
-#       configfile => $yaml_config,
-#       db_dir     => $db_location,
-#       out_file   => $out_file . "2",
-#       debug      => $debug,
-#     }
-#   );
+   my $annotate_instance2 = Seq->new(
+    {
+      snpfile    => $snpfile,
+      configfile => $yaml_config,
+      db_dir     => $db_location,
+      out_file   => $out_file . "2",
+      debug      => $debug,
+    }
+  );
 
 
 
-# # annotate the snp file
+# annotate the snp file
 
-# $annotate_instance2->annotate_snpfile;
+$annotate_instance2->annotate_snpfile;
   }
 );
 
 my $normalQueue3 = threads->new(sub
   {
-#    my $annotate_instance3 = Seq->new(
-#   {
-#     snpfile    => $snpfile,
-#     configfile => $yaml_config,
-#     db_dir     => $db_location,
-#     out_file   => $out_file  . "3",
-#     debug      => $debug,
-#   }
-# );
-#    $annotate_instance3->annotate_snpfile;
+   my $annotate_instance3 = Seq->new(
+  {
+    snpfile    => $snpfile,
+    configfile => $yaml_config,
+    db_dir     => $db_location,
+    out_file   => $out_file  . "3",
+    debug      => $debug,
+  }
+);
+   $annotate_instance3->annotate_snpfile;
   }
 );
 
-my @workers = ($normalQueue, $normalQueue2,$normalQueue3);
+my $normalQueue4 = threads->new(sub
+  {
+   my $annotate_instance3 = Seq->new(
+  {
+    snpfile    => $snpfile,
+    configfile => $yaml_config,
+    db_dir     => $db_location,
+    out_file   => $out_file  . "4",
+    debug      => $debug,
+  }
+);
+   $annotate_instance3->annotate_snpfile;
+  }
+);
+
+my $normalQueue5 = threads->new(sub
+  {
+   my $annotate_instance3 = Seq->new(
+  {
+    snpfile    => $snpfile,
+    configfile => $yaml_config,
+    db_dir     => $db_location,
+    out_file   => $out_file  . "5",
+    debug      => $debug,
+  }
+);
+   $annotate_instance3->annotate_snpfile;
+  }
+);
+my @workers = ($normalQueue, $normalQueue2,$normalQueue3, $normalQueue4,$normalQueue5);
 $_->join for @workers;
 
 __END__

@@ -20,8 +20,6 @@ use threads::shared;
 
 my $genomeIdxHref :shared = shared_clone({}); #a class variable
 
-print ref($genomeIdxHref);
-print "\n";
 has _genomeIdxHref => (
   traits   => ['Hash'],
   is      => 'rw',
@@ -36,16 +34,12 @@ sub load_genome_sequence
   state $check = compile( Object, Str, Str ); #self, $file_name
   my ( $self, $sequence_file_name, $sequence_file_parent_path) = $check->(@_);
 
-  
   if( $self->hasSeq($sequence_file_name) ) #$sequence_file_name acts as sequence hash key
   {
-    print "FOUND COOL!";
     return $self->getSeq($sequence_file_name); #returns anonymous array [\$seq,$genome_length]
   }
 
   $sequence_file_parent_path = File::Spec->rel2abs( $sequence_file_parent_path );
-
-  print "\n THe path is $sequence_file_parent_path \n";
 
   my $sequence_file_path = File::Spec->catfile( $sequence_file_parent_path, $sequence_file_name );
   my $genome_seq_fh = $self->get_read_fh($sequence_file_path);

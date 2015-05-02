@@ -18,8 +18,8 @@ use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
 use DDP;
-use Data::Dumper;
-use threads;use threads::shared;
+use Data::Dumper; 
+
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
 use Seq::BDBManager;
@@ -177,17 +177,8 @@ sub BUILD {
   $self->_logger->info(
     "finished loading " . $self->count_genome_scores . " genome score track(s)" );
 }
-my $i :shared = shared_clone({});
-sub _load_genome_sized_track {
-  if(!exists($i->{count}))
-  {
-    $i->{count} = 1;
-  }
 
-  else{
-    $i->{count}+=1;
-  }
-  print "\nCalled ".$i->{count}." times\n";
+sub _load_genome_sized_track {
   state $check = compile( Object, Object );
   my ( $self, $gst ) = $check->(@_);
 
