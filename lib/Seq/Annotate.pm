@@ -186,7 +186,7 @@ sub _load_genome_sized_track {
   my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
   my $idx_dir = $self->genome_index_dir;
 
-  my $genome_idx_Aref = $self->load_genome_sequence($idx_name, $self->genome_index_dir);
+  my $genome_idx_Aref = $self->load_genome_sequence($idx_name, $idx_dir);
 
   # yml file
   my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
