@@ -39,6 +39,7 @@ sub load_genome_sequence
   
   if( $self->hasSeq($sequence_file_name) ) #$sequence_file_name acts as sequence hash key
   {
+    print "FOUND COOL!";
     return $self->getSeq($sequence_file_name); #returns anonymous array [\$seq,$genome_length]
   }
 
@@ -52,8 +53,9 @@ sub load_genome_sequence
 
   my $genome_length = -s $sequence_file_path;
   my $seqRef : shared  = shared_clone([]);
-  
-  $seqRef->[0] = ''; $seqRef->[1] = $genome_length;
+  my $seq : shared = '';
+
+  $seqRef->[0] = ''; $seqRef->[1] = $genome_length;#\$seq; 
   # error check the idx_file
   croak "ERROR: expected file: '$sequence_file_path' does not exist." unless -f $sequence_file_path;
   croak "ERROR: expected file: '$sequence_file_path' is empty." unless $genome_length;

@@ -15,7 +15,12 @@ use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
 use YAML::XS qw/ LoadFile /;
 
+use threads;
 use Seq;
+
+use Moose;
+with 'Seq::Role::IO', 'Seq::Role::AnnotatorDataStore', 'MooX::Role::Logger';
+
 
 my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file, $force,
   $debug );
@@ -80,19 +85,72 @@ my $log_file = File::Spec->rel2abs( ".", $log_name );
 say "writing log file here: $log_file" if $verbose;
 Log::Any::Adapter->set( 'File', $log_file );
 
-# create the annotator
 my $annotate_instance = Seq->new(
+    {
+      snpfile    => $snpfile,
+      configfile => $yaml_config,
+      db_dir     => $db_location,
+      out_file   => $out_file . "1",
+      debug      => $debug,
+    }
+    
+  );
+   $annotate_instance->annotate_snpfile;
+   
+# create the annotator
+my $normalQueue = threads->new(sub
   {
-    snpfile    => $snpfile,
-    configfile => $yaml_config,
-    db_dir     => $db_location,
-    out_file   => $out_file,
-    debug      => $debug,
+   my $annotate_instance = Seq->new(
+    {
+      snpfile    => $snpfile,
+      configfile => $yaml_config,
+      db_dir     => $db_location,
+      out_file   => $out_file . "1",
+      debug      => $debug,
+    }
+    
+  );
+   $annotate_instance->annotate_snpfile;
   }
 );
 
-# annotate the snp file
-$annotate_instance->annotate_snpfile;
+my $normalQueue2 = threads->new(sub
+  {
+#    my $annotate_instance2 = Seq->new(
+#     {
+#       snpfile    => $snpfile,
+#       configfile => $yaml_config,
+#       db_dir     => $db_location,
+#       out_file   => $out_file . "2",
+#       debug      => $debug,
+#     }
+#   );
+
+
+
+# # annotate the snp file
+
+# $annotate_instance2->annotate_snpfile;
+  }
+);
+
+my $normalQueue3 = threads->new(sub
+  {
+#    my $annotate_instance3 = Seq->new(
+#   {
+#     snpfile    => $snpfile,
+#     configfile => $yaml_config,
+#     db_dir     => $db_location,
+#     out_file   => $out_file  . "3",
+#     debug      => $debug,
+#   }
+# );
+#    $annotate_instance3->annotate_snpfile;
+  }
+);
+
+my @workers = ($normalQueue, $normalQueue2,$normalQueue3);
+$_->join for @workers;
 
 __END__
 

@@ -19,7 +19,7 @@ use YAML::XS qw/ LoadFile /;
 
 use DDP;
 use Data::Dumper;
-
+use threads;use threads::shared;
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
 use Seq::BDBManager;
@@ -36,7 +36,8 @@ has _genome => (
   lazy     => 1,
   builder  => '_load_genome',
   handles  => [ 
-    'genome_length','get_base','get_idx_base','get_idx_in_gan',
+    'get_abs_pos', 'char_genome_length', 'genome_length',
+    'get_base','get_idx_base','get_idx_in_gan',
     'get_idx_in_gene','get_idx_in_exon','get_idx_in_snp'
   ]
 );
@@ -176,8 +177,17 @@ sub BUILD {
   $self->_logger->info(
     "finished loading " . $self->count_genome_scores . " genome score track(s)" );
 }
-
+my $i :shared = shared_clone({});
 sub _load_genome_sized_track {
+  if(!exists($i->{count}))
+  {
+    $i->{count} = 1;
+  }
+
+  else{
+    $i->{count}+=1;
+  }
+  print "\nCalled ".$i->{count}." times\n";
   state $check = compile( Object, Object );
   my ( $self, $gst ) = $check->(@_);
 
@@ -201,7 +211,7 @@ sub _load_genome_sized_track {
       genome_chrs   => $self->genome_chrs,
       genome_length => $genome_idx_Aref->[1],
       chr_len       => $chr_len_href,
-      char_seq      => $genome_idx_Aref->[0]
+      char_seq      => \$genome_idx_Aref->[0]
     }
   );
 
