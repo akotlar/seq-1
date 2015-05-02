@@ -66,8 +66,8 @@ sub worker
 		  my $db_location = $user_choices{location} || $user_choices{l} | "";
 		  my $snpfile = $user_choices{s} || $user_choices{snpfile} || "";
 		  my $yaml_config = $user_choices{c} || $user_choices{config} || "";
-			my $verbose = $user_choices{v} || $user_choices{verbose} || "";
-			my $debug = $user_choices{d} || $user_choices{debug} || "";
+			my $verbose = $user_choices{v} || $user_choices{verbose};
+			my $debug = $user_choices{d} || $user_choices{debug};
 		 
 		  # sanity check
 			unless ( -d $db_location ) {

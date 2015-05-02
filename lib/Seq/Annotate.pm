@@ -333,14 +333,14 @@ sub get_snp_annotation {
   }
   my $record = $ref_site_annotation;
   $record->{gene_site_annotation} = \%gene_site_annotation;
-  p %gene_site_annotation;
+  p %gene_site_annotation if $self->debug;
   $record->{snp_site_annotation}  = \%snp_site_annotation;
-  p %snp_site_annotation;
+  p %snp_site_annotation if $self->debug;
 
   my $gene_ann = $self->_mung_output( \%gene_site_annotation );
-  p $gene_ann;
+  p $gene_ann if $self->debug;
   my $snp_ann  = $self->_mung_output( \%snp_site_annotation );
-  p $snp_ann;
+  p $snp_ann if $self->debug;
 
   map { $record->{$_} = $gene_ann->{$_} } keys %$gene_ann;
   map { $record->{$_} = $snp_ann->{$_} } keys %$snp_ann;
