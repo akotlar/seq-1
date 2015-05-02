@@ -53,17 +53,14 @@ sub load_genome_sequence
   my $genome_length = -s $sequence_file_path;
   my $seqRef : shared  = shared_clone([]);
   
-  my $seq = '';
+  $seqRef->[0] = ''; $seqRef->[1] = $genome_length;
   # error check the idx_file
   croak "ERROR: expected file: '$sequence_file_path' does not exist." unless -f $sequence_file_path;
   croak "ERROR: expected file: '$sequence_file_path' is empty." unless $genome_length;
 
-  read $genome_seq_fh, $seq, $genome_length;
+  read $genome_seq_fh, $seqRef->[0], $genome_length;
 
-  push(@$seqRef, $seq);
-  push(@$seqRef, $genome_length);
-
-  #$self->storeSeq($sequence_file_name,$seqRef);
+  $self->storeSeq($sequence_file_name,$seqRef);
   
   return $seqRef;
 }
