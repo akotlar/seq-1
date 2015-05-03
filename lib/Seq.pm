@@ -217,7 +217,7 @@ sub annotate_snpfile {
       print "ids hash:\n";
       p %ids if $self->debug;
 
-      @sample_ids = keys %ids; # to avoid calling keys on every _get_minor_allele_carriers call
+      @sample_ids = sort { $a <=> $b }  keys %ids; # to avoid calling keys on every _get_minor_allele_carriers call
 
       next;
     }
