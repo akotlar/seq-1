@@ -304,7 +304,7 @@ sub get_snp_annotation {
   p $ref_site_annotation if $self->debug;
 
   # gene site annotations
-  my $gene_aref //= $ref_site_annotation->{gene_data};
+  my $gene_aref = $ref_site_annotation->{gene_data};
   my %gene_site_annotation;
   for my $gene_site (@$gene_aref) {
     $gene_site->{minor_allele} = $new_base;
@@ -323,7 +323,7 @@ sub get_snp_annotation {
   }
 
   # snp site annotation
-  my $snp_aref //= $ref_site_annotation->{snp_data};
+  my $snp_aref = $ref_site_annotation->{snp_data};
   my %snp_site_annotation;
   for my $snp_site (@$snp_aref) {
     my $san = Seq::Site::Snp->new($snp_site)->as_href_with_NAs;

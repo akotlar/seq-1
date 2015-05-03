@@ -87,19 +87,29 @@ else {
 
 # read config file, setup names for genome and chrs
 my $config_href = LoadFile($config_file) || croak "cannot load $config_file: $!";
-my $genome    //= $config_href->{genome_name};
-my $chrs_aref //= $config_href->{genome_chrs};
+my $genome    = $config_href->{genome_name};
+my $chrs_aref = $config_href->{genome_chrs};
+
+unless ($genome and $chrs_aref ) {
+  say "cannot determine genome and/or chromosomes of genome from: $config_file";
+  exit(1);
+}
 
 # choose gene and snp track names
 my ( $gene_track_name, $snp_track_name );
 for my $track ( @{ $config_href->{sparse_tracks} } ) {
   if ( $track->{type} eq 'gene' ) {
-    $gene_track_name //= $track->{name};
+    $gene_track_name = $track->{name};
   }
   elsif ( $track->{type} eq 'snp' ) {
-    $snp_track_name //= $track->{name};
+    $snp_track_name = $track->{name};
   }
   last if ( $gene_track_name && $snp_track_name );
+}
+
+unless ($gene_track_name and $snp_track_name ) {
+  say "cannot determine gene and snp track names from: $config_file";
+  exit(1);
 }
 
 # setup UCSC connection
@@ -185,7 +195,7 @@ for my $chr (@$chrs_aref) {
         Get_fa_seq( $chr, ( $data{txStart} - $padding ), ( $data{txEnd} + $padding ) );
 
       # add new sequence to existing 'chromosome' sequence
-      my $seq //= $chr_seq{$chr};
+      my $seq = $chr_seq{$chr};
       if ($seq) {
         ${ $chr_seq{$chr} } .= ${$seq_sref};
       }

@@ -31,7 +31,7 @@ sub new_with_config {
   my ( $class, $opts ) = $check->(@_);
   my %opts;
 
-  my $configfile //= $opts->{configfile};
+  my $configfile = $opts->{configfile};
 
   if ( defined $configfile ) {
     my $hash = $class->get_config_from_file($configfile);

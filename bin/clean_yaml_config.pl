@@ -59,7 +59,7 @@ else {
   p $config_href;
 
   for my $i ( keys %$config_href ) {
-    my $type //= reftype $config_href->{$i};
+    my $type = reftype $config_href->{$i};
     if ($type) {
       if ( $type eq "ARRAY" ) {
         say join( " ", $i, scalar @{ $config_href->{$i} } );
