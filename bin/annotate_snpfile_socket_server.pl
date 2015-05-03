@@ -122,7 +122,7 @@ sub worker
 our $W //= 8;
 
 my $lsn = new IO::Socket::INET(
-	Listen => 5, LocalPort => '9003'
+	Listen => 5, LocalPort => '9003', Reuse => 1
 ) or die "Failed to open listening port: $!\n";
 
 my @workers = map threads->create( \&worker, \%cache ), 1 .. $W;
