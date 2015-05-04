@@ -8,10 +8,10 @@ package Seq;
 # VERSION
 
 use Moose 2;
+use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 
 use Carp qw/ croak /;
 use namespace::autoclean;
-use File::Spec;
 use Text::CSV_XS;
 use Seq::Annotate;
 
@@ -21,25 +21,26 @@ with 'Seq::Role::IO';
 
 has snpfile => (
   is       => 'ro',
-  isa      => 'Str',
+  isa      => AbsFile, #file must exist
+  coerce   => 1,
   required => 1,
+  handles => {snpfile_path => 'stringify'}
 );
 
 has configfile => (
   is       => 'ro',
-  isa      => 'Str',
+  isa      => AbsFile, #file must exist
   required => 1,
-);
-
-has db_dir => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
+  coerce   => 1,
+  handles => {configfile_path => 'stringify'}
 );
 
 has out_file => (
-  is  => 'ro',
-  isa => 'Str',
+  is        => 'ro',
+  isa       => AbsPath, #without this, if Annotate.pm chdir, path of user's files may not be as intended
+  coerce    => 1,
+  required  => 0,
+  handles => {out_file_path => 'stringify'}
 );
 
 has debug => (
@@ -56,6 +57,7 @@ has _out_fh => (
 
 has _count_key => (
   is      => 'ro',
+  isa     => 'Str',
   lazy    => 1,
   default => 'count',
 );
@@ -141,42 +143,26 @@ my $heterozygote_regex = qr{[KMRSWYEH]+};
 
 sub _build_out_fh {
   my $self = shift;
-  if ( $self->out_file ) {
-    my $out_file = File::Spec->rel2abs( $self->out_file );
-    # my $out_file = path( $self->out_file )->absolute->stringify;
-    return $self->get_write_bin_fh($out_file);
+  my $output_path = $self->out_file_path;
+  if ( $output_path ) 
+  {
+    return $self->get_write_bin_fh($output_path);
   }
   else {
     return \*STDOUT;
   }
 }
 
-sub _get_annotator {
-  my $self           = shift;
-  my $abs_configfile = File::Spec->rel2abs( $self->configfile );
-  my $abs_db_dir     = File::Spec->rel2abs( $self->db_dir );
-  #my $abs_configfile = path( $self->configfile )->absolute;
-  #my $abs_db_dir     = path( $self->db_dir )->absolute;
-
-  # change to the root dir of the database
-  chdir($abs_db_dir) || die "cannot change to $abs_db_dir: $!";
-
-  return Seq::Annotate->new_with_config( { configfile => $abs_configfile } );
-}
-
 sub annotate_snpfile {
   my $self = shift;
 
-  croak "specify a snpfile to annotate\n" unless $self->snpfile;
+  croak "specify a snpfile to annotate\n" unless $self->snpfile_path;
 
   say "about to load annotation data" if $self->debug;
   # $self->_logger->info("about to load annotation data");
+  my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
 
-  # setup
-  my $abs_snpfile = File::Spec->rel2abs( $self->snpfile );
-  #my $abs_snpfile = path( $self->snpfile )->absolute->stringify;
-  my $snpfile_fh = $self->get_read_fh($abs_snpfile);
-  my $annotator  = $self->_get_annotator;
+  my $annotator  = Seq::Annotate->new_with_config({configfile => $self->configfile_path});
 
   say "loaded annotation data" if $self->debug;
   # $self->_logger->info("loaded annotation data");
@@ -190,13 +176,12 @@ sub annotate_snpfile {
   push @header, 'heterozygotes_ids', 'homozygote_ids', 'chr', 'pos', 'type', 'alleles', 'allele_counts';
   $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
-  say "about to process snp data\n";
+  say "about to process snp data\n" if $self->debug;
 
   # process snpdata
   my ( %header, %ids, @sample_ids, $summary_href );
   while ( my $line = $snpfile_fh->getline ) 
   {
-
     # process snpfile
     chomp $line;
     my $clean_line = $self->clean_line($line);
@@ -211,11 +196,10 @@ sub annotate_snpfile {
     {
       %header = map { $fields[$_] => $_ } ( 0 .. 5 );
       p %header if $self->debug;
+     
       for my $i ( 6 .. $#fields ) {
         $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
       }
-      print "ids hash:\n";
-      p %ids if $self->debug;
 
       @sample_ids = sort(keys %ids); # to avoid calling keys on every _get_minor_allele_carriers call
 

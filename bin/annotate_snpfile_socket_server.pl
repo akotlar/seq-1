@@ -69,38 +69,30 @@ sub worker
 			my $verbose = $user_choices{v} || $user_choices{verbose};
 			my $debug = $user_choices{d} || $user_choices{debug};
 		 
-		  # sanity check
-			unless ( -d $db_location ) {
-			  say "ERROR: Expected '$db_location' to be a directory.";
-			  exit;
-			}
-			unless ( -f $snpfile  ) {
-			  say "ERROR: Expected '$snpfile' to be a file.";
-			  exit;
-			}
-			unless ( -f $yaml_config ) {
-			  say "ERROR: Expected '$yaml_config' to be a file.";
-			  exit;
-			}
+		  # sanity checks mostly now not needed, will be checked in Seq.pm using MooseX:Type:Path:Tiny
 			if ( -f $out_file && !$force ) {
 			  say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
 			  exit;
 			}
 
-			# get absolute path
-			$out_file = File::Spec->rel2abs($out_file);  
-			say "writing annotation data here: $out_file" if $verbose;
+			# get absolute path not needed anymore, handled by coercison in Seq.pm, closer to where file is actually written
 
+			# read config file to determine genome name for loging and to check validity of config
 			# read config file to determine genome name for loging and to check validity of config
 			my $config_href = LoadFile($yaml_config)
 			  || die "ERROR: Cannot read YAML file - $yaml_config: $!\n";
 
-		  # create the annotator
+			# set log file
+			my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
+			my $log_file = File::Spec->rel2abs( ".", $log_name );
+			say "writing log file here: $log_file" if $verbose;
+			Log::Any::Adapter->set( 'File', $log_file );
+
+			# create the annotator
 			my $annotate_instance = Seq->new(
 			  {
 			    snpfile    => $snpfile,
 			    configfile => $yaml_config,
-			    db_dir     => $db_location,
 			    out_file   => $out_file,
 			    debug      => $debug,
 			  }

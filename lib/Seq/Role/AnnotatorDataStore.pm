@@ -8,7 +8,7 @@ package Seq::Role::AnnotatorDataStore;
 # VERSION
 use Moose::Role;
 use Carp qw/ croak /;
-use File::Spec;
+use Path::Tiny qw/ path /;
 use namespace::autoclean;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
@@ -18,6 +18,8 @@ use DDP;
 use threads;
 use threads::shared;
 
+#since we cannot insantiate a role, we may not need this...all variables may be class varialbes
+#however, moose role attributes are composed into the including class, suggesting this may still be needed
 my $_genomeDataHref :shared = shared_clone({}); #a class variable holding our thread-shared data 
 
 has _genomeDataHref => (
@@ -32,39 +34,37 @@ has _genomeDataHref => (
 my $shared_count :shared =0; #debug, to be removed
 my $count : shared =0; #debug, to be removed
 
-sub load_genome_sequence 
+sub load_track_data 
 {
-  state $check = compile( Object, Str, Str ); #self, $sequence_file_name, $sequence_file_parent_path
-  my ( $self, $sequence_file_name, $sequence_file_parent_path) = $check->(@_);
+  state $check = compile( Object, Str, Str ); #self, $track_file_name, $sequence_file_parent_path
+  my ( $self, $track_file_name, $track_file_folder) = $check->(@_);
   
   $count += 1; print "\nTotal count run $count\n";
 
-  if( $self->hasSeq($sequence_file_name) ) #$sequence_file_name acts as sequence hash key
+  if( $self->hasSeq($track_file_name) ) #$track_file_name acts as hash key
   {
     $shared_count+=1;
     print "\nShared the data $shared_count times.\n";
    
-    return $self->getSeq($sequence_file_name); #returns anonymous array [\$seq,$genome_length]
+    return $self->getSeq($track_file_name); #returns anonymous array [\$seq,$track_length]
   }
 
-  $sequence_file_parent_path = File::Spec->rel2abs( $sequence_file_parent_path );
+  my $track_file_path = path( $track_file_folder, $track_file_name )->stringify;
+  my $track_fh = $self->get_read_fh($track_file_path);
+  binmode $track_fh;
 
-  my $sequence_file_path = File::Spec->catfile( $sequence_file_parent_path, $sequence_file_name );
-  my $genome_seq_fh = $self->get_read_fh($sequence_file_path);
-  binmode $genome_seq_fh;
-
-  my $genome_length = -s $sequence_file_path;
+  my $track_length = -s $track_file_path;
   
   my $seqRef : shared  = shared_clone([]);
 
-  $seqRef->[0] = ''; $seqRef->[1] = $genome_length;
+  $seqRef->[0] = ''; $seqRef->[1] = $track_length;
   # error check the idx_file
-  croak "ERROR: expected file: '$sequence_file_path' does not exist." unless -f $sequence_file_path;
-  croak "ERROR: expected file: '$sequence_file_path' is empty." unless $genome_length;
+  croak "ERROR: expected file: '$track_file_path' does not exist." unless -f $track_file_path;
+  croak "ERROR: expected file: '$track_file_path' is empty." unless $track_length;
 
-  read $genome_seq_fh, $seqRef->[0], $genome_length;
+  read $track_fh, $seqRef->[0], $track_length;
 
-  $self->storeSeq($sequence_file_name,$seqRef);
+  $self->storeSeq($track_file_name,$seqRef);
   
   return $seqRef;
 }
