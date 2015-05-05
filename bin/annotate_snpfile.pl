@@ -17,7 +17,7 @@ use YAML::XS qw/ LoadFile /;
 
 use Seq;
 
-my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file, $force,
+my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force,
   $debug );
 
 #
@@ -26,7 +26,6 @@ my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file, $force,
 GetOptions(
   'c|config=s'   => \$yaml_config,
   's|snpfile=s'  => \$snpfile,
-  'l|location=s' => \$db_location,
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
   'o|out=s'      => \$out_file,
@@ -41,34 +40,19 @@ if ($help) {
 
 
 unless ( $yaml_config
-  and $db_location
   and $snpfile
   and $out_file )
 {
   Pod::Usage::pod2usage();
 }
 
-# sanity check
-unless ( -d $db_location ) {
-  say "ERROR: Expected '$db_location' to be a directory.";
-  exit;
-}
-unless ( -f $snpfile ) {
-  say "ERROR: Expected '$snpfile' to be a file.";
-  exit;
-}
-unless ( -f $yaml_config ) {
-  say "ERROR: Expected '$yaml_config' to be a file.";
-  exit;
-}
+# sanity checks mostly now not needed, will be checked in Seq.pm using MooseX:Type:Path:Tiny
 if ( -f $out_file && !$force ) {
   say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
   exit;
 }
 
-# get absolute path
-$out_file = File::Spec->rel2abs($out_file); # path($out_file)->absolute->stringify;
-say "writing annotation data here: $out_file" if $verbose;
+# get absolute path not needed anymore, handled by coercison in Seq.pm, closer to where file is actually written
 
 # read config file to determine genome name for loging and to check validity of config
 my $config_href = LoadFile($yaml_config)
@@ -85,7 +69,6 @@ my $annotate_instance = Seq->new(
   {
     snpfile    => $snpfile,
     configfile => $yaml_config,
-    db_dir     => $db_location,
     out_file   => $out_file,
     debug      => $debug,
   }
