@@ -27,9 +27,11 @@ use 5.10.0;
 use strict;
 use warnings;
 use DBI;
+use Data::Dumper;
 use Carp qw/ croak /;
 use Getopt::Long;
 use File::Spec;
+use File::Path qw/ make_path /;
 use Path::Tiny;
 use IO::File;
 use IO::Compress::Gzip qw/ gzip $GzipError /;
@@ -45,11 +47,13 @@ use DDP;
 #
 # variables
 #
-my ( $help, $out_ext, %snpfile_sites, $padding, $config_file, $twobit_genome );
+my ( $help, $out_ext, %snpfile_sites, $twobit_genome );
 
 # defaults
 my $location       = 'sandbox';
 my $twobit2fa_prog = 'twoBitToFa';
+my $config_file = 'config/hg38_local.yml';
+my $padding = 0;
 my $gene_count     = 1;
 
 GetOptions(
@@ -107,7 +111,7 @@ my $dsn = "DBI:mysql:host=genome-mysql.cse.ucsc.edu;database=$genome";
 my $dbh = DBI->connect( $dsn, "genome", "" ) or croak "cannot connect to $dsn";
 
 # change dir to directory where we'll download data
-chdir $location or croak "cannot change into $location";
+chdir $location or path($location)->mkpath and chdir $location or croak "cannot change into $location";
 
 # get abs path to 2bit file
 #   going to assume twoBitToFa is in path
@@ -127,7 +131,9 @@ my %out_dirs = (
   gene      => "$genome/raw/gene",
   phyloP    => "$genome/raw/phyloP",
   phastCons => "$genome/raw/phastCons",
+  haploIns  => "$genome/raw/haploInsufficiency"
 );
+
 %out_dirs =
   map { $_ => File::Spec->rel2abs( File::Spec->canonpath( $out_dirs{$_} ) ) }
   keys %out_dirs;
@@ -142,6 +148,7 @@ my %out_files = (
   phastCons => 'phastCons.txt.gz',
   snp       => "$snp_track_name.txt.gz",
   clinvar   => 'clinvar.txt.gz',
+  haploIns  => 'haploIns.txt.gz'
 );
 %out_files =
   map { $_ => File::Spec->catfile( $out_dirs{$_}, $out_files{$_} ) }
@@ -242,6 +249,8 @@ chdir $out_dirs{raw} or croak "cannot change dir $out_dirs{raw}\n";
 }
 
 # print fake conservation data - aboult half of the bases will have scores
+# TODO: kotlar: is $i + 1 correct? we are all 0 indexed and UCSC is 0 indexed as well?
+# https://genome.ucsc.edu/FAQ/FAQtracks.html
 for my $chr (@$chrs_aref) {
   for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
     say { $out_fhs{phastCons} } join( "\t", $chr, ( $i + 1 ), rand(1) )
@@ -251,7 +260,28 @@ for my $chr (@$chrs_aref) {
   }
 }
 
-#
+# print fake haploinsufficiency data - about 70% of genes have scores
+# pretends we have genome-wide haploinsufficiency data @ snv resolution
+# TODO: what to do about promoter sequences? 
+{
+  for my $chr (sort keys %found_chr)
+  {
+      say "\n\nWe found the gene symbol: $chr"; # . $found_chr{$chr}->{geneSymbol} ."\n";
+
+      #at the moment %founcchr{$chr} is a 1 length 1D array
+      #but $chr_length{$chr} is a scalar
+      for my $geneRecord ( @{ $found_chr{$chr} } )
+      {
+          for (my $i = 0; $i < $chr_len{$chr}; $i++) 
+          {
+            say { $out_fhs{haploIns} } join( "\t", $chr, $i, rand(1) )
+              if rand(1) > 0.25;
+          }
+      }
+     # say {$out_fhs{haploIns}} join("\t", $found_chr{$chr}{geneSymbol}, rand(1) )
+     #   if rand(1) > 0.25;
+  } 
+}
 # print fake snp data - about 1% of sites will be snps
 # for human genome, create clinvar data, about 0.05% will be clinvar sites
 #
@@ -480,7 +510,7 @@ file
 
 make_fake_genome.pl
   --config <file>
-  --locaiton <path>
+  --location <path>
   --twoBitToFa_prog <path/to/twoBitToFa_binary>
   --twoBit_genome <path/to/2bit_genome>
   --out <output extension for snpfile and bedfile of actual genomic coordinates>
