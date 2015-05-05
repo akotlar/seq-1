@@ -1,3 +1,4 @@
+# perl gitignore
 ld/
 cover_db/
 inc/
@@ -18,7 +19,41 @@ nytprof.out
 /_eumm/
 .tidyall.d
 
-# test files
+# vim gitignore
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
+# OSX gitignore - general
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# OSX gitignore - Icon must end with two \r
+Icon
+
+# OSX gitignore - Thumbnails
+._*
+
+# OSX gitignore - Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+
+# OSX gitignore - Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# seq package test files
 hg38.2bit
 twoBitToFa
 nytprof
