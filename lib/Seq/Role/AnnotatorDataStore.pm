@@ -45,11 +45,19 @@ sub load_track_data
   {
     $shared_count+=1;
     print "\nShared the data $shared_count times.\n";
-   
+    
+    if(is_shared($self->getSeq($track_file_name)->[0]))
+    {
+      print "\nThe data of the $track_file_name index 0 key is shared\n";
+    }
+
     return $self->getSeq($track_file_name); #returns anonymous array [\$seq,$track_length]
   }
 
+  lock( $self->{_genomeDataHref} ); #if we need finer control, like per property, use threads::sempahore
+
   my $track_file_path = path( $track_file_folder, $track_file_name )->stringify;
+
   my $track_fh = $self->get_read_fh($track_file_path);
   binmode $track_fh;
 
@@ -59,7 +67,6 @@ sub load_track_data
 
   $seqRef->[0] = ''; $seqRef->[1] = $track_length;
   # error check the idx_file
-  croak "ERROR: expected file: '$track_file_path' does not exist." unless -f $track_file_path;
   croak "ERROR: expected file: '$track_file_path' is empty." unless $track_length;
 
   read $track_fh, $seqRef->[0], $track_length;

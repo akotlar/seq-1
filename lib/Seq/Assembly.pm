@@ -11,6 +11,7 @@ use Moose 2;
 use Carp qw/ croak /;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
+use Path::Tiny qw/ path /;
 
 use DDP;
 
@@ -21,9 +22,8 @@ with 'Seq::Role::ConfigFromFile';
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-#TODO: Make a MooseX::Types::Path::Tiny Dir object, to check for bad dir, more atomic than doing in Annotate.pm
+has genome_db_dir   => ( is => 'ro', isa => 'Str', required => 1, ); 
 has genome_index_dir   => ( is => 'ro', isa => 'Str', required => 1, ); 
-
 has genome_chrs => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
@@ -109,6 +109,12 @@ sub BUILDARGS {
   else 
   {
     my %hash;
+
+    #to avoid subtle chdir issues in a multi-user env, just make the genome_index_dir correct from the getgo
+    $href->{genome_index_dir} = path( $href->{genome_index_dir} )->absolute( $href->{genome_db_dir} );
+    $href->{genome_index_dir}->mkpath; #makes or returns undef, errors are trapped & exception thrown on error
+    $href->{genome_index_dir} = $href->{genome_index_dir}->stringify; 
+
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) 
     {
       $sparse_track->{genome_name} = $href->{genome_name};

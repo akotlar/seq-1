@@ -8,7 +8,6 @@ package Seq::Annotate;
 # VERSION
 
 use Moose 2;
-use MooseX::Types::Path::Tiny qw/Dir Path/;
 use Moose;
 with 'Seq::Role::ConfigFromFile';
 use Carp qw/ croak /;
@@ -31,20 +30,10 @@ use Seq::Site::Snp;
 extends 'Seq::Assembly';
 with 'Seq::Role::IO', 'Seq::Role::AnnotatorDataStore', 'MooX::Role::Logger';
 
-has 'genome_db_dir' => (
-  is       => 'ro',
-  isa      => Dir, #check -d to make sure real, save typing!
-  coerce   => 1,
-  required => 1,
-  handles  => {genome_db_path => 'stringify'}
-);
-
 has genome_index_dir => (
   is       => 'ro',
-  isa      => Path,
-  coerce   => 1,
-  required => 1,
-  handles  => {genome_index_path => 'stringify'}
+  isa      => 'Str',
+  required => 1
 );
 
 has _genome => (
@@ -117,7 +106,7 @@ has _header => (
 sub _get_bdb_file 
 {
   my ( $self, $name ) = @_;
-  my $file = path($self->genome_index_path, $name )->stringify;
+  my $file = path($self->genome_index_dir, $name )->stringify;
 
   croak "ERROR: expected file: '$file' does not exist." unless -f $file;
 
@@ -209,28 +198,20 @@ sub BUILD
 {
   my $self = shift;
   #not really? occurs later in _load_genome_sized_track?
-  #nothing after $self->_logger runs
-  # $self->_logger->info( "finished loading genome of size " . $self->genome_length );
-  # $self->_logger->info(
-  #   "finished loading " . $self->count_genome_scores . " genome score track(s)" );
-
-  # change to the root dir of the index dir
-  #TODO: This should probably happen in assembly? Seems more atomic, since BUILD here runs after BUILDARGS there
-  chdir($self->genome_db_path) || die "cannot change to ".$self->genome_db_path.": $!";
-
-  $self->genome_index_dir->is_dir || die "$!";
-}
+  $self->_logger->info( "finished loading genome of size " . $self->genome_length );
+  $self->_logger->info(
+    "finished loading " . $self->count_genome_scores . " genome score track(s)" );
+} 
 
 sub _load_genome_sized_track 
 {
   state $check = compile( Object, Object );
+
   my ( $self, $gst ) = $check->(@_);
 
   # genome sized track annotation file
   my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
-  my $idx_dir = $self->genome_index_dir->absolute->stringify;
-
-  print "\nIndex dir is $idx_dir\n";
+  my $idx_dir = $self->genome_index_dir;
 
   my $genome_idx_Aref = $self->load_track_data($idx_name, $idx_dir);
 

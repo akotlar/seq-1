@@ -27,9 +27,10 @@ sub build_gene_db {
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
 
-  # output
-  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path($index_dir) unless -f $index_dir;
+  # we know that genome_index_dir is safe because it is checked in Assembly.pm
+  my $index_dir = $self->genome_index_dir; 
+  #my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  #make_path($index_dir) unless -d $index_dir;
 
   # flanking site range file
   my $gan_name = join( ".", $self->name, 'gan', 'dat' );
