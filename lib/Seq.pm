@@ -247,7 +247,7 @@ sub annotate_snpfile {
         $record_href->{heterozygotes_ids} = (@$het_ids_aref)
           ? join ";", @$het_ids_aref
           : 'NA';
-        $record_href->{homozygote_ids} = (@$hom_ids_aref) ? join ";", @$het_ids_aref : 'NA';
+        $record_href->{homozygote_ids} = (@$hom_ids_aref) ? join ";", @$hom_ids_aref : 'NA';
         #my @record = map { $record_href->{$_} } @header;
         my @record;
         for my $attr (@header) {
