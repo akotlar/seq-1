@@ -8,7 +8,6 @@ use lib './lib';
 use Carp;
 use Getopt::Long;
 use File::Spec;
-# use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
@@ -67,7 +66,8 @@ if ( -f $out_file && !$force ) {
 }
 
 # get absolute path
-$out_file = File::Spec->rel2abs($out_file); # path($out_file)->absolute->stringify;
+$out_file = File::Spec->rel2abs($out_file);
+
 say "writing annotation data here: $out_file" if $verbose;
 
 # read config file to determine genome name for loging and to check validity of config

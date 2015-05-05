@@ -19,7 +19,7 @@ use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
 use Seq::Build::TxTrack;
 use Seq::Build::GenomeSizedTrackStr;
-use Seq::BDBManager;
+use Seq::KCManager;
 use Seq::MongoManager;
 
 use DDP;
@@ -84,7 +84,7 @@ sub build_snp_sites {
     for my $snp_track ( $self->all_snp_tracks ) {
 
       # create file for bdb
-      my $snp_track_bdb = join( '.', $snp_track->name, $snp_track->type, 'db' );
+      my $snp_track_bdb = join( '.', $snp_track->name, $snp_track->type, 'kch' );
 
       # extract keys from snp_track for creation of Seq::Build::SnpTrack
       my $record = $snp_track->as_href;
@@ -94,7 +94,7 @@ sub build_snp_sites {
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
       $record->{no_bdb_insert}    = $self->no_bdb_insert,
-        $record->{bdb_connection} = Seq::BDBManager->new(
+        $record->{bdb_connection} = Seq::KCManager->new(
         {
           filename      => $self->_save_bdb($snp_track_bdb),
           no_bdb_insert => $self->no_bdb_insert,
@@ -115,10 +115,13 @@ sub build_transcript_db {
   for my $gene_track ( $self->all_gene_tracks ) {
 
     # create file for bdb
-    my $gene_track_seq_db = join( '.', $gene_track->name, $gene_track->type, 'seq.db' );
+    my $gene_track_seq_db = join( '.', $gene_track->name, $gene_track->type, 'seq.kch' );
 
     # extract keys from snp_track for creation of Seq::Build::TxTrack
     my $record = $gene_track->as_href;
+
+    my $db_file = $self->_save_bdb($gene_track_seq_db);
+    $self->_logger->info('using db: ' . $db_file );
 
     # add additional keys to the hashref for Seq::Build::TxTrack
     $record->{genome_track_str} = $self->genome_str_track;
@@ -126,9 +129,9 @@ sub build_transcript_db {
     $record->{genome_name}      = $self->genome_name;
     $record->{name}             = $gene_track->name;
     $record->{no_bdb_insert}    = $self->no_bdb_insert,
-      $record->{bdb_connection} = Seq::BDBManager->new(
+      $record->{bdb_connection} = Seq::KCManager->new(
       {
-        filename      => $self->_save_bdb($gene_track_seq_db),
+        filename      => $db_file,
         no_bdb_insert => $self->no_bdb_insert,
       }
       );
@@ -149,7 +152,7 @@ sub build_gene_sites {
   for my $gene_track ( $self->all_gene_tracks ) {
 
     # create a file for bdb
-    my $gene_track_db = join( '.', $gene_track->name, $gene_track->type, 'db' );
+    my $gene_track_db = join( '.', $gene_track->name, $gene_track->type, 'kch' );
 
     # extract keys to the hashref for Seq::Build::GeneTrack
     my $record = $gene_track->as_href;
@@ -158,7 +161,7 @@ sub build_gene_sites {
     $record->{genome_track_str} = $self->genome_str_track;
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
-    $record->{bdb_connection}   = Seq::BDBManager->new(
+    $record->{bdb_connection}   = Seq::KCManager->new(
       {
         filename      => $self->_save_bdb($gene_track_db),
         no_bdb_insert => $self->no_bdb_insert,

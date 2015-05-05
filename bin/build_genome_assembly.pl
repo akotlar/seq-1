@@ -46,14 +46,14 @@ if ($help) {
   exit;
 }
 
-my $method = $cmd_2_method{$build_type};
-
 unless ( defined $yaml_config
-  and defined $db_location
-  and defined $method )
+  and $db_location
+  and exists $cmd_2_method{$build_type}  )
 {
   Pod::Usage::pod2usage();
 }
+
+my $method = $cmd_2_method{$build_type};
 
 # get absolute path for YAML file and db_location
 $yaml_config       = path($yaml_config)->absolute->stringify;

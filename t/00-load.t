@@ -9,7 +9,7 @@ plan tests => 25;
 BEGIN {
   use_ok('Seq')                              || print "Bail out!\n";
   use_ok('Seq::Assembly')                    || print "Bail out!\n";
-  use_ok('Seq::BDBManager')                  || print "Bail out!\n";
+  use_ok('Seq::KCManager')                  || print "Bail out!\n";
   use_ok('Seq::Config::GenomeSizedTrack')    || print "Bail out!\n";
   use_ok('Seq::Config::SparseTrack')         || print "Bail out!\n";
   use_ok('Seq::Fetch')                       || print "Bail out!\n";

@@ -22,7 +22,7 @@ use Data::Dumper;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
-use Seq::BDBManager;
+use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
@@ -63,7 +63,7 @@ has _mongo_connection => (
 
 has bdb_gene => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::BDBManager]',
+  isa     => 'ArrayRef[Seq::KCManager]',
   builder => '_build_bdb_gene',
   traits  => ['Array'],
   handles => { _all_bdb_gene => 'elements', },
@@ -72,7 +72,7 @@ has bdb_gene => (
 
 has bdb_snp => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::BDBManager]',
+  isa     => 'ArrayRef[Seq::KCManager]',
   builder => '_build_bdb_snp',
   traits  => ['Array'],
   handles => { _all_bdb_snp => 'elements', },
@@ -81,7 +81,7 @@ has bdb_snp => (
 
 has bdb_seq => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::BDBManager]',
+  isa     => 'ArrayRef[Seq::KCManager]',
   builder => '_build_bdb_tx',
   traits  => ['Array'],
   handles => { _all_bdb_seq => 'elements', },
@@ -111,8 +111,8 @@ sub _build_bdb_gene {
   my $self  = shift;
   my @array = ();
   for my $gene_track ( $self->all_gene_tracks ) {
-    my $db_name = join ".", $gene_track->name, $gene_track->type, 'db';
-    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
+    my $db_name = join ".", $gene_track->name, $gene_track->type, 'kch';
+    push @array, Seq::KCManager->new( { filename => $self->_get_bdb_file($db_name), } );
   }
   return \@array;
 }
@@ -121,8 +121,8 @@ sub _build_bdb_snp {
   my $self  = shift;
   my @array = ();
   for my $snp_track ( $self->all_snp_tracks ) {
-    my $db_name = join ".", $snp_track->name, $snp_track->type, 'db';
-    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
+    my $db_name = join ".", $snp_track->name, $snp_track->type, 'kch';
+    push @array, Seq::KCManager->new( { filename => $self->_get_bdb_file($db_name), } );
   }
   return \@array;
 }
@@ -131,8 +131,8 @@ sub _build_bdb_tx {
   my $self  = shift;
   my @array = ();
   for my $gene_track ( $self->all_snp_tracks ) {
-    my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'db';
-    push @array, Seq::BDBManager->new( { filename => $self->_get_bdb_file($db_name), } );
+    my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'kch';
+    push @array, Seq::KCManager->new( { filename => $self->_get_bdb_file($db_name), } );
   }
   return \@array;
 }
