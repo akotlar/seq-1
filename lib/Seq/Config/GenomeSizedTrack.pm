@@ -166,37 +166,37 @@ sub _build_next_chr {
 sub get_idx_code {
   my $self = shift;
   my ( $base, $in_gan, $in_gene, $in_exon, $in_snp ) = @_;
-  my $code //= $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
+  my $code = $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
   return $code;
 }
 
 sub get_idx_base {
   my ( $self, $char ) = @_;
-  my $base //= $idx_base{$char};
+  my $base = $idx_base{$char};
   return $base;
 }
 
 sub get_idx_in_gan {
   my ( $self, $char ) = @_;
-  my $code //= $idx_in_gan{$char};
+  my $code = $idx_in_gan{$char};
   return $code;
 }
 
 sub get_idx_in_gene {
   my ( $self, $char ) = @_;
-  my $code //= $idx_in_gene{$char};
+  my $code = $idx_in_gene{$char};
   return $code;
 }
 
 sub get_idx_in_exon {
   my ( $self, $char ) = @_;
-  my $code //= $idx_in_exon{$char};
+  my $code = $idx_in_exon{$char};
   return $code;
 }
 
 sub get_idx_in_snp {
   my ( $self, $char ) = @_;
-  my $code //= $idx_in_snp{$char};
+  my $code = $idx_in_snp{$char};
   return $code;
 }
 

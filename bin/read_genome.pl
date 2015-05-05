@@ -18,13 +18,14 @@
 #   - remove relative library position
 #
 
-use lib './lib';
+use 5.10.0;
+use strict;
+use warnings;
 use autodie;
 use Cpanel::JSON::XS;
 use File::Spec;
 use IO::File;
 use Getopt::Long;
-use Modern::Perl qw/ 2013 /;
 use Pod::Usage;
 use YAML::XS qw/ LoadFile /;
 use Seq::GenomeSizedTrackChar;
@@ -88,13 +89,13 @@ my $out_fh = IO::File->new( "fa.$now_timestamp.seq", 'w' );
 my $config_data = LoadFile($yaml_config);
 
 # genome assembly
-my $assembly //= $config_data->{genome_name};
+my $assembly = $config_data->{genome_name};
 
 # db location
 $db_location = File::Spec->canonpath($db_location);
 
 # index directory
-my $index_dir //= $config_data->{genome_index_dir};
+my $index_dir = $config_data->{genome_index_dir};
 $index_dir = File::Spec->canonpath($index_dir);
 
 #  make genome sized objects

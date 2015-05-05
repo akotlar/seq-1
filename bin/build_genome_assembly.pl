@@ -46,7 +46,7 @@ if ($help) {
   exit;
 }
 
-my $method //= $cmd_2_method{$build_type};
+my $method = $cmd_2_method{$build_type};
 
 unless ( defined $yaml_config
   and defined $db_location

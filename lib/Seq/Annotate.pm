@@ -18,7 +18,7 @@ use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
 use DDP;
-use Data::Dumper; 
+use Data::Dumper;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
@@ -35,10 +35,10 @@ has _genome => (
   required => 1,
   lazy     => 1,
   builder  => '_load_genome',
-  handles  => [ 
-    'get_abs_pos', 'char_genome_length', 'genome_length',
-    'get_base','get_idx_base','get_idx_in_gan',
-    'get_idx_in_gene','get_idx_in_exon','get_idx_in_snp'
+  handles  => [
+    'get_abs_pos',  'char_genome_length', 'genome_length',   'get_base',
+    'get_idx_base', 'get_idx_in_gan',     'get_idx_in_gene', 'get_idx_in_exon',
+    'get_idx_in_snp'
   ]
 );
 
@@ -186,12 +186,12 @@ sub _load_genome_sized_track {
   my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
   my $idx_dir = $self->genome_index_dir;
 
-  my $genome_idx_Aref = $self->load_genome_sequence($idx_name, $idx_dir);
+  my $genome_idx_Aref = $self->load_genome_sequence( $idx_name, $idx_dir );
 
   # yml file
   my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
   my $yml_file = File::Spec->catfile( $idx_dir, $yml_name );
-  
+
   # read yml chr offsets
   my $chr_len_href = LoadFile($yml_file);
 
@@ -206,7 +206,8 @@ sub _load_genome_sized_track {
     }
   );
 
-  $self->_logger->info("read genome-sized track (".$genome_idx_Aref->[1].") from $idx_name");
+  $self->_logger->info(
+    "read genome-sized track (" . $genome_idx_Aref->[1] . ") from $idx_name" );
   return $obj;
 }
 
@@ -296,7 +297,7 @@ sub get_snp_annotation {
   p $ref_site_annotation if $self->debug;
 
   # gene site annotations
-  my $gene_aref //= $ref_site_annotation->{gene_data};
+  my $gene_aref = $ref_site_annotation->{gene_data};
   my %gene_site_annotation;
   for my $gene_site (@$gene_aref) {
     $gene_site->{minor_allele} = $new_base;
@@ -315,7 +316,7 @@ sub get_snp_annotation {
   }
 
   # snp site annotation
-  my $snp_aref //= $ref_site_annotation->{snp_data};
+  my $snp_aref = $ref_site_annotation->{snp_data};
   my %snp_site_annotation;
   for my $snp_site (@$snp_aref) {
     my $san = Seq::Site::Snp->new($snp_site)->as_href_with_NAs;
@@ -334,12 +335,12 @@ sub get_snp_annotation {
   my $record = $ref_site_annotation;
   $record->{gene_site_annotation} = \%gene_site_annotation;
   p %gene_site_annotation if $self->debug;
-  $record->{snp_site_annotation}  = \%snp_site_annotation;
+  $record->{snp_site_annotation} = \%snp_site_annotation;
   p %snp_site_annotation if $self->debug;
 
   my $gene_ann = $self->_mung_output( \%gene_site_annotation );
   p $gene_ann if $self->debug;
-  my $snp_ann  = $self->_mung_output( \%snp_site_annotation );
+  my $snp_ann = $self->_mung_output( \%snp_site_annotation );
   p $snp_ann if $self->debug;
 
   map { $record->{$_} = $gene_ann->{$_} } keys %$gene_ann;

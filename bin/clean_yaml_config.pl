@@ -4,12 +4,14 @@
 # TODO: Ensure this is consistent with recent revamped Seq package scheme
 #
 
-use Modern::Perl qw(2013);
-use YAML::XS qw(Dump Load LoadFile);
+use 5.10.0;
+use strict;
+use warnings;
+use YAML::XS qw/ Dump Load LoadFile/;
 use Getopt::Long;
 use Pod::Usage;
 use Time::localtime;
-use Scalar::Util qw( reftype );
+use Scalar::Util qw/ reftype /;
 use DDP;
 
 # variables
@@ -59,7 +61,7 @@ else {
   p $config_href;
 
   for my $i ( keys %$config_href ) {
-    my $type //= reftype $config_href->{$i};
+    my $type = reftype $config_href->{$i};
     if ($type) {
       if ( $type eq "ARRAY" ) {
         say join( " ", $i, scalar @{ $config_href->{$i} } );

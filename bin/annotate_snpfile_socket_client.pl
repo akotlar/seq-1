@@ -42,7 +42,6 @@ if ($help) {
   exit;
 }
 
-
 unless ( $yaml_config
   and $db_location
   and $snpfile
@@ -83,14 +82,16 @@ my $log_file = File::Spec->rel2abs( ".", $log_name );
 say "writing log file here: $log_file" if $verbose;
 Log::Any::Adapter->set( 'File', $log_file );
 
-my $socket = IO::Socket::INET->new('PeerAddr' => $name,
-                                   'PeerPort' => $port,
-                                'Proto' => 'tcp') or die "Can't create socket ($!)\n";
+my $socket = IO::Socket::INET->new(
+  'PeerAddr' => $name,
+  'PeerPort' => $port,
+  'Proto'    => 'tcp'
+) or die "Can't create socket ($!)\n";
 
 my $command_hash_ref = {
-	'c' => $yaml_config,
-	's' => $snpfile,
-	'l' => $db_location,
+  'c' => $yaml_config,
+  's' => $snpfile,
+  'l' => $db_location,
   'v' => $verbose,
   'h' => $help,
   'o' => $out_file,
@@ -103,4 +104,4 @@ print "Client sending\n";
 my $msg = encode_json($command_hash_ref);
 print $socket $msg;
 close $socket
-    or die "Can't close socket ($!)\n";
+  or die "Can't close socket ($!)\n";

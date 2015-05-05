@@ -123,7 +123,7 @@ sub db_put {
     p $old_href;
 
     for my $key ( keys %$old_href ) {
-      my $new_val //= $href->{$key};
+      my $new_val = $href->{$key};
 
       # is there a new value? if so, should we merge (i.e., is it not identical
       # to what's already stored? )

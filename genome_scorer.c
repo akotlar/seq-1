@@ -69,15 +69,17 @@ typedef struct chrom_node
 CHROM_NODE * my_node_search(char *ss,CHROM_NODE **list,int count)
 {
   if(count <= 0)
-          return NULL;
+    return NULL;
 
   int i = count/2;
   int j = b_comp(ss,&(list[i]));
+
   if(j == 0)
-          return list[i];
+    return list[i];
   if(j < 0)
-          return  my_node_search(ss,list,i);
-          return my_node_search(ss,&(list[i+1]),count-(i+1));
+    return  my_node_search(ss,list,i);
+
+  return my_node_search(ss,&(list[i+1]),count-(i+1));
 }
 
 int main(int argc, char *argv[])

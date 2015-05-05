@@ -109,7 +109,7 @@ has genes_annotated => (
   },
 );
 
-my @allowed_genotype_codes = [qw( A C G T K M R S W Y D E H N )];
+my @allowed_genotype_codes = [qw/ A C G T K M R S W Y D E H N /];
 
 # IPUAC ambiguity simplify representing genotypes
 my %IUPAC_codes = (
@@ -178,7 +178,8 @@ sub annotate_snpfile {
 
   # write header
   my @header = $annotator->all_header;
-  push @header, 'heterozygotes_ids', 'homozygote_ids', 'chr', 'pos', 'type', 'alleles', 'allele_counts';
+  push @header, 'heterozygotes_ids', 'homozygote_ids', 'chr', 'pos', 'type',
+    'alleles', 'allele_counts';
   $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
   say "about to process snp data\n";
@@ -241,25 +242,26 @@ sub annotate_snpfile {
         p $allele if $self->debug;
         next if $allele eq $ref_allele;
         my $record_href = $annotator->get_snp_annotation( $abs_pos, $allele );
-        $record_href->{chr}               = $chr;
-        $record_href->{pos}               = $pos;
-        $record_href->{type}              = $type;
-        $record_href->{alleles}           = $all_alleles;
-        $record_href->{allele_counts}     = $allele_counts;
-        $record_href->{heterozygotes_ids} = (@$het_ids_aref)
+        $record_href->{chr}           = $chr;
+        $record_href->{pos}           = $pos;
+        $record_href->{type}          = $type;
+        $record_href->{alleles}       = $all_alleles;
+        $record_href->{allele_counts} = $allele_counts;
+        $record_href->{heterozygotes_ids} =
+          (@$het_ids_aref)
           ? join ";", @$het_ids_aref
           : 'NA';
         $record_href->{homozygote_ids} = (@$hom_ids_aref) ? join ";", @$het_ids_aref : 'NA';
         #my @record = map { $record_href->{$_} } @header;
         my @record;
         for my $attr (@header) {
-           if (ref $record_href->{$attr} eq 'ARRAY') {
-             push @record, join ";", @{ $record_href->{$attr} };
-           }
-           else {
-             push @record, $record_href->{$attr};
-           }
-         }
+          if ( ref $record_href->{$attr} eq 'ARRAY' ) {
+            push @record, join ";", @{ $record_href->{$attr} };
+          }
+          else {
+            push @record, $record_href->{$attr};
+          }
+        }
 
         if ( $self->debug ) {
           p $record_href;

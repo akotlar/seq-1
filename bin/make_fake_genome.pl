@@ -52,8 +52,8 @@ my ( $help, $out_ext, %snpfile_sites, $twobit_genome );
 # defaults
 my $location       = 'sandbox';
 my $twobit2fa_prog = 'twoBitToFa';
-my $config_file = 'config/hg38_local.yml';
-my $padding = 0;
+my $config_file    = 'config/hg38_local.yml';
+my $padding        = 0;
 my $gene_count     = 1;
 
 GetOptions(
@@ -91,17 +91,17 @@ else {
 
 # read config file, setup names for genome and chrs
 my $config_href = LoadFile($config_file) || croak "cannot load $config_file: $!";
-my $genome    //= $config_href->{genome_name};
-my $chrs_aref //= $config_href->{genome_chrs};
+my $genome      = $config_href->{genome_name};
+my $chrs_aref   = $config_href->{genome_chrs};
 
 # choose gene and snp track names
 my ( $gene_track_name, $snp_track_name );
 for my $track ( @{ $config_href->{sparse_tracks} } ) {
   if ( $track->{type} eq 'gene' ) {
-    $gene_track_name //= $track->{name};
+    $gene_track_name = $track->{name};
   }
   elsif ( $track->{type} eq 'snp' ) {
-    $snp_track_name //= $track->{name};
+    $snp_track_name = $track->{name};
   }
   last if ( $gene_track_name && $snp_track_name );
 }
@@ -111,7 +111,9 @@ my $dsn = "DBI:mysql:host=genome-mysql.cse.ucsc.edu;database=$genome";
 my $dbh = DBI->connect( $dsn, "genome", "" ) or croak "cannot connect to $dsn";
 
 # change dir to directory where we'll download data
-chdir $location or path($location)->mkpath and chdir $location or croak "cannot change into $location";
+chdir $location
+  or path($location)->mkpath and chdir $location
+  or croak "cannot change into $location";
 
 # get abs path to 2bit file
 #   going to assume twoBitToFa is in path
@@ -192,7 +194,7 @@ for my $chr (@$chrs_aref) {
         Get_fa_seq( $chr, ( $data{txStart} - $padding ), ( $data{txEnd} + $padding ) );
 
       # add new sequence to existing 'chromosome' sequence
-      my $seq //= $chr_seq{$chr};
+      my $seq = $chr_seq{$chr};
       if ($seq) {
         ${ $chr_seq{$chr} } .= ${$seq_sref};
       }
@@ -262,25 +264,22 @@ for my $chr (@$chrs_aref) {
 
 # print fake haploinsufficiency data - about 70% of genes have scores
 # pretends we have genome-wide haploinsufficiency data @ snv resolution
-# TODO: what to do about promoter sequences? 
+# TODO: what to do about promoter sequences?
 {
-  for my $chr (sort keys %found_chr)
-  {
-      say "\n\nWe found the gene symbol: $chr"; # . $found_chr{$chr}->{geneSymbol} ."\n";
+  for my $chr ( sort keys %found_chr ) {
+    say "\n\nWe found the gene symbol: $chr"; # . $found_chr{$chr}->{geneSymbol} ."\n";
 
-      #at the moment %founcchr{$chr} is a 1 length 1D array
-      #but $chr_length{$chr} is a scalar
-      for my $geneRecord ( @{ $found_chr{$chr} } )
-      {
-          for (my $i = 0; $i < $chr_len{$chr}; $i++) 
-          {
-            say { $out_fhs{haploIns} } join( "\t", $chr, $i, rand(1) )
-              if rand(1) > 0.25;
-          }
+    #at the moment %founcchr{$chr} is a 1 length 1D array
+    #but $chr_length{$chr} is a scalar
+    for my $geneRecord ( @{ $found_chr{$chr} } ) {
+      for ( my $i = 0; $i < $chr_len{$chr}; $i++ ) {
+        say { $out_fhs{haploIns} } join( "\t", $chr, $i, rand(1) )
+          if rand(1) > 0.25;
       }
-     # say {$out_fhs{haploIns}} join("\t", $found_chr{$chr}{geneSymbol}, rand(1) )
-     #   if rand(1) > 0.25;
-  } 
+    }
+    # say {$out_fhs{haploIns}} join("\t", $found_chr{$chr}{geneSymbol}, rand(1) )
+    #   if rand(1) > 0.25;
+  }
 }
 # print fake snp data - about 1% of sites will be snps
 # for human genome, create clinvar data, about 0.05% will be clinvar sites
