@@ -181,7 +181,7 @@ sub annotate_snpfile {
   push @header, 'heterozygotes_ids', 'homozygote_ids', 'chr', 'pos', 'type', 'alleles', 'allele_counts';
   $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
-  say "about to process snp data";
+  say "about to process snp data\n";
 
   # process snpdata
   my ( %header, %ids );

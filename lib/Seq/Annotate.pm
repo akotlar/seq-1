@@ -18,6 +18,7 @@ use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
 use DDP;
+use Data::Dumper; 
 
 use Seq::GenomeSizedTrackChar;
 use Seq::MongoManager;
@@ -26,7 +27,7 @@ use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::IO', 'MooX::Role::Logger';
+with 'Seq::Role::IO', 'Seq::Role::AnnotatorDataStore', 'MooX::Role::Logger';
 
 has _genome => (
   is       => 'ro',
@@ -34,7 +35,11 @@ has _genome => (
   required => 1,
   lazy     => 1,
   builder  => '_load_genome',
-  handles  => [ 'get_abs_pos', 'char_genome_length', 'genome_length' ]
+  handles  => [ 
+    'get_abs_pos', 'char_genome_length', 'genome_length',
+    'get_base','get_idx_base','get_idx_in_gan',
+    'get_idx_in_gene','get_idx_in_exon','get_idx_in_snp'
+  ]
 );
 
 has _genome_scores => (
@@ -177,29 +182,16 @@ sub _load_genome_sized_track {
   state $check = compile( Object, Object );
   my ( $self, $gst ) = $check->(@_);
 
-  # index dir
-  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-
   # idx file
   my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
-  my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
-  my $idx_fh = $self->get_read_fh($idx_file);
-  binmode $idx_fh;
+  my $idx_dir = $self->genome_index_dir;
+
+  my $genome_idx_Aref = $self->load_genome_sequence($idx_name, $idx_dir);
 
   # yml file
   my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
-  my $yml_file = File::Spec->catfile( $index_dir, $yml_name );
-
-  # read genome
-  my $seq           = '';
-  my $genome_length = -s $idx_file;
-
-  # error check the idx_file
-  croak "ERROR: expected file: '$idx_file' does not exist." unless -f $idx_file;
-  croak "ERROR: expected file: '$idx_file' is empty." unless $genome_length;
-
-  read $idx_fh, $seq, $genome_length;
-
+  my $yml_file = File::Spec->catfile( $idx_dir, $yml_name );
+  
   # read yml chr offsets
   my $chr_len_href = LoadFile($yml_file);
 
@@ -208,13 +200,13 @@ sub _load_genome_sized_track {
       name          => $gst->name,
       type          => $gst->type,
       genome_chrs   => $self->genome_chrs,
-      genome_length => $genome_length,
+      genome_length => $genome_idx_Aref->[1],
       chr_len       => $chr_len_href,
-      char_seq      => \$seq,
+      char_seq      => \$genome_idx_Aref->[0]
     }
   );
 
-  $self->_logger->info("read genome-sized track ($genome_length) from $idx_file");
+  $self->_logger->info("read genome-sized track (".$genome_idx_Aref->[1].") from $idx_name");
   return $obj;
 }
 
@@ -225,12 +217,12 @@ sub get_ref_annotation {
   my %record;
 
   # my $abs_pos   = $self->get_abs_pos( $chr, $pos );
-  my $site_code = $self->_genome->get_base($abs_pos);
-  my $base      = $self->_genome->get_idx_base($site_code);
-  my $gan       = ( $self->_genome->get_idx_in_gan($site_code) ) ? 1 : 0;
-  my $gene      = ( $self->_genome->get_idx_in_gene($site_code) ) ? 1 : 0;
-  my $exon      = ( $self->_genome->get_idx_in_exon($site_code) ) ? 1 : 0;
-  my $snp       = ( $self->_genome->get_idx_in_snp($site_code) ) ? 1 : 0;
+  my $site_code = $self->get_base($abs_pos);
+  my $base      = $self->get_idx_base($site_code);
+  my $gan       = ( $self->get_idx_in_gan($site_code) ) ? 1 : 0;
+  my $gene      = ( $self->get_idx_in_gene($site_code) ) ? 1 : 0;
+  my $exon      = ( $self->get_idx_in_exon($site_code) ) ? 1 : 0;
+  my $snp       = ( $self->get_idx_in_snp($site_code) ) ? 1 : 0;
 
   # $record{chr}       = $chr;
   # $record{rel_pos}   = $pos;
@@ -341,14 +333,14 @@ sub get_snp_annotation {
   }
   my $record = $ref_site_annotation;
   $record->{gene_site_annotation} = \%gene_site_annotation;
-  p %gene_site_annotation;
+  p %gene_site_annotation if $self->debug;
   $record->{snp_site_annotation}  = \%snp_site_annotation;
-  p %snp_site_annotation;
+  p %snp_site_annotation if $self->debug;
 
   my $gene_ann = $self->_mung_output( \%gene_site_annotation );
-  p $gene_ann;
+  p $gene_ann if $self->debug;
   my $snp_ann  = $self->_mung_output( \%snp_site_annotation );
-  p $snp_ann;
+  p $snp_ann if $self->debug;
 
   map { $record->{$_} = $gene_ann->{$_} } keys %$gene_ann;
   map { $record->{$_} = $snp_ann->{$_} } keys %$snp_ann;

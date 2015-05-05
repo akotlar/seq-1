@@ -45,21 +45,39 @@ typedef struct chrom_node
   long offset;
 } CHROM_NODE;
 
-int compare_node(const void *a,const void *b)
-{
-  CHROM_NODE *aa,*bb;
-  aa = (CHROM_NODE*)(*(CHROM_NODE**)a);
-  bb = (CHROM_NODE*)(*(CHROM_NODE**)b);
-  return strcmp(aa->name,bb->name);
-}
 
-int b_comp(const void *a,const void *b)
+// Wrote our own search function since we had problems using bsearch.
+// int compare_node(const void *a,const void *b)
+// {
+//   CHROM_NODE *aa,*bb;
+//   aa = (CHROM_NODE*)(*(CHROM_NODE**)a);
+//   bb = (CHROM_NODE*)(*(CHROM_NODE**)b);
+//   return strcmp(aa->name,bb->name);
+// }
+//
+// int b_comp(const void *a,const void *b)
+// {
+//   CHROM_NODE *bb;
+//   char *aa;
+//   aa = (char *)(a);
+//   bb = (CHROM_NODE*)(*(CHROM_NODE**)b);
+//   printf("\n offset for this %s is %lu \n", bb->name, bb->offset);
+//   return strcmp(aa,bb->name);
+// }
+
+
+CHROM_NODE * my_node_search(char *ss,CHROM_NODE **list,int count)
 {
-  CHROM_NODE *bb;
-  char *aa;
-  aa = (char *)(a);
-  bb = (CHROM_NODE*)(*(CHROM_NODE**)b);
-  return strcmp(aa,bb->name);
+  if(count <= 0)
+          return NULL;
+
+  int i = count/2;
+  int j = b_comp(ss,&(list[i]));
+  if(j == 0)
+          return list[i];
+  if(j < 0)
+          return  my_node_search(ss,list,i);
+          return my_node_search(ss,&(list[i+1]),count-(i+1));
 }
 
 int main(int argc, char *argv[])
@@ -180,10 +198,12 @@ int main(int argc, char *argv[])
       token = strtok(NULL," \n\t=");
       if(strcmp(token,last_chrom) != 0)
       {
-        last_cn = bsearch(token,clist,no_chrom,sizeof(CHROM_NODE *),b_comp);
+        // last_cn = (CHROM_NODE *) bsearch(token,clist,no_chrom,sizeof(CHROM_NODE *),b_comp);
+        last_cn = my_node_search(token,clist,no_chrom);
         if(last_cn)
         {
-          printf("\n Found %s \n",token);
+          printf("\n Found %s which is at memory position %ld has name %s and offset %ld\n",
+            token, (long)last_cn, last_cn->name, last_cn->offset);
           skip_it = 0;
         }
         else
@@ -197,8 +217,10 @@ int main(int argc, char *argv[])
       if(!skip_it)
       {
         current_pos = last_cn->offset-1;
+        // printf("\n New offset: %ld \n", current_pos );
         token = strtok(NULL," \n\t=");
         token = strtok(NULL," \n\t=");
+        // printf("\n New offset: %s \n", token );
         current_pos += atol(token);
         token = strtok(NULL," \n\t=");
         token = strtok(NULL," \n\t=");

@@ -1,5 +1,3 @@
-#!/usr/bin/env perl
-
 use 5.10.0;
 use strict;
 use warnings;
@@ -15,7 +13,12 @@ use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
 use YAML::XS qw/ LoadFile /;
 
-use Seq;
+use IO::Socket::INET;
+
+use Cpanel::JSON::XS;
+
+my $name = '127.0.0.1'; #Server IP
+my $port = '9003';
 
 my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file, $force,
   $debug );
@@ -80,72 +83,24 @@ my $log_file = File::Spec->rel2abs( ".", $log_name );
 say "writing log file here: $log_file" if $verbose;
 Log::Any::Adapter->set( 'File', $log_file );
 
-# create the annotator
-my $annotate_instance = Seq->new(
-  {
-    snpfile    => $snpfile,
-    configfile => $yaml_config,
-    db_dir     => $db_location,
-    out_file   => $out_file,
-    debug      => $debug,
-  }
-);
+my $socket = IO::Socket::INET->new('PeerAddr' => $name,
+                                   'PeerPort' => $port,
+                                'Proto' => 'tcp') or die "Can't create socket ($!)\n";
 
-# annotate the snp file
-$annotate_instance->annotate_snpfile;
+my $command_hash_ref = {
+	'c' => $yaml_config,
+	's' => $snpfile,
+	'l' => $db_location,
+  'v' => $verbose,
+  'h' => $help,
+  'o' => $out_file,
+  'f' => $force,
+  'd' => $debug
+};
 
-__END__
+print "Client sending\n";
 
-=head1 NAME
-
-annotate_snpfile - annotates a snpfile using a given genome assembly specified
-in a configuration file
-
-=head1 SYNOPSIS
-<<<<<<< HEAD
- 
-annotate_snpfile.pl --snp <snpfile> --config <file> --location <path> --out <path>
-=======
-
-annotate_snpfile.pl --config <assembly config> --snp <snpfile> --locaiton <path> --out <file_ext>
->>>>>>> e5fe5671c1e0bd3bc2b05bd21630b043d8375524
-
-=head1 DESCRIPTION
-
-C<annotate_snpfile.pl> takes a yaml configuration file and snpfile and gives
-the annotations for the sites in the snpfile.
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<-s>, B<--snp>
-
-Snp: snpfile
-
-=item B<-c>, B<--config>
-
-Config: A YAML genome assembly configuration file that specifies the various
-tracks and data associated with the assembly. This is the same file that is also
-used by the Seq Package to build the binary genome without any alteration.
-
-=item B<-l>, B<--location>
-
-Location: This is the base directory for the location of the binary index.
-
-=item B<-o>, B<--out>
-
-Output directory: This is the output director.
-
-
-=back
-
-=head1 AUTHOR
-
-Thomas Wingo
-
-=head1 SEE ALSO
-
-Seq Package
-
-=cut
+my $msg = encode_json($command_hash_ref);
+print $socket $msg;
+close $socket
+    or die "Can't close socket ($!)\n";

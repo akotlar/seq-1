@@ -24,7 +24,7 @@ twoBitToFa
 nytprof
 tmp*
 test*
-/sandbox/
+sandbox
 /t/*.sh
 /t/archive
 *.db
@@ -32,3 +32,4 @@ test*
 /bin/genome_scorer
 /ex
 /real_hg38
+*.log
