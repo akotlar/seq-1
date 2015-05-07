@@ -32,25 +32,25 @@ has _genomeDataHref => (
   default => sub { return $_genomeDataHref; }
 );
 
-my $shared_count : shared = 0; #debug, to be removed
-my $count : shared        = 0; #debug, to be removed
+#my $shared_count : shared = 0; #debug, to be removed
+#my $count : shared        = 0; #debug, to be removed
 
 sub load_track_data 
 {
   state $check = compile( Object, Str, Str ); #self, $track_file_name, $sequence_file_parent_path
   my ( $self, $track_file_name, $track_file_folder) = $check->(@_);
   
-  $count += 1; print "\nTotal count run $count\n";
+  #$count += 1; print "\nTotal count run $count\n";
 
   if( $self->hasSeq($track_file_name) ) #$track_file_name acts as hash key
   {
-    $shared_count+=1;
-    print "\nShared the data $shared_count times.\n";
+    # $shared_count+=1;
+    # print "\nShared the data $shared_count times.\n";
     
-    if(is_shared($self->getSeq($track_file_name)->[0]))
-    {
-      print "\nThe data of the $track_file_name index 0 key is shared\n";
-    }
+    # if(is_shared($self->getSeq($track_file_name)->[0]))
+    # {
+    #   print "\nThe data of the $track_file_name index 0 key is shared\n";
+    # }
 
     return $self->getSeq($track_file_name); #returns anonymous array [\$seq,$track_length]
   }

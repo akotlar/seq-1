@@ -131,17 +131,17 @@ has _score_lu => (
 
 sub _build_score_lu {
   my $self = shift;
-  p $self->score_R;
-  p $self->score_min;
-  p $self->score_max;
-  p $self->_score_beta;
+  # p $self->score_R;
+  # p $self->score_min;
+  # p $self->score_max;
+  # p $self->_score_beta;
 
   my %score_lu =
     map { $_ => ( ( ( $_ - 1 ) / $self->_score_beta ) + $self->score_min ) }
     ( 1 .. 254 );
   $score_lu{'0'} = 'NA';
 
-  p %score_lu;
+  # p %score_lu;
   return \%score_lu;
 }
 
