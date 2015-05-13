@@ -38,19 +38,23 @@ has local_file       => ( is => 'ro', isa => 'Str', required => 1, );
 around 'sql_statement' => sub {
   my $orig = shift;
   my $self = shift;
+  my $new_stmt = "";
 
-  my $new_stmt;
-
-  my $gene_table_fields_str = join( ", ", @gene_track_fields, @{ $self->features } );
-  my $snp_table_fields_str  = join( ", ", @snp_track_fields,  @{ $self->features } );
-
-  if ( $self->$orig(@_) =~ m/\_snp\_fields/ ) {
-    ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/;
+  if ($self->type eq 'snp') {
+    my $snp_table_fields_str  = join( ", ", @snp_track_fields,  @{ $self->features } );
+    if ( $self->$orig(@_) =~ m/\_snp\_fields/xm ) {
+      ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/xm;
+    }
+    elsif ( $self->$orig(@_) =~ m/_asterisk/xm ) {
+      ( $new_stmt = $self->$orig(@_) ) =~ s/\_asterisk/\*/xm;
+    }
   }
-  else {
-    ( $new_stmt = $self->$orig(@_) ) =~ s/\_gene\_fields/$gene_table_fields_str/;
+  elsif ( $self->type eq 'gene') {
+    my $gene_table_fields_str = join( ", ", @gene_track_fields, @{ $self->features } );
+    if ( $self->$orig(@_) =~ m/\_gene\_fields/xm ) {
+      ( $new_stmt = $self->$orig(@_) ) =~ s/\_gene\_fields/$gene_table_fields_str/xm;
+    }
   }
-
   return $new_stmt;
 };
 
