@@ -17,8 +17,12 @@ use Seq::Gene;
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
-sub build_gene_db {
+sub _get_gene_data {
   my $self = shift;
+  my $chr  = shift;
+
+  # to return gene data
+  my @gene_data;
 
   $self->_logger->info('starting to build gene site db');
 
@@ -26,35 +30,6 @@ sub build_gene_db {
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
   my $in_fh      = $self->get_read_fh($local_file);
-
-  # output
-  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path($index_dir) unless -f $index_dir;
-
-  # flanking site range file
-  my $gan_name = join( ".", $self->name, 'gan', 'dat' );
-  my $gan_file = File::Spec->catfile( $index_dir, $gan_name );
-
-  # exon site range file
-  my $ex_name = join( ".", $self->name, 'exon', 'dat' );
-  my $ex_file = File::Spec->catfile( $index_dir, $ex_name );
-
-  # gene region files
-  # my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
-  # my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
-
-  # check if we've already build site range files
-  return
-    if ( $self->_has_site_range_file($gan_file)
-    && $self->_has_site_range_file($ex_file) );
-
-  # 1st line needs to be value that should be added to encoded genome for these sites
-  my $gan_fh = $self->get_write_fh($gan_file);
-  say {$gan_fh} $self->in_gan_val;
-  my $ex_fh = $self->get_write_fh($ex_file);
-  say {$ex_fh} $self->in_exon_val;
-  # my $gene_region_fh = $self->get_write_fh($gene_region_file);
-  # say {$gene_region_fh} $self->in_gene_val;
 
   my %ucsc_table_lu = (
     name       => 'transcript_id',
@@ -79,8 +54,8 @@ sub build_gene_db {
     my %data = map { $_ => $fields[ $header{$_} ] }
       ( @{ $self->gene_fields_aref }, $self->all_features );
 
-    # skip sites on alt chromosome builds
-    next unless $self->exists_chr_len( $data{chrom} );
+    # this also has the byproduct of skipping weird chromosomes
+    next unless $data{chrom} eq $chr;
 
     # prepare basic gene data
     my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
@@ -98,9 +73,53 @@ sub build_gene_db {
     #   being.
     my %alt_names = map { $_ => ( $data{$_} ) ? $data{$_} : 'NA' if exists $data{$_} }
       ( $self->all_features );
+    $gene_data{_alt_names} = \%alt_names;
 
-    my $gene = Seq::Gene->new( \%gene_data );
-    $gene->set_alt_names(%alt_names);
+    push @gene_data, \%gene_data;
+  }
+  return \@gene_data;
+}
+
+sub build_gene_db_for_chr {
+
+  my ( $self, $chr )  = @_;
+
+  # output
+  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
+  make_path($index_dir) unless -f $index_dir;
+
+  # flanking site range file
+  my $gan_name = join( ".", $self->name, $chr, 'gan', 'dat' );
+  my $gan_file = File::Spec->catfile( $index_dir, $gan_name );
+
+  # exon site range file
+  my $ex_name = join( ".", $self->name, $chr, 'exon', 'dat' );
+  my $ex_file = File::Spec->catfile( $index_dir, $ex_name );
+
+  # gene region files - moved to package: seq::build::txtrack
+  # my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
+  # my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
+
+  # check if we've already build site range files
+  return
+    if ( $self->_has_site_range_file($gan_file)
+    && $self->_has_site_range_file($ex_file) );
+
+  # 1st line needs to be value that should be added to encoded genome for these sites
+  my $gan_fh = $self->get_write_fh($gan_file);
+  say {$gan_fh} $self->in_gan_val;
+  my $ex_fh = $self->get_write_fh($ex_file);
+  say {$ex_fh} $self->in_exon_val;
+  # my $gene_region_fh = $self->get_write_fh($gene_region_file);
+  # say {$gene_region_fh} $self->in_gene_val;
+
+  # this is an array of hashes
+  my $chr_data_aref = _get_gene_data( $chr );
+
+  for my $gene_href ( @$chr_data_aref ) {
+
+    my $gene = Seq::Gene->new( $gene_href );
+    $gene->set_alt_names( $gene_href->{_alt_names} );
 
     my ( @fl_sites, @ex_sites ) = ();
 

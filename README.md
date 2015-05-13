@@ -152,19 +152,23 @@ Seq Dependencies:
 		File::Copy
 		File::Path
 		File::Spec
+		File::Rsync
 		Getopt::Long
 		Hash::Merge
 		IO::Compress::Gzip
 		IO::File
 		IO::Uncompress::Gunzip
+		KyotoCabinet
 		Lingua::EN::Inflect
 		List::Util
 		Log::Any::Adapter
-		Modern::Perl
+		MongoDB
 		Moose
 		Moose::Role
 		Moose::Util::TypeConstraints
+		MooseX::Role::MongoDB
 		MooseX::Types::Path::Tiny
+		MooX::Role::Logger
 		Path::Tiny
 		Pod::Usage
 		Scalar::Util
@@ -176,12 +180,19 @@ Seq Dependencies:
 		Try::Tiny
 		Type::Params
 		Types::Standard
-		YAML
 		YAML::XS
-		autodie
-		bigint
-		constant
-		lib
 		namespace::autoclean
-		strict
-		warnings
+
+Install them like so:
+
+		cpanm AnyEvent Code::TidyAll Coro Cpanel::JSON::XS Cwd DBD::Mock DBD::mysql \
+		DBI	DB_File DDP Excel::Writer::XLSX ExtUtils::MakeMaker File::Copy File::Path \
+		File::Rsync File::Spec Getopt::Long Hash::Merge IO::All IO::Compress::Gzip \
+		IO::File IO::Uncompress::Gunzip Lingua::EN::Inflect List::Util \
+		Log::Any::Adapter Math::GSL Modern::Perl MongoDB MongoDB::OID \
+		MooX::Role::Logger Moose Moose::Role Moose::Util::TypeConstraints \
+		MooseX::Getopt MooseX::Role::MongoDB MooseX::Types::Path::Tiny Path::Class \
+		Path::Tiny Pod::Usage Scalar::Util Spreadsheet::ParseExcel Spreadsheet::XLSX \
+		Storable Task::Kensho Test::Exception Test::More Text::CSV_XS Text::Iconv \
+		Time::localtime Try::Tiny Type::Params Types::Standard YAML YAML::XS \
+		namespace::autoclean

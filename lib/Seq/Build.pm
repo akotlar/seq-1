@@ -20,7 +20,7 @@ use Seq::Build::GeneTrack;
 use Seq::Build::TxTrack;
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::KCManager;
-use Seq::MongoManager;
+#use Seq::MongoManager;
 
 use DDP;
 
@@ -45,6 +45,12 @@ has genome_scorer => (
   is      => 'ro',
   isa     => 'Str',
   default => 'genome_scorer',
+);
+
+has wanted_chr => (
+  is => 'ro',
+  isa => 'Maybe[Str]',
+  default => undef,
 );
 
 sub _build_genome_str_track {
@@ -168,8 +174,16 @@ sub build_gene_sites {
       }
     );
 
+    my $wanted_chr = $self->wanted_chr;
     my $gene_db = Seq::Build::GeneTrack->new($record);
-    $gene_db->build_gene_db;
+    for my $chr ($self->all_genome_chrs) {
+
+      # skip to the next chr if we specified a chr to build and this chr isn't
+      #   the one we specified
+      next unless $wanted_chr && $wanted_chr eq $chr;
+      $self->_logger->info('building gene track for ' . $chr );
+      $gene_db->build_gene_db_for_chr($chr);
+    }
   }
   $self->_logger->info('finished building gene track');
 }
