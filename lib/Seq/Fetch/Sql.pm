@@ -75,7 +75,7 @@ sub _write_sql_data {
         push @sql_data, $clean_row_aref;
       }
       $line_cnt++;
-      if ( scalar @sql_data == 1000 ) {
+      if ( scalar @sql_data > 1000 ) {
         map { say { $out_fh } join( "\t", @$_ ); } @sql_data;
         @sql_data = ( );
       }
