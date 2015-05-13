@@ -10,16 +10,18 @@ use Moose;
 use namespace::autoclean;
 use Time::localtime;
 
-use DDP;
-
 extends 'Seq::Config::SparseTrack';
-with 'Seq::Role::IO';
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
-my $year          = localtime->year() + 1900;
-my $mos           = localtime->mon() + 1;
-my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, localtime->mday );
+# time stamp
+my $year = localtime->year() + 1900;
+my $mos  = localtime->mon() + 1;
+my $day  = localtime->mday;
+my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, $day );
 
 has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
+has act     => ( is => 'ro', isa => 'Bool', );
+has verbose => ( is => 'ro', isa => 'Bool', );
 has dsn => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
 has host => (
   is       => 'ro',
@@ -31,8 +33,6 @@ has user => ( is => 'ro', isa => 'Str', required => 1, default => "genome" );
 has password => ( is => 'ro', isa => 'Str', );
 has port     => ( is => 'ro', isa => 'Int', );
 has socket   => ( is => 'ro', isa => 'Str', );
-has act      => ( is => 'ro', isa => 'Int' );
-has verbose  => ( is => 'ro', isa => 'Int' );
 
 sub dbh {
   my $self = shift;
@@ -46,36 +46,42 @@ sub dbh {
   return DBI->connect( $dsn, $self->user, $self->password, \%conn_attrs );
 }
 
-sub get_sql_aref {
+sub _write_sql_data {
 
-  my $self = shift;
+  my ($self, $file) = @_;
 
-  # get data
-  my $track_statement = $self->sql_statement;
+  # for return data
+  my @sql_data = ( );
 
-  # get connection handle
-  my $dbh = $self->dbh;
 
-  # prepare and execute mysql command
-  p $track_statement;
-  my $sth = $dbh->prepare($track_statement) or die $dbh->errstr;
-  my $rc = $sth->execute or die $dbh->errstr;
+  if ( $self->act ) {
 
-  # retrieve data
-  my @sql_data;
-  my $line_cnt = 0;
-  while ( my @row = $sth->fetchrow_array ) {
-    if ( $line_cnt == 0 ) {
-      push @sql_data, $sth->{NAME};
+    # prepare file handle
+    my $out_fh = $self->get_write_fh($file);
+
+    # prepare and execute mysql command
+    my $dbh = $self->dbh;
+    my $sth = $dbh->prepare($self->sql_statement) or die $dbh->errstr;
+    my $rc = $sth->execute or die $dbh->errstr;
+
+    # retrieve data
+    my $line_cnt = 0;
+    while ( my @row = $sth->fetchrow_array ) {
+      if ( $line_cnt == 0 ) {
+        push @sql_data, $sth->{NAME};
+      }
+      else {
+        my $clean_row_aref = $self->_clean_row( \@row );
+        push @sql_data, $clean_row_aref;
+      }
+      $line_cnt++;
+      if ( scalar @sql_data == 1000 ) {
+        map { say { $out_fh } join( "\t", @$_ ); } @sql_data;
+        @sql_data = ( );
+      }
     }
-    else {
-      my $clean_row_aref = $self->_clean_row( \@row );
-      push @sql_data, $clean_row_aref;
-    }
-    $line_cnt++;
+    $dbh->disconnect;
   }
-  $dbh->disconnect;
-  return \@sql_data;
 }
 
 sub _clean_row {
@@ -97,6 +103,9 @@ sub _clean_row {
 sub write_sql_data {
   my $self = shift;
 
+  # statement
+  $self->_logger->info( "sql cmd: " . $self->sql_statement ) if $self->verbose;
+
   # set directories
   my $dir = File::Spec->canonpath( $self->local_dir );
   my $cwd = cwd();
@@ -108,18 +117,20 @@ sub write_sql_data {
   my $symlink_target   = File::Spec->catfile( ( $cwd, $dir ), $self->local_file );
 
   # make target dir
-  make_path($dir);
+  make_path($dir) if $self->act;
 
-  my $out_fh = $self->get_write_fh($target_file);
-
-  # get data
-  my $sql_data = $self->get_sql_aref;
+  my $sql_data = $self->_write_sql_data( $target_file );
 
   # write data
-  map { say $out_fh join( "\t", @$_ ); } @$sql_data;
+  # map { say $out_fh join( "\t", @$_ ); } @$sql_data if $self->act;
+
+  $self->_logger->info( "sql wrote data to: " . $target_file ) if $self->verbose;
 
   # link files and return success
-  return symlink $symlink_original, $symlink_target;
+  if ($self->act) {
+    symlink $symlink_original, $symlink_target or
+      $self->_logger->error( "could not symlink $symlink_original, $symlink_target" );
+  }
 }
 
 __PACKAGE__->meta->make_immutable;
