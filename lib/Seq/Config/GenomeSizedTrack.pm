@@ -12,30 +12,55 @@ use Moose::Util::TypeConstraints;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
-use DDP;
-
 enum GenomeSizedTrackType => [ 'genome', 'score', ];
 
-my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp );
 my %base_char_2_txt = ( '0' => 'N', '1' => 'A', '2' => 'C', '3' => 'G', '4' => 'T' );
 my @in_gan  = qw/ 0 8 /; # is gene annotated
 my @in_exon = qw/ 0 16 /;
 my @in_gene = qw/ 0 32 /;
 my @in_snp  = qw/ 0 64 /;
 
+#
+# TODO: replace hashes with arrays
+# my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp );#
+# foreach my $base_char ( keys %base_char_2_txt ) {
+#   foreach my $gan (@in_gan) {
+#     foreach my $gene (@in_gene) {
+#       foreach my $exon (@in_exon) {
+#         foreach my $snp (@in_snp) {
+#           my $char_code = $base_char + $gan + $gene + $exon + $snp;
+#           my $txt_base  = $base_char_2_txt{$base_char};
+#           $idx_codes{$txt_base}{$gan}{$gene}{$exon}{$snp} = $char_code;
+#           $idx_base{$char_code} = $txt_base;
+#           $idx_in_gan{$char_code}  = $txt_base if $gan;
+#           $idx_in_gene{$char_code} = $txt_base if $gene;
+#           $idx_in_exon{$char_code} = $txt_base if $exon;
+#           $idx_in_snp{$char_code}  = $txt_base if $snp;
+#         }
+#       }
+#     }
+#   }
+# }
+
+my ( @idx_codes, @idx_base, @idx_in_gan, @idx_in_gene, @idx_in_exon, @idx_in_snp );
+
+# we will use 0 to indicate absence and undef to indicate an error
+for (my $i = 0; $i < 256; $i++) {
+  $idx_codes[$i] = $idx_base[$i] = $idx_in_gan[$i] = $idx_in_gene[$i] = $idx_in_exon[$i] = $idx_in_snp[$i] = undef;
+}
+
 foreach my $base_char ( keys %base_char_2_txt ) {
-  foreach my $gan (@in_gan) {
+  foreach my $snp (@in_snp) {
     foreach my $gene (@in_gene) {
       foreach my $exon (@in_exon) {
-        foreach my $snp (@in_snp) {
+        foreach my $gan (@in_gan) {
           my $char_code = $base_char + $gan + $gene + $exon + $snp;
           my $txt_base  = $base_char_2_txt{$base_char};
-          $idx_codes{$txt_base}{$gan}{$gene}{$exon}{$snp} = $char_code;
-          $idx_base{$char_code} = $txt_base;
-          $idx_in_gan{$char_code}  = $txt_base if $gan;
-          $idx_in_gene{$char_code} = $txt_base if $gene;
-          $idx_in_exon{$char_code} = $txt_base if $exon;
-          $idx_in_snp{$char_code}  = $txt_base if $snp;
+          $idx_base[$char_code] = $txt_base;
+          $idx_in_gan[$char_code]  = ( $gan ) ? 1 : 0;
+          $idx_in_gene[$char_code] = ( $gene ) ? 1 : 0;
+          $idx_in_exon[$char_code] = ( $exon ) ? 1 : 0;
+          $idx_in_snp[$char_code]  = ( $snp ) ? 1 : 0;
         }
       }
     }
@@ -141,7 +166,6 @@ sub _build_score_lu {
     ( 1 .. 254 );
   $score_lu{'0'} = 'NA';
 
-  p %score_lu;
   return \%score_lu;
 }
 
@@ -163,35 +187,36 @@ sub _build_next_chr {
   return \%next_chrs;
 }
 
-sub get_idx_code {
-  my $self = shift;
-  my ( $base, $in_gan, $in_gene, $in_exon, $in_snp ) = @_;
-  return $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
-}
+# no longer needed as the building is moved to genome_hasher.c
+# sub get_idx_code {
+#   my $self = shift;
+#   my ( $base, $in_gan, $in_gene, $in_exon, $in_snp ) = @_;
+#   return $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
+# }
 
 sub get_idx_base {
   my ( $self, $char ) = @_;
-  return $idx_base{$char};
+  return $idx_base[$char];
 }
 
 sub get_idx_in_gan {
   my ( $self, $char ) = @_;
-  return $idx_in_gan{$char};
+  return $idx_in_gan[$char];
 }
 
 sub get_idx_in_gene {
   my ( $self, $char ) = @_;
-  return $idx_in_gene{$char};
+  return $idx_in_gene[$char];
 }
 
 sub get_idx_in_exon {
   my ( $self, $char ) = @_;
-  return $idx_in_exon{$char};
+  return $idx_in_exon[$char];
 }
 
 sub get_idx_in_snp {
   my ( $self, $char ) = @_;
-  return $idx_in_snp{$char};
+  return $idx_in_snp[$char];
 }
 
 sub in_gan_val {
