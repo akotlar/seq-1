@@ -15,7 +15,7 @@ use YAML::XS qw/ LoadFile /;
 
 use Seq::Build;
 
-my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help );
+my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help, $wanted_chr);
 
 my $genome_hasher_bin = './genome_hasher';
 my $genome_scorer_bin = './genome_scorer';
@@ -39,6 +39,7 @@ GetOptions(
   'h|help'       => \$help,
   'hasher=s'     => \$genome_hasher_bin,
   'scorer=s'     => \$genome_scorer_bin,
+  'wanted_chr=s' => \$wanted_chr,
 );
 
 if ($help) {
@@ -75,7 +76,8 @@ my $builder_options_href = {
   configfile    => $yaml_config,
   no_bdb_insert => $no_bdb,
   genome_scorer => $genome_scorer_bin,
-  genome_hasher => $genome_hasher_bin
+  genome_hasher => $genome_hasher_bin,
+  wanted_chr => $wanted_chr,
 };
 
 my $builder = Seq::Build->new_with_config($builder_options_href);
