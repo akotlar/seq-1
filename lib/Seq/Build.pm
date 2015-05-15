@@ -149,7 +149,7 @@ sub build_transcript_db {
 }
 
 sub build_gene_sites {
-  my $self = shift;
+  my ( $self, $chr ) = @_;
   # build gene tracks - these are gene annotation tracks downloaded from UCSC
   # e.g., knownGene
 

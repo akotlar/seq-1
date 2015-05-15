@@ -13,6 +13,8 @@ use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
 use YAML::XS qw/ LoadFile /;
 
+use DDP;
+
 use Seq::Build;
 
 my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help, $wanted_chr);
@@ -77,10 +79,11 @@ my $builder_options_href = {
   no_bdb_insert => $no_bdb,
   genome_scorer => $genome_scorer_bin,
   genome_hasher => $genome_hasher_bin,
-  wanted_chr => $wanted_chr,
+  wanted_chr    => $wanted_chr,
 };
 
 my $builder = Seq::Build->new_with_config($builder_options_href);
+p $builder;
 
 if ( $method and $config_href ) {
 

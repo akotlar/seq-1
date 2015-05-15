@@ -18,8 +18,7 @@ extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
 sub _get_gene_data {
-  my $self = shift;
-  my $chr  = shift;
+  my ( $self, $chr ) = @_;
 
   # to return gene data
   my @gene_data;
@@ -114,7 +113,7 @@ sub build_gene_db_for_chr {
   # say {$gene_region_fh} $self->in_gene_val;
 
   # this is an array of hashes
-  my $chr_data_aref = _get_gene_data( $chr );
+  my $chr_data_aref = $self->_get_gene_data( $chr );
 
   for my $gene_href ( @$chr_data_aref ) {
 
