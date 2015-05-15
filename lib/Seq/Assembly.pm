@@ -21,10 +21,6 @@ has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_index_dir   => ( is => 'ro', isa => 'Str', required => 1, );
 
-# genome_db_dir is ununsed
-# TODO: decide if we want relative paths or absolute in YAML file
-has genome_db_dir => ( is => 'ro', isa => 'Str', required => 1, );
-
 has genome_chrs => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
@@ -66,24 +62,24 @@ has no_bdb_insert => (
   default => 0,
 );
 
-has host => (
-  is      => 'ro',
-  isa     => 'Str',
-  default => '127.0.0.1',
-);
-
-has port => (
-  is      => 'ro',
-  isa     => 'Int',
-  default => 27107,
-);
-
-has mongo_addr => (
-  is      => 'ro',
-  isa     => 'Str',
-  lazy    => 1,
-  builder => '_build_mongo_addr',
-);
+# has host => (
+#   is      => 'ro',
+#   isa     => 'Str',
+#   default => '127.0.0.1',
+# );
+#
+# has port => (
+#   is      => 'ro',
+#   isa     => 'Int',
+#   default => 27107,
+# );
+#
+# has mongo_addr => (
+#   is      => 'ro',
+#   isa     => 'Str',
+#   lazy    => 1,
+#   builder => '_build_mongo_addr',
+# );
 
 has debug => (
   is      => 'ro',
@@ -91,13 +87,13 @@ has debug => (
   default => 0,
 );
 
-sub _build_mongo_addr {
-  my $self = shift;
-
-  my $addr = 'mongodb://';
-  $addr .= $self->host;
-  return $addr;
-}
+# sub _build_mongo_addr {
+#   my $self = shift;
+#
+#   my $addr = 'mongodb://';
+#   $addr .= $self->host;
+#   return $addr;
+# }
 
 sub BUILDARGS {
   my $class = shift;
@@ -127,8 +123,8 @@ sub BUILDARGS {
       push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
     }
     for my $attrib (
-      qw/ genome_name genome_description genome_chrs genome_index_dir genome_db_dir
-      host port no_bdb_insert genome_hasher genome_scorer debug /
+      qw/ genome_name genome_description genome_chrs genome_index_dir
+      no_bdb_insert genome_hasher genome_scorer debug /
       )
     {
       $hash{$attrib} = $href->{$attrib};
