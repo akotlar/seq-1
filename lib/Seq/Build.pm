@@ -92,6 +92,7 @@ sub build_snp_sites {
       $record->{genome_track_str} = $self->genome_str_track;
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
+      $record->{genome_chrs}      = $self->genome_chrs;
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db($chr);
     }
@@ -264,7 +265,7 @@ sub build_genome_index {
   # get abs path to genome_hasher
   my $genome_hasher = File::Spec->canonpath( $self->genome_hasher );
 
-  my $cmd = qq{ $genome_hasher $genome_str_file $file_list_file $idx_file };
+  my $cmd = qq{$genome_hasher $genome_str_file $file_list_file $idx_file};
 
   $self->_logger->info("running command: $cmd");
 
