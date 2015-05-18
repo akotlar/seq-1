@@ -41,7 +41,7 @@ genome_index_dir: ./hg38/index
 sparse_tracks:
   - type: gene
     local_dir: ./hg38/raw/gene
-    local_file: knownGene.txt.gz
+    local_file: hg38.knownGene.txt
     name: knownGene
     sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
     features:
@@ -55,14 +55,14 @@ sparse_tracks:
       - rfamAcc
   - type: snp
     local_dir: ./hg38/raw/snp
-    local_file: snp141.txt.gz
+    local_file: hg38.snp141.txt
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141
     features:
       - name
   - type: snp
     local_dir: ./hg38/raw/snp
-    local_file: clinvar.txt.gz
+    local_file: hg38.clinvar.txt
     name: clinvar
     sql_statement: SELECT _asterisk FROM Clinvar
     features:
@@ -128,7 +128,7 @@ genome_sized_tracks:
     type: score
     local_dir: ./hg38/raw/phastCons
     local_files:
-      - hg38.txt.gz
+      - hg38.phastCons7way.wigFix.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phastCons7way/
     remote_files:
       - hg38.phastCons7way.wigFix.gz
@@ -136,7 +136,7 @@ genome_sized_tracks:
     type: score
     local_dir: ./hg38/raw/phyloP
     local_files:
-      - hg38.txt.gz
+      - hg38.phyloP7way.wigFix.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP7way/
     remote_files:
       - hg38.phyloP7way.wigFix.gz
