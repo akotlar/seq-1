@@ -37,7 +37,6 @@ GetOptions(
   'l|location=s' => \$db_location,
   't|type=s'     => \$build_type,
   'v|verbose'    => \$verbose,
-  'n|no_bdb'     => \$no_bdb,
   'h|help'       => \$help,
   'hasher=s'     => \$genome_hasher_bin,
   'scorer=s'     => \$genome_scorer_bin,
@@ -76,7 +75,6 @@ my $config_href = LoadFile($yaml_config);
 
 my $builder_options_href = {
   configfile    => $yaml_config,
-  no_bdb_insert => $no_bdb,
   genome_scorer => $genome_scorer_bin,
   genome_hasher => $genome_hasher_bin,
   wanted_chr    => $wanted_chr,
@@ -135,6 +133,11 @@ used by the Seq Package to annotate snpfiles.
 
 Location: Base location of the raw genomic information used to build the
 annotation index.
+
+=item B<-w>, B<--wanted_chr>
+
+Wanted_chr: chromosome to build, if building gene or snp; will build all if not
+specified.
 
 =back
 
