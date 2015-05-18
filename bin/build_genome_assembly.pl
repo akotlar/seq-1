@@ -86,7 +86,7 @@ p $builder;
 if ( $method and $config_href ) {
 
   # set log file
-  my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type, 'log';
+  my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type, $wanted_chr, 'log';
   my $log_file = path($db_location)->child($log_name)->absolute->stringify;
   Log::Any::Adapter->set( 'File', $log_file );
 
