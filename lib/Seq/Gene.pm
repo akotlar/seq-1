@@ -21,6 +21,8 @@ with 'MooX::Role::Logger';
 # would be useful to extend to have capcity to build peptides
 
 my $splice_site_length = 6;
+my $five_prime = qr{\A[5]+};
+my $three_prime = qr{[3]+\z};
 
 has genome_track => (
   is       => 'ro',
@@ -195,21 +197,22 @@ sub BUILD {
 sub _build_transcript_error {
   my $self = shift;
 
+  my @errors;
   # check coding sequence is
   #   1. divisible by 3
   #   2. starts with ATG
   #   3. Ends with stop codon
 
   # check coding sequence
-  my @transcript_annotation = split( //, $self->transcript_annotation );
-  my $coding_bases = grep { /ACTG/ } @transcript_annotation;
-  my @errors;
+  my $coding_seq = $self->transcript_annotation;
+  $coding_seq =~ s/$five_prime//xm;
+  $coding_seq =~ s/$three_prime//xm;
 
   if ( $self->coding_start == $self->coding_end ) {
     return \@errors;
   }
   else {
-    if ( $coding_bases % 3 != 0 ) {
+    if ( ( length $coding_seq ) % 3 != 0 ) {
       push @errors, 'coding sequence not divisible by 3';
     }
 
