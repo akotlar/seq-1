@@ -47,8 +47,8 @@ has genome_scorer => (
 );
 
 has wanted_chr => (
-  is => 'ro',
-  isa => 'Maybe[Str]',
+  is      => 'ro',
+  isa     => 'Maybe[Str]',
   default => undef,
 );
 
@@ -82,7 +82,7 @@ sub build_snp_sites {
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
     my $record = $snp_track->as_href;
 
-    for my $chr ($self->all_genome_chrs) {
+    for my $chr ( $self->all_genome_chrs ) {
 
       # skip to the next chr if we specified a chr to build
       # and this chr isn't the one we specified
@@ -132,7 +132,7 @@ sub build_gene_sites {
     # extract keys to the hashref for Seq::Build::GeneTrack
     my $record = $gene_track->as_href;
 
-    for my $chr ($self->all_genome_chrs) {
+    for my $chr ( $self->all_genome_chrs ) {
 
       # skip to the next chr if we specified a chr to build and this chr isn't
       #   the one we specified
@@ -144,7 +144,7 @@ sub build_gene_sites {
       $record->{genome_name}      = $self->genome_name;
 
       my $wanted_chr = $self->wanted_chr;
-      my $gene_db = Seq::Build::GeneTrack->new($record);
+      my $gene_db    = Seq::Build::GeneTrack->new($record);
       $gene_db->build_gene_db_for_chr($chr);
     }
   }
@@ -234,7 +234,7 @@ sub build_genome_index {
   my $genome_str_file = File::Spec->catfile( $index_dir, $genome_str_name );
 
   # gather files for each chr
-  for my $chr ($self->all_genome_chrs) {
+  for my $chr ( $self->all_genome_chrs ) {
 
     # snp sites
     for my $snp_track ( $self->all_snp_tracks ) {
@@ -244,8 +244,8 @@ sub build_genome_index {
 
     # gene annotation and exon positions
     for my $gene_track ( $self->all_gene_tracks ) {
-      my $gan_name         = join( ".", $gene_track->name, $chr, 'gan', 'dat' );
-      my $exon_name        = join( ".", $gene_track->name, $chr, 'exon', 'dat' );
+      my $gan_name  = join( ".", $gene_track->name, $chr, 'gan',  'dat' );
+      my $exon_name = join( ".", $gene_track->name, $chr, 'exon', 'dat' );
       push @file_list_files, File::Spec->catfile( $index_dir, $gan_name );
       push @file_list_files, File::Spec->catfile( $index_dir, $exon_name );
 

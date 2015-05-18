@@ -20,11 +20,11 @@ with 'Seq::Role::ConfigFromFile', 'MooX::Role::Logger';
 
 # TODO: add --force option to overwrite existing data
 
-has act     => ( is => 'ro', isa => 'Bool', );
-has verbose => ( is => 'ro', isa => 'Bool', );
+has act                => ( is => 'ro', isa => 'Bool', );
+has verbose            => ( is => 'ro', isa => 'Bool', );
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_chrs        => (
+has genome_chrs => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
   traits   => ['Array'],
@@ -48,13 +48,14 @@ sub fetch_sparse_tracks {
   my $self               = shift;
   my $sparse_tracks_aref = $self->sparse_tracks;
   for my $track (@$sparse_tracks_aref) {
-    $self->_logger->info( "about to fetch sql data for: " . $track->name ) if $self->verbose;
+    $self->_logger->info( "about to fetch sql data for: " . $track->name )
+      if $self->verbose;
     $track->write_sql_data;
   }
 }
 
 sub fetch_genome_size_tracks {
-  my $self = shift;
+  my $self                     = shift;
   my $genome_sized_tracks_aref = $self->genome_sized_tracks;
   for my $track (@$genome_sized_tracks_aref) {
     $self->_logger->info( "about to fetch data for: " . $track->name ) if $self->verbose;
@@ -82,8 +83,11 @@ sub BUILDARGS {
       }
       push @{ $new_hash{genome_sized_tracks} }, Seq::Fetch::Files->new($genome_track);
     }
-    for my $attrib (qw/ genome_name genome_description genome_chrs genome_raw_dir
-      verbose act /) {
+    for my $attrib (
+      qw/ genome_name genome_description genome_chrs genome_raw_dir
+      verbose act /
+      )
+    {
       $new_hash{$attrib} = $href->{$attrib} || "";
     }
     return $class->SUPER::BUILDARGS( \%new_hash );

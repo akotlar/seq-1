@@ -39,15 +39,9 @@ has genome_track_str => (
 );
 
 has dbm_file => (
-  is => 'ro',
+  is  => 'ro',
   isa => 'Str',
 );
-
-# has dbm_connection  => (
-#   is       => 'ro',
-#   isa      => 'Seq::KCWriter',
-#   handles  => [ 'db_put', 'db_get' ],
-# );
 
 has counter => (
   traits  => ['Counter'],

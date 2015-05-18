@@ -82,7 +82,7 @@ sub _get_gene_data {
 
 sub build_gene_db_for_chr {
 
-  my ( $self, $chr )  = @_;
+  my ( $self, $chr ) = @_;
 
   # output
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
@@ -102,7 +102,7 @@ sub build_gene_db_for_chr {
 
   my $db = Seq::KCManager->new(
     filename => $dbm_file,
-    mode => 'create',
+    mode     => 'create',
     # bnum => bucket number => 50-400% of expected items in the hash is optimal
     # annotated sites for hg38 is 22727477 (chr1) to 13222 (chrM) with avg of
     # 9060664 and sd of 4925631; thus, took ~1/2 of maximal number of entries
@@ -128,11 +128,11 @@ sub build_gene_db_for_chr {
   # say {$gene_region_fh} $self->in_gene_val;
 
   # this is an array of hashes
-  my $chr_data_aref = $self->_get_gene_data( $chr );
+  my $chr_data_aref = $self->_get_gene_data($chr);
 
-  for my $gene_href ( @$chr_data_aref ) {
+  for my $gene_href (@$chr_data_aref) {
 
-    my $gene = Seq::Gene->new( $gene_href );
+    my $gene = Seq::Gene->new($gene_href);
     $gene->set_alt_names( %{ $gene_href->{_alt_names} } );
 
     my ( @fl_sites, @ex_sites ) = ();

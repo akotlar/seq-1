@@ -45,8 +45,9 @@ my @in_snp  = qw/ 0 64 /;
 my ( @idx_codes, @idx_base, @idx_in_gan, @idx_in_gene, @idx_in_exon, @idx_in_snp );
 
 # we will use 0 to indicate absence and undef to indicate an error
-for (my $i = 0; $i < 256; $i++) {
-  $idx_codes[$i] = $idx_base[$i] = $idx_in_gan[$i] = $idx_in_gene[$i] = $idx_in_exon[$i] = $idx_in_snp[$i] = undef;
+for ( my $i = 0; $i < 256; $i++ ) {
+  $idx_codes[$i] = $idx_base[$i] = $idx_in_gan[$i] = $idx_in_gene[$i] =
+    $idx_in_exon[$i] = $idx_in_snp[$i] = undef;
 }
 
 foreach my $base_char ( keys %base_char_2_txt ) {
@@ -56,11 +57,11 @@ foreach my $base_char ( keys %base_char_2_txt ) {
         foreach my $gan (@in_gan) {
           my $char_code = $base_char + $gan + $gene + $exon + $snp;
           my $txt_base  = $base_char_2_txt{$base_char};
-          $idx_base[$char_code] = $txt_base;
-          $idx_in_gan[$char_code]  = ( $gan ) ? 1 : 0;
-          $idx_in_gene[$char_code] = ( $gene ) ? 1 : 0;
-          $idx_in_exon[$char_code] = ( $exon ) ? 1 : 0;
-          $idx_in_snp[$char_code]  = ( $snp ) ? 1 : 0;
+          $idx_base[$char_code]    = $txt_base;
+          $idx_in_gan[$char_code]  = ($gan) ? 1 : 0;
+          $idx_in_gene[$char_code] = ($gene) ? 1 : 0;
+          $idx_in_exon[$char_code] = ($exon) ? 1 : 0;
+          $idx_in_snp[$char_code]  = ($snp) ? 1 : 0;
         }
       }
     }

@@ -14,14 +14,14 @@ extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO', 'MooX::Role::Logger';
 
 # time stamp
-my $year = localtime->year() + 1900;
-my $mos  = localtime->mon() + 1;
-my $day  = localtime->mday;
+my $year          = localtime->year() + 1900;
+my $mos           = localtime->mon() + 1;
+my $day           = localtime->mday;
 my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, $day );
 
 has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
-has act     => ( is => 'ro', isa => 'Bool', );
-has verbose => ( is => 'ro', isa => 'Bool', );
+has act         => ( is => 'ro', isa => 'Bool', );
+has verbose     => ( is => 'ro', isa => 'Bool', );
 has dsn => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
 has host => (
   is       => 'ro',
@@ -48,11 +48,10 @@ sub dbh {
 
 sub _write_sql_data {
 
-  my ($self, $file) = @_;
+  my ( $self, $file ) = @_;
 
   # for return data
-  my @sql_data = ( );
-
+  my @sql_data = ();
 
   if ( $self->act ) {
 
@@ -61,8 +60,8 @@ sub _write_sql_data {
 
     # prepare and execute mysql command
     my $dbh = $self->dbh;
-    my $sth = $dbh->prepare($self->sql_statement) or die $dbh->errstr;
-    my $rc = $sth->execute or die $dbh->errstr;
+    my $sth = $dbh->prepare( $self->sql_statement ) or die $dbh->errstr;
+    my $rc  = $sth->execute or die $dbh->errstr;
 
     # retrieve data
     my $line_cnt = 0;
@@ -76,8 +75,8 @@ sub _write_sql_data {
       }
       $line_cnt++;
       if ( scalar @sql_data > 1000 ) {
-        map { say { $out_fh } join( "\t", @$_ ); } @sql_data;
-        @sql_data = ( );
+        map { say {$out_fh} join( "\t", @$_ ); } @sql_data;
+        @sql_data = ();
       }
     }
     $dbh->disconnect;
@@ -119,7 +118,7 @@ sub write_sql_data {
   # make target dir
   make_path($dir) if $self->act;
 
-  my $sql_data = $self->_write_sql_data( $target_file );
+  my $sql_data = $self->_write_sql_data($target_file);
 
   # write data
   # map { say $out_fh join( "\t", @$_ ); } @$sql_data if $self->act;
@@ -127,9 +126,9 @@ sub write_sql_data {
   $self->_logger->info( "sql wrote data to: " . $target_file ) if $self->verbose;
 
   # link files and return success
-  if ($self->act) {
-    symlink $symlink_original, $symlink_target or
-      $self->_logger->error( "could not symlink $symlink_original, $symlink_target" );
+  if ( $self->act ) {
+    symlink $symlink_original, $symlink_target
+      or $self->_logger->error("could not symlink $symlink_original, $symlink_target");
   }
 }
 

@@ -21,8 +21,8 @@ with 'MooX::Role::Logger';
 # would be useful to extend to have capcity to build peptides
 
 my $splice_site_length = 6;
-my $five_prime = qr{\A[5]+};
-my $three_prime = qr{[3]+\z};
+my $five_prime         = qr{\A[5]+};
+my $three_prime        = qr{[3]+\z};
 
 has genome_track => (
   is       => 'ro',

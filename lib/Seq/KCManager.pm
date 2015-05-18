@@ -27,8 +27,8 @@ has filename => (
 
 # mode: - read or create
 has mode => (
-  is => 'ro',
-  isa => 'Str',
+  is       => 'ro',
+  isa      => 'Str',
   required => 1,
 );
 
@@ -36,15 +36,15 @@ has mode => (
 # the number of stored elements should be used for optimal speed; this only
 # needs to be set at creation
 has bnum => (
-  is => 'ro',
-  isa => 'Int',
+  is      => 'ro',
+  isa     => 'Int',
   default => 10_000_000,
 );
 
 # size of mapped memory - set for read/write
 has msiz => (
-  is => 'ro',
-  isa => 'Int',
+  is      => 'ro',
+  isa     => 'Int',
   default => 128_000_000,
 );
 
@@ -60,22 +60,22 @@ sub _build_db {
 
   my $this_msiz = join "=", "msiz", $self->msiz;
 
-  if ($self->mode eq 'create' ) {
+  if ( $self->mode eq 'create' ) {
     my $this_bnum = join "=", "bnum", $self->bnum;
 
     # this option is recommended when creating a db with a prespecified bucket
     # number
-    my $options = "opts=HashDB::TLINEAR";
-    my $params = join "#", $options, $this_bnum, $this_msiz;
+    my $options          = "opts=HashDB::TLINEAR";
+    my $params           = join "#", $options, $this_bnum, $this_msiz;
     my $file_with_params = join "#", $self->filename, $params;
-    my $db = new KyotoCabinet::DB;
+    my $db               = new KyotoCabinet::DB;
 
-    if ( !$db->open( $file_with_params, $db->OWRITER | $db->OCREATE )) {
+    if ( !$db->open( $file_with_params, $db->OWRITER | $db->OCREATE ) ) {
       printf STDERR "open error: %s\n", $db->error;
     }
     return $db;
   }
-  elsif ($self->mode eq 'read') {
+  elsif ( $self->mode eq 'read' ) {
     my $file_with_params = join "#", $self->filename, $this_msiz;
     my $db = new KyotoCabinet::DB;
 
@@ -96,7 +96,7 @@ sub db_put {
   my ( $self, $key, $href ) = @_;
 
   # is there data for the key?
-  if ( $self->_db->check( $key ) > 0 )  {
+  if ( $self->_db->check($key) > 0 ) {
 
     # get database data value
     my $old_href = $self->db_get($key);
@@ -104,7 +104,7 @@ sub db_put {
     # get all keys from old and new data
     my @keys = ( keys %$old_href, keys %$href );
 
-    for my $keys ( @keys ) {
+    for my $keys (@keys) {
 
       # retrieve values for old and new hash data
       my $new_val = $href->{$key};
@@ -116,14 +116,14 @@ sub db_put {
 
       if ( defined $new_val ) {
         if ( defined $old_val ) {
-          if ( ref $old_val eq "HASH" && ref $new_val eq "HASH") {
+          if ( ref $old_val eq "HASH" && ref $new_val eq "HASH" ) {
             my @sub_keys = ( keys %$old_val, keys %$new_val );
-            for my $sub_key ( @sub_keys ) {
+            for my $sub_key (@sub_keys) {
               my $new_sub_val = $new_val->{$sub_key};
               my $old_sub_val = $old_val->{$sub_key};
-              if (defined $new_sub_val ) {
-                if (defined $old_sub_val ) {
-                  if ($new_sub_val ne $old_sub_val ) {
+              if ( defined $new_sub_val ) {
+                if ( defined $old_sub_val ) {
+                  if ( $new_sub_val ne $old_sub_val ) {
                     my @old_sub_vals = split /\;/, $old_sub_val;
                     $href->{$key}{$sub_key} = join ";", $new_sub_val, @old_sub_vals;
                   }
@@ -158,8 +158,8 @@ sub db_put {
 sub db_get {
   my ( $self, $key ) = @_;
 
-  if ($self->_db->check( $key ) > 0 ) {
-    return decode_json( $self->_db->get( $key ) );
+  if ( $self->_db->check($key) > 0 ) {
+    return decode_json( $self->_db->get($key) );
   }
   else {
     return;

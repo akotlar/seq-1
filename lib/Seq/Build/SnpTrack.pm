@@ -44,7 +44,7 @@ sub build_snp_db {
 
   my $db = Seq::KCManager->new(
     filename => $dbm_file,
-    mode => 'create',
+    mode     => 'create',
     # chosed as ~ 50% of the largest number of SNPs on a chr (chr 2)
     bnum => 3_000_000,
     msiz => 512_000_000,

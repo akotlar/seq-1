@@ -43,7 +43,7 @@ sub insert_transcript_seq {
   # create dbm object
   my $db = Seq::KCManager->new(
     filename => $dbm_file,
-    mode => 'create',
+    mode     => 'create',
     # bnum => bucket number => 50-400% of expected items in the hash is optimal
     # annotated sites for hg38 is 22727477 (chr1) to 13222 (chrM) with avg of
     # 9060664 and sd of 4925631; thus, took ~1/2 of maximal number of entries
