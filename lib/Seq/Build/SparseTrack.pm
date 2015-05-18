@@ -38,12 +38,16 @@ has genome_track_str => (
   ],
 );
 
-has bdb_connection => (
-  is       => 'ro',
-  isa      => 'Seq::KCManager',
-  required => 1,
-  handles  => [ 'db_put', 'db_get' ],
+has dbm_file => (
+  is => 'ro',
+  isa => 'Str',
 );
+
+# has dbm_connection  => (
+#   is       => 'ro',
+#   isa      => 'Seq::KCWriter',
+#   handles  => [ 'db_put', 'db_get' ],
+# );
 
 has counter => (
   traits  => ['Counter'],
