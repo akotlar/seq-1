@@ -18,9 +18,9 @@ extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
 sub build_snp_db {
-  my $self = shift;
+  my ( $self, $chr ) = @_;
 
-  $self->_logger->info('started building gene site db');
+  $self->_logger->info("starting to build snp db for chr: $chr");
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -32,11 +32,23 @@ sub build_snp_db {
   make_path($index_dir) unless -f $index_dir;
 
   # snp sites
-  my $snp_name = join( ".", $self->name, 'snp', 'dat' );
+  my $snp_name = join( ".", $self->name, $chr, 'snp', 'dat' );
   my $snp_file = File::Spec->catfile( $index_dir, $snp_name );
 
   # check to see if we need to make the site range file
   return if $self->_has_site_range_file($snp_file);
+
+  # dbm file
+  my $dbm_name = join ".", $self->name, $chr, $self->type, 'kch';
+  my $dbm_file = File::Spec->catfile( $index_dir, $dbm_name );
+
+  my $db = Seq::KCManager->new(
+    filename => $dbm_file,
+    mode => 'create',
+    # chosed as ~ 50% of the largest number of SNPs on a chr (chr 2)
+    bnum => 3_000_000,
+    msiz => 512_000_000,
+  );
 
   # 1st line needs to be value that should be added to encoded genome for these sites
   my $snp_fh = $self->get_write_fh($snp_file);
@@ -86,7 +98,7 @@ sub build_snp_db {
 
         # this is a total hack - MAF might be nice to have but doesn't fit into the
         # present framework well since it's not a 'feature' we retrieve but rather
-        # it's calculated... since you get about the same infor with alleleFreqs
+        # it's calculated... since you get about the same info with alleleFreqs
         # I'm not really sure it's even needed.
         $feature_hash{maf} = $min_allele_freq if ($min_allele_freq);
 
@@ -96,26 +108,23 @@ sub build_snp_db {
 
         my $site_href = $snp_site->as_href;
 
-        $self->db_put( $abs_pos, $site_href );
+        $db->db_put( $abs_pos, $site_href );
 
         if ( $self->counter > $self->bulk_insert_threshold ) {
           say {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
           @snp_sites = ();
           $self->reset_counter;
         }
-
       }
     }
     $self->inc_counter;
   }
-
   if ( $self->counter ) {
     say {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
     @snp_sites = ();
     $self->reset_counter;
   }
-
-  $self->_logger->info('finished building snp site db');
+  $self->_logger->info("finished building snp site db for chr: $chr");
 }
 
 __PACKAGE__->meta->make_immutable;
