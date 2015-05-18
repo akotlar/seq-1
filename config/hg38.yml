@@ -41,7 +41,7 @@ genome_index_dir: ./hg38/index
 sparse_tracks:
   - type: gene
     local_dir: ./hg38/raw/gene
-    local_file: hg38.txt
+    local_file: knownGene.txt.gz
     name: knownGene
     sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
     features:
