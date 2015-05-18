@@ -18,9 +18,9 @@ extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
 sub build_snp_db {
-  my ( $self, $chr ) = @_;
+  my ( $self, $wanted_chr ) = @_;
 
-  $self->_logger->info("starting to build snp db for chr: $chr");
+  $self->_logger->info("starting to build snp db for chr: $wanted_chr");
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -32,14 +32,14 @@ sub build_snp_db {
   make_path($index_dir) unless -f $index_dir;
 
   # snp sites
-  my $snp_name = join( ".", $self->name, $chr, 'snp', 'dat' );
+  my $snp_name = join( ".", $self->name, $wanted_chr, 'snp', 'dat' );
   my $snp_file = File::Spec->catfile( $index_dir, $snp_name );
 
   # check to see if we need to make the site range file
   return if $self->_has_site_range_file($snp_file);
 
   # dbm file
-  my $dbm_name = join ".", $self->name, $chr, $self->type, 'kch';
+  my $dbm_name = join ".", $self->name, $wanted_chr, $self->type, 'kch';
   my $dbm_file = File::Spec->catfile( $index_dir, $dbm_name );
 
   my $db = Seq::KCManager->new(
@@ -61,17 +61,15 @@ sub build_snp_db {
     chomp $line;
     my $clean_line = $self->clean_line($line);
     next unless $clean_line;
-    my @fields = split( /\t/, $clean_line );
+    my @fields = split /\t/, $clean_line;
 
-    if ( $. == 1 ) {
-      map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
-      next;
-    }
+    if ( !%header ) { %header = map { $fields[$_] => $_ } ( 0 .. $#fields ); }
+    
+    # process wanted chr
+    next unless $fields[0] eq $wanted_chr;
+
     my %data = map { $_ => $fields[ $header{$_} ] } @{ $self->snp_fields_aref };
     my ( $allele_freq_count, @alleles, @allele_freqs, $min_allele_freq );
-
-    # skip sites on alt chromosome builds
-    next unless $self->exists_chr_len( $data{chrom} );
 
     if ( $data{alleleFreqCount} ) {
       @alleles      = split( /,/, $data{alleles} );
@@ -124,7 +122,7 @@ sub build_snp_db {
     @snp_sites = ();
     $self->reset_counter;
   }
-  $self->_logger->info("finished building snp site db for chr: $chr");
+  $self->_logger->info("finished building snp site db for chr: $wanted_chr");
 }
 
 __PACKAGE__->meta->make_immutable;
