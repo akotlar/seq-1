@@ -56,44 +56,17 @@ has gene_tracks => (
   },
 );
 
-has no_bdb_insert => (
+has dbm_dry_run => (
   is      => 'ro',
   isa     => 'Bool',
   default => 0,
 );
-
-# has host => (
-#   is      => 'ro',
-#   isa     => 'Str',
-#   default => '127.0.0.1',
-# );
-#
-# has port => (
-#   is      => 'ro',
-#   isa     => 'Int',
-#   default => 27107,
-# );
-#
-# has mongo_addr => (
-#   is      => 'ro',
-#   isa     => 'Str',
-#   lazy    => 1,
-#   builder => '_build_mongo_addr',
-# );
 
 has debug => (
   is      => 'ro',
   isa     => 'Bool',
   default => 0,
 );
-
-# sub _build_mongo_addr {
-#   my $self = shift;
-#
-#   my $addr = 'mongodb://';
-#   $addr .= $self->host;
-#   return $addr;
-# }
 
 sub BUILDARGS {
   my $class = shift;
@@ -124,7 +97,7 @@ sub BUILDARGS {
     }
     for my $attrib (
       qw/ genome_name genome_description genome_chrs genome_index_dir
-      no_bdb_insert genome_hasher genome_scorer debug wanted_chr /
+          genome_hasher genome_scorer debug wanted_chr /
       )
     {
       $hash{$attrib} = $href->{$attrib};
