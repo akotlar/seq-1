@@ -51,7 +51,7 @@ for my $type (qw/ gene_db snp_db /) {
     $cmd .= " --verbose" if $verbose;
     $cmd .= " --act"     if $act;
     my $file_name = Write_script( $type, $chr, $cmd );
-    my $q_cmd = qq{qsub -v USER -v PATH -cwd -o $type.$chr.log -j y $file_name};
+    my $q_cmd = qq{qsub -v USER -v PATH -cwd -q lh.q -o $type.$chr.log -j y $file_name};
     say $q_cmd if $verbose;
     system $q_cmd if $act;
   }
