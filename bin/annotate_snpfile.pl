@@ -102,13 +102,8 @@ annotate_snpfile - annotates a snpfile using a given genome assembly specified
 in a configuration file
 
 =head1 SYNOPSIS
-<<<<<<< HEAD
- 
-annotate_snpfile.pl --snp <snpfile> --config <file> --location <path> --out <path>
-=======
 
 annotate_snpfile.pl --config <assembly config> --snp <snpfile> --locaiton <path> --out <file_ext>
->>>>>>> e5fe5671c1e0bd3bc2b05bd21630b043d8375524
 
 =head1 DESCRIPTION
 
@@ -136,7 +131,6 @@ Location: This is the base directory for the location of the binary index.
 =item B<-o>, B<--out>
 
 Output directory: This is the output director.
-
 
 =back
 
