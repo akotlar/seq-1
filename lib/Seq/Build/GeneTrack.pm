@@ -13,6 +13,7 @@ use File::Spec;
 use namespace::autoclean;
 
 use Seq::Gene;
+use Seq::KCManager;
 
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
@@ -23,7 +24,7 @@ sub _get_gene_data {
   # to return gene data
   my @gene_data;
 
-  $self->_logger->info('starting to build gene site db');
+  $self->_logger->info("starting to build gene site db for: $chr");
 
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
@@ -88,12 +89,26 @@ sub build_gene_db_for_chr {
   make_path($index_dir) unless -f $index_dir;
 
   # flanking site range file
-  my $gan_name = join( ".", $self->name, $chr, 'gan', 'dat' );
+  my $gan_name = join ".", $self->name, $chr, 'gan', 'dat';
   my $gan_file = File::Spec->catfile( $index_dir, $gan_name );
 
   # exon site range file
-  my $ex_name = join( ".", $self->name, $chr, 'exon', 'dat' );
+  my $ex_name = join ".", $self->name, $chr, 'exon', 'dat';
   my $ex_file = File::Spec->catfile( $index_dir, $ex_name );
+
+  # dbm file
+  my $dbm_name = join ".", $self->name, $chr, $self->type, 'kch';
+  my $dbm_file = File::Spec->catfile( $index_dir, $dbm_name );
+
+  my $db = Seq::KCManager->new(
+    filename => $dbm_file,
+    mode => 'create',
+    # bnum => bucket number => 50-400% of expected items in the hash is optimal
+    # annotated sites for hg38 is 22727477 (chr1) to 13222 (chrM) with avg of
+    # 9060664 and sd of 4925631; thus, took ~1/2 of maximal number of entries
+    bnum => 12_000_000,
+    msiz => 512_000_000,
+  );
 
   # gene region files - moved to package: seq::build::txtrack
   # my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
@@ -118,7 +133,7 @@ sub build_gene_db_for_chr {
   for my $gene_href ( @$chr_data_aref ) {
 
     my $gene = Seq::Gene->new( $gene_href );
-    $gene->set_alt_names( $gene_href->{_alt_names} );
+    $gene->set_alt_names( %{ $gene_href->{_alt_names} } );
 
     my ( @fl_sites, @ex_sites ) = ();
 
@@ -127,7 +142,7 @@ sub build_gene_db_for_chr {
     for my $site (@flank_exon_sites) {
       my $site_href = $site->as_href;
       my $abs_pos   = $site_href->{abs_pos};
-      $self->db_put( $abs_pos, $site_href );
+      $db->db_put( $abs_pos, $site_href );
       push @fl_sites, $abs_pos;
     }
 
@@ -139,7 +154,7 @@ sub build_gene_db_for_chr {
     for my $site (@exon_sites) {
       my $site_href = $site->as_href;
       my $abs_pos   = $site_href->{abs_pos};
-      $self->db_put( $abs_pos, $site_href );
+      $db->db_put( $abs_pos, $site_href );
       push @ex_sites, $abs_pos;
     }
 
