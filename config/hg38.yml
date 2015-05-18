@@ -55,14 +55,14 @@ sparse_tracks:
       - rfamAcc
   - type: snp
     local_dir: ./hg38/raw/snp
-    local_file: hg38.dbsnp.txt
+    local_file: snp141.txt.gz
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141
     features:
       - name
   - type: snp
     local_dir: ./hg38/raw/snp
-    local_file: hg38.clinvar.txt
+    local_file: clinvar.txt.gz
     name: clinvar
     sql_statement: SELECT _asterisk FROM Clinvar
     features:
