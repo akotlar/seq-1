@@ -44,6 +44,8 @@ $location       = path($location)->absolute->stringify;
 
 my $config_href = LoadFile($config_file);
 
+my $cmd_fh = IO::File->new( 'build.sh', 'w');
+
 for my $type (qw/ gene_db snp_db /) {
   for my $chr ( @{ $config_href->{genome_chrs} } ) {
     my $cmd =
@@ -51,9 +53,9 @@ for my $type (qw/ gene_db snp_db /) {
     $cmd .= " --verbose" if $verbose;
     $cmd .= " --act"     if $act;
     my $file_name = Write_script( $type, $chr, $cmd );
-    my $q_cmd = qq{qsub -v USER -v PATH -cwd -q lh.q -o $type.$chr.log -j y $file_name};
-    say $q_cmd if $verbose;
-    system $q_cmd if $act;
+    my $log_file  = File::Spec->rel2abs( "$type.$chr.log" );
+    my $q_cmd = qq{qsub -v USER -v PATH -cwd -q lh.q -o $log_file -j y $file_name};
+    say {$cmd_fh} $q_cmd if $verbose;
   }
 }
 
