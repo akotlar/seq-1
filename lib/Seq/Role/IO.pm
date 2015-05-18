@@ -17,7 +17,7 @@ use IO::Uncompress::Gunzip qw/ $GunzipError /;
 # tried various ways of assigning this to an attrib, with the intention that
 # one could change the taint checking characters allowed but this is the simpliest
 # one that worked; wanted it precompiled to improve the speed of checking
-my $taint_check_regex = qr{\A([\,\.\-\=\:\/\t\s\w\d]+)\Z};
+my $taint_check_regex = qr{\A([\,\.\-\=\:\/\t\s\w\d]+)\z};
 
 sub get_read_fh {
   my ( $class, $file ) = @_;
@@ -65,7 +65,7 @@ sub get_write_bin_fh {
 sub clean_line {
   my ( $class, $line ) = @_;
 
-  if ( $line =~ m/$taint_check_regex/ ) {
+  if ( $line =~ m/$taint_check_regex/xm ) {
     return $1;
   }
   return;
