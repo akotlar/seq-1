@@ -66,7 +66,7 @@ sub _build_db {
     # this option is recommended when creating a db with a prespecified bucket
     # number
     my $options          = "opts=HashDB::TLINEAR";
-    my $params           = join "#", $options, $this_bnum, $this_msiz;
+    my $params           = join "#", $options, $this_bnum;
     my $file_with_params = join "#", $self->filename, $params;
     my $db               = new KyotoCabinet::DB;
 
