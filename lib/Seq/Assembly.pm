@@ -20,7 +20,6 @@ with 'Seq::Role::ConfigFromFile';
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_index_dir   => ( is => 'ro', isa => 'Str', required => 1, );
-
 has genome_chrs => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
