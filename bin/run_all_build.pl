@@ -12,6 +12,7 @@ use warnings;
 
 use lib './lib';
 use Carp;
+use Cwd;
 use Getopt::Long;
 use File::Spec;
 use Path::Tiny;
@@ -23,6 +24,7 @@ use YAML::XS qw/ LoadFile /;
 
 # variables
 my ( $verbose, $act, $config_file, $out_ext, $location, $build_assembly );
+my $cwd = cwd();
 my @type = qw/ genome conserv transcript_db snp_db gene_db /;
 
 # get options
@@ -63,6 +65,6 @@ sub Write_script {
   my ( $type, $chr, $cmd ) = @_;
   my $file_name = "$type.$chr.sh";
   my $out_fh = IO::File->new( $file_name, 'w' );
-  say { $out_fh } join "\n", '#!bin/sh', $cmd;
+  say { $out_fh } join "\n", '#!bin/sh', qq{cd $cwd}, $cmd;
   return $file_name;
 }
