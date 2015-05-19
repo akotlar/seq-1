@@ -65,6 +65,7 @@ sandbox
 *.db
 /bin/genome_hasher
 /bin/genome_scorer
+/bin/genome_cadd
 /ex
 /real_hg38
 *.log
