@@ -27,7 +27,7 @@ use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::IO', 'Seq::Role::AnnotatorDataStore', 'MooX::Role::Logger';
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
 has _genome => (
   is       => 'ro',
@@ -38,7 +38,7 @@ has _genome => (
   handles  => [
     'get_abs_pos',  'char_genome_length', 'genome_length',   'get_base',
     'get_idx_base', 'get_idx_in_gan',     'get_idx_in_gene', 'get_idx_in_exon',
-    'get_idx_in_snp'
+    'get_idx_in_snp', 'chr_len',
   ]
 );
 
@@ -61,32 +61,33 @@ has _mongo_connection => (
   builder => '_build_mongo_connection',
 );
 
-has bdb_gene => (
+has dbm_gene => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::KCManager]',
-  builder => '_build_bdb_gene',
+  isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
+  builder => '_build_dbm_gene',
   traits  => ['Array'],
-  handles => { _all_bdb_gene => 'elements', },
+  handles => { _all_dbm_gene => 'elements', },
   lazy    => 1,
 );
 
-has bdb_snp => (
+has dbm_snp => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::KCManager]',
-  builder => '_build_bdb_snp',
+  isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
+  builder => '_build_dbm_snp',
   traits  => ['Array'],
-  handles => { _all_bdb_snp => 'elements', },
+  handles => { _all_dbm_snp => 'elements', },
   lazy    => 1,
 );
 
-has bdb_seq => (
+has dbm_tx => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::KCManager]',
-  builder => '_build_bdb_tx',
+  isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
+  builder => '_build_dbm_tx',
   traits  => ['Array'],
-  handles => { _all_bdb_seq => 'elements', },
+  handles => { _all_dbm_seq => 'elements', },
   lazy    => 1,
 );
+
 has _header => (
   is      => 'ro',
   isa     => 'ArrayRef',
@@ -96,7 +97,7 @@ has _header => (
   handles => { all_header => 'elements' },
 );
 
-sub _get_bdb_file {
+sub _get_dbm_file {
   my ( $self, $name ) = @_;
   my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
@@ -107,48 +108,50 @@ sub _get_bdb_file {
   return $file;
 }
 
-sub _build_bdb_gene {
+sub _build_dbm_gene {
   my $self  = shift;
   my @array = ();
-  for my $gene_track ( $self->all_gene_tracks ) {
-    my $db_name = join ".", $gene_track->name, $gene_track->type, 'kch';
-    push @array, Seq::KCManager->new( { filename => $self->_get_bdb_file($db_name), } );
+  for my $chr ( $self->all_genome_chrs ) {
+    for my $gene_track ( $self->all_gene_tracks ) {
+      my $db_name = join ".", $gene_track->name, $chr, $gene_track->type, 'kch';
+      push @array, Seq::KCManager->new( {
+        filename => $self->_get_dbm_file($db_name),
+        mode => 'read',
+        }
+      );
+    }
   }
   return \@array;
 }
 
-sub _build_bdb_snp {
+sub _build_dbm_snp {
   my $self  = shift;
   my @array = ();
-  for my $snp_track ( $self->all_snp_tracks ) {
-    my $db_name = join ".", $snp_track->name, $snp_track->type, 'kch';
-    push @array, Seq::KCManager->new( { filename => $self->_get_bdb_file($db_name), } );
+  for my $chr ( $self->all_genome_chrs ) {
+    for my $snp_track ( $self->all_snp_tracks ) {
+      my $db_name = join ".", $snp_track->name, $chr, $snp_track->type, 'kch';
+      push @array, Seq::KCManager->new( {
+        filename => $self->_get_dbm_file($db_name),
+        mode => 'read',
+        }
+      );
+    }
   }
   return \@array;
 }
 
-sub _build_bdb_tx {
+sub _build_dbm_tx {
   my $self  = shift;
   my @array = ();
   for my $gene_track ( $self->all_snp_tracks ) {
     my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'kch';
-    push @array, Seq::KCManager->new( { filename => $self->_get_bdb_file($db_name), } );
+    push @array, Seq::KCManager->new( {
+      filename => $self->_get_dbm_file($db_name),
+      mode => 'read',
+      }
+    );
   }
   return \@array;
-}
-
-sub _build_mongo_connection {
-  state $check = compile(Object);
-  my ($self) = $check->(@_);
-  return Seq::MongoManager->new(
-    {
-      default_database => $self->genome_name,
-      client_options   => {
-        host => $self->mongo_addr,
-        port => $self->port,
-      },
-    }
-  );
 }
 
 sub _load_genome {
@@ -212,12 +215,10 @@ sub _load_genome_sized_track {
 }
 
 sub get_ref_annotation {
-  state $check = compile( Object, Int );
-  my ( $self, $abs_pos ) = $check->(@_);
+  my ( $self, $chr_index, $abs_pos ) = @_;
 
   my %record;
 
-  # my $abs_pos   = $self->get_abs_pos( $chr, $pos );
   my $site_code = $self->get_base($abs_pos);
   my $base      = $self->get_idx_base($site_code);
   my $gan       = ( $self->get_idx_in_gan($site_code) ) ? 1 : 0;
@@ -225,8 +226,6 @@ sub get_ref_annotation {
   my $exon      = ( $self->get_idx_in_exon($site_code) ) ? 1 : 0;
   my $snp       = ( $self->get_idx_in_snp($site_code) ) ? 1 : 0;
 
-  # $record{chr}       = $chr;
-  # $record{rel_pos}   = $pos;
   $record{abs_pos}   = $abs_pos;
   $record{site_code} = $site_code;
   $record{ref_base}  = $base;
@@ -249,35 +248,16 @@ sub get_ref_annotation {
     my $name  = $gs->name;
     my $score = $gs->get_score($abs_pos);
     $record{$name} = $score;
+    # add CADD stuff here
   }
 
-  if ($gan) {
-    for my $gene_dbs ( $self->_all_bdb_gene ) {
-      push @gene_data, $gene_dbs->db_get($abs_pos);
-    }
+  for my $gene_dbs ( $self->_all_dbm_gene ) {
+    push @gene_data, $gene_dbs->[$chr_index]->db_get($abs_pos);
   }
 
-  if ($snp) {
-    for my $snp_dbs ( $self->_all_bdb_snp ) {
-      push @snp_data, $snp_dbs->db_get($abs_pos);
-    }
+  for my $snp_dbs ( $self->_all_dbm_snp ) {
+    push @snp_data, $snp_dbs->[$chr_index]->db_get($abs_pos);
   }
-
-  # if ($gan) {
-  #   for my $gene_track ( $self->all_gene_tracks ) {
-  #     push @gene_data,
-  #       $self->_mongo_connection->_mongo_collection( $gene_track->name )
-  #       ->find( { abs_pos => $abs_pos } )->all;
-  #   }
-  # }
-  #
-  # if ($snp) {
-  #   for my $snp_track ( $self->all_snp_tracks ) {
-  #     push @snp_data,
-  #       $self->_mongo_connection->_mongo_collection( $snp_track->name )
-  #       ->find( { abs_pos => $abs_pos } )->all;
-  #   }
-  # }
 
   $record{gene_data} = \@gene_data if @gene_data;
   $record{snp_data}  = \@snp_data  if @snp_data;
@@ -287,12 +267,12 @@ sub get_ref_annotation {
 
 # indels will be handled in a separate method
 sub get_snp_annotation {
-  state $check = compile( Object, Int, Str );
-  my ( $self, $abs_pos, $new_base ) = $check->(@_);
+  state $check = compile( Object, Int, Int, Str );
+  my ( $self, $chr_index, $abs_pos, $new_base ) = $check->(@_);
 
   say "about to get ref annotation: $abs_pos" if $self->debug;
 
-  my $ref_site_annotation = $self->get_ref_annotation($abs_pos);
+  my $ref_site_annotation = $self->get_ref_annotation($chr_index, $abs_pos);
 
   p $ref_site_annotation if $self->debug;
 
@@ -484,8 +464,8 @@ sub _annotate_del_sites {
     for my $gene_data ( @{ $record->{gene_data} } ) {
       my $tx_id = $gene_data->{transcript_id};
 
-      for my $bdb_seq ( $self->_all_bdb_seq ) {
-        my $tx_href = $bdb_seq->db_get($tx_id);
+      for my $dbm_seq ( $self->_all_dbm_seq ) {
+        my $tx_href = $dbm_seq->db_get($tx_id);
         if ( defined $tx_href ) {
           push @tx_hrefs, $tx_href;
         }

@@ -17,7 +17,7 @@ use Seq::Annotate;
 
 use DDP;
 
-with 'Seq::Role::IO';
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
 has snpfile => (
   is       => 'ro',
@@ -158,17 +158,13 @@ sub annotate_snpfile {
 
   croak "specify a snpfile to annotate\n" unless $self->snpfile;
 
-  say "about to load annotation data" if $self->debug;
-  # $self->_logger->info("about to load annotation data");
+  $self->_logger->info("about to load annotation data");
 
   # setup
   my $abs_snpfile = File::Spec->rel2abs( $self->snpfile );
   #my $abs_snpfile = path( $self->snpfile )->absolute->stringify;
   my $snpfile_fh = $self->get_read_fh($abs_snpfile);
   my $annotator  = $self->_get_annotator;
-
-  say "loaded annotation data" if $self->debug;
-  # $self->_logger->info("loaded annotation data");
 
   # for writing data
   my $csv_writer = Text::CSV_XS->new(
@@ -180,10 +176,17 @@ sub annotate_snpfile {
     'alleles', 'allele_counts';
   $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
-  say "about to process snp data\n";
+  # import hashes - not calling directly because that's slow
+  my $chrs_aref     = $annotator->genome_chrs;
+  my %chr_index     = map { $chrs_aref->[$_] => $_ } (0..$#{ $chrs_aref } );
+  my $next_chr_href = $annotator->next_chr;
+  my $chr_len_href  = $annotator->chr_len;
+  my $genome_len    = $annotator->char_genome_length;
+
+  $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
 
   # process snpdata
-  my ( %header, %ids );
+  my ( %header, %ids, $last_chr, $chr_offset, $next_chr_offset, $chr_index);
   while ( my $line = $snpfile_fh->getline ) {
 
     # process snpfile
@@ -213,7 +216,26 @@ sub annotate_snpfile {
     my $type          = $fields[ $header{Type} ];
     my $all_alleles   = $fields[ $header{Alleles} ];
     my $allele_counts = $fields[ $header{Allele_Counts} ];
-    my $abs_pos       = $annotator->get_abs_pos( $chr, $pos );
+    my $abs_pos;
+
+    if ($chr eq $last_chr) {
+      $abs_pos = $chr_offset + $pos + 1;
+    }
+    else {
+      $chr_offset      = $chr_len_href->{$chr};
+      $chr_index       = $chr_index{ $chr };
+      $next_chr_offset = $chr_len_href->{ $next_chr_href->{$chr} };
+      $next_chr_offset = ( defined $next_chr_offset ) ? $next_chr_offset : $genome_len;
+
+      unless ( defined $chr_offset and defined $chr_index ) {
+        croak "unrecognized chromosome: $chr\n";
+      }
+      $abs_pos = $chr_offset + $pos + 1;
+    }
+
+    if ($abs_pos < $next_chr_offset) {
+      croak "$chr:$pos is beyond the end of $chr\n";
+    }
 
     # get carrier ids for variant
     my ( $het_ids_aref, $hom_ids_aref ) =
@@ -239,7 +261,7 @@ sub annotate_snpfile {
       for my $allele ( split( /,/, $all_alleles ) ) {
         p $allele if $self->debug;
         next if $allele eq $ref_allele;
-        my $record_href = $annotator->get_snp_annotation( $abs_pos, $allele );
+        my $record_href = $annotator->get_snp_annotation( $chr_index, $abs_pos, $allele );
         $record_href->{chr}           = $chr;
         $record_href->{pos}           = $pos;
         $record_href->{type}          = $type;
@@ -268,6 +290,7 @@ sub annotate_snpfile {
         $csv_writer->print( $self->_out_fh, \@record ) or $csv_writer->error_diag;
       }
     }
+    $last_chr = $chr;
   }
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
