@@ -37,7 +37,6 @@ genome_chrs:
 genome_raw_dir: ./hg38/raw
 genome_index_dir: ./hg38/index
 
-# sparse tracks
 sparse_tracks:
   - type: gene
     local_dir: ./hg38/raw/gene
@@ -67,6 +66,7 @@ sparse_tracks:
     sql_statement: SELECT _asterisk FROM Clinvar
     features:
       - name
+
 genome_sized_tracks:
   - name: hg38
     type: genome
@@ -140,3 +140,11 @@ genome_sized_tracks:
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP7way/
     remote_files:
       - hg38.phyloP7way.wigFix.gz
+  - name: cadd
+    type: cadd
+    local_dir: ./hg38/raw/cadd
+    local_files:
+      - hg38.cadd.gz
+    remote_dir: NA
+    remote_files:
+      - NA
