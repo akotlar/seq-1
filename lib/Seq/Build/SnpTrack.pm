@@ -64,7 +64,7 @@ sub build_snp_db {
     my @fields = split /\t/, $clean_line;
 
     if ( !%header ) { %header = map { $fields[$_] => $_ } ( 0 .. $#fields ); }
-    
+
     # process wanted chr
     next unless $fields[0] eq $wanted_chr;
 
@@ -122,6 +122,10 @@ sub build_snp_db {
     @snp_sites = ();
     $self->reset_counter;
   }
+
+  # add a final blank line to the region file; this is a bit of a hack so the c
+  # hasher will not crash if there are no entries (after the initial idx mask)
+  say {$snp_fh} '';
   $self->_logger->info("finished building snp site db for chr: $wanted_chr");
 }
 

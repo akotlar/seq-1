@@ -159,8 +159,11 @@ sub build_gene_db_for_chr {
     }
 
     # exonic annotations need to be written to both gan and exon files
-    say {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) };
-    say {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) };
+    # - add a final blank line to the region file; this is a bit of a hack so
+    # the c hasher will not crash if there are no entries (after the initial
+    # idx mask)
+    say {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) }, "";
+    say {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) }, "";
     # say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
   }
   $self->_logger->info('finished building gene site db');
