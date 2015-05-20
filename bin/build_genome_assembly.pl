@@ -70,6 +70,10 @@ else {
   croak "expected location of db to be a directory instead got: $db_location\n";
 }
 
+if ( !$wanted_chr ) {
+  $wanted_chr = 'all';
+}
+
 # read config file to determine genome name for log and check validity
 my $config_href = LoadFile($yaml_config);
 
