@@ -94,7 +94,7 @@ sub BUILDARGS {
     }
 
     # if score_R, score_min, or score_max are set by the caller then the
-    # following will override it
+    # following will override the defaults
     for my $attr ( keys %$href ) {
       $hash{$attr} = $href->{$attr};
     }
