@@ -78,7 +78,8 @@ has genome_chrs => (
   required => 1,
   handles  => { all_genome_chrs => 'elements', },
 );
-has _next_chrs => (
+
+has next_chr => (
   is      => 'ro',
   isa     => 'HashRef',
   traits  => ['Hash'],
