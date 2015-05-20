@@ -219,10 +219,10 @@ sub build_genome_index {
   my $idx_name       = join( ".", $self->genome_name, 'genome', 'idx' );
   my $file_list_name = join( ".", $self->genome_name, 'genome', 'list' );
   my $idx_file       = File::Spec->catfile( $index_dir, $idx_name );
-  my $file_list_file = File::Spec->catfile( $index_dir, $file_list_name );
-  my $file_list_fh   = $self->get_write_fh($file_list_file);
+  my $region_list_file = File::Spec->catfile( $index_dir, $file_list_name );
+  my $file_list_fh   = $self->get_write_fh($region_list_file);
 
-  my @file_list_files;
+  my @region_files;
 
   $self->_logger->info('writing genome file list');
 
@@ -240,15 +240,15 @@ sub build_genome_index {
     # snp sites
     for my $snp_track ( $self->all_snp_tracks ) {
       my $snp_name = join( ".", $snp_track->name, $chr, 'snp', 'dat' );
-      push @file_list_files, File::Spec->catfile( $index_dir, $snp_name );
+      push @region_files, File::Spec->catfile( $index_dir, $snp_name );
     }
 
     # gene annotation and exon positions
     for my $gene_track ( $self->all_gene_tracks ) {
       my $gan_name  = join( ".", $gene_track->name, $chr, 'gan',  'dat' );
       my $exon_name = join( ".", $gene_track->name, $chr, 'exon', 'dat' );
-      push @file_list_files, File::Spec->catfile( $index_dir, $gan_name );
-      push @file_list_files, File::Spec->catfile( $index_dir, $exon_name );
+      push @region_files, File::Spec->catfile( $index_dir, $gan_name );
+      push @region_files, File::Spec->catfile( $index_dir, $exon_name );
 
     }
   }
@@ -256,16 +256,16 @@ sub build_genome_index {
   # gather gene region site file
   for my $gene_track ( $self->all_gene_tracks ) {
     my $gene_region_name = join( ".", $gene_track->name, 'gene_region', 'dat' );
-    push @file_list_files, File::Spec->catfile( $index_dir, $gene_region_name );
+    push @region_files, File::Spec->catfile( $index_dir, $gene_region_name );
   }
 
   # write file locations
-  say {$file_list_fh} join "\n", @file_list_files;
+  say {$file_list_fh} join "\n", @region_files;
 
   # get abs path to genome_hasher
   my $genome_hasher = File::Spec->canonpath( $self->genome_hasher );
 
-  my $cmd = qq{$genome_hasher $genome_str_file $file_list_file $idx_file};
+  my $cmd = qq{$genome_hasher $genome_str_file $region_list_file $idx_file};
 
   $self->_logger->info("running command: $cmd");
 
