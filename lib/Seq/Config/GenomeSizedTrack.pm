@@ -12,6 +12,8 @@ use Moose::Util::TypeConstraints;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
+use DDP;
+
 enum GenomeSizedTrackType => [ 'genome', 'score', ];
 
 my %base_char_2_txt = ( '0' => 'N', '1' => 'A', '2' => 'C', '3' => 'G', '4' => 'T' );

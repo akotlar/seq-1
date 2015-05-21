@@ -181,12 +181,13 @@ sub annotate_snpfile {
   my %chr_index     = map { $chrs_aref->[$_] => $_ } (0..$#{ $chrs_aref } );
   my $next_chr_href = $annotator->next_chr;
   my $chr_len_href  = $annotator->chr_len;
-  my $genome_len    = $annotator->char_genome_length;
+  my $genome_len    = $annotator->genome_length;
 
   $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
 
-  # process snpdata
-  my ( %header, %ids, $last_chr, $chr_offset, $next_chr_offset, $chr_index);
+  my ( %header, %ids ) = ( );
+  my ( $last_chr, $chr_offset, $next_chr_offset, $chr_index) = (-9, -9, -9, -9);
+
   while ( my $line = $snpfile_fh->getline ) {
 
     # process snpfile
@@ -222,7 +223,7 @@ sub annotate_snpfile {
       $abs_pos = $chr_offset + $pos + 1;
     }
     else {
-      $chr_offset      = $chr_len_href->{$chr};
+      $chr_offset      = $chr_len_href->{ $chr };
       $chr_index       = $chr_index{ $chr };
       $next_chr_offset = $chr_len_href->{ $next_chr_href->{$chr} };
       $next_chr_offset = ( defined $next_chr_offset ) ? $next_chr_offset : $genome_len;
@@ -233,7 +234,7 @@ sub annotate_snpfile {
       $abs_pos = $chr_offset + $pos + 1;
     }
 
-    if ($abs_pos < $next_chr_offset) {
+    if ($abs_pos > $next_chr_offset) {
       croak "$chr:$pos is beyond the end of $chr\n";
     }
 
@@ -259,7 +260,6 @@ sub annotate_snpfile {
       # get annotation for snp sites
       next unless $type eq 'SNP';
       for my $allele ( split( /,/, $all_alleles ) ) {
-        p $allele if $self->debug;
         next if $allele eq $ref_allele;
         my $record_href = $annotator->get_snp_annotation( $chr_index, $abs_pos, $allele );
         $record_href->{chr}           = $chr;
@@ -267,12 +267,8 @@ sub annotate_snpfile {
         $record_href->{type}          = $type;
         $record_href->{alleles}       = $all_alleles;
         $record_href->{allele_counts} = $allele_counts;
-        $record_href->{heterozygotes_ids} =
-          (@$het_ids_aref)
-          ? join ";", @$het_ids_aref
-          : 'NA';
+        $record_href->{heterozygotes_ids} = (@$het_ids_aref) ? join ";", @$het_ids_aref : 'NA';
         $record_href->{homozygote_ids} = (@$hom_ids_aref) ? join ";", @$hom_ids_aref : 'NA';
-        #my @record = map { $record_href->{$_} } @header;
         my @record;
         for my $attr (@header) {
           if ( ref $record_href->{$attr} eq 'ARRAY' ) {
@@ -281,11 +277,6 @@ sub annotate_snpfile {
           else {
             push @record, $record_href->{$attr};
           }
-        }
-
-        if ( $self->debug ) {
-          p $record_href;
-          p @record;
         }
         $csv_writer->print( $self->_out_fh, \@record ) or $csv_writer->error_diag;
       }
@@ -320,12 +311,6 @@ sub _get_minor_allele_carriers {
     # non-ref heterozygotes - recall E and H are for het insertions and deletions
     #   and they are not part of IUPAC but snpfile spec
     push @het_ids, $id if ( $id_geno =~ m/[KMRSWYEH]+/ );
-  }
-  if ( $self->debug ) {
-    say "het_ids";
-    p @het_ids;
-    say "hom_ids";
-    p @hom_ids;
   }
   return \@het_ids, \@hom_ids;
 }

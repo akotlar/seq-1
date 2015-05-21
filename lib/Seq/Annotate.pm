@@ -38,7 +38,7 @@ has _genome => (
   handles  => [
     'get_abs_pos',  'char_genome_length', 'genome_length',   'get_base',
     'get_idx_base', 'get_idx_in_gan',     'get_idx_in_gene', 'get_idx_in_exon',
-    'get_idx_in_snp', 'chr_len',
+    'get_idx_in_snp', 'chr_len', 'next_chr',
   ]
 );
 
@@ -102,17 +102,25 @@ sub _get_dbm_file {
   my $dir = File::Spec->canonpath( $self->genome_index_dir );
   my $file = File::Spec->catfile( $dir, $name );
 
-  croak "ERROR: expected file: '$file' does not exist." unless -f $file;
-  croak "ERROR: expected file: '$file' is empty." unless $file;
+  warn "WARNING: expected file: '$file' does not exist." unless -f $file;
+  warn "WARNING: expected file: '$file' is empty." unless $file;
+
+  if (!$file or !-f $file) {
+    $self->_logger->warn( "dbm file is either zero-sized or missing: " . $file )
+  }
+  else {
+    $self->_logger->info( "found dbm file: " . $file );
+  }
 
   return $file;
 }
 
 sub _build_dbm_gene {
   my $self  = shift;
-  my @array = ();
-  for my $chr ( $self->all_genome_chrs ) {
-    for my $gene_track ( $self->all_gene_tracks ) {
+  my @gene_tracks = ();
+  for my $gene_track ( $self->all_gene_tracks ) {
+    my @array;
+    for my $chr ( $self->all_genome_chrs ) {
       my $db_name = join ".", $gene_track->name, $chr, $gene_track->type, 'kch';
       push @array, Seq::KCManager->new( {
         filename => $self->_get_dbm_file($db_name),
@@ -120,15 +128,17 @@ sub _build_dbm_gene {
         }
       );
     }
+    push @gene_tracks, \@array;
   }
-  return \@array;
+  return \@gene_tracks;
 }
 
 sub _build_dbm_snp {
   my $self  = shift;
-  my @array = ();
-  for my $chr ( $self->all_genome_chrs ) {
-    for my $snp_track ( $self->all_snp_tracks ) {
+  my @snp_tracks;
+  for my $snp_track ( $self->all_snp_tracks ) {
+    my @array = ();
+    for my $chr ( $self->all_genome_chrs ) {
       my $db_name = join ".", $snp_track->name, $chr, $snp_track->type, 'kch';
       push @array, Seq::KCManager->new( {
         filename => $self->_get_dbm_file($db_name),
@@ -136,8 +146,9 @@ sub _build_dbm_snp {
         }
       );
     }
+    push @snp_tracks, \@array;
   }
-  return \@array;
+  return \@snp_tracks;
 }
 
 sub _build_dbm_tx {
@@ -185,15 +196,32 @@ sub _load_genome_sized_track {
   state $check = compile( Object, Object );
   my ( $self, $gst ) = $check->(@_);
 
+  # index dir
+  my $index_dir = $self->genome_index_dir;
+
+  # alex's new stuff:
+  # my $genome_idx_Aref = $self->load_genome_sequence( $idx_name, $idx_dir );
+  # temporarily reverting to how I wrote this before.
+
   # idx file
   my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
-  my $idx_dir = $self->genome_index_dir;
+  my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
+  my $idx_fh = $self->get_read_fh($idx_file);
+  binmode $idx_fh;
 
-  my $genome_idx_Aref = $self->load_genome_sequence( $idx_name, $idx_dir );
+  # read genome
+  my $seq           = '';
+  my $genome_length = -s $idx_file;
+
+  # error check the idx_file
+  croak "ERROR: expected file: '$idx_file' does not exist." unless -f $idx_file;
+  croak "ERROR: expected file: '$idx_file' is empty." unless $genome_length;
+
+  read $idx_fh, $seq, $genome_length;
 
   # yml file
   my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
-  my $yml_file = File::Spec->catfile( $idx_dir, $yml_name );
+  my $yml_file = File::Spec->catfile( $index_dir, $yml_name );
 
   # read yml chr offsets
   my $chr_len_href = LoadFile($yml_file);
@@ -203,14 +231,14 @@ sub _load_genome_sized_track {
       name          => $gst->name,
       type          => $gst->type,
       genome_chrs   => $self->genome_chrs,
-      genome_length => $genome_idx_Aref->[1],
+      genome_length => $genome_length,
       chr_len       => $chr_len_href,
-      char_seq      => \$genome_idx_Aref->[0]
+      char_seq      => \$seq,
     }
   );
 
   $self->_logger->info(
-    "read genome-sized track (" . $genome_idx_Aref->[1] . ") from $idx_name" );
+    "read genome-sized track (" . $genome_length . ") from $idx_name" );
   return $obj;
 }
 
