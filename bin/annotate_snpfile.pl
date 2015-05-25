@@ -14,14 +14,14 @@ use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
 use YAML::XS qw/ LoadFile /;
 
+use Data::Dump qw/ pp /;
+
 use Seq;
 
 my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force,
   $debug );
 
-#
 # usage
-#
 GetOptions(
   'c|config=s'   => \$yaml_config,
   's|snpfile=s'  => \$snpfile,
@@ -37,7 +37,6 @@ if ($help) {
   exit;
 }
 
-
 unless ( $yaml_config
   and $snpfile
   and $out_file )
@@ -45,24 +44,21 @@ unless ( $yaml_config
   Pod::Usage::pod2usage();
 }
 
-# sanity checks mostly now not needed, will be checked in Seq.pm using MooseX:Type:Path:Tiny
+# sanit checking
 if ( -f $out_file && !$force ) {
   say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
   exit;
 }
 
-<<<<<<< HEAD
 # get absolute path
 $out_file = File::Spec->rel2abs($out_file);
-
 say "writing annotation data here: $out_file" if $verbose;
-=======
-# get absolute path not needed anymore, handled by coercison in Seq.pm, closer to where file is actually written
->>>>>>> 8f44ed26144d2374015c048e6309f0f8d19bef6c
 
 # read config file to determine genome name for loging and to check validity of config
 my $config_href = LoadFile($yaml_config)
   || die "ERROR: Cannot read YAML file - $yaml_config: $!\n";
+
+say pp( $config_href );
 
 # set log file
 my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';

@@ -12,8 +12,10 @@ use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 
 use Carp qw/ croak /;
 use namespace::autoclean;
-use Text::CSV_XS;
+#use Text::CSV_XS;
 use Seq::Annotate;
+use Coro;
+use AnyEvent;
 
 use DDP;
 
@@ -177,14 +179,16 @@ sub annotate_snpfile {
   my $annotator  = Seq::Annotate->new_with_config({configfile => $self->configfile_path});
 
   # for writing data
-  my $csv_writer = Text::CSV_XS->new(
-    { binary => 1, auto_diag => 1, always_quote => 1, eol => "\n" } );
+  #my $csv_writer = Text::CSV_XS->new(
+  #  { binary => 1, auto_diag => 1, always_quote => 1, eol => "\n" } );
 
   # write header
   my @header = $annotator->all_header;
   push @header, 'heterozygotes_ids', 'homozygote_ids', 'chr', 'pos', 'type',
     'alleles', 'allele_counts';
-  $csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
+  say {$self->_out_fh} join "\t", @header;
+
+  #$csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
   # import hashes - not calling directly because that's slow
   my $chrs_aref     = $annotator->genome_chrs;
@@ -195,7 +199,7 @@ sub annotate_snpfile {
 
   $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
 
-  my ( %header, %ids ) = ( );
+  my ( %header, %ids, @sample_ids) = ( );
   my ( $last_chr, $chr_offset, $next_chr_offset, $chr_index) = (-9, -9, -9, -9);
 
   while ( my $line = $snpfile_fh->getline ) {
@@ -278,9 +282,10 @@ sub annotate_snpfile {
 
       for my $allele ( split( /,/, $all_alleles ) )
       {
-        p $allele if $self->debug;
         next if $allele eq $ref_allele;
-        my $record_href = $annotator->get_snp_annotation( $abs_pos, $allele );
+        p $allele if $self->debug;
+        my $coro = async {
+        my $record_href = $annotator->get_snp_annotation( $chr_index, $abs_pos, $allele );
 
         $record_href->{chr}               = $chr;
         $record_href->{pos}               = $pos;
@@ -290,26 +295,30 @@ sub annotate_snpfile {
         $record_href->{heterozygotes_ids} = $het_ids || 'NA';
         $record_href->{homozygote_ids}    = $hom_ids || 'NA';
 
-        $self->_summarize($record_href, $summary_href, \@sample_ids, $hom_ids_href);
+        # $self->_summarize($record_href, $summary_href, \@sample_ids, $hom_ids_href);
 
         my @record;
-        for my $attr (@header)
-        {
+        for my $attr (@header) {
            if (ref $record_href->{$attr} eq 'ARRAY') {
              push @record, join ";", @{ $record_href->{$attr} };
            }
            else {
              push @record, $record_href->{$attr};
-           }
          }
+        }
 
         if ( $self->debug )
         {
           p $record_href;
           p @record;
         }
+        @record;
+      }
 
-        $csv_writer->print( $self->_out_fh, \@record ) or $csv_writer->error_diag;
+      Coro::cede;
+      my @record = $coro->join;
+      say {$self->_out_fh} join "\t", @record;
+
       }
     }
     $last_chr = $chr;
@@ -318,10 +327,10 @@ sub annotate_snpfile {
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
   my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
 
-  p $summary_href if $self->debug;
+  # p $summary_href if $self->debug;
   # TODO: decide how to return data or do we just print it out...
   #   - print conservation scores...
-  return $summary_href; #we may want to consider returning the full experiment hash, in case we do interesting things.
+  # return $summary_href; #we may want to consider returning the full experiment hash, in case we do interesting things.
 }
 
 sub _summarize {

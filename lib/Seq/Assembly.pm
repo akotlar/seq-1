@@ -22,7 +22,7 @@ with 'Seq::Role::ConfigFromFile';
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_db_dir   => ( is => 'ro', isa => 'Str', required => 1, );
+has genome_db_dir      => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_index_dir   => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_chrs => (
   is       => 'ro',
@@ -114,7 +114,7 @@ sub BUILDARGS {
     }
     for my $attrib (
       qw/ genome_name genome_description genome_chrs genome_index_dir
-      genome_hasher genome_scorer debug wanted_chr /
+      genome_hasher genome_scorer debug wanted_chr genome_db_dir /
       )
     {
       $hash{$attrib} = $href->{$attrib};

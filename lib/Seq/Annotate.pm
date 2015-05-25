@@ -197,8 +197,7 @@ sub _load_scores {
   return \@score_tracks;
 }
 
-sub BUILD
-{
+sub BUILD {
   my $self = shift;
   #not really? occurs later in _load_genome_sized_track?
   $self->_logger->info( "finished loading genome of size " . $self->genome_length );
@@ -206,11 +205,8 @@ sub BUILD
     "finished loading " . $self->count_genome_scores . " genome score track(s)" );
 }
 
-sub _load_genome_sized_track
-{
-  state $check = compile( Object, Object );
-
-  my ( $self, $gst ) = $check->(@_);
+sub _load_genome_sized_track {
+  my ( $self, $gst ) = @_;
 
   # index dir
   my $index_dir = $self->genome_index_dir;
@@ -246,7 +242,7 @@ sub _load_genome_sized_track
   # my $yml_file_path = path($idx_dir, $yml_name )->stringify;
 
   # read yml chr offsets
-  my $chr_len_href = LoadFile($yml_file_path);
+  my $chr_len_href = LoadFile($yml_file);
 
   my $obj = Seq::GenomeSizedTrackChar->new(
     {
@@ -265,7 +261,8 @@ sub _load_genome_sized_track
 }
 
 sub get_ref_annotation {
-  my ( $self, $chr_index, $abs_pos ) = @_;
+  state $check = compile( Object, Int, Int );
+  my ( $self, $chr_index, $abs_pos ) = $check->(@_);
 
   my %record;
 
