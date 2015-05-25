@@ -11,6 +11,9 @@ use Moose 2;
 use Carp qw/ croak /;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
+use Path::Tiny qw/ path /;
+
+use DDP;
 
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
@@ -19,6 +22,7 @@ with 'Seq::Role::ConfigFromFile';
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
+has genome_db_dir   => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_index_dir   => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_chrs => (
   is       => 'ro',
@@ -70,28 +74,42 @@ has debug => (
 sub BUILDARGS {
   my $class = shift;
   my $href  = $_[0];
-  if ( scalar @_ > 1 || reftype($href) ne "HASH" ) {
+
+  if ( scalar @_ > 1 || reftype($href) ne "HASH" )
+  {
     confess "Error: $class expects hash reference.\n";
   }
-  else {
+  else
+  {
     my %hash;
-    for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
+
+    #to avoid subtle chdir issues in a multi-user env, just make the genome_index_dir correct from the getgo
+    $href->{genome_index_dir} = path( $href->{genome_index_dir} )->absolute( $href->{genome_db_dir} );
+    $href->{genome_index_dir}->mkpath; #makes or returns undef, errors are trapped & exception thrown on error
+    $href->{genome_index_dir} = $href->{genome_index_dir}->stringify;
+
+    for my $sparse_track ( @{ $href->{sparse_tracks} } )
+    {
       $sparse_track->{genome_name} = $href->{genome_name};
-      if ( $sparse_track->{type} eq "gene" ) {
+      if ( $sparse_track->{type} eq "gene" )
+      {
         push @{ $hash{gene_tracks} }, Seq::Config::SparseTrack->new($sparse_track);
       }
-      elsif ( $sparse_track->{type} eq "snp" ) {
+      elsif ( $sparse_track->{type} eq "snp" )
+      {
         push @{ $hash{snp_tracks} }, Seq::Config::SparseTrack->new($sparse_track);
       }
-      else {
+      else
+      {
         croak sprintf( "unrecognized genome track type %s\n", $sparse_track->{type} );
       }
     }
-    for my $gst ( @{ $href->{genome_sized_tracks} } ) {
+    for my $gst ( @{ $href->{genome_sized_tracks} } )
+    {
       croak sprintf( "unrecognized genome track type %s\n", $gst->{type} )
         unless ( $gst->{type} eq 'genome' or $gst->{type} eq 'score' );
       $gst->{genome_chrs}      = $href->{genome_chrs};
-      $gst->{genome_index_dir} = $href->{genome_index_dir};
+      $gst->{genome_index_dir} = $href->{genome_index_dir}; #do we need this?
       push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
     }
     for my $attrib (

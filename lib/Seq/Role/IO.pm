@@ -19,22 +19,26 @@ use IO::Uncompress::Gunzip qw/ $GunzipError /;
 # one that worked; wanted it precompiled to improve the speed of checking
 my $taint_check_regex = qr{\A([\,\.\-\=\:\/\t\s\w\d]+)\z};
 
-sub get_read_fh {
+sub get_read_fh 
+{
   my ( $class, $file ) = @_;
 
   my $fh;
-  if ( $file =~ m/\.gz\Z/ ) {
+  if ( $file =~ m/\.gz\Z/ ) 
+  {
     $fh = IO::Uncompress::Gunzip->new($file)
       || confess "\nError: gzip failed: $GunzipError\n";
   }
-  else {
+  else 
+  {
     $fh = IO::File->new( $file, 'r' )
       || confess "\nError: unable to open file ($file) for reading: $!\n";
   }
   return $fh;
 }
 
-sub get_write_fh {
+sub get_write_fh 
+{
   my ( $class, $file ) = @_;
 
   confess "\nError: get_fh() expected a filename\n" unless $file;
@@ -51,7 +55,8 @@ sub get_write_fh {
   return $fh;
 }
 
-sub get_write_bin_fh {
+sub get_write_bin_fh 
+{
   my ( $class, $file ) = @_;
 
   confess "\nError: get_write_bin_fh() expects a filename\n" unless $file;
@@ -62,7 +67,8 @@ sub get_write_bin_fh {
   return $fh;
 }
 
-sub clean_line {
+sub clean_line 
+{
   my ( $class, $line ) = @_;
 
   if ( $line =~ m/$taint_check_regex/xm ) {
