@@ -45,7 +45,7 @@ has bnum => (
 has msiz => (
   is      => 'ro',
   isa     => 'Int',
-  default => 128_000_000,
+  default => 1_280_000_000,
 );
 
 has _db => (
@@ -158,12 +158,20 @@ sub db_put {
 sub db_get {
   my ( $self, $key ) = @_;
 
-  if ( $self->_db->check($key) > 0 ) {
-    return decode_json( $self->_db->get($key) );
+  my $val = $self->_db->get($key);
+  if (defined ) {
+    return decode_json $val;
   }
   else {
     return;
   }
+  #
+  # if ( $self->_db->check($key) > 0 ) {
+  #   return decode_json( $self->_db->get($key) );
+  # }
+  # else {
+  #   return;
+  # }
 }
 
 __PACKAGE__->meta->make_immutable;

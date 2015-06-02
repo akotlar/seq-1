@@ -213,7 +213,7 @@ sub annotate_snpfile {
     my @fields = split( /\t/, $clean_line );
 
     # for snpfile, define columns for expected header fields and ids
-    if ( !%header ) {
+    if ( $. == 1 ) {
       %header = map { $fields[$_] => $_ } ( 0 .. 5 );
       for my $i ( 6 .. $#fields ) {
         $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
@@ -222,6 +222,9 @@ sub annotate_snpfile {
         sort( keys %ids ); # to avoid calling keys on every _get_minor_allele_carriers call
       next;
     }
+
+    # need to die if we've read the first line and didn't find the header
+    croak "Could not read header" unless %header;
 
     # get basic information about variant
     my $chr           = $fields[ $header{Fragment} ];
@@ -239,8 +242,13 @@ sub annotate_snpfile {
       $chr_offset      = $chr_len_href->{$chr};
       $chr_index       = $chr_index{$chr};
       $next_chr        = $next_chr_href->{$chr};
-      $next_chr_offset = $chr_len_href->{ $next_chr };
-      $next_chr_offset = ( defined $next_chr_offset ) ? $next_chr_offset : $genome_len;
+      if (defined $next_chr ) {
+        $next_chr_offset =  $chr_len_href->{ $next_chr };
+      }
+      else {
+        $next_chr = -9;
+        $next_chr_offset = $genome_len;
+      }
 
       say join " ", $chr, $pos, $chr_offset, $next_chr, $next_chr_offset;
 
@@ -343,10 +351,35 @@ sub _summarize {
   return;
 }
 
+my %het_genos = (
+  K => [ 'G', 'T' ],
+  M => [ 'A', 'C' ],
+  R => [ 'A', 'G' ],
+  S => [ 'C', 'G' ],
+  W => [ 'A', 'T' ],
+  Y => [ 'C', 'T' ],
+);
+
+my %hom_genos = (
+  A => ['A', 'A'],
+  C => ['C', 'C'],
+  G => ['G', 'G'],
+  T => ['T', 'T'],
+);
+
+my %hom_indel = (
+  D => ['-', '-'],
+  I => ['+', '+'],
+);
+my %het_indel = (
+  E => ['-'],
+  H => ['+'],
+);
+
 sub _get_minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
-  my ( $het_ids, $hom_ids, $hom_ids_href ) = ( '', '', {} );
+  my ( @het_ids, @hom_ids, $het_ids_str, $hom_ids_str );
 
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
@@ -355,27 +388,18 @@ sub _get_minor_allele_carriers {
     # skip homozygote reference && N's
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
-    # non-ref homozygotes - recall D and I are for insertions and deletions
-    #   and they are not part of IUPAC but snpfile spec
-    if ( $id_geno =~ m/$homozygote_regex/ ) {
-      $hom_ids .= $id . ':' . $id_geno . ';'; #should be faster than join
-      $hom_ids_href->{$id} = $id_geno;        #needed for statistic calculator
+    if ( exists $het_genos{ $id_geno } ) {
+      push @het_ids, $id_geno;
     }
-
-    # non-ref heterozygotes - recall E and H are for het insertions and deletions
-    #   and they are not part of IUPAC but snpfile spec
-
-    if ( $id_geno =~ m/$heterozygote_regex/ ) {
-      $het_ids .= $id . ':' . $id_geno . ';';
+    elsif ( exists $hom_genos{ $id_geno } ) {
+      push @hom_ids, $id_geno;
     }
+    $het_ids_str = join ";", @het_ids;
+    $hom_ids_str = join ";", @hom_ids;
   }
 
-  # remove trailing ':'
-  chop($hom_ids);
-  chop($het_ids);
-
   # return ids for printing
-  return ( $het_ids, $hom_ids, $hom_ids_href );
+  return ( $het_ids_str, $hom_ids_str, \@hom_ids );
 }
 
 __PACKAGE__->meta->make_immutable;

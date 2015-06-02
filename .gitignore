@@ -70,5 +70,6 @@ sandbox
 /real_hg38
 *.log
 Pileup.annotation.txt.gz
+Pileup.annotation.txt
 Pileup.snp
 /stash
