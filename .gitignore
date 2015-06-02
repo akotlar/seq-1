@@ -69,3 +69,6 @@ sandbox
 /ex
 /real_hg38
 *.log
+Pileup.annotation.txt.gz
+Pileup.snp
+/stash
