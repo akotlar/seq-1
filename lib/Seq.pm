@@ -12,10 +12,9 @@ use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 
 use Carp qw/ croak /;
 use namespace::autoclean;
-#use Text::CSV_XS;
 use Seq::Annotate;
-use Coro;
-use AnyEvent;
+# use Coro;
+# use AnyEvent;
 
 use DDP;
 
@@ -26,7 +25,7 @@ has snpfile => (
   isa      => AbsFile,
   coerce   => 1,
   required => 1,
-  handles => {snpfile_path => 'stringify'}
+  handles  => { snpfile_path => 'stringify' }
 );
 
 has configfile => (
@@ -34,15 +33,15 @@ has configfile => (
   isa      => AbsFile,
   required => 1,
   coerce   => 1,
-  handles => {configfile_path => 'stringify'}
+  handles  => { configfile_path => 'stringify' }
 );
 
 has out_file => (
-  is        => 'ro',
-  isa       => AbsPath,
-  coerce    => 1,
-  required  => 0,
-  handles => {out_file_path => 'stringify'}
+  is       => 'ro',
+  isa      => AbsPath,
+  coerce   => 1,
+  required => 0,
+  handles  => { out_file_path => 'stringify' }
 );
 
 has debug => (
@@ -140,14 +139,13 @@ my %IUPAC_codes = (
   N => [],
 );
 
-my $homozygote_regex = qr{[ACGTDI]+};
+my $homozygote_regex   = qr{[ACGTDI]+};
 my $heterozygote_regex = qr{[KMRSWYEH]+};
 
 sub _build_out_fh {
-  my $self = shift;
+  my $self        = shift;
   my $output_path = $self->out_file_path;
-  if ( $output_path )
-  {
+  if ($output_path) {
     return $self->get_write_bin_fh($output_path);
   }
   else {
@@ -174,9 +172,10 @@ sub annotate_snpfile {
   $self->_logger->info("about to load annotation data");
   say "about to load annotation data" if $self->debug;
   # $self->_logger->info("about to load annotation data");
-  my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
+  my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
 
-  my $annotator  = Seq::Annotate->new_with_config({configfile => $self->configfile_path});
+  my $annotator =
+    Seq::Annotate->new_with_config( { configfile => $self->configfile_path } );
 
   # for writing data
   #my $csv_writer = Text::CSV_XS->new(
@@ -186,21 +185,21 @@ sub annotate_snpfile {
   my @header = $annotator->all_header;
   push @header, 'heterozygotes_ids', 'homozygote_ids', 'chr', 'pos', 'type',
     'alleles', 'allele_counts';
-  say {$self->_out_fh} join "\t", @header;
+  say { $self->_out_fh } join "\t", @header;
 
   #$csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
 
   # import hashes - not calling directly because that's slow
   my $chrs_aref     = $annotator->genome_chrs;
-  my %chr_index     = map { $chrs_aref->[$_] => $_ } (0..$#{ $chrs_aref } );
+  my %chr_index     = map { $chrs_aref->[$_] => $_ } ( 0 .. $#{$chrs_aref} );
   my $next_chr_href = $annotator->next_chr;
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
 
   $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
 
-  my ( %header, %ids, @sample_ids) = ( );
-  my ( $last_chr, $chr_offset, $next_chr_offset, $chr_index) = (-9, -9, -9, -9);
+  my ( %header, %ids, @sample_ids ) = ();
+  my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) = ( -9, -9, -9, -9, -9 );
 
   while ( my $line = $snpfile_fh->getline ) {
 
@@ -214,17 +213,13 @@ sub annotate_snpfile {
     my @fields = split( /\t/, $clean_line );
 
     # for snpfile, define columns for expected header fields and ids
-    if ( $. == 1 )
-    {
+    if ( !%header ) {
       %header = map { $fields[$_] => $_ } ( 0 .. 5 );
-      p %header if $self->debug;
-
       for my $i ( 6 .. $#fields ) {
         $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
       }
-
-      @sample_ids = sort(keys %ids); # to avoid calling keys on every _get_minor_allele_carriers call
-
+      @sample_ids =
+        sort( keys %ids ); # to avoid calling keys on every _get_minor_allele_carriers call
       next;
     }
 
@@ -237,14 +232,17 @@ sub annotate_snpfile {
     my $allele_counts = $fields[ $header{Allele_Counts} ];
     my $abs_pos;
 
-    if ($chr eq $last_chr) {
+    if ( $chr eq $last_chr ) {
       $abs_pos = $chr_offset + $pos + 1;
     }
     else {
-      $chr_offset      = $chr_len_href->{ $chr };
-      $chr_index       = $chr_index{ $chr };
-      $next_chr_offset = $chr_len_href->{ $next_chr_href->{$chr} };
+      $chr_offset      = $chr_len_href->{$chr};
+      $chr_index       = $chr_index{$chr};
+      $next_chr        = $next_chr_href->{$chr};
+      $next_chr_offset = $chr_len_href->{ $next_chr };
       $next_chr_offset = ( defined $next_chr_offset ) ? $next_chr_offset : $genome_len;
+
+      say join " ", $chr, $pos, $chr_offset, $next_chr, $next_chr_offset;
 
       unless ( defined $chr_offset and defined $chr_index ) {
         croak "unrecognized chromosome: $chr\n";
@@ -252,16 +250,22 @@ sub annotate_snpfile {
       $abs_pos = $chr_offset + $pos + 1;
     }
 
-    if ($abs_pos > $next_chr_offset) {
-      croak "$chr:$pos is beyond the end of $chr\n";
+    if ( $abs_pos > $next_chr_offset ) {
+      say "ERROR: $chr:$pos is beyond the end of $chr $next_chr_offset\n";
+      p %chr_index;
+      p $next_chr_href;
+      p $chr_len_href;
+      exit(1);
     }
+
+    # save this chr for next time
+    $last_chr = $chr;
 
     # get carrier ids for variant; returns hom_ids_href for use in statistics calculator later (hets currently ignored)
     my ( $het_ids, $hom_ids, $hom_ids_href ) =
       $self->_get_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
-    if ( $self->debug )
-    {
+    if ( $self->debug ) {
       say join " ", $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts,
         'abs_pos:', $abs_pos;
       say "het_ids:";
@@ -270,8 +274,7 @@ sub annotate_snpfile {
       p $hom_ids;
     }
 
-    if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' )
-    {
+    if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
       my $method = lc 'set_' . $type . '_site';
 
       p $method if $self->debug;
@@ -280,11 +283,9 @@ sub annotate_snpfile {
       # get annotation for snp site
       next unless $type eq 'SNP';
 
-      for my $allele ( split( /,/, $all_alleles ) )
-      {
+      for my $allele ( split( /,/, $all_alleles ) ) {
         next if $allele eq $ref_allele;
         p $allele if $self->debug;
-        my $coro = async {
         my $record_href = $annotator->get_snp_annotation( $chr_index, $abs_pos, $allele );
 
         $record_href->{chr}               = $chr;
@@ -299,29 +300,20 @@ sub annotate_snpfile {
 
         my @record;
         for my $attr (@header) {
-           if (ref $record_href->{$attr} eq 'ARRAY') {
-             push @record, join ";", @{ $record_href->{$attr} };
-           }
-           else {
-             push @record, $record_href->{$attr};
-         }
+          if ( ref $record_href->{$attr} eq 'ARRAY' ) {
+            push @record, join ";", @{ $record_href->{$attr} };
+          }
+          else {
+            push @record, $record_href->{$attr};
+          }
         }
-
-        if ( $self->debug )
-        {
+        if ( $self->debug ) {
           p $record_href;
           p @record;
         }
-        @record;
-      }
-
-      Coro::cede;
-      my @record = $coro->join;
-      say {$self->_out_fh} join "\t", @record;
-
+        say { $self->_out_fh } join "\t", @record;
       }
     }
-    $last_chr = $chr;
   }
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
@@ -334,14 +326,13 @@ sub annotate_snpfile {
 }
 
 sub _summarize {
-  my ($self, $record_href, $summary_href, $sample_ids_aref, $hom_ids_href) = @_;
+  my ( $self, $record_href, $summary_href, $sample_ids_aref, $hom_ids_href ) = @_;
 
-  my $count_key = $self->_count_key;
-  my $site_type = $record_href->{type};
+  my $count_key       = $self->_count_key;
+  my $site_type       = $record_href->{type};
   my $annotation_code = $record_href->{genomic_annotation_code};
 
-  foreach my $id (@$sample_ids_aref)
-  {
+  foreach my $id (@$sample_ids_aref) {
     $summary_href->{$id}{$site_type}{$count_key} += 1;
     $summary_href->{$id}{$site_type}{$annotation_code}{$count_key} += 1;
   }
@@ -355,10 +346,9 @@ sub _summarize {
 sub _get_minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
-  my ( $het_ids, $hom_ids, $hom_ids_href ) = ('','',{});
+  my ( $het_ids, $hom_ids, $hom_ids_href ) = ( '', '', {} );
 
-  for my $id ( @$id_names_aref )
-  {
+  for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
     my $id_prob = $fields_aref->[ $ids_href->{$id} + 1 ];
 
@@ -367,26 +357,25 @@ sub _get_minor_allele_carriers {
 
     # non-ref homozygotes - recall D and I are for insertions and deletions
     #   and they are not part of IUPAC but snpfile spec
-    if ( $id_geno =~ m/$homozygote_regex/ )
-    {
-      $hom_ids .= $id.':'.$id_geno.';'; #should be faster than join
-      $hom_ids_href->{$id} = $id_geno; #needed for statistic calculator
-    };
+    if ( $id_geno =~ m/$homozygote_regex/ ) {
+      $hom_ids .= $id . ':' . $id_geno . ';'; #should be faster than join
+      $hom_ids_href->{$id} = $id_geno;        #needed for statistic calculator
+    }
 
     # non-ref heterozygotes - recall E and H are for het insertions and deletions
     #   and they are not part of IUPAC but snpfile spec
 
-    if ( $id_geno =~ m/$heterozygote_regex/ )
-    {
-      $het_ids .= $id.':'.$id_geno.';';
-    };
+    if ( $id_geno =~ m/$heterozygote_regex/ ) {
+      $het_ids .= $id . ':' . $id_geno . ';';
+    }
   }
 
   # remove trailing ':'
-  chop($hom_ids); chop($het_ids);
+  chop($hom_ids);
+  chop($het_ids);
 
   # return ids for printing
-  return ($het_ids, $hom_ids, $hom_ids_href);
+  return ( $het_ids, $hom_ids, $hom_ids_href );
 }
 
 __PACKAGE__->meta->make_immutable;

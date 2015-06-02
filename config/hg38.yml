@@ -36,6 +36,7 @@ genome_chrs:
   - chrY
 genome_raw_dir: ./hg38/raw
 genome_index_dir: ./hg38/index
+genome_db_dir: ./sandbox
 
 sparse_tracks:
   - type: gene
@@ -141,7 +142,7 @@ genome_sized_tracks:
     remote_files:
       - hg38.phyloP7way.wigFix.gz
   - name: cadd
-    type: score
+    type: cadd
     local_dir: ./hg38/raw/cadd
     local_files:
      - hg38.cadd.gz

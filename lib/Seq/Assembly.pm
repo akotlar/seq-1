@@ -59,6 +59,11 @@ has gene_tracks => (
   },
 );
 
+has cadd_track => (
+  is => 'ro',
+  isa => 'Seq::Config::GenomeSizedTrack',
+);
+
 has dbm_dry_run => (
   is      => 'ro',
   isa     => 'Bool',
@@ -106,11 +111,19 @@ sub BUILDARGS {
     }
     for my $gst ( @{ $href->{genome_sized_tracks} } )
     {
-      croak sprintf( "unrecognized genome track type %s\n", $gst->{type} )
-        unless ( $gst->{type} eq 'genome' or $gst->{type} eq 'score' );
-      $gst->{genome_chrs}      = $href->{genome_chrs};
-      $gst->{genome_index_dir} = $href->{genome_index_dir}; #do we need this?
-      push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
+      if ( $gst->{type} eq 'genome' or $gst->{type} eq 'score' ) {
+        $gst->{genome_chrs}      = $href->{genome_chrs};
+        $gst->{genome_index_dir} = $href->{genome_index_dir};
+        push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
+      }
+      elsif ( $gst->{type} eq 'cadd' ) {
+        $gst->{genome_chrs}      = $href->{genome_chrs};
+        $gst->{genome_index_dir} = $href->{genome_index_dir};
+        $hash{cadd_track}        = Seq::Config::GenomeSizedTrack->new($gst);
+      }
+      else {
+        croak sprintf( "unrecognized genome track type %s\n", $gst->{type} )
+      }
     }
     for my $attrib (
       qw/ genome_name genome_description genome_chrs genome_index_dir

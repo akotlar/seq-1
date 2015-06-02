@@ -8,8 +8,6 @@ package Seq::Annotate;
 # VERSION
 
 use Moose 2;
-use Moose;
-with 'Seq::Role::ConfigFromFile';
 use Carp qw/ croak /;
 use Path::Tiny qw/ path /;
 use namespace::autoclean;
@@ -27,7 +25,7 @@ use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::IO', 'MooX::Role::Logger';
+with 'Seq::Role::ConfigFromFile', 'Seq::Role::IO', 'MooX::Role::Logger';
 
 has genome_index_dir => (
   is       => 'ro',
@@ -203,6 +201,11 @@ sub BUILD {
   $self->_logger->info( "finished loading genome of size " . $self->genome_length );
   $self->_logger->info(
     "finished loading " . $self->count_genome_scores . " genome score track(s)" );
+  for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
+    for my $dbm ( @$dbm_aref ) {
+      $self->_logger->info( "loading " . $dbm->filename );
+    }
+  }
 }
 
 sub _load_genome_sized_track {
