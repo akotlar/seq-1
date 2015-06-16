@@ -95,71 +95,82 @@ sub _build_db {
 sub db_put {
   my ( $self, $key, $href ) = @_;
 
-  # is there data for the key?
-  if ( $self->_db->check($key) > 0 ) {
+  my $existing_aref = $self->db_get($key);
 
-    # get database data value
-    my $old_href = $self->db_get($key);
-
-    # get all keys from old and new data
-    my @keys = ( keys %$old_href, keys %$href );
-
-    for my $keys (@keys) {
-
-      # retrieve values for old and new hash data
-      my $new_val = $href->{$key};
-      my $old_val = $old_href->{$key};
-
-      # merge hash - we have a predictable strucutre, which simplifies what
-      # we need to deal with - there will only be string values or hashref
-      # values;
-
-      if ( defined $new_val ) {
-        if ( defined $old_val ) {
-          if ( ref $old_val eq "HASH" && ref $new_val eq "HASH" ) {
-            my @sub_keys = ( keys %$old_val, keys %$new_val );
-            for my $sub_key (@sub_keys) {
-              my $new_sub_val = $new_val->{$sub_key};
-              my $old_sub_val = $old_val->{$sub_key};
-              if ( defined $new_sub_val ) {
-                if ( defined $old_sub_val ) {
-                  if ( $new_sub_val ne $old_sub_val ) {
-                    my @old_sub_vals = split /\;/, $old_sub_val;
-                    $href->{$key}{$sub_key} = join ";", $new_sub_val, @old_sub_vals;
-                  }
-                }
-              }
-              else {
-                if ( defined $old_sub_val ) {
-                  $href->{$key}{$sub_key} = $old_val;
-                }
-              }
-            }
-          }
-          elsif ( $old_val ne $new_val ) {
-            my @old_vals = split( /\;/, $old_val );
-            $href->{$key} = join( ";", $new_val, @old_vals );
-          }
-        }
-      }
-      else {
-        if ( defined $old_val ) {
-          $href->{$key} = $old_val;
-        }
-      }
-    }
-    $self->_db->set( $key, encode_json($href) );
+  if (defined $existing_aref) {
+    my @data = @$existing_aref;
+    push @data, $href;
+    $self->_db->set( $key, encode_json( \@data ) );
   }
   else {
-    $self->_db->set( $key, encode_json($href) );
+    $self->_db->set( $key, encode_json( [ $href ] ) );
   }
+  #
+  # # is there data for the key?
+  # if ( $self->_db->check($key) > 0 ) {
+  #
+  #   # get database data value
+  #   my $old_href = $self->db_get($key);
+  #
+  #   # get all keys from old and new data
+  #   my @keys = ( keys %$old_href, keys %$href );
+  #
+  #   for my $keys (@keys) {
+  #
+  #     # retrieve values for old and new hash data
+  #     my $new_val = $href->{$key};
+  #     my $old_val = $old_href->{$key};
+  #
+  #     # merge hash - we have a predictable strucutre, which simplifies what
+  #     # we need to deal with - there will only be string values or hashref
+  #     # values;
+  #
+  #     if ( defined $new_val ) {
+  #       if ( defined $old_val ) {
+  #         if ( ref $old_val eq "HASH" && ref $new_val eq "HASH" ) {
+  #           my @sub_keys = ( keys %$old_val, keys %$new_val );
+  #           for my $sub_key (@sub_keys) {
+  #             my $new_sub_val = $new_val->{$sub_key};
+  #             my $old_sub_val = $old_val->{$sub_key};
+  #             if ( defined $new_sub_val ) {
+  #               if ( defined $old_sub_val ) {
+  #                 if ( $new_sub_val ne $old_sub_val ) {
+  #                   my @old_sub_vals = split /\;/, $old_sub_val;
+  #                   $href->{$key}{$sub_key} = join ";", $new_sub_val, @old_sub_vals;
+  #                 }
+  #               }
+  #             }
+  #             else {
+  #               if ( defined $old_sub_val ) {
+  #                 $href->{$key}{$sub_key} = $old_val;
+  #               }
+  #             }
+  #           }
+  #         }
+  #         elsif ( $old_val ne $new_val ) {
+  #           my @old_vals = split( /\;/, $old_val );
+  #           $href->{$key} = join( ";", $new_val, @old_vals );
+  #         }
+  #       }
+  #     }
+  #     else {
+  #       if ( defined $old_val ) {
+  #         $href->{$key} = $old_val;
+  #       }
+  #     }
+  #   }
+  #   $self->_db->set( $key, encode_json($href) );
+  # }
+  # else {
+  #   $self->_db->set( $key, encode_json($href) );
+  # }
 }
 
 sub db_get {
   my ( $self, $key ) = @_;
 
   my $val = $self->_db->get($key);
-  if (defined ) {
+  if (defined $val) {
     return decode_json $val;
   }
   else {

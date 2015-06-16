@@ -258,9 +258,9 @@ sub _build_transcript_db {
   for ( my $i = 0; $i < @exon_starts; $i++ ) {
     my $exon;
     for ( my $abs_pos = $exon_starts[$i]; $abs_pos < $exon_ends[$i]; $abs_pos++ ) {
-      $exon .= $self->get_base( $abs_pos, 1 );
+      $exon .= $self->get_base( $abs_pos );
     }
-    #say join ("\t", $exon_starts[$i], $exon_ends[$i], $exon);
+    say join ("\t", $exon_starts[$i], $exon_ends[$i], $exon);
     $seq .= $exon;
   }
   if ( $self->strand eq "-" ) {
@@ -277,9 +277,7 @@ sub _build_transcript_annotation {
   my $self         = shift;
   my @exon_starts  = $self->all_exon_starts;
   my @exon_ends    = $self->all_exon_ends;
-  my $coding_start = $self->coding_start;
-  my $coding_end   = $self->coding_end;
-  my $non_coding   = ( $coding_start == $coding_end ) ? 1 : 0;
+  my $non_coding   = ( $self->coding_start == $self->coding_end ) ? 1 : 0;
   my $seq;
 
   for ( my $i = 0; $i < @exon_starts; $i++ ) {
@@ -290,7 +288,7 @@ sub _build_transcript_annotation {
       else {
         if ( $abs_pos < $coding_end ) {
           if ( $abs_pos >= $coding_start ) {
-            $seq .= $self->get_base( $abs_pos, 1 );
+            $seq .= $self->get_base( $abs_pos );
           }
           else {
             $seq .= '5';

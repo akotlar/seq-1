@@ -301,16 +301,24 @@ sub get_ref_annotation {
     # add CADD stuff here
   }
 
-  for my $gene_dbs ( $self->_all_dbm_gene ) {
-    push @gene_data, $gene_dbs->[$chr_index]->db_get($abs_pos);
+  if ( $gan ) {
+    for my $gene_dbs ( $self->_all_dbm_gene ) {
+      my $kch = $gene_dbs->[$chr_index];
+      my $rec = $kch->db_get($abs_pos);
+      p $kch if $self->debug;
+      p $rec if $self->debug;
+
+      push @gene_data, $rec;
+    }
+    $record{gene_data} = \@gene_data;
   }
 
-  for my $snp_dbs ( $self->_all_dbm_snp ) {
-    push @snp_data, $snp_dbs->[$chr_index]->db_get($abs_pos);
+  if ( $snp ) {
+    for my $snp_dbs ( $self->_all_dbm_snp ) {
+      push @snp_data, $snp_dbs->[$chr_index]->db_get($abs_pos);
+    }
+    $record{snp_data}  = \@snp_data;
   }
-
-  $record{gene_data} = \@gene_data if @gene_data;
-  $record{snp_data}  = \@snp_data  if @snp_data;
 
   return \%record;
 }

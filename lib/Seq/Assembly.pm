@@ -127,7 +127,7 @@ sub BUILDARGS {
     }
     for my $attrib (
       qw/ genome_name genome_description genome_chrs genome_index_dir
-      genome_hasher genome_scorer debug wanted_chr genome_db_dir /
+        genome_hasher genome_scorer debug wanted_chr genome_db_dir debug/
       )
     {
       $hash{$attrib} = $href->{$attrib};

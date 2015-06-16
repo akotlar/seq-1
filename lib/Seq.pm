@@ -175,7 +175,10 @@ sub annotate_snpfile {
   my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
 
   my $annotator =
-    Seq::Annotate->new_with_config( { configfile => $self->configfile_path } );
+    Seq::Annotate->new_with_config( {
+      configfile => $self->configfile_path,
+      debug => $self->debug
+    } );
 
   # for writing data
   #my $csv_writer = Text::CSV_XS->new(
@@ -218,8 +221,8 @@ sub annotate_snpfile {
       for my $i ( 6 .. $#fields ) {
         $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
       }
-      @sample_ids =
-        sort( keys %ids ); # to avoid calling keys on every _get_minor_allele_carriers call
+      # to avoid calling keys on every _get_minor_allele_carriers call
+      @sample_ids = sort( keys %ids );
       next;
     }
 
@@ -273,14 +276,14 @@ sub annotate_snpfile {
     my ( $het_ids, $hom_ids, $hom_ids_href ) =
       $self->_get_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
-    if ( $self->debug ) {
-      say join " ", $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts,
-        'abs_pos:', $abs_pos;
-      say "het_ids:";
-      p $het_ids;
-      say "hom_ids";
-      p $hom_ids;
-    }
+    # if ( $self->debug ) {
+    #   say join " ", $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts,
+    #     'abs_pos:', $abs_pos;
+    #   say "het_ids:";
+    #   p $het_ids;
+    #   say "hom_ids";
+    #   p $hom_ids;
+    # }
 
     if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
       my $method = lc 'set_' . $type . '_site';
@@ -295,6 +298,8 @@ sub annotate_snpfile {
         next if $allele eq $ref_allele;
         p $allele if $self->debug;
         my $record_href = $annotator->get_snp_annotation( $chr_index, $abs_pos, $allele );
+
+        p $record_href if $self->debug;
 
         $record_href->{chr}               = $chr;
         $record_href->{pos}               = $pos;
@@ -389,10 +394,10 @@ sub _get_minor_allele_carriers {
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
     if ( exists $het_genos{ $id_geno } ) {
-      push @het_ids, $id_geno;
+      push @het_ids, $id;
     }
     elsif ( exists $hom_genos{ $id_geno } ) {
-      push @hom_ids, $id_geno;
+      push @hom_ids, $id;
     }
     $het_ids_str = join ";", @het_ids;
     $hom_ids_str = join ";", @hom_ids;
