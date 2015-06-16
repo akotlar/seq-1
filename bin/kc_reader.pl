@@ -12,6 +12,7 @@ my $db = new KyotoCabinet::DB;
 
 # open the database
 my $db_name = $ARGV[0];
+my $lu      = $ARGV[1];
 my $msiz    = 512_000_000;
 my $params  = join "#", "msiz=$msiz";
 my $db_arg  = join "#", $db_name, $params;
@@ -20,6 +21,14 @@ if (!$db->open($db_arg, $db->OREADER ) ) {
     printf STDERR ("open error: %s\n", $db->error);
     exit(1);
 }
+
+if ($lu) {
+  my $val = $db->get( $lu );
+  my $href = decode_json $val;
+  p $val;
+  exit;
+}
+
 
 # traverse records
 my $cur = $db->cursor;
