@@ -84,15 +84,15 @@ my $builder_options_href = {
   wanted_chr    => $wanted_chr,
 };
 
-my $builder = Seq::Build->new_with_config($builder_options_href);
-p $builder;
-
 if ( $method and $config_href ) {
 
   # set log file
   my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type, $wanted_chr, 'log';
   my $log_file = path($db_location)->child($log_name)->absolute->stringify;
   Log::Any::Adapter->set( 'File', $log_file );
+
+  my $builder = Seq::Build->new_with_config($builder_options_href);
+  p $builder;
 
   # build encoded genome, gene and snp site databases
   $builder->$method;
