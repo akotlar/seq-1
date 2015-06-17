@@ -18,7 +18,7 @@ genome_chrs:
   - chr7
   - chr8
   - chr9
-  - chr10
+  - chr12
   - chr11
   - chr12
   - chr13
@@ -28,7 +28,7 @@ genome_chrs:
   - chr17
   - chr18
   - chr19
-  - chr20
+  - chr22
   - chr21
   - chr22
   - chrM
@@ -40,7 +40,7 @@ genome_db_dir: ./sandbox
 
 sparse_tracks:
   - type: gene
-    local_dir: ./hg38/raw/gene
+    local_dir: /ssd/twingo/sandbox/hg38/raw/gene
     local_file: hg38.knownGene.txt
     name: knownGene
     sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
@@ -54,14 +54,14 @@ sparse_tracks:
       - description
       - rfamAcc
   - type: snp
-    local_dir: ./hg38/raw/snp
+    local_dir: /ssd/twingo/sandbox/hg38/raw/snp
     local_file: hg38.snp141.txt
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141
     features:
       - name
   - type: snp
-    local_dir: ./hg38/raw/snp
+    local_dir: /ssd/twingo/sandbox/hg38/raw/snp
     local_file: hg38.clinvar.txt
     name: clinvar
     sql_statement: SELECT _asterisk FROM Clinvar
@@ -71,7 +71,7 @@ sparse_tracks:
 genome_sized_tracks:
   - name: hg38
     type: genome
-    local_dir: ./hg38/raw/seq/
+    local_dir: /ssd/twingo/sandbox/hg38/raw/seq
     local_files:
       - chr1.fa.gz
       - chr2.fa.gz
@@ -127,7 +127,7 @@ genome_sized_tracks:
        - chrY.fa.gz
   - name: phastCons
     type: score
-    local_dir: ./hg38/raw/phastCons
+    local_dir: /ssd/twingo/sandbox/hg38/raw/phastCons
     local_files:
       - hg38.phastCons7way.wigFix.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phastCons7way/
@@ -135,7 +135,7 @@ genome_sized_tracks:
       - hg38.phastCons7way.wigFix.gz
   - name: phyloP
     type: score
-    local_dir: ./hg38/raw/phyloP
+    local_dir: /ssd/twingo/sandbox/hg38/raw/phyloP
     local_files:
       - hg38.phyloP7way.wigFix.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP7way/
@@ -143,7 +143,7 @@ genome_sized_tracks:
       - hg38.phyloP7way.wigFix.gz
   - name: cadd
     type: cadd
-    local_dir: ./hg38/raw/cadd
+    local_dir: /ssd/twingo/sandbox/hg38/raw/cadd
     local_files:
      - hg38.cadd.gz
     remote_dir: NA
