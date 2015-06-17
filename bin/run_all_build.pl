@@ -57,7 +57,8 @@ for my $type (qw/ gene_db snp_db /) {
     my $file_name = Write_script( $type, $chr, $cmd );
     my $log_file  = File::Spec->rel2abs( "$type.$chr.log" );
     my $q_cmd = qq{qsub -v USER -v PATH -cwd -q lh.q -o $log_file -j y $file_name};
-    say {$cmd_fh} $q_cmd if $verbose;
+    say {$cmd_fh} $q_cmd;
+    say $q_cmd if $verbose;
   }
 }
 
