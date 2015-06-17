@@ -41,16 +41,16 @@ while (my ($key, $value) = $cur->get(1)) {
   my $href = decode_json $value;
   p $href;
 
-  my @prn;
-  for my $key (keys %$href) {
-    if (ref $href->{$key} eq "HASH") {
-      push @prn, join " ", $key, %{ $href->{$key} };
-    }
-    else {
-      push @prn, $key, $href->{$key};
-    }
-  }
-  say join " ", @prn;
+#  my @prn;
+#  for my $key (keys %$href) {
+#    if (ref $href->{$key} eq "HASH") {
+#      push @prn, join " ", $key, %{ $href->{$key} };
+#    }
+#    else {
+#      push @prn, $key, $href->{$key};
+#    }
+#  }
+#  say join " ", @prn;
 }
 $cur->disable;
 
