@@ -52,6 +52,14 @@ has wanted_chr => (
   default => undef,
 );
 
+sub BUILD {
+  my $self = shift;
+  $self->_logger->info( "loading genome of size " . $self->genome_length );
+  $self->_logger->info( "genome_hasher: " . $self->genome_hasher );
+  $self->_logger->info( "genmoe_scoreer: " . $self->genome_scorer );
+  $self->_logger->info( "wanted_chr: " . $self->wanted_chr );
+}
+
 sub _build_genome_str_track {
   my $self = shift;
   for my $gst ( $self->all_genome_sized_tracks ) {

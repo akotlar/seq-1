@@ -42,6 +42,8 @@ sub build_snp_db {
   my $dbm_name = join ".", $self->name, $wanted_chr, $self->type, 'kch';
   my $dbm_file = File::Spec->catfile( $index_dir, $dbm_name );
 
+  $self->_logger->info("dbm_file: $dbm_file");
+
   my $db = Seq::KCManager->new(
     filename => $dbm_file,
     mode     => 'create',
@@ -49,6 +51,8 @@ sub build_snp_db {
     bnum => 3_000_000,
     msiz => 512_000_000,
   );
+
+  $self->_logger->info("adding entries for $wanted_chr");
 
   # 1st line needs to be value that should be added to encoded genome for these sites
   my $snp_fh = $self->get_write_fh($snp_file);
