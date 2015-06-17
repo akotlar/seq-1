@@ -286,8 +286,8 @@ sub _build_transcript_annotation {
         $seq .= '0';
       }
       else {
-        if ( $abs_pos < $coding_end ) {
-          if ( $abs_pos >= $coding_start ) {
+        if ( $abs_pos < $self->coding_end ) {
+          if ( $abs_pos >= $self->coding_start ) {
             $seq .= $self->get_base( $abs_pos );
           }
           else {
