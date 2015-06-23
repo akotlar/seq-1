@@ -52,6 +52,7 @@ if ( -f $out_file && !$force ) {
 
 # get absolute path
 $out_file = File::Spec->rel2abs($out_file);
+$yaml_config = File::Spec->rel2abs($yaml_config);
 say "writing annotation data here: $out_file" if $verbose;
 
 # read config file to determine genome name for loging and to check validity of config
