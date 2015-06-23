@@ -60,10 +60,11 @@ has _genome_scores => (
 
 has _genome_cadd => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::GenomeSizedTrackChar]',
+  isa     => 'ArrayRef',
   traits  => ['Array'],
   handles => {
     _get_cadd_track => 'get',
+    count_cadd_scores => 'count',
   },
   lazy    => 1,
   builder => '_load_cadd',
@@ -123,9 +124,10 @@ has _header => (
   handles => { all_header => 'elements' },
 );
 
-has is_cadd_track => (
+has has_cadd_track => (
   is      => 'rw',
   isa     => 'Bool',
+  traits  => ['Bool'],
   default => 0,
   handles => {
     unset_cadd => 'unset',
@@ -133,15 +135,16 @@ has is_cadd_track => (
   }
 );
 
-
 sub _load_cadd {
   my $self = shift;
 
   for my $gst ( $self->all_genome_sized_tracks ) {
     if ( $gst->type eq 'cadd' ) {
-      return $self->_load_cadd($gst);
+      $self->set_cadd;
+      return $self->_load_cadd_score($gst);
     }
   }
+  $self->unset_cadd;
 }
 
 sub _build_cadd_lookup {
@@ -172,7 +175,7 @@ sub get_cadd_score {
   return $cadd_track->get_score( $abs_pos );
 }
 
-sub _load_cadd {
+sub _load_cadd_score {
   my ( $self, $gst ) = @_;
 
   my @cadd_scores;
@@ -183,13 +186,16 @@ sub _load_cadd {
   for my $i ( 0 .. 2 ) {
 
     # idx file
-    my $idx_name = join( ".", $gst->name, $gst->type, sprintf("%03d", $i) );
+    my $idx_name = join( ".", $gst->type, $i);
     my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
 
     # check for a file and bail if none found
-    unless ( -s $idx_file ) {
+    p $idx_file;
+    unless ( -e $idx_file ) {
+      say "empty file: $idx_file";
+      exit;
       $self->unset_cadd;
-      return;
+      return \@cadd_scores;
     }
 
     # read the file
@@ -225,8 +231,9 @@ sub _load_cadd {
     );
     push @cadd_scores, $obj;
     $self->_logger->info("read cadd track ($genome_length) from $idx_name" );
-    $self->set_cadd;
   }
+  say $_ for @cadd_scores;
+  $self->set_cadd;
   return \@cadd_scores;
 }
 
@@ -329,10 +336,11 @@ sub _load_scores {
 
 sub BUILD {
   my $self = shift;
+  p $self;
   #not really? occurs later in _load_genome_sized_track?
   $self->_logger->info( "finished loading genome of size " . $self->genome_length );
-  $self->_logger->info(
-    "finished loading " . $self->count_genome_scores . " genome score track(s)" );
+  $self->_logger->info( "finished loading " . $self->count_genome_scores . " genome score track(s)" );
+  $self->_logger->info( "finished loading " . $self->count_cadd_scores . " cadd scores");
   for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
     for my $dbm (@$dbm_aref) {
       $self->_logger->info( "loading " . $dbm->filename );
@@ -504,7 +512,9 @@ sub get_snp_annotation {
   my @header = $self->all_header;
 
   # add cadd score
-  if ($self->is_cadd_track ) {
+  p $self if $self->debug;
+  if ($self->has_cadd_track ) {
+    say "getting cadd score:";
     push @header, 'cadd';
     $record->{cadd} = $self->get_cadd_score( $abs_pos, $ref_site_annotation->{ref_base}, $new_base );
   }

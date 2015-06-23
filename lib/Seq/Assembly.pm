@@ -86,9 +86,11 @@ sub BUILDARGS {
   else {
     my %hash;
 
-    #to avoid subtle chdir issues in a multi-user env, just make the genome_index_dir correct from the getgo
+    # to avoid subtle chdir issues in a multi-user env, just make the genome_index_dir correct from the getgo
     $href->{genome_index_dir} = path( $href->{genome_index_dir} )->absolute( $href->{genome_db_dir} );
     # makes or returns undef, errors are trapped & exception thrown on error
+    # TODO: you're 100% right but this can be a bit cryptic when it happens ... i.e., how can the error msg
+    #       be helpful to the user?
     $href->{genome_index_dir}->mkpath; 
     $href->{genome_index_dir} = $href->{genome_index_dir}->stringify;
 
