@@ -384,7 +384,7 @@ sub get_snp_annotation {
       $hash{$attr} = 'NA';
     }
   }
-  p %hash;
+  p %hash if $self->debug;
   return \%hash;
 }
 
