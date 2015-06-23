@@ -18,7 +18,7 @@ genome_chrs:
   - chr7
   - chr8
   - chr9
-  - chr12
+  - chr10
   - chr11
   - chr12
   - chr13
@@ -28,6 +28,7 @@ genome_chrs:
   - chr17
   - chr18
   - chr19
+  - chr20
   - chr22
   - chr21
   - chr22
@@ -36,7 +37,7 @@ genome_chrs:
   - chrY
 genome_raw_dir: ./hg38/raw
 genome_index_dir: ./hg38/index
-genome_db_dir: ./sandbox
+genome_db_dir: /ssd/twingo/sandbox
 
 sparse_tracks:
   - type: gene
@@ -60,6 +61,9 @@ sparse_tracks:
     sql_statement: SELECT _snp_fields FROM hg38.snp141
     features:
       - name
+      - alleleFreqCount
+      - alleles
+      - alleleFreqs
   - type: snp
     local_dir: /ssd/twingo/sandbox/hg38/raw/snp
     local_file: hg38.clinvar.txt
@@ -67,6 +71,10 @@ sparse_tracks:
     sql_statement: SELECT _asterisk FROM Clinvar
     features:
       - name
+      - ClinicalSignificance
+      - Cytogenic
+      - PhenotypeID
+      - ReviewStatus
 
 genome_sized_tracks:
   - name: hg38
