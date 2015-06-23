@@ -123,6 +123,17 @@ has _header => (
   handles => { all_header => 'elements' },
 );
 
+has is_cadd_track => (
+  is      => 'rw',
+  isa     => 'Bool',
+  default => 0,
+  handles => {
+    unset_cadd => 'unset',
+    set_cadd => 'set',
+  }
+);
+
+
 sub _load_cadd {
   my $self = shift;
 
@@ -170,9 +181,18 @@ sub _load_cadd {
   my $index_dir = $self->genome_index_dir;
 
   for my $i ( 0 .. 2 ) {
+
     # idx file
     my $idx_name = join( ".", $gst->name, $gst->type, sprintf("%03d", $i) );
     my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
+
+    # check for a file and bail if none found
+    unless ( -s $idx_file ) {
+      $self->unset_cadd;
+      return;
+    }
+
+    # read the file
     my $idx_fh = $self->get_read_fh($idx_file);
     binmode $idx_fh;
 
@@ -205,8 +225,8 @@ sub _load_cadd {
     );
     push @cadd_scores, $obj;
     $self->_logger->info("read cadd track ($genome_length) from $idx_name" );
+    $self->set_cadd;
   }
-
   return \@cadd_scores;
 }
 
@@ -481,8 +501,14 @@ sub get_snp_annotation {
   my $record = $ref_site_annotation;
   my $merged_ann = $self->_join_href( $gene_site_ann_href, $snp_site_ann_href );
   my %hash;
-
   my @header = $self->all_header;
+
+  # add cadd score
+  if ($self->is_cadd_track ) {
+    push @header, 'cadd';
+    $record->{cadd} = $self->get_cadd_score( $abs_pos, $ref_site_annotation->{ref_base}, $new_base );
+  }
+
   for my $attr (@header) {
     if ( defined $record->{$attr} ) {
       $hash{$attr} = $record->{$attr};

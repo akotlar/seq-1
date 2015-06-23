@@ -59,10 +59,10 @@ has gene_tracks => (
   },
 );
 
-has cadd_track => (
-  is  => 'ro',
-  isa => 'Seq::Config::GenomeSizedTrack',
-);
+# has cadd_track => (
+#   is  => 'ro',
+#   isa => 'Seq::Config::GenomeSizedTrack',
+# );
 
 has dbm_dry_run => (
   is      => 'ro',
@@ -106,16 +106,16 @@ sub BUILDARGS {
       }
     }
     for my $gst ( @{ $href->{genome_sized_tracks} } ) {
-      if ( $gst->{type} eq 'genome' or $gst->{type} eq 'score' ) {
+      if ( $gst->{type} eq 'genome' or $gst->{type} eq 'score'  or $gst->{type} eq 'cadd') {
         $gst->{genome_chrs}      = $href->{genome_chrs};
         $gst->{genome_index_dir} = $href->{genome_index_dir};
         push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
       }
-      elsif ( $gst->{type} eq 'cadd' ) {
-        $gst->{genome_chrs}      = $href->{genome_chrs};
-        $gst->{genome_index_dir} = $href->{genome_index_dir};
-        $hash{cadd_track}        = Seq::Config::GenomeSizedTrack->new($gst);
-      }
+      # elsif ( $gst->{type} eq 'cadd' ) {
+      #   $gst->{genome_chrs}      = $href->{genome_chrs};
+      #   $gst->{genome_index_dir} = $href->{genome_index_dir};
+      #   $hash{cadd_track}        = Seq::Config::GenomeSizedTrack->new($gst);
+      # }
       else {
         croak sprintf( "unrecognized genome track type %s\n", $gst->{type} );
       }
