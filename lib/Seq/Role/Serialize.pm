@@ -28,7 +28,7 @@ sub as_href_with_NAs {
     #  say join( ". .", $name, $type_constraint );
     #  say "this attrib: " . $attr->name . " has value: ";
     #  p $self->$name;
-    if ( $attr->has_value($self) && $self->$name ) {
+    if ( defined $self->$name ) {
       if ( $type_constraint eq 'HashRef' ) {
         map { $obj{"$name.$_"} = $self->$name->{$_} } keys %{ $self->$name };
       }

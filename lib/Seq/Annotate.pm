@@ -298,7 +298,6 @@ sub get_ref_annotation {
     my $name  = $gs->name;
     my $score = $gs->get_score($abs_pos);
     $record{$name} = $score;
-    # add CADD stuff here
   }
 
   if ( $gan ) {
@@ -308,14 +307,19 @@ sub get_ref_annotation {
       p $kch if $self->debug;
       p $rec if $self->debug;
 
-      push @gene_data, $rec;
+      push @gene_data, @$rec if defined $rec;
     }
     $record{gene_data} = \@gene_data;
   }
 
   if ( $snp ) {
     for my $snp_dbs ( $self->_all_dbm_snp ) {
-      push @snp_data, $snp_dbs->[$chr_index]->db_get($abs_pos);
+      my $kch = $snp_dbs->[$chr_index];
+      my $rec = $kch->db_get($abs_pos);
+      p $kch if $self->debug;
+      p $rec if $self->debug;
+
+      push @snp_data, @$rec if defined $rec;
     }
     $record{snp_data}  = \@snp_data;
   }
@@ -336,121 +340,128 @@ sub get_snp_annotation {
 
   # gene site annotations
   my $gene_aref = $ref_site_annotation->{gene_data};
-  my %gene_site_annotation;
-  for my $gene_site (@$gene_aref)
-  {
+  my $gene_site_ann_href; 
+  for my $gene_site (@$gene_aref) {
+
+    # get data; need to add new base to href to create the obj with wanted 
+    #   data, like proper AA substitution
     $gene_site->{minor_allele} = $new_base;
     my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs;
-    for my $attr ( keys %$gan )
-    {
-      if ( exists $gene_site_annotation{$attr} )
-      {
-        if ( $gene_site_annotation{$attr} ne $gan->{$_} )
-        {
-          $gene_site_annotation{$attr} =
-            $self->_join_data( $gene_site_annotation{$attr}, $gan->{$_} );
-        }
-      }
-      else
-      {
-        $gene_site_annotation{$attr} = $gan->{$attr};
-      }
-    }
+    
+    # merge data
+    $gene_site_ann_href = $self->_join_href( $gene_site_ann_href, $gan );
   }
 
   # snp site annotation
   my $snp_aref = $ref_site_annotation->{snp_data};
-  my %snp_site_annotation;
-  for my $snp_site (@$snp_aref)
-  {
+  my $snp_site_ann_href;
+  for my $snp_site (@$snp_aref) {
+
+    # get data
     my $san = Seq::Site::Snp->new($snp_site)->as_href_with_NAs;
-    for my $attr ( keys %$san )
-    {
-      if ( exists $snp_site_annotation{$attr} )
-      {
-        if ( $snp_site_annotation{$attr} ne $san->{$attr} )
-        {
-          $snp_site_annotation{$attr} =
-            $self->_join_data( $snp_site_annotation{$attr}, $san->{$attr} );
-        }
-      }
-      else
-      {
-        $snp_site_annotation{$attr} = $san->{$attr};
-      }
-    }
+
+    # merge data
+    $snp_site_ann_href = $self->_join_href( $snp_site_ann_href, $san );
   }
-  my $record = $ref_site_annotation;
-  $record->{gene_site_annotation} = \%gene_site_annotation;
-  p %gene_site_annotation if $self->debug;
-  $record->{snp_site_annotation} = \%snp_site_annotation;
-  p %snp_site_annotation if $self->debug;
+  say "final annotation" if $self->debug;
 
-  my $gene_ann = $self->_mung_output( \%gene_site_annotation );
-  p $gene_ann if $self->debug;
-  my $snp_ann = $self->_mung_output( \%snp_site_annotation );
-  p $snp_ann if $self->debug;
-
-  map { $record->{$_} = $gene_ann->{$_} } keys %$gene_ann;
-  map { $record->{$_} = $snp_ann->{$_} } keys %$snp_ann;
+  # original annotation and merged annotations
+  my $record     = $ref_site_annotation;
+  my $merged_ann = $self->_join_href( $gene_site_ann_href, $snp_site_ann_href );
+  my %hash;
 
   my @header = $self->all_header;
-  my %hash;
-  for my $attr (@header)
-  {
-    if ( $record->{$attr} )
-    {
+  for my $attr (@header) {
+    if ( defined $record->{$attr} ) {
       $hash{$attr} = $record->{$attr};
     }
-    else
-    {
+    elsif ( defined $merged_ann->{$attr} ) {
+      $hash{$attr} = $merged_ann->{$attr};
+    }
+    else {
       $hash{$attr} = 'NA';
     }
   }
+  p %hash;
   return \%hash;
 }
 
-sub _join_data
-{
-  my ( $self, $old_val, $new_val ) = @_;
-  my $type = reftype($old_val);
-  if ($type)
-  {
-    if ( $type eq 'Array' )
-    {
-      unless ( grep { /$new_val/ } @$old_val )
-      {
-        push @{$old_val}, $new_val;
-        return $old_val;
+# 
+#  this method joins together data; preserving the sequential order
+#
+sub _join_href {
+  my ($self, $old_href, $new_href ) = @_;
+
+  my %attrs = map { $_ => 1 } (keys %$old_href, keys %$new_href );
+  my %merge;
+
+  for my $attr ( keys %attrs ) {
+    my $old_val = $old_href->{$attr};
+    my $new_val = $new_href->{$attr};
+    if ( defined $old_val and defined $new_val ) {
+      if ( $old_val eq $new_val ) {
+        $merge{$attr} = join ";", $old_val, $new_val;
+      }
+      else {
+        my @old_vals = split /\;/, $old_val;
+        push @old_vals, $new_val;
+        $merge{$attr} = join ";", @old_vals;
       }
     }
+    elsif ( defined $old_val ) {
+      $merge{$attr} = $old_val;
+    }
+    elsif ( defined $new_val ) {
+      $merge{$attr} = $new_val;
+    }
   }
-  else
-  {
-    my @new_array;
-    push @new_array, $old_val, $new_val;
-    return \@new_array;
-  }
+  return \%merge;
 }
 
-sub _mung_output
-{
-  my ( $self, $href ) = @_;
-  my %hash;
-  for my $attrib ( keys %$href )
-  {
-    my $ref = reftype( $href->{$attrib} );
-    if ( $ref && $ref eq 'Array' )
-    {
-      $hash{$attrib} = join( ";", @{ $href->{$attrib} } );
-    }
-    else
-    {
-      $hash{$attrib} = $href->{$attrib};
-    }
-  }
-  return \%hash;
-}
+# 
+# Depreciated Methods:
+#
+# sub _join_data
+# {
+#   my ( $self, $old_val, $new_val ) = @_;
+#   my $type = reftype($old_val);
+#   if ($type)
+#   {
+#     if ( $type eq 'Array' )
+#     {
+#       unless ( grep { /$new_val/ } @$old_val )
+#       {
+#         push @{$old_val}, $new_val;
+#         return $old_val;
+#       }
+#     }
+#   }
+#   else
+#   {
+#     my @new_array;
+#     push @new_array, $old_val, $new_val;
+#     return \@new_array;
+#   }
+# }
+# 
+# sub _mung_output
+# {
+#   my ( $self, $href ) = @_;
+#   my %hash;
+#   for my $attrib ( keys %$href )
+#   {
+#     my $ref = reftype( $href->{$attrib} );
+#     if ( $ref && $ref eq 'Array' )
+#     {
+#       $hash{$attrib} = join( ";", @{ $href->{$attrib} } );
+#     }
+#     else
+#     {
+#       $hash{$attrib} = $href->{$attrib};
+#     }
+#   }
+#   return \%hash;
+# }
 
 sub _build_header
 {

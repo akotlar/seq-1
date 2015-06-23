@@ -15,7 +15,7 @@ my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_s
   codon_number codon_position ref_aa_residue error_code alt_names
   genotype new_codon_seq new_aa_residue annotation_type );
 
-extends extends 'Seq::Site', 'Seq::Site::Gene';
+extends extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
 
 enum non_missing_base_types => [qw( A C G T )];
