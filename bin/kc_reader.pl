@@ -22,10 +22,12 @@ if (!$db->open($db_arg, $db->OREADER ) ) {
     exit(1);
 }
 
+my $json = Cpanel::JSON::XS->new->utf8->pretty(1);
+
 if ($lu) {
   my $val = $db->get( $lu );
-  my $href = decode_json $val;
-  p $val;
+  my $href = ( defined $val ) ? decode_json $val : {};
+  say join " : ", $lu, $json->encode( $href );
   exit;
 }
 
