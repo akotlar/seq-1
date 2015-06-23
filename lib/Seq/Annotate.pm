@@ -212,19 +212,11 @@ sub _load_cadd_score {
 
     read $idx_fh, $seq, $genome_length;
 
-    # yml file
-    my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
-    my $yml_file = File::Spec->catfile( $index_dir, $yml_name );
-
-    # read yml chr offsets
-    my $chr_len_href = LoadFile($yml_file);
-
     my $obj = Seq::GenomeSizedTrackChar->new(
       {
         name          => $gst->name,
         type          => $gst->type,
         genome_chrs   => $self->genome_chrs,
-        genome_length => $genome_length,
         chr_len       => $chr_len_href,
         char_seq      => \$seq,
       }
