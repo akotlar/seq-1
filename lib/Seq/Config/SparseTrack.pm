@@ -19,12 +19,12 @@ my @gene_track_fields = qw( chrom     strand    txStart   txEnd
   exonEnds  name );
 
 # genome assembly info
-has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
+has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_chrs => (
-  is       => 'ro',
-  isa      => 'ArrayRef[Str]',
-  traits   => ['Array'],
-  handles  => { all_genome_chrs => 'elements', },
+  is      => 'ro',
+  isa     => 'ArrayRef[Str]',
+  traits  => ['Array'],
+  handles => { all_genome_chrs => 'elements', },
 );
 
 # track information

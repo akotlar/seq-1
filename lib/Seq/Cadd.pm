@@ -18,7 +18,7 @@ use YAML::XS qw/ LoadFile /;
 
 use Seq::GenomeSizedTrackChar;
 
-with 'Seq::Role::IO', 'Seq::Role::Genome' 'MooX::Role::Logger';
+with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
 
 
 # TODO: need to load CADD scores into an array

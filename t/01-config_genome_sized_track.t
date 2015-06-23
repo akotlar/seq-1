@@ -74,7 +74,7 @@ for my $attr_name (qw( type )) {
 #   2 - index decoding: get_idx_base, get_idx_in_gan, get_idx_in_gene, get_idx_in_exon,
 #                       get_idx_in_snp
 {
-  my (@exp_idx_code, @obs_idx_code);
+  my ( @exp_idx_code, @obs_idx_code );
   my ( %idx_codes, %idx_base, %idx_in_gan, %idx_in_gene, %idx_in_exon, %idx_in_snp );
   my %base_char_2_txt = ( '0' => 'N', '1' => 'A', '2' => 'C', '3' => 'G', '4' => 'T' );
   my @in_gan  = qw/ 0 8 /; # is gene annotated

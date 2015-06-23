@@ -97,13 +97,13 @@ sub db_put {
 
   my $existing_aref = $self->db_get($key);
 
-  if (defined $existing_aref) {
+  if ( defined $existing_aref ) {
     my @data = @$existing_aref;
     push @data, $href;
     $self->_db->set( $key, encode_json( \@data ) );
   }
   else {
-    $self->_db->set( $key, encode_json( [ $href ] ) );
+    $self->_db->set( $key, encode_json( [$href] ) );
   }
   #
   # # is there data for the key?
@@ -170,7 +170,7 @@ sub db_get {
   my ( $self, $key ) = @_;
 
   my $val = $self->_db->get($key);
-  if (defined $val) {
+  if ( defined $val ) {
     return decode_json $val;
   }
   else {

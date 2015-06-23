@@ -130,7 +130,7 @@ sub build_gene_db_for_chr {
   # this is an array of hashes
   my $chr_data_aref = $self->_get_gene_data($chr);
 
-  $self->_logger->info("finished reading data for " . $chr);
+  $self->_logger->info( "finished reading data for " . $chr );
 
   for my $gene_href (@$chr_data_aref) {
 

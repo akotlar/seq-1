@@ -17,7 +17,8 @@ use DDP;
 
 use Seq::Build;
 
-my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help, $wanted_chr);
+my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help,
+  $wanted_chr );
 
 my $genome_hasher_bin = './genome_hasher';
 my $genome_scorer_bin = './genome_scorer';
@@ -50,7 +51,7 @@ if ($help) {
 
 unless ( defined $yaml_config
   and $db_location
-  and exists $cmd_2_method{$build_type}  )
+  and exists $cmd_2_method{$build_type} )
 {
   Pod::Usage::pod2usage();
 }
@@ -87,7 +88,8 @@ my $builder_options_href = {
 if ( $method and $config_href ) {
 
   # set log file
-  my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type, $wanted_chr, 'log';
+  my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type,
+    $wanted_chr, 'log';
   my $log_file = path($db_location)->child($log_name)->absolute->stringify;
   Log::Any::Adapter->set( 'File', $log_file );
 

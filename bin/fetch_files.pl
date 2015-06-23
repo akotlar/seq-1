@@ -15,7 +15,7 @@ use YAML::XS qw/ LoadFile /;
 
 use Seq::Fetch;
 
-my ($yaml_config, $db_location, $verbose, $help, $act);
+my ( $yaml_config, $db_location, $verbose, $help, $act );
 
 # usage
 GetOptions(
@@ -36,8 +36,8 @@ unless ( defined $yaml_config and $db_location ) {
 }
 
 # get absolute path for YAML file and db_location
-$yaml_config       = path($yaml_config)->absolute->stringify;
-$db_location       = path($db_location)->absolute->stringify;
+$yaml_config = path($yaml_config)->absolute->stringify;
+$db_location = path($db_location)->absolute->stringify;
 
 if ( -d $db_location ) {
   chdir($db_location) || croak "cannot change to dir: $db_location: $!\n";
@@ -51,8 +51,8 @@ my $config_href = LoadFile($yaml_config);
 
 my $fetch_options_href = {
   configfile => $yaml_config,
-  act => $act,
-  verbose => $verbose
+  act        => $act,
+  verbose    => $verbose
 };
 
 # set log file
@@ -60,7 +60,7 @@ my $log_name = join '.', 'fetch', $config_href->{genome_name}, 'log';
 my $log_file = path($db_location)->child($log_name)->absolute->stringify;
 Log::Any::Adapter->set( 'File', $log_file );
 
-my $fetch_obj = Seq::Fetch->new_with_config( $fetch_options_href );
+my $fetch_obj = Seq::Fetch->new_with_config($fetch_options_href);
 
 # fetch remote files
 $fetch_obj->fetch_genome_size_tracks;

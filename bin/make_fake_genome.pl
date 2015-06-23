@@ -95,7 +95,7 @@ my $config_href = LoadFile($config_file) || croak "cannot load $config_file: $!"
 my $genome    = $config_href->{genome_name};
 my $chrs_aref = $config_href->{genome_chrs};
 
-unless ($genome and $chrs_aref ) {
+unless ( $genome and $chrs_aref ) {
   say "cannot determine genome and/or chromosomes of genome from: $config_file";
   exit(1);
 }
@@ -112,7 +112,7 @@ for my $track ( @{ $config_href->{sparse_tracks} } ) {
   last if ( $gene_track_name && $snp_track_name );
 }
 
-unless ($gene_track_name and $snp_track_name ) {
+unless ( $gene_track_name and $snp_track_name ) {
   say "cannot determine gene and snp track names from: $config_file";
   exit(1);
 }

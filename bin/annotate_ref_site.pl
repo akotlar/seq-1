@@ -19,7 +19,6 @@ use Seq::Annotate;
 
 Log::Any::Adapter->set('Stdout');
 
-
 my ( $snpfile, $yaml_file, $db_location, $verbose, $help, $out_file, $force,
   $debug );
 my ( $wanted_chr, $pos_from, $pos_to );
@@ -76,7 +75,7 @@ if ( $pos_from >= $pos_to ) {
 $yaml_file   = File::Spec->rel2abs($yaml_file);
 $db_location = File::Spec->rel2abs($db_location);
 
-chdir( $db_location ) || croak "ERROR: cannot change to $db_location";
+chdir($db_location) || croak "ERROR: cannot change to $db_location";
 
 # read config file to determine genome name for loging and to check validity of config
 my $config_href = LoadFile($yaml_file)

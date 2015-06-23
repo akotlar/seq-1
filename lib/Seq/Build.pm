@@ -226,9 +226,9 @@ sub build_genome_index {
   # prepare idx file and file list needed to make indexed genome
   my $idx_name       = join( ".", $self->genome_name, 'genome', 'idx' );
   my $file_list_name = join( ".", $self->genome_name, 'genome', 'list' );
-  my $idx_file       = File::Spec->catfile( $index_dir, $idx_name );
+  my $idx_file         = File::Spec->catfile( $index_dir, $idx_name );
   my $region_list_file = File::Spec->catfile( $index_dir, $file_list_name );
-  my $file_list_fh   = $self->get_write_fh($region_list_file);
+  my $file_list_fh     = $self->get_write_fh($region_list_file);
 
   my @region_files;
 

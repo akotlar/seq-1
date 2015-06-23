@@ -18,18 +18,17 @@ use Data::Dump qw/ pp /;
 
 use Seq;
 
-my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force,
-  $debug );
+my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force, $debug );
 
 # usage
 GetOptions(
-  'c|config=s'   => \$yaml_config,
-  's|snpfile=s'  => \$snpfile,
-  'v|verbose'    => \$verbose,
-  'h|help'       => \$help,
-  'o|out=s'      => \$out_file,
-  'f|force'      => \$force,
-  'd|debug'      => \$debug,
+  'c|config=s'  => \$yaml_config,
+  's|snpfile=s' => \$snpfile,
+  'v|verbose'   => \$verbose,
+  'h|help'      => \$help,
+  'o|out=s'     => \$out_file,
+  'f|force'     => \$force,
+  'd|debug'     => \$debug,
 );
 
 if ($help) {
@@ -51,7 +50,7 @@ if ( -f $out_file && !$force ) {
 }
 
 # get absolute path
-$out_file = File::Spec->rel2abs($out_file);
+$out_file    = File::Spec->rel2abs($out_file);
 $yaml_config = File::Spec->rel2abs($yaml_config);
 say "writing annotation data here: $out_file" if $verbose;
 
@@ -59,7 +58,7 @@ say "writing annotation data here: $out_file" if $verbose;
 my $config_href = LoadFile($yaml_config)
   || die "ERROR: Cannot read YAML file - $yaml_config: $!\n";
 
-say pp( $config_href );
+say pp($config_href);
 
 # set log file
 my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';

@@ -174,11 +174,12 @@ sub annotate_snpfile {
   # $self->_logger->info("about to load annotation data");
   my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
 
-  my $annotator =
-    Seq::Annotate->new_with_config( {
+  my $annotator = Seq::Annotate->new_with_config(
+    {
       configfile => $self->configfile_path,
-      debug => $self->debug
-    } );
+      debug      => $self->debug
+    }
+  );
 
   # for writing data
   #my $csv_writer = Text::CSV_XS->new(
@@ -202,7 +203,8 @@ sub annotate_snpfile {
   $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
 
   my ( %header, %ids, @sample_ids ) = ();
-  my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) = ( -9, -9, -9, -9, -9 );
+  my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
+    ( -9, -9, -9, -9, -9 );
 
   while ( my $line = $snpfile_fh->getline ) {
 
@@ -242,14 +244,14 @@ sub annotate_snpfile {
       $abs_pos = $chr_offset + $pos + 1;
     }
     else {
-      $chr_offset      = $chr_len_href->{$chr};
-      $chr_index       = $chr_index{$chr};
-      $next_chr        = $next_chr_href->{$chr};
-      if (defined $next_chr ) {
-        $next_chr_offset =  $chr_len_href->{ $next_chr };
+      $chr_offset = $chr_len_href->{$chr};
+      $chr_index  = $chr_index{$chr};
+      $next_chr   = $next_chr_href->{$chr};
+      if ( defined $next_chr ) {
+        $next_chr_offset = $chr_len_href->{$next_chr};
       }
       else {
-        $next_chr = -9;
+        $next_chr        = -9;
         $next_chr_offset = $genome_len;
       }
 
@@ -366,15 +368,15 @@ my %het_genos = (
 );
 
 my %hom_genos = (
-  A => ['A', 'A'],
-  C => ['C', 'C'],
-  G => ['G', 'G'],
-  T => ['T', 'T'],
+  A => [ 'A', 'A' ],
+  C => [ 'C', 'C' ],
+  G => [ 'G', 'G' ],
+  T => [ 'T', 'T' ],
 );
 
 my %hom_indel = (
-  D => ['-', '-'],
-  I => ['+', '+'],
+  D => [ '-', '-' ],
+  I => [ '+', '+' ],
 );
 my %het_indel = (
   E => ['-'],
@@ -393,10 +395,10 @@ sub _get_minor_allele_carriers {
     # skip homozygote reference && N's
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
-    if ( exists $het_genos{ $id_geno } ) {
+    if ( exists $het_genos{$id_geno} ) {
       push @het_ids, $id;
     }
-    elsif ( exists $hom_genos{ $id_geno } ) {
+    elsif ( exists $hom_genos{$id_geno} ) {
       push @hom_ids, $id;
     }
     $het_ids_str = join ";", @het_ids;

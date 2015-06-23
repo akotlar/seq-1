@@ -258,7 +258,7 @@ sub _build_transcript_db {
   for ( my $i = 0; $i < @exon_starts; $i++ ) {
     my $exon;
     for ( my $abs_pos = $exon_starts[$i]; $abs_pos < $exon_ends[$i]; $abs_pos++ ) {
-      $exon .= $self->get_base( $abs_pos, 1);
+      $exon .= $self->get_base( $abs_pos, 1 );
     }
     # say join ("\t", $exon_starts[$i], $exon_ends[$i], $exon);
     $seq .= $exon;

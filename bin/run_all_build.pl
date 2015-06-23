@@ -24,7 +24,7 @@ use YAML::XS qw/ LoadFile /;
 
 # variables
 my ( $verbose, $act, $config_file, $out_ext, $location, $build_assembly );
-my $cwd = cwd();
+my $cwd  = cwd();
 my @type = qw/ genome conserv transcript_db snp_db gene_db /;
 
 # get options
@@ -46,7 +46,7 @@ $location       = path($location)->absolute->stringify;
 
 my $config_href = LoadFile($config_file);
 
-my $cmd_fh = IO::File->new( 'build.sh', 'w');
+my $cmd_fh = IO::File->new( 'build.sh', 'w' );
 
 for my $type (qw/ gene_db snp_db /) {
   for my $chr ( @{ $config_href->{genome_chrs} } ) {
@@ -55,8 +55,8 @@ for my $type (qw/ gene_db snp_db /) {
     $cmd .= " --verbose" if $verbose;
     $cmd .= " --act"     if $act;
     my $file_name = Write_script( $type, $chr, $cmd );
-    my $log_file  = File::Spec->rel2abs( "$type.$chr.log" );
-    my $q_cmd = qq{qsub -v USER -v PATH -cwd -q lh.q -o $log_file -j y $file_name};
+    my $log_file  = File::Spec->rel2abs("$type.$chr.log");
+    my $q_cmd     = qq{qsub -v USER -v PATH -cwd -q lh.q -o $log_file -j y $file_name};
     say {$cmd_fh} $q_cmd if $verbose;
   }
 }
@@ -65,6 +65,6 @@ sub Write_script {
   my ( $type, $chr, $cmd ) = @_;
   my $file_name = "$type.$chr.sh";
   my $out_fh = IO::File->new( $file_name, 'w' );
-  say { $out_fh } join "\n", '#!bin/sh', qq{cd $cwd}, $cmd;
+  say {$out_fh} join "\n", '#!bin/sh', qq{cd $cwd}, $cmd;
   return $file_name;
 }

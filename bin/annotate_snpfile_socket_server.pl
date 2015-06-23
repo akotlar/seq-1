@@ -38,13 +38,11 @@ my $Qdone = new Thread::Queue;
 my $done : shared = 0;
 
 #
-sub worker 
-{
+sub worker {
   my $tid = threads->tid;
 
   #dequeue takes the socket connection from the head of the $Qwork array
-  while ( my $fno = $Qwork->dequeue ) 
-  {
+  while ( my $fno = $Qwork->dequeue ) {
     open my $client, "+<&", $fno or die $!;
     tprint "$tid: Duped $fno to $client";
     my $buffer     = '';
@@ -54,59 +52,58 @@ sub worker
     while ( my $c = sysread( $client, $buffer, 1, length $buffer ) ) {
       last if $done;
     }
-	    	
-		if ($buffer !~ m/^end/gi && $buffer !~ m/^\z/gi)
-		{
-		  %user_choices = %{ $JSONObject->decode($buffer) }; 
-		  
-		  print Dumper(\%user_choices);
-		  my $out_file = $user_choices{o} || $user_choices{outfile} | "";
-		  my $force = $user_choices{f} || $user_choices{force};
-		  my $db_location = $user_choices{location} || $user_choices{l} | "";
-		  my $snpfile = $user_choices{s} || $user_choices{snpfile} || "";
-		  my $yaml_config = $user_choices{c} || $user_choices{config} || "";
-			my $verbose = $user_choices{v} || $user_choices{verbose};
-			my $debug = $user_choices{d} || $user_choices{debug};
-		 
-		  # sanity checks mostly now not needed, will be checked in Seq.pm using MooseX:Type:Path:Tiny
-			if ( -f $out_file && !$force ) {
-			  say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
-			  exit;
-			}
 
-			# get absolute path not needed anymore, handled by coercison in Seq.pm, closer to where file is actually written
+    if ( $buffer !~ m/^end/gi && $buffer !~ m/^\z/gi ) {
+      %user_choices = %{ $JSONObject->decode($buffer) };
 
-			# read config file to determine genome name for loging and to check validity of config
-			# read config file to determine genome name for loging and to check validity of config
-			my $config_href = LoadFile($yaml_config)
-			  || die "ERROR: Cannot read YAML file - $yaml_config: $!\n";
+      print Dumper( \%user_choices );
+      my $out_file    = $user_choices{o}        || $user_choices{outfile} | "";
+      my $force       = $user_choices{f}        || $user_choices{force};
+      my $db_location = $user_choices{location} || $user_choices{l} | "";
+      my $snpfile     = $user_choices{s}        || $user_choices{snpfile} || "";
+      my $yaml_config = $user_choices{c}        || $user_choices{config} || "";
+      my $verbose     = $user_choices{v}        || $user_choices{verbose};
+      my $debug       = $user_choices{d}        || $user_choices{debug};
 
-			# set log file
-			my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
-			my $log_file = File::Spec->rel2abs( ".", $log_name );
-			say "writing log file here: $log_file" if $verbose;
-			Log::Any::Adapter->set( 'File', $log_file );
+      # sanity checks mostly now not needed, will be checked in Seq.pm using MooseX:Type:Path:Tiny
+      if ( -f $out_file && !$force ) {
+        say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
+        exit;
+      }
 
-			# create the annotator
-			my $annotate_instance = Seq->new(
-			  {
-			    snpfile    => $snpfile,
-			    configfile => $yaml_config,
-			    out_file   => $out_file,
-			    debug      => $debug,
-			  }
-			);
+      # get absolute path not needed anymore, handled by coercison in Seq.pm, closer to where file is actually written
 
-			# annotate the snp file
-			$annotate_instance->annotate_snpfile;
+      # read config file to determine genome name for loging and to check validity of config
+      # read config file to determine genome name for loging and to check validity of config
+      my $config_href = LoadFile($yaml_config)
+        || die "ERROR: Cannot read YAML file - $yaml_config: $!\n";
 
-			print "Done!";
+      # set log file
+      my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
+      my $log_file = File::Spec->rel2abs( ".", $log_name );
+      say "writing log file here: $log_file" if $verbose;
+      Log::Any::Adapter->set( 'File', $log_file );
 
-			close $client;
+      # create the annotator
+      my $annotate_instance = Seq->new(
+        {
+          snpfile    => $snpfile,
+          configfile => $yaml_config,
+          out_file   => $out_file,
+          debug      => $debug,
+        }
+      );
 
-			$Qdone->enqueue( $fno );
-		}
-	}
+      # annotate the snp file
+      $annotate_instance->annotate_snpfile;
+
+      print "Done!";
+
+      close $client;
+
+      $Qdone->enqueue($fno);
+    }
+  }
 }
 
 # how many threads we allow in the pool

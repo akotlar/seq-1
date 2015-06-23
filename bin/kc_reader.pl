@@ -17,20 +17,19 @@ my $msiz    = 512_000_000;
 my $params  = join "#", "msiz=$msiz";
 my $db_arg  = join "#", $db_name, $params;
 
-if (!$db->open($db_arg, $db->OREADER ) ) {
-    printf STDERR ("open error: %s\n", $db->error);
-    exit(1);
+if ( !$db->open( $db_arg, $db->OREADER ) ) {
+  printf STDERR ( "open error: %s\n", $db->error );
+  exit(1);
 }
 
 my $json = Cpanel::JSON::XS->new->utf8->pretty(1);
 
 if ($lu) {
-  my $val = $db->get( $lu );
+  my $val = $db->get($lu);
   my $href = ( defined $val ) ? decode_json $val : {};
-  say join " : ", $lu, $json->encode( $href );
+  say join " : ", $lu, $json->encode($href);
   exit;
 }
-
 
 # traverse records
 my $cur = $db->cursor;
@@ -39,24 +38,24 @@ p $cur;
 
 $cur->jump;
 
-while (my ($key, $value) = $cur->get(1)) {
+while ( my ( $key, $value ) = $cur->get(1) ) {
   my $href = decode_json $value;
   p $href;
 
-#  my @prn;
-#  for my $key (keys %$href) {
-#    if (ref $href->{$key} eq "HASH") {
-#      push @prn, join " ", $key, %{ $href->{$key} };
-#    }
-#    else {
-#      push @prn, $key, $href->{$key};
-#    }
-#  }
-#  say join " ", @prn;
+  #  my @prn;
+  #  for my $key (keys %$href) {
+  #    if (ref $href->{$key} eq "HASH") {
+  #      push @prn, join " ", $key, %{ $href->{$key} };
+  #    }
+  #    else {
+  #      push @prn, $key, $href->{$key};
+  #    }
+  #  }
+  #  say join " ", @prn;
 }
 $cur->disable;
 
 # close the database
-if (!$db->close) {
-    printf STDERR ("close error: %s\n", $db->error);
+if ( !$db->close ) {
+  printf STDERR ( "close error: %s\n", $db->error );
 }

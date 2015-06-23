@@ -67,7 +67,9 @@ sub build_snp_db {
     next unless $clean_line;
     my @fields = split /\t/, $clean_line;
 
-    if ( !%header ) { %header = map { $fields[$_] => $_ } ( 0 .. $#fields ); }
+    if ( !%header ) {
+      %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
+    }
 
     # process wanted chr
     next unless $fields[0] eq $wanted_chr;
