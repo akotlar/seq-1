@@ -87,10 +87,9 @@ sub BUILDARGS {
     my %hash;
 
     #to avoid subtle chdir issues in a multi-user env, just make the genome_index_dir correct from the getgo
-    $href->{genome_index_dir} =
-      path( $href->{genome_index_dir} )->absolute( $href->{genome_db_dir} );
-    $href->{genome_index_dir}
-      ->mkpath; #makes or returns undef, errors are trapped & exception thrown on error
+    $href->{genome_index_dir} = path( $href->{genome_index_dir} )->absolute( $href->{genome_db_dir} );
+    # makes or returns undef, errors are trapped & exception thrown on error
+    $href->{genome_index_dir}->mkpath; 
     $href->{genome_index_dir} = $href->{genome_index_dir}->stringify;
 
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
