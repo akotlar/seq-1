@@ -92,6 +92,11 @@ sub BUILDARGS {
         $hash{score_max} = 30;
       }
     }
+    elsif ( $href->{type} eq "cadd" ) {
+      $hash{score_R} = 255;
+      $hash{score_min} = 0;
+      $hash{score_max} = 85;
+    }
 
     # if score_R, score_min, or score_max are set by the caller then the
     # following will override the defaults

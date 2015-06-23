@@ -58,6 +58,28 @@ has _genome_scores => (
   builder => '_load_scores',
 );
 
+has _genome_cadd => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Seq::GenomeSizedTrackChar]',
+  traits  => ['Array'],
+  handles => {
+    _get_cadd_track => 'get',
+  },
+  lazy    => 1,
+  builder => '_load_cadd',
+);
+
+has _cadd_lookup => (
+  is      => 'ro',
+  isa     => 'HashRef',
+  traits  => ['Hash'],
+  handles => {
+    get_cadd_index => 'get',
+  },
+  lazy    => 1,
+  builder => '_build_cadd_lookup',
+);
+
 has _mongo_connection => (
   is      => 'ro',
   isa     => 'Seq::MongoManager',
@@ -100,6 +122,94 @@ has _header => (
   traits  => ['Array'],
   handles => { all_header => 'elements' },
 );
+
+sub _load_cadd {
+  my $self = shift;
+
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'cadd' ) {
+      return $self->_load_cadd($gst);
+    }
+  }
+}
+
+sub _build_cadd_lookup {
+  my $self = shift;
+
+  my %cadd_lu;
+  my @ref_bases = qw/ A C G T/;
+  my @input_bases = qw/ A C G T/;
+  for my $ref ( @ref_bases ) {
+    my $i = 0;
+    for my $input ( @input_bases ) {
+      if ($ref ne $input ) {
+        my $key = join ":", $ref, $input;
+        $cadd_lu{ $key } = $i;
+        $i++;
+      }
+    }
+  }
+  \%cadd_lu;
+}
+
+sub get_cadd_score {
+  my ($self, $abs_pos, $ref, $input) = @_;
+
+  my $key = join ":", $ref, $input;
+  my $i = $self->get_cadd_index( $key );
+  my $cadd_track = $self->_get_cadd_track($i);
+  return $cadd_track->get_score( $abs_pos );
+}
+
+sub _load_cadd {
+  my ( $self, $gst ) = @_;
+
+  my @cadd_scores;
+
+  # index dir
+  my $index_dir = $self->genome_index_dir;
+
+  for my $i ( 0 .. 2 ) {
+    # idx file
+    my $idx_name = join( ".", $gst->name, $gst->type, sprintf("%03d", $i) );
+    my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
+    my $idx_fh = $self->get_read_fh($idx_file);
+    binmode $idx_fh;
+
+    # read genome
+    my $seq           = '';
+    my $genome_length = -s $idx_file;
+
+    # error check the idx_file
+    croak "ERROR: expected file: '$idx_file' does not exist." unless -f $idx_file;
+    croak "ERROR: expected file: '$idx_file' is empty." unless $genome_length;
+
+    read $idx_fh, $seq, $genome_length;
+
+    # yml file
+    my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
+    my $yml_file = File::Spec->catfile( $index_dir, $yml_name );
+
+    # read yml chr offsets
+    my $chr_len_href = LoadFile($yml_file);
+
+    my $obj = Seq::GenomeSizedTrackChar->new(
+      {
+        name          => $gst->name,
+        type          => $gst->type,
+        genome_chrs   => $self->genome_chrs,
+        genome_length => $genome_length,
+        chr_len       => $chr_len_href,
+        char_seq      => \$seq,
+      }
+    );
+    push @cadd_scores, $obj;
+    $self->_logger->info("read cadd track ($genome_length) from $idx_name" );
+  }
+
+  return \@cadd_scores;
+}
+
 
 sub _get_dbm_file {
 
