@@ -217,7 +217,7 @@ sub _load_cadd_score {
         name          => $gst->name,
         type          => $gst->type,
         genome_chrs   => $self->genome_chrs,
-        chr_len       => $chr_len_href,
+        genome_length => $genome_length,
         char_seq      => \$seq,
       }
     );
