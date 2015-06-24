@@ -167,12 +167,21 @@ sub _build_cadd_lookup {
 }
 
 sub get_cadd_score {
-  my ($self, $abs_pos, $ref, $input) = @_;
+  my ($self, $abs_pos, $ref, $allele) = @_;
 
-  my $key = join ":", $ref, $input;
+  my $key = join ":", $ref, $allele;
   my $i = $self->get_cadd_index( $key );
-  my $cadd_track = $self->_get_cadd_track($i);
-  return $cadd_track->get_score( $abs_pos );
+  if ($self->debug) {
+    p $key;
+    p $i;
+  }
+  if ( defined $i ) {
+    my $cadd_track = $self->_get_cadd_track($i);
+    return $cadd_track->get_score( $abs_pos );
+  }
+  else {
+    return '-9';
+  }
 }
 
 sub _load_cadd_score {
@@ -190,7 +199,7 @@ sub _load_cadd_score {
     my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
 
     # check for a file and bail if none found
-    p $idx_file;
+    p $idx_file if $self->debug;
     unless ( -e $idx_file ) {
       say "empty file: $idx_file";
       exit;
@@ -328,7 +337,7 @@ sub _load_scores {
 
 sub BUILD {
   my $self = shift;
-  p $self;
+  p $self if $self->debug;
   #not really? occurs later in _load_genome_sized_track?
   $self->_logger->info( "finished loading genome of size " . $self->genome_length );
   $self->_logger->info( "finished loading " . $self->count_genome_scores . " genome score track(s)" );
@@ -461,12 +470,21 @@ sub get_ref_annotation {
 
 # indels will be handled in a separate method
 sub get_snp_annotation {
-  state $check = compile( Object, Int, Int, Str );
-  my ( $self, $chr_index, $abs_pos, $new_base ) = $check->(@_);
+  state $check = compile( Object, Int, Int, Str, Str );
+  my ( $self, $chr_index, $abs_pos, $ref_base, $new_base ) = $check->(@_);
 
   say "about to get ref annotation: $abs_pos" if $self->debug;
 
   my $ref_site_annotation = $self->get_ref_annotation( $chr_index, $abs_pos );
+
+  if ($ref_site_annotation->{ref_base} ne $ref_base ) {
+    my $err_msg = sprintf(
+      "ERROR: At abs pos '%d': input reference base (%s) does not agree with encoded reference base (%s)",
+      $abs_pos, $ref_base, $ref_site_annotation->{ref_base});
+    say $err_msg;
+    $self->_logger->info( $err_msg );
+    exit(1);
+  }
 
   p $ref_site_annotation if $self->debug;
 
@@ -506,8 +524,7 @@ sub get_snp_annotation {
   # add cadd score
   p $self if $self->debug;
   if ($self->has_cadd_track ) {
-    say "getting cadd score:";
-    push @header, 'cadd';
+    # push @header, 'cadd';
     $record->{cadd} = $self->get_cadd_score( $abs_pos, $ref_site_annotation->{ref_base}, $new_base );
   }
 
@@ -635,6 +652,8 @@ sub _build_header {
   }
 
   push @features, @alt_features;
+
+  push @features, 'cadd' if $self->has_cadd_track;
 
   return \@features;
 }

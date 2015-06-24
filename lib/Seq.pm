@@ -241,7 +241,7 @@ sub annotate_snpfile {
     my $abs_pos;
 
     if ( $chr eq $last_chr ) {
-      $abs_pos = $chr_offset + $pos + 1;
+      $abs_pos = $chr_offset + $pos - 1;
     }
     else {
       $chr_offset = $chr_len_href->{$chr};
@@ -260,7 +260,7 @@ sub annotate_snpfile {
       unless ( defined $chr_offset and defined $chr_index ) {
         croak "unrecognized chromosome: $chr\n";
       }
-      $abs_pos = $chr_offset + $pos + 1;
+      $abs_pos = $chr_offset + $pos - 1;
     }
 
     if ( $abs_pos > $next_chr_offset ) {
@@ -299,7 +299,7 @@ sub annotate_snpfile {
       for my $allele ( split( /,/, $all_alleles ) ) {
         next if $allele eq $ref_allele;
         p $allele if $self->debug;
-        my $record_href = $annotator->get_snp_annotation( $chr_index, $abs_pos, $allele );
+        my $record_href = $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
 
         p $record_href if $self->debug;
 
