@@ -21,6 +21,7 @@ use Seq;
 my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force, $debug );
 
 # usage
+#TODO: read directly from argument_format.json
 GetOptions(
   'c|config=s'  => \$yaml_config,
   's|snpfile=s' => \$snpfile,
