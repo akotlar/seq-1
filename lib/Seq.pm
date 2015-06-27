@@ -208,7 +208,6 @@ sub _build_out_fh
     elsif($self->out_file->is_dir) #this is actually the only option, but only if we specify AbsPath type, and this is fragile
     {
       my $output_path = $self->out_file->child("SeqantOutput." . time )->stringify;
-      say "Output path is: $output_path" if $self->debug;
 
       return $self->get_write_bin_fh($output_path);
     }
@@ -272,11 +271,11 @@ sub annotate_snpfile {
 
   my $summary_href;
 
-  $self->_logger->info( "finished loading assembly" . $annotator->genome_name );
+  $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
 
   if($self->wants_to_publish_messages)
   {
-    $self->_publish_message("finished loading assembly" . $annotator->genome_name)
+    $self->_publish_message("finished loading assembly " . $annotator->genome_name)
   }
 
   my ( %header, %ids, @sample_ids ) = ();
