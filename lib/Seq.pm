@@ -234,7 +234,6 @@ sub annotate_snpfile {
   $self->_logger->info("about to load annotation data");
   say "about to load annotation data" if $self->debug;
 
-  say "Has publishMessage?: " . $self->wants_to_publish_messages if $self->debug;
   if($self->wants_to_publish_messages)
   {
     $self->_publish_message("about to load annotation data");
@@ -421,10 +420,13 @@ sub annotate_snpfile {
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
   my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
 
-  # p $summary_href if $self->debug;
+  p $summary_href if $self->debug;
   # TODO: decide how to return data or do we just print it out...
   #   - print conservation scores...
-  # return $summary_href; #we may want to consider returning the full experiment hash, in case we do interesting things.
+  
+  #TODO: decide on the final return value
+  #at a minimum we need the sample-level summary
+  return $summary_href; #we may want to consider returning the full experiment hash, in case we do interesting things.
 }
 
 sub _summarize {
