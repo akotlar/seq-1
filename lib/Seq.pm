@@ -13,6 +13,9 @@ use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 use Carp qw/ croak /;
 use namespace::autoclean;
 use Seq::Annotate;
+
+use Redis;
+use Cpanel::JSON::XS;
 # use Coro;
 # use AnyEvent;
 
@@ -50,9 +53,28 @@ has debug => (
   default => 0,
 );
 
+has messageChannelHref => (
+  is      => 'ro',
+  isa     => 'HashRef',
+  traits    => ['Hash'],
+  required => 0,
+  predicate => 'wants_to_publish_messages',
+  handles => {channelInfo => 'get'} 
+);
+
+#vars that are not initialized at construction
+has _message_publisher => (
+  is  => 'ro',
+  required => 0,
+  init_arg => undef,
+  builder  => '_build_message_publisher',
+  handles  => { _publishMessage => 'publish'}
+);
+
 has _out_fh => (
   is      => 'ro',
   lazy    => 1,
+  init_arg => undef,
   builder => '_build_out_fh',
 );
 
@@ -60,12 +82,14 @@ has _count_key => (
   is      => 'ro',
   isa     => 'Str',
   lazy    => 1,
+  init_arg => undef,
   default => 'count',
 );
 
 has del_sites => (
   is      => 'rw',
   isa     => 'HashRef',
+  init_arg => undef,
   default => sub { {} },
   traits  => ['Hash'],
   handles => {
@@ -80,6 +104,7 @@ has del_sites => (
 has ins_sites => (
   is      => 'rw',
   isa     => 'HashRef',
+  init_arg => undef,
   default => sub { {} },
   traits  => ['Hash'],
   handles => {
@@ -94,6 +119,7 @@ has ins_sites => (
 has snp_sites => (
   is      => 'rw',
   isa     => 'HashRef',
+  init_arg => undef,
   default => sub { {} },
   traits  => ['Hash'],
   handles => {
@@ -108,6 +134,7 @@ has snp_sites => (
 has genes_annotated => (
   is      => 'rw',
   isa     => 'HashRef',
+  init_arg => undef,
   default => sub { {} },
   traits  => ['Hash'],
   handles => {
@@ -142,15 +169,51 @@ my %IUPAC_codes = (
 my $homozygote_regex   = qr{[ACGTDI]+};
 my $heterozygote_regex = qr{[KMRSWYEH]+};
 
-sub _build_out_fh {
+my $redisHost  = 'localhost';
+my $redisPort  = '6379';
+sub _build_message_publisher
+{
+  my $self = shift;
+
+  return Redis->new(host => $redisHost, port => $redisPort);
+}
+
+sub _publish_message
+{
+  my ($self,$message) = @_;
+  #TODO:check performance of the array merge
+  #benefit is indirection, cost may be too high?
+  $self->_publishMessage(
+    $self->channelInfo('messageChannel'),
+    encode_json(
+      {
+        %{$self->channelInfo('recordLocator')},
+        message=>$message
+      } 
+    )
+  )
+}
+sub _build_out_fh 
+{
   my $self        = shift;
   my $output_path = $self->out_file_path;
-  if ($output_path) {
-    return $self->get_write_bin_fh($output_path);
+  #allow users to give us a directory or a filepath, if directory use some sensible default
+  #TODO: make the sensible default based on the input file name
+  if ($output_path) 
+  {
+    if($self->out_file->is_file)
+    {
+      return $self->get_write_bin_fh($output_path);
+    }
+    elsif($self->out_file->is_dir) #this is actually the only option, but only if we specify AbsPath type, and this is fragile
+    {
+      my $output_path = $self->out_file->child("SeqantOutput." . time )->stringify;
+      say "Output path is: $output_path" if $self->debug;
+
+      return $self->get_write_bin_fh($output_path);
+    }
   }
-  else {
-    return \*STDOUT;
-  }
+  return \*STDOUT;
 }
 
 sub _get_annotator {
@@ -171,6 +234,13 @@ sub annotate_snpfile {
 
   $self->_logger->info("about to load annotation data");
   say "about to load annotation data" if $self->debug;
+
+  say "Has publishMessage?: " . $self->wants_to_publish_messages if $self->debug;
+  if($self->wants_to_publish_messages)
+  {
+    $self->_publish_message("about to load annotation data");
+  }
+  $self->_publish_message("about to load annotation data");
   # $self->_logger->info("about to load annotation data");
   my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
 
@@ -200,14 +270,22 @@ sub annotate_snpfile {
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
 
-  $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
+  my $summary_href;
+
+  $self->_logger->info( "finished loading assembly" . $annotator->genome_name );
+
+  if($self->wants_to_publish_messages)
+  {
+    $self->_publish_message("finished loading assembly" . $annotator->genome_name)
+  }
 
   my ( %header, %ids, @sample_ids ) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
 
-  while ( my $line = $snpfile_fh->getline ) {
-
+  my $i = 0;
+  while ( my $line = $snpfile_fh->getline ) 
+  {
     # process snpfile
     chomp $line;
     my $clean_line = $self->clean_line($line);
@@ -311,7 +389,7 @@ sub annotate_snpfile {
         $record_href->{heterozygotes_ids} = $het_ids || 'NA';
         $record_href->{homozygote_ids}    = $hom_ids || 'NA';
 
-        # $self->_summarize($record_href, $summary_href, \@sample_ids, $hom_ids_href);
+        $self->_summarize($record_href, $summary_href, \@sample_ids, $hom_ids_href);
 
         my @record;
         for my $attr (@header) {
@@ -329,6 +407,16 @@ sub annotate_snpfile {
         say { $self->_out_fh } join "\t", @record;
       }
     }
+
+    if($i == 200)
+    {
+      $i = 0;
+      if($self->wants_to_publish_messages)
+      {
+        $self->_publish_message("finished annotating position $pos");
+      }
+    }
+    ++$i;
   }
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;

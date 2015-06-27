@@ -307,6 +307,7 @@ sub get_ref_annotation {
       my $kch = $gene_dbs->[$chr_index];
       my $rec = $kch->db_get($abs_pos);
       p $kch if $self->debug;
+      print "\n\nThis is rec:\n\n";
       p $rec if $self->debug;
 
       push @gene_data, @$rec if defined $rec;
