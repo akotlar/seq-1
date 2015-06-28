@@ -58,7 +58,7 @@ say "writing annotation data here: $out_file" if $verbose;
 my $config_href = LoadFile($yaml_config)
   || die "ERROR: Cannot read YAML file - $yaml_config: $!\n";
 
-say pp($config_href);
+say pp($config_href) if $debug;
 
 # set log file
 my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
