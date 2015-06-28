@@ -106,29 +106,34 @@ sub write_sql_data {
   $self->_logger->info( "sql cmd: " . $self->sql_statement ) if $self->verbose;
 
   # set directories
-  my $dir = File::Spec->canonpath( $self->local_dir );
+  my $local_dir = File::Spec->canonpath( $self->local_dir );
   my $cwd = cwd();
 
   # set file names
   my $file_with_time   = $now_timestamp . "." . $self->local_file;
-  my $target_file      = File::Spec->catfile( $dir, $file_with_time );
-  my $symlink_original = File::Spec->catfile( ( $cwd, $dir ), $file_with_time );
-  my $symlink_target   = File::Spec->catfile( ( $cwd, $dir ), $self->local_file );
+  my $target_file      = File::Spec->catfile( $local_dir, $file_with_time );
+  my $symlink_original = File::Spec->catfile( ( $cwd, $local_dir ), $file_with_time );
+  my $symlink_target   = File::Spec->catfile( ( $cwd, $local_dir ), $self->local_file );
 
   # make target dir
-  make_path($dir) if $self->act;
+  make_path($local_dir) if $self->act;
 
   my $sql_data = $self->_write_sql_data($target_file);
 
   # write data
-  # map { say $out_fh join( "\t", @$_ ); } @$sql_data if $self->act;
-
   $self->_logger->info( "sql wrote data to: " . $target_file ) if $self->verbose;
-
-  # link files and return success
+  
+  # link files
   if ( $self->act ) {
-    symlink $symlink_original, $symlink_target
-      or $self->_logger->error("could not symlink $symlink_original, $symlink_target");
+    chdir $local_dir || die "cannot change to $local_dir";
+
+    if ( symlink $file_with_time, $self->local_file ) {
+      $self->_logger->info("symlinked $symlink_original -> $symlink_target");
+    }
+    else {
+      $self->_logger->error("could not symlink $symlink_original -> $symlink_target");
+    }
+    chdir $cwd || die "cannot change to $cwd";
   }
 }
 
