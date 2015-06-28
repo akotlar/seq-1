@@ -189,7 +189,7 @@ sub _load_cadd_score {
     my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
 
     # check for a file and bail if none found
-    p $idx_file if $self->debug;
+    $self->_logger->info("attempting to load: $idx_file");
     unless ( -e $idx_file ) {
       say "empty file: $idx_file";
       exit;
@@ -391,7 +391,7 @@ sub _build_header {
   }
   map { push @alt_features, $_ } keys %snp_features;
 
-  my @features = qw/ chr pos ref_base genomic_annotation_code annotation_type
+  my @features = qw/ chr pos ref_base type alleles allele_counts genomic_annotation_code annotation_type
     codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
     ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id snp_id /;
 
@@ -401,7 +401,6 @@ sub _build_header {
   }
 
   push @features, @alt_features;
-
   push @features, 'cadd' if $self->has_cadd_track;
 
   return \@features;
