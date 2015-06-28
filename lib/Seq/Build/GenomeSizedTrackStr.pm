@@ -57,15 +57,15 @@ sub _build_str_genome {
 
   my $local_dir   = File::Spec->canonpath( $self->local_dir );
   my @local_files = $self->all_local_files;
-  my @genome_chrs = $self->all_genome_chrs;
 
+  # setup genome string files
   my $dir              = File::Spec->canonpath( $self->genome_index_dir );
   my $chr_len_name     = join ".", $self->name, $self->type, 'chr_len', 'dat';
   my $genome_name      = join ".", $self->name, $self->type, 'str', 'dat';
   my $chr_len_file     = File::Spec->catfile( $dir, $chr_len_name );
   my $genome_file      = File::Spec->catfile( $dir, $genome_name );
   my $genome_file_size = -s $genome_file;
-  my $genome_str       = '';
+
 
   if ( -s $chr_len_file && $genome_file_size ) {
 
@@ -80,35 +80,45 @@ sub _build_str_genome {
   }
   else {
 
-    $self->_logger->info('no previous genome detected; building genome string');
+    $self->_logger->info("building genome string");
+
+    my %seq_of_chr; # added this to do the munging ...
 
     for ( my $i = 0; $i < @local_files; $i++ ) {
       my $file        = $local_files[$i];
-      my $chr         = $genome_chrs[$i];
       my $local_file  = File::Spec->catfile( $local_dir, $file );
       my $in_fh       = $self->get_read_fh($local_file);
       my @file_fields = split( /\./, $file );
-
-      confess "expected chromosomes and sequence files to be in the"
-        . " same order but found $file with $chr\n"
-        unless $chr eq $file_fields[0];
-
-      $self->set_chr_len( $chr => length $genome_str );
+      my $wanted_chr  = 0;
+      my $chr;
 
       while ( my $line = $in_fh->getline() ) {
         chomp $line;
         $line =~ s/\s+//g;
-        next if ( $line =~ m/\A>/ );
-        if ( $line =~ m/(\A[ATCGNatcgn]+)\Z/ ) {
-          $genome_str .= uc $1;
+        if ($line =~ m/\A>([\w\d]+)/) {
+          $chr = $1;
+          if (grep {/$chr/} $self->all_genome_chrs ) {
+            $wanted_chr = 1;
+          }
+          else {
+            $self->warn("skipping $chr");
+            $wanted_chr = 0;
+          }
+        }
+        if ( $wanted_chr && $line =~ m/(\A[ATCGNatcgn]+)\z/xmi ) {
+          $seq_of_chr{$chr} .= uc $1;
         }
         else {
-          confess join( "\n",
-            "ERROR: Unexpected Non-Base Character.",
-            "\tfile: $file ",
-            "\tline: $.", "\tsequence: $line" );
+          $self->_logger->info("skipping unrecognized chromsome while building gneome str: $chr ");
         }
       }
+    }
+
+    # build final genome string
+    my $genome_str = '';
+    for my $chr ( $self->all_genome_chrs ) {
+      $genome_str .= $seq_of_chr{$chr};
+      $seq_of_chr{$chr} = ( );
     }
 
     my $fh = $self->get_write_fh($genome_file);
