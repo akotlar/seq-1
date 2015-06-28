@@ -95,9 +95,9 @@ sub _build_str_genome {
       while ( my $line = $in_fh->getline() ) {
         chomp $line;
         $line =~ s/\s+//g;
-        if ($line =~ m/\A>([\w\d]+)/) {
+        if ( $line =~ m/\A>([\w\d]+)/ ) {
           $chr = $1;
-          if (grep {/$chr/} $self->all_genome_chrs ) {
+          if ( grep { /$chr/ } $self->all_genome_chrs ) {
             $wanted_chr = 1;
           }
           else {
@@ -109,7 +109,8 @@ sub _build_str_genome {
           $seq_of_chr{$chr} .= uc $1;
         }
         else {
-          $self->_logger->info("skipping unrecognized chromsome while building gneome str: $chr ");
+          $self->_logger->info(
+            "skipping unrecognized chromsome while building gneome str: $chr ");
         }
       }
     }
@@ -119,11 +120,14 @@ sub _build_str_genome {
     for my $chr ( $self->all_genome_chrs ) {
       if ( exists $seq_of_chr{$chr} && defined $seq_of_chr{$chr} ) {
         $genome_str .= $seq_of_chr{$chr};
-        $seq_of_chr{$chr} = ( );
+        $seq_of_chr{$chr} = ();
       }
       else {
-        ( my $err_msg = qq{did not find chromosome data for required chromosome
-          $chr while building genome for $self->name} ) =~ s/\n/ /xmi;
+        (
+          my $err_msg =
+            qq{did not find chromosome data for required chromosome
+          $chr while building genome for $self->name}
+        ) =~ s/\n/ /xmi;
         $self->_logger->info($err_msg);
         say $err_msg;
         exit(1);

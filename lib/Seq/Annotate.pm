@@ -62,7 +62,7 @@ has _genome_cadd => (
   isa     => 'ArrayRef',
   traits  => ['Array'],
   handles => {
-    _get_cadd_track => 'get',
+    _get_cadd_track   => 'get',
     count_cadd_scores => 'count',
   },
   lazy    => 1,
@@ -73,9 +73,7 @@ has _cadd_lookup => (
   is      => 'ro',
   isa     => 'HashRef',
   traits  => ['Hash'],
-  handles => {
-    get_cadd_index => 'get',
-  },
+  handles => { get_cadd_index => 'get', },
   lazy    => 1,
   builder => '_build_cadd_lookup',
 );
@@ -123,7 +121,7 @@ has has_cadd_track => (
   default => 0,
   handles => {
     unset_cadd => 'unset',
-    set_cadd => 'set',
+    set_cadd   => 'set',
   }
 );
 
@@ -143,14 +141,14 @@ sub _build_cadd_lookup {
   my $self = shift;
 
   my %cadd_lu;
-  my @ref_bases = qw/ A C G T/;
+  my @ref_bases   = qw/ A C G T/;
   my @input_bases = qw/ A C G T/;
-  for my $ref ( @ref_bases ) {
+  for my $ref (@ref_bases) {
     my $i = 0;
-    for my $input ( @input_bases ) {
-      if ($ref ne $input ) {
+    for my $input (@input_bases) {
+      if ( $ref ne $input ) {
         my $key = join ":", $ref, $input;
-        $cadd_lu{ $key } = $i;
+        $cadd_lu{$key} = $i;
         $i++;
       }
     }
@@ -159,17 +157,17 @@ sub _build_cadd_lookup {
 }
 
 sub get_cadd_score {
-  my ($self, $abs_pos, $ref, $allele) = @_;
+  my ( $self, $abs_pos, $ref, $allele ) = @_;
 
   my $key = join ":", $ref, $allele;
-  my $i = $self->get_cadd_index( $key );
-  if ($self->debug) {
+  my $i = $self->get_cadd_index($key);
+  if ( $self->debug ) {
     p $key;
     p $i;
   }
   if ( defined $i ) {
     my $cadd_track = $self->_get_cadd_track($i);
-    return $cadd_track->get_score( $abs_pos );
+    return $cadd_track->get_score($abs_pos);
   }
   else {
     return 'NA';
@@ -187,7 +185,7 @@ sub _load_cadd_score {
   for my $i ( 0 .. 2 ) {
 
     # idx file
-    my $idx_name = join( ".", $gst->type, $i);
+    my $idx_name = join( ".", $gst->type, $i );
     my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
 
     # check for a file and bail if none found
@@ -223,12 +221,11 @@ sub _load_cadd_score {
       }
     );
     push @cadd_scores, $obj;
-    $self->_logger->info("read cadd track ($genome_length) from $idx_name" );
+    $self->_logger->info("read cadd track ($genome_length) from $idx_name");
   }
   $self->set_cadd;
   return \@cadd_scores;
 }
-
 
 sub _get_dbm_file {
 
@@ -414,8 +411,10 @@ sub BUILD {
   my $self = shift;
   p $self if $self->debug;
   $self->_logger->info( "finished loading genome of size " . $self->genome_length );
-  $self->_logger->info( "finished loading " . $self->count_genome_scores . " genome score track(s)" );
-  $self->_logger->info( "finished loading " . $self->count_cadd_scores . " cadd scores");
+  $self->_logger->info(
+    "finished loading " . $self->count_genome_scores . " genome score track(s)" );
+  $self->_logger->info(
+    "finished loading " . $self->count_cadd_scores . " cadd scores" );
   for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
     for my $dbm (@$dbm_aref) {
       $self->_logger->info( "finished loading " . $dbm->filename );
@@ -499,12 +498,12 @@ sub get_snp_annotation {
 
   my $ref_site_annotation = $self->get_ref_annotation( $chr_index, $abs_pos );
 
-  if ($ref_site_annotation->{ref_base} ne $ref_base ) {
+  if ( $ref_site_annotation->{ref_base} ne $ref_base ) {
     my $err_msg = sprintf(
       "ERROR: At abs pos '%d': input reference base (%s) does not agree with encoded reference base (%s)",
-      $abs_pos, $ref_base, $ref_site_annotation->{ref_base});
+      $abs_pos, $ref_base, $ref_site_annotation->{ref_base} );
     say $err_msg;
-    $self->_logger->info( $err_msg );
+    $self->_logger->info($err_msg);
     exit(1);
   }
 
@@ -544,8 +543,9 @@ sub get_snp_annotation {
   my @header = $self->all_header;
 
   # add cadd score
-  if ($self->has_cadd_track ) {
-    $record->{cadd} = $self->get_cadd_score( $abs_pos, $ref_site_annotation->{ref_base}, $new_base );
+  if ( $self->has_cadd_track ) {
+    $record->{cadd} =
+      $self->get_cadd_score( $abs_pos, $ref_site_annotation->{ref_base}, $new_base );
   }
 
   for my $attr (@header) {

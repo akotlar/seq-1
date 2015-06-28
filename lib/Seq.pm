@@ -13,8 +13,6 @@ use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 use Carp qw/ croak /;
 use namespace::autoclean;
 use Seq::Annotate;
-# use Coro;
-# use AnyEvent;
 
 use DDP;
 
@@ -299,7 +297,8 @@ sub annotate_snpfile {
       for my $allele ( split( /,/, $all_alleles ) ) {
         next if $allele eq $ref_allele;
         p $allele if $self->debug;
-        my $record_href = $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
+        my $record_href =
+          $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
 
         p $record_href if $self->debug;
 
