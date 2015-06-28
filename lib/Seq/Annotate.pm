@@ -19,7 +19,6 @@ use YAML::XS qw/ LoadFile /;
 use DDP;
 
 use Seq::GenomeSizedTrackChar;
-use Seq::MongoManager;
 use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
@@ -79,13 +78,6 @@ has _cadd_lookup => (
   },
   lazy    => 1,
   builder => '_build_cadd_lookup',
-);
-
-has _mongo_connection => (
-  is      => 'ro',
-  isa     => 'Seq::MongoManager',
-  lazy    => 1,
-  builder => '_build_mongo_connection',
 );
 
 has dbm_gene => (
@@ -180,7 +172,7 @@ sub get_cadd_score {
     return $cadd_track->get_score( $abs_pos );
   }
   else {
-    return '-9';
+    return 'NA';
   }
 }
 
@@ -233,7 +225,6 @@ sub _load_cadd_score {
     push @cadd_scores, $obj;
     $self->_logger->info("read cadd track ($genome_length) from $idx_name" );
   }
-  say $_ for @cadd_scores;
   $self->set_cadd;
   return \@cadd_scores;
 }
@@ -335,29 +326,11 @@ sub _load_scores {
   return \@score_tracks;
 }
 
-sub BUILD {
-  my $self = shift;
-  p $self if $self->debug;
-  #not really? occurs later in _load_genome_sized_track?
-  $self->_logger->info( "finished loading genome of size " . $self->genome_length );
-  $self->_logger->info( "finished loading " . $self->count_genome_scores . " genome score track(s)" );
-  $self->_logger->info( "finished loading " . $self->count_cadd_scores . " cadd scores");
-  for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
-    for my $dbm (@$dbm_aref) {
-      $self->_logger->info( "loading " . $dbm->filename );
-    }
-  }
-}
-
 sub _load_genome_sized_track {
   my ( $self, $gst ) = @_;
 
   # index dir
   my $index_dir = $self->genome_index_dir;
-
-  # alex's new stuff:
-  # my $genome_idx_Aref = $self->load_genome_sequence( $idx_name, $idx_dir );
-  # temporarily reverting to how I wrote this before.
 
   # idx file
   my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
@@ -373,17 +346,12 @@ sub _load_genome_sized_track {
   croak "ERROR: expected file: '$idx_file' does not exist." unless -f $idx_file;
   croak "ERROR: expected file: '$idx_file' is empty." unless $genome_length;
 
+  # read genome index into memory
   read $idx_fh, $seq, $genome_length;
 
   # yml file
   my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
   my $yml_file = File::Spec->catfile( $index_dir, $yml_name );
-
-  # my $genome_idx_Aref = $self->load_track_data($idx_name, $idx_dir);
-  #
-  # # yml file
-  # my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
-  # my $yml_file_path = path($idx_dir, $yml_name )->stringify;
 
   # read yml chr offsets
   my $chr_len_href = LoadFile($yml_file);
@@ -402,6 +370,57 @@ sub _load_genome_sized_track {
   $self->_logger->info(
     "read genome-sized track (" . $genome_length . ") from $idx_name" );
   return $obj;
+}
+
+sub _build_header {
+  my $self = shift;
+
+  my ( %gene_features, %snp_features );
+
+  for my $gene_track ( $self->all_gene_tracks ) {
+    my @features = $gene_track->all_features;
+    map { $gene_features{"alt_names.$_"}++ } @features;
+  }
+  my @alt_features = map { $_ } keys %gene_features;
+
+  for my $snp_track ( $self->all_snp_tracks ) {
+    my @snp_features = $snp_track->all_features;
+
+    # this is a total hack got allow me to calcuate a single MAF for the snp
+    # that's not already a value we retrieve and, therefore, doesn't fit in the
+    # framework well
+    push @snp_features, 'maf';
+    map { $snp_features{"snp_feature.$_"}++ } @snp_features;
+  }
+  map { push @alt_features, $_ } keys %snp_features;
+
+  my @features = qw/ chr pos ref_base genomic_annotation_code annotation_type
+    codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
+    ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id snp_id /;
+
+  # add genome score track names
+  for my $gs ( $self->_all_genome_scores ) {
+    push @features, $gs->name;
+  }
+
+  push @features, @alt_features;
+
+  push @features, 'cadd' if $self->has_cadd_track;
+
+  return \@features;
+}
+
+sub BUILD {
+  my $self = shift;
+  p $self if $self->debug;
+  $self->_logger->info( "finished loading genome of size " . $self->genome_length );
+  $self->_logger->info( "finished loading " . $self->count_genome_scores . " genome score track(s)" );
+  $self->_logger->info( "finished loading " . $self->count_cadd_scores . " cadd scores");
+  for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
+    for my $dbm (@$dbm_aref) {
+      $self->_logger->info( "finished loading " . $dbm->filename );
+    }
+  }
 }
 
 sub get_ref_annotation {
@@ -435,12 +454,14 @@ sub get_ref_annotation {
 
   my ( @gene_data, @snp_data, %conserv_scores );
 
+  # get scores at site
   for my $gs ( $self->_all_genome_scores ) {
     my $name  = $gs->name;
     my $score = $gs->get_score($abs_pos);
     $record{$name} = $score;
   }
 
+  # get gene annotations at site
   if ($gan) {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
@@ -453,6 +474,7 @@ sub get_ref_annotation {
     $record{gene_data} = \@gene_data;
   }
 
+  # get snp annotations at site
   if ($snp) {
     for my $snp_dbs ( $self->_all_dbm_snp ) {
       my $kch = $snp_dbs->[$chr_index];
@@ -468,7 +490,7 @@ sub get_ref_annotation {
   return \%record;
 }
 
-# indels will be handled in a separate method
+# annotate a snp site
 sub get_snp_annotation {
   state $check = compile( Object, Int, Int, Str, Str );
   my ( $self, $chr_index, $abs_pos, $ref_base, $new_base ) = $check->(@_);
@@ -513,18 +535,16 @@ sub get_snp_annotation {
     # merge data
     $snp_site_ann_href = $self->_join_href( $snp_site_ann_href, $san );
   }
-  say "final annotation" if $self->debug;
 
   # original annotation and merged annotations
   my $record = $ref_site_annotation;
   my $merged_ann = $self->_join_href( $gene_site_ann_href, $snp_site_ann_href );
+
   my %hash;
   my @header = $self->all_header;
 
   # add cadd score
-  p $self if $self->debug;
   if ($self->has_cadd_track ) {
-    # push @header, 'cadd';
     $record->{cadd} = $self->get_cadd_score( $abs_pos, $ref_site_annotation->{ref_base}, $new_base );
   }
 
@@ -573,89 +593,6 @@ sub _join_href {
     }
   }
   return \%merge;
-}
-
-#
-# Depreciated Methods:
-#
-# sub _join_data
-# {
-#   my ( $self, $old_val, $new_val ) = @_;
-#   my $type = reftype($old_val);
-#   if ($type)
-#   {
-#     if ( $type eq 'Array' )
-#     {
-#       unless ( grep { /$new_val/ } @$old_val )
-#       {
-#         push @{$old_val}, $new_val;
-#         return $old_val;
-#       }
-#     }
-#   }
-#   else
-#   {
-#     my @new_array;
-#     push @new_array, $old_val, $new_val;
-#     return \@new_array;
-#   }
-# }
-#
-# sub _mung_output
-# {
-#   my ( $self, $href ) = @_;
-#   my %hash;
-#   for my $attrib ( keys %$href )
-#   {
-#     my $ref = reftype( $href->{$attrib} );
-#     if ( $ref && $ref eq 'Array' )
-#     {
-#       $hash{$attrib} = join( ";", @{ $href->{$attrib} } );
-#     }
-#     else
-#     {
-#       $hash{$attrib} = $href->{$attrib};
-#     }
-#   }
-#   return \%hash;
-# }
-
-sub _build_header {
-  my $self = shift;
-
-  my ( %gene_features, %snp_features );
-
-  for my $gene_track ( $self->all_gene_tracks ) {
-    my @features = $gene_track->all_features;
-    map { $gene_features{"alt_names.$_"}++ } @features;
-  }
-  my @alt_features = map { $_ } keys %gene_features;
-
-  for my $snp_track ( $self->all_snp_tracks ) {
-    my @snp_features = $snp_track->all_features;
-
-    # this is a total hack got allow me to calcuate a single MAF for the snp
-    # that's not already a value we retrieve and, therefore, doesn't fit in the
-    # framework well
-    push @snp_features, 'maf';
-    map { $snp_features{"snp_feature.$_"}++ } @snp_features;
-  }
-  map { push @alt_features, $_ } keys %snp_features;
-
-  my @features = qw/ chr pos ref_base genomic_annotation_code annotation_type
-    codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
-    ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id snp_id /;
-
-  # add genome score track names
-  for my $gs ( $self->_all_genome_scores ) {
-    push @features, $gs->name;
-  }
-
-  push @features, @alt_features;
-
-  push @features, 'cadd' if $self->has_cadd_track;
-
-  return \@features;
 }
 
 sub annotate_dels {
