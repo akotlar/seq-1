@@ -8,7 +8,7 @@ package Seq::Build::GenomeSizedTrackStr;
 
 use Moose 2;
 
-use Carp qw/ confess /;
+use Carp qw/ confess croak /;
 use File::Path;
 use File::Spec;
 use namespace::autoclean;
@@ -117,8 +117,14 @@ sub _build_str_genome {
     # build final genome string
     my $genome_str = '';
     for my $chr ( $self->all_genome_chrs ) {
-      $genome_str .= $seq_of_chr{$chr};
-      $seq_of_chr{$chr} = ( );
+      if ( exists $seq_of_chr{$chr} && defined $seq_of_chr{$chr} ) {
+        $genome_str .= $seq_of_chr{$chr};
+        $seq_of_chr{$chr} = ( );
+      }
+      else {
+        croak "did not find chromosome data for required chromosome,"
+        . $chr . " while building genome for: " . $self->name ;
+      }
     }
 
     my $fh = $self->get_write_fh($genome_file);
