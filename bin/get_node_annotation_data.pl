@@ -6,7 +6,6 @@
 #
 # Description:
 
-
 use 5.10.0;
 use strict;
 use warnings;
@@ -16,23 +15,25 @@ use File::Spec;
 use IO::File;
 use DDP;
 
-my ($verbose, $act, $source_dir, $destination_dir);
+my ( $verbose, $act, $source_dir, $destination_dir );
 
 # get options
 die "Usage: $0 [-v] [-a] -s <source dir> -t <destination dir>\n"
   unless GetOptions(
-    'v|verbose' => \$verbose,
-    'a|act'     => \$act,
-    's|source=s' => \$source_dir,
-    'd|destination=s' => \$destination_dir,
-    ) and $source_dir
-      and $destination_dir;
+  'v|verbose'       => \$verbose,
+  'a|act'           => \$act,
+  's|source=s'      => \$source_dir,
+  'd|destination=s' => \$destination_dir,
+  )
+  and $source_dir
+  and $destination_dir;
 $verbose++ unless $act;
 
-my $wd = cwd();
-my @nodes = map { sprintf("%02d", $_ ) } ( 1 .. 4);
+my $wd              = cwd();
+my @nodes           = map { sprintf( "%02d", $_ ) } ( 1 .. 4 );
 my $out_script_file = File::Spec->catfile( $wd, "rsync_tmp.$$.sh" );
-my $out_script_fh = IO::File->new( $out_script_file, 'w' ) or die "$out_script_file: $!\n";
+my $out_script_fh   = IO::File->new( $out_script_file, 'w' )
+  or die "$out_script_file: $!\n";
 $destination_dir = File::Spec->rel2abs($destination_dir);
 my $rsync_opt = "-aP";
 $rsync_opt .= "n" unless $act;
@@ -44,7 +45,7 @@ cd $wd
 rsync $rsync_opt $source_dir $destination_dir
 };
 
-say { $out_script_fh } $script_txt;
+say {$out_script_fh} $script_txt;
 
 for my $node (@nodes) {
   my $cmd = qq{dsh -w -m node$node "sh $out_script_file"};
