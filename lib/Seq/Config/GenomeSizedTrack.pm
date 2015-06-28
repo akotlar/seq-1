@@ -161,13 +161,6 @@ sub _build_next_chr {
   return \%next_chrs;
 }
 
-# no longer needed as the building is moved to genome_hasher.c
-# sub get_idx_code {
-#   my $self = shift;
-#   my ( $base, $in_gan, $in_gene, $in_exon, $in_snp ) = @_;
-#   return $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
-# }
-
 sub get_idx_base {
   my ( $self, $char ) = @_;
   return $idx_base[$char];
