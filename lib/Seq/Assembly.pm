@@ -13,8 +13,6 @@ use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use Path::Tiny qw/ path /;
 
-use DDP;
-
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
 
@@ -58,18 +56,11 @@ has gene_tracks => (
     add_gene_track  => 'push',
   },
 );
-
-# has cadd_track => (
-#   is  => 'ro',
-#   isa => 'Seq::Config::GenomeSizedTrack',
-# );
-
 has dbm_dry_run => (
   is      => 'ro',
   isa     => 'Bool',
   default => 0,
 );
-
 has debug => (
   is      => 'ro',
   isa     => 'Bool',
@@ -91,7 +82,7 @@ sub BUILDARGS {
     # makes or returns undef, errors are trapped & exception thrown on error
     # TODO: you're 100% right but this can be a bit cryptic when it happens ... i.e., how can the error msg
     #       be helpful to the user?
-    $href->{genome_index_dir}->mkpath; 
+    $href->{genome_index_dir}->mkpath;
     $href->{genome_index_dir} = $href->{genome_index_dir}->stringify;
 
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
