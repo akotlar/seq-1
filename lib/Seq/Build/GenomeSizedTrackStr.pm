@@ -65,7 +65,7 @@ sub _build_str_genome {
   my $chr_len_file     = File::Spec->catfile( $dir, $chr_len_name );
   my $genome_file      = File::Spec->catfile( $dir, $genome_name );
   my $genome_file_size = -s $genome_file;
-
+  my $genome_str       = '';
 
   if ( -s $chr_len_file && $genome_file_size ) {
 
@@ -115,7 +115,7 @@ sub _build_str_genome {
     }
 
     # build final genome string
-    my $genome_str = '';
+
     for my $chr ( $self->all_genome_chrs ) {
       if ( exists $seq_of_chr{$chr} && defined $seq_of_chr{$chr} ) {
         $genome_str .= $seq_of_chr{$chr};
