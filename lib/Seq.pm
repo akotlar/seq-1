@@ -116,51 +116,13 @@ has genes_annotated => (
   },
 );
 
-my @allowed_genotype_codes = [qw/ A C G T K M R S W Y D E H N /];
 
-# IPUAC ambiguity simplify representing genotypes
-my %IUPAC_codes = (
-  K => [ 'G', 'T' ],
-  M => [ 'A', 'C' ],
-  R => [ 'A', 'G' ],
-  S => [ 'C', 'G' ],
-  W => [ 'A', 'T' ],
-  Y => [ 'C', 'T' ],
-  A => ['A'],
-  C => ['C'],
-  G => ['G'],
-  T => ['T'],
-  # the following indel codes are not technically IUPAC but part of the snpfile spec
-  D => ['-'],
-  E => ['-'],
-  H => ['+'],
-  N => [],
-);
+=head2 annotation_snpfile
 
-my $homozygote_regex   = qr{[ACGTDI]+};
-my $heterozygote_regex = qr{[KMRSWYEH]+};
+annotate_snpfile - method called on Seq object to annotate the snpfile that 
+  was supplied to the object at construction; 
 
-sub _build_out_fh {
-  my $self        = shift;
-  my $output_path = $self->out_file_path;
-  if ($output_path) {
-    return $self->get_write_bin_fh($output_path);
-  }
-  else {
-    return \*STDOUT;
-  }
-}
-
-sub _get_annotator {
-  my $self           = shift;
-  my $abs_configfile = File::Spec->rel2abs( $self->configfile );
-  my $abs_db_dir     = File::Spec->rel2abs( $self->db_dir );
-
-  # change to the root dir of the database
-  chdir($abs_db_dir) || die "cannot change to $abs_db_dir: $!";
-
-  return Seq::Annotate->new_with_config( { configfile => $abs_configfile } );
-}
+=cut
 
 sub annotate_snpfile {
   my $self = shift;
@@ -179,35 +141,32 @@ sub annotate_snpfile {
     }
   );
 
-  # for writing data
-  #my $csv_writer = Text::CSV_XS->new(
-  #  { binary => 1, auto_diag => 1, always_quote => 1, eol => "\n" } );
-
-  # write header
-  my @header = $annotator->all_header;
-  push @header, 'heterozygotes_ids', 'homozygote_ids', 'chr', 'pos', 'type',
-    'alleles', 'allele_counts';
-  say { $self->_out_fh } join "\t", @header;
-
-  #$csv_writer->print( $self->_out_fh, \@header ) or $csv_writer->error_diag;
-
-  # import hashes - not calling directly because that's slow
+  # cache import hashes that are otherwise obtained via method calls 
+  #   - does this speed things up?
+  #
   my $chrs_aref     = $annotator->genome_chrs;
   my %chr_index     = map { $chrs_aref->[$_] => $_ } ( 0 .. $#{$chrs_aref} );
   my $next_chr_href = $annotator->next_chr;
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
-
+  
   $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
 
-  my ( %header, %ids, @sample_ids ) = ();
+  # attributes / header
+  my @header = $annotator->all_header;
+  push @header, ( qw/ heterozygotes_ids homozygote_ids /);
+
+  # variables
+  my ( %header, %ids, @sample_ids, @all_annotations) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
 
+  # let the annotation begin
   while ( my $line = $snpfile_fh->getline ) {
 
-    # process snpfile
     chomp $line;
+
+    # taint check the snpfile's data
     my $clean_line = $self->clean_line($line);
 
     # skip lines that don't return any usable data
@@ -216,18 +175,23 @@ sub annotate_snpfile {
     my @fields = split( /\t/, $clean_line );
 
     # for snpfile, define columns for expected header fields and ids
-    if ( $. == 1 ) {
-      %header = map { $fields[$_] => $_ } ( 0 .. 5 );
-      for my $i ( 6 .. $#fields ) {
-        $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
+    if (!%header) {
+      if ($. == 1 ) {
+        %header = map { $fields[$_] => $_ } ( 0 .. 5 );
+        for my $i ( 6 .. $#fields ) {
+          $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
+        }
+        # save list of ids within the snpfile
+        @sample_ids = sort( keys %ids );
+        next;
       }
-      # to avoid calling keys on every _get_minor_allele_carriers call
-      @sample_ids = sort( keys %ids );
-      next;
+      else {
+        # exit if we've read the first line and didn't find the header
+        my $err_msg = qq{ERROR: Could not read header from file: };
+        $self->_logger->error( $err_msg . " " . $self->snpfile_path );
+        croak $err_msg . " " . $self->snpfile_path;
+      }
     }
-
-    # need to die if we've read the first line and didn't find the header
-    croak "Could not read header" unless %header;
 
     # get basic information about variant
     my $chr           = $fields[ $header{Fragment} ];
@@ -238,6 +202,7 @@ sub annotate_snpfile {
     my $allele_counts = $fields[ $header{Allele_Counts} ];
     my $abs_pos;
 
+    # determine the absolute position of the base to annotate
     if ( $chr eq $last_chr ) {
       $abs_pos = $chr_offset + $pos - 1;
     }
@@ -253,7 +218,7 @@ sub annotate_snpfile {
         $next_chr_offset = $genome_len;
       }
 
-      say join " ", $chr, $pos, $chr_offset, $next_chr, $next_chr_offset;
+      # say join " ", $chr, $pos, $chr_offset, $next_chr, $next_chr_offset;
 
       unless ( defined $chr_offset and defined $chr_index ) {
         croak "unrecognized chromosome: $chr\n";
@@ -262,17 +227,16 @@ sub annotate_snpfile {
     }
 
     if ( $abs_pos > $next_chr_offset ) {
-      say "ERROR: $chr:$pos is beyond the end of $chr $next_chr_offset\n";
-      p %chr_index;
-      p $next_chr_href;
-      p $chr_len_href;
-      exit(1);
+      my $err_msg = qq{ERROR: $chr:$pos is beyond the end of $chr $next_chr_offset\n};
+      $self->_logger->error( $err_msg );
+      croak $err_msg;
     }
 
-    # save this chr for next time
+    # save the current chr for next iteration of the loop
     $last_chr = $chr;
 
-    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator later (hets currently ignored)
+    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator 
+    #   later (hets currently ignored)
     my ( $het_ids, $hom_ids, $hom_ids_href ) =
       $self->_get_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
@@ -288,7 +252,6 @@ sub annotate_snpfile {
     if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
       my $method = lc 'set_' . $type . '_site';
 
-      p $method if $self->debug;
       $self->$method( $abs_pos => [ $chr, $pos ] );
 
       # get annotation for snp site
@@ -325,18 +288,49 @@ sub annotate_snpfile {
           p $record_href;
           p @record;
         }
-        say { $self->_out_fh } join "\t", @record;
+        push @all_annotations, \@record;
       }
     }
   }
+  $self->_print_annotations( \@all_annotations, \@header);
+
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
   my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
+}
 
-  # p $summary_href if $self->debug;
-  # TODO: decide how to return data or do we just print it out...
-  #   - print conservation scores...
-  # return $summary_href; #we may want to consider returning the full experiment hash, in case we do interesting things.
+sub _build_out_fh {
+  my $self        = shift;
+  my $output_path = $self->out_file_path;
+  if ($output_path) {
+    return $self->get_write_bin_fh($output_path);
+  }
+  else {
+    return \*STDOUT;
+  }
+}
+
+sub _get_annotator {
+  my $self           = shift;
+  my $abs_configfile = File::Spec->rel2abs( $self->configfile );
+  my $abs_db_dir     = File::Spec->rel2abs( $self->db_dir );
+
+  # change to the root dir of the database
+  chdir($abs_db_dir) || die "cannot change to $abs_db_dir: $!";
+
+  return Seq::Annotate->new_with_config( { configfile => $abs_configfile } );
+}
+
+sub _print_annotations {
+ my ( $self, $annotations_aref, $header_aref ) = @_;
+
+ # print header
+ say { $self->_out_fh } join "\t", @$header_aref;
+
+ # print entries
+ for my $entry_aref ( @$annotations_aref ) {
+   say { $self->_out_fh } join "\t", @$entry_aref;
+ }
 }
 
 sub _summarize {
@@ -356,6 +350,9 @@ sub _summarize {
 
   return;
 }
+
+# the genotype codes below are based on the IUPAC ambiguity codes with the notable
+#   exception of the indel codes that are specified in the snpfile specifications
 
 my %het_genos = (
   K => [ 'G', 'T' ],
@@ -377,6 +374,7 @@ my %hom_indel = (
   D => [ '-', '-' ],
   I => [ '+', '+' ],
 );
+
 my %het_indel = (
   E => ['-'],
   H => ['+'],
