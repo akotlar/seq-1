@@ -82,7 +82,8 @@ sub _build_str_genome {
 
     $self->_logger->info("building genome string");
 
-    my %seq_of_chr; # added this to do the munging ...
+    # hash to hold temporary chromosome strings
+    my %seq_of_chr;
 
     for ( my $i = 0; $i < @local_files; $i++ ) {
       my $file        = $local_files[$i];
@@ -101,24 +102,31 @@ sub _build_str_genome {
             $wanted_chr = 1;
           }
           else {
-            $self->warn("skipping $chr");
+          $self->_logger->info(
+            "skipping unrecognized chromsome while building gneome str: $chr ");
             $wanted_chr = 0;
           }
         }
-        if ( $wanted_chr && $line =~ m/(\A[ATCGNatcgn]+)\z/xmi ) {
+        elsif ( $wanted_chr && $line =~ m/(\A[ATCGNatcgn]+)\z/xmi ) {
           $seq_of_chr{$chr} .= uc $1;
         }
-        else {
-          $self->_logger->info(
-            "skipping unrecognized chromsome while building gneome str: $chr ");
-        }
+
+        # warn if a single file does not appear to have a vaild chromosome - concern
+        #   is that it's not in fasta format
+        if ($. == 2 and !$wanted_chr ) {
+          (my $err_msg = qq{WARNING: found data for $chr in $local_file but 
+            '$chr' is not a valid chromsome for $genome_name; ensure chromsomes
+            are in fasta format")}) =~ s/\n/ /xmi;
+          $self->_logger->info( $err_msg );
+          warn $err_msg;
+         }
       }
     }
 
-    # build final genome string
-
+    # build final genome string and chromosome off-set hash
     for my $chr ( $self->all_genome_chrs ) {
       if ( exists $seq_of_chr{$chr} && defined $seq_of_chr{$chr} ) {
+        $self->set_chr_len( $chr => length $genome_str );
         $genome_str .= $seq_of_chr{$chr};
         $seq_of_chr{$chr} = ();
       }
