@@ -122,8 +122,11 @@ sub _build_str_genome {
         $seq_of_chr{$chr} = ( );
       }
       else {
-        croak "did not find chromosome data for required chromosome,"
-        . $chr . " while building genome for: " . $self->name ;
+        ( my $err_msg = qq{did not find chromosome data for required chromosome
+          $chr while building genome for $self->name} ) =~ s/\n/ /xmi;
+        $self->_logger->info($err_msg);
+        say $err_msg;
+        exit(1);
       }
     }
 
