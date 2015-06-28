@@ -136,63 +136,29 @@ genome_sized_tracks:
 
 Seq Dependencies:
 
-		==> ack --perl "use " | perl -nlE \
+		ack --perl "use " | perl -nlE \
 		'{ if ($_ =~ m/\:use ([\w\d.:]+)/) { $modules{$1}++; }}
 		END{ print join "\n", sort keys %modules; }' | grep -v Seq
 
-		5.10.0
-		Carp
-		Cpanel::JSON::XS
-		Cwd
-		DBD::Mock
-		DBI
-		DB_File
-		DDP
-		ExtUtils::MakeMaker
-		File::Copy
-		File::Path
-		File::Spec
-		File::Rsync
-		Getopt::Long
-		Hash::Merge
-		IO::Compress::Gzip
-		IO::File
-		IO::Uncompress::Gunzip
-		KyotoCabinet
-		Lingua::EN::Inflect
-		List::Util
-		Log::Any::Adapter
-		MongoDB
-		Moose
-		Moose::Role
-		Moose::Util::TypeConstraints
-		MooseX::Role::MongoDB
-		MooseX::Types::Path::Tiny
-		MooX::Role::Logger
-		Path::Tiny
-		Pod::Usage
-		Scalar::Util
-		Storable
-		Test::Exception
-		Test::More
-		Text::CSV_XS
-		Time::localtime
-		Try::Tiny
-		Type::Params
-		Types::Standard
-		YAML::XS
+Install dependencies with `cpanm` like so:
+
+		cpanm Carp Cpanel::JSON::XS Cwd DBD::Mock DBI DDP Data::Dump Data::Dumper \
+		File::Copy File::Path File::Rsync File::Spec Getopt::Long \
+		IO::Compress::Gzip IO::File IO::Socket IO::Socket::INET \
+		IO::Uncompress::Gunzip KyotoCabinet Lingua::EN::Inflect List::Util \
+		Log::Any::Adapter Modern::Perl Moose Moose::Role
+		Moose::Util::TypeConstraints MooseX::Types::Path::Tiny Path::Tiny \
+		Pod::Usage Scalar::Util Test::Exception Test::More Time::localtime \
+		Try::Tiny Type::Params Types::Standard YAML YAML::XS autodie bigint \
 		namespace::autoclean
 
-Install them like so:
+# directories
 
-		cpanm AnyEvent Code::TidyAll Coro Cpanel::JSON::XS Cwd DBD::Mock DBD::mysql \
-		DBI	DB_File DDP Excel::Writer::XLSX ExtUtils::MakeMaker File::Copy File::Path \
-		File::Rsync File::Spec Getopt::Long Hash::Merge IO::All IO::Compress::Gzip \
-		IO::File IO::Uncompress::Gunzip Lingua::EN::Inflect List::Util \
-		Log::Any::Adapter Math::GSL Modern::Perl MongoDB MongoDB::OID \
-		MooX::Role::Logger Moose Moose::Role Moose::Util::TypeConstraints \
-		MooseX::Getopt MooseX::Role::MongoDB MooseX::Types::Path::Tiny Path::Class \
-		Path::Tiny Pod::Usage Scalar::Util Spreadsheet::ParseExcel Spreadsheet::XLSX \
-		Storable Task::Kensho Test::Exception Test::More Text::CSV_XS Text::Iconv \
-		Time::localtime Try::Tiny Type::Params Types::Standard YAML YAML::XS \
-		namespace::autoclean
+The main genome directories are organized like so:
+
+		genome_db_dir
+			+-- genome_raw_dir (?needed?)
+			+-- genome_index_dir
+
+The `local_dir` (used for the trac`ks) is stand alone and should be an absolute
+path.

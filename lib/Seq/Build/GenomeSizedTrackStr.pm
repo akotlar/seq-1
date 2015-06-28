@@ -8,7 +8,7 @@ package Seq::Build::GenomeSizedTrackStr;
 
 use Moose 2;
 
-use Carp qw/ confess /;
+use Carp qw/ confess croak /;
 use File::Path;
 use File::Spec;
 use namespace::autoclean;
@@ -57,8 +57,8 @@ sub _build_str_genome {
 
   my $local_dir   = File::Spec->canonpath( $self->local_dir );
   my @local_files = $self->all_local_files;
-  my @genome_chrs = $self->all_genome_chrs;
 
+  # setup genome string files
   my $dir              = File::Spec->canonpath( $self->genome_index_dir );
   my $chr_len_name     = join ".", $self->name, $self->type, 'chr_len', 'dat';
   my $genome_name      = join ".", $self->name, $self->type, 'str', 'dat';
@@ -80,34 +80,65 @@ sub _build_str_genome {
   }
   else {
 
-    $self->_logger->info('no previous genome detected; building genome string');
+    $self->_logger->info("building genome string");
+
+    # hash to hold temporary chromosome strings
+    my %seq_of_chr;
 
     for ( my $i = 0; $i < @local_files; $i++ ) {
       my $file        = $local_files[$i];
-      my $chr         = $genome_chrs[$i];
       my $local_file  = File::Spec->catfile( $local_dir, $file );
       my $in_fh       = $self->get_read_fh($local_file);
       my @file_fields = split( /\./, $file );
-
-      confess "expected chromosomes and sequence files to be in the"
-        . " same order but found $file with $chr\n"
-        unless $chr eq $file_fields[0];
-
-      $self->set_chr_len( $chr => length $genome_str );
+      my $wanted_chr  = 0;
+      my $chr;
 
       while ( my $line = $in_fh->getline() ) {
         chomp $line;
         $line =~ s/\s+//g;
-        next if ( $line =~ m/\A>/ );
-        if ( $line =~ m/(\A[ATCGNatcgn]+)\Z/ ) {
-          $genome_str .= uc $1;
+        if ( $line =~ m/\A>([\w\d]+)/ ) {
+          $chr = $1;
+          if ( grep { /$chr/ } $self->all_genome_chrs ) {
+            $wanted_chr = 1;
+          }
+          else {
+          $self->_logger->info(
+            "skipping unrecognized chromsome while building gneome str: $chr ");
+            $wanted_chr = 0;
+          }
         }
-        else {
-          confess join( "\n",
-            "ERROR: Unexpected Non-Base Character.",
-            "\tfile: $file ",
-            "\tline: $.", "\tsequence: $line" );
+        elsif ( $wanted_chr && $line =~ m/(\A[ATCGNatcgn]+)\z/xmi ) {
+          $seq_of_chr{$chr} .= uc $1;
         }
+
+        # warn if a single file does not appear to have a vaild chromosome - concern
+        #   is that it's not in fasta format
+        if ($. == 2 and !$wanted_chr ) {
+          (my $err_msg = qq{WARNING: found data for $chr in $local_file but 
+            '$chr' is not a valid chromsome for $genome_name; ensure chromsomes
+            are in fasta format")}) =~ s/\n/ /xmi;
+          $self->_logger->info( $err_msg );
+          warn $err_msg;
+         }
+      }
+    }
+
+    # build final genome string and chromosome off-set hash
+    for my $chr ( $self->all_genome_chrs ) {
+      if ( exists $seq_of_chr{$chr} && defined $seq_of_chr{$chr} ) {
+        $self->set_chr_len( $chr => length $genome_str );
+        $genome_str .= $seq_of_chr{$chr};
+        $seq_of_chr{$chr} = ();
+      }
+      else {
+        (
+          my $err_msg =
+            qq{did not find chromosome data for required chromosome
+          $chr while building genome for $self->name}
+        ) =~ s/\n/ /xmi;
+        $self->_logger->info($err_msg);
+        say $err_msg;
+        exit(1);
       }
     }
 

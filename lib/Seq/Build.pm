@@ -215,6 +215,8 @@ sub build_conserv_scores_index {
 sub build_genome_index {
   my $self = shift;
 
+  $self->_logger->info('begining to build indexed genome');
+
   # build needed tracks, which write ranges for snp and gene sites
   $self->build_snp_sites;
   $self->build_gene_sites;

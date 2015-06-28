@@ -12,8 +12,6 @@ use Moose::Util::TypeConstraints;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
-use DDP;
-
 enum GenomeSizedTrackType => [ 'genome', 'score', 'cadd' ];
 
 my ( @idx_codes, @idx_base, @idx_in_gan, @idx_in_gene, @idx_in_exon, @idx_in_snp );
@@ -137,11 +135,6 @@ has _score_lu => (
 
 sub _build_score_lu {
   my $self = shift;
-  p $self->score_R;
-  p $self->score_min;
-  p $self->score_max;
-  p $self->_score_beta;
-
   my %score_lu =
     map { $_ => ( ( ( $_ - 1 ) / $self->_score_beta ) + $self->score_min ) }
     ( 1 .. 254 );
@@ -167,13 +160,6 @@ sub _build_next_chr {
   }
   return \%next_chrs;
 }
-
-# no longer needed as the building is moved to genome_hasher.c
-# sub get_idx_code {
-#   my $self = shift;
-#   my ( $base, $in_gan, $in_gene, $in_exon, $in_snp ) = @_;
-#   return $idx_codes{$base}{$in_gan}{$in_gene}{$in_exon}{$in_snp};
-# }
 
 sub get_idx_base {
   my ( $self, $char ) = @_;
