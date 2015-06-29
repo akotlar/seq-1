@@ -4,7 +4,7 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use lib '../lib';
+use lib './lib';
 use Carp;
 use Getopt::Long;
 use File::Spec;
@@ -18,18 +18,20 @@ use Data::Dump qw/ pp /;
 
 use Seq;
 
-my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force, $debug );
+my ( $snpfile, $db_dir, $yaml_config, $verbose, $help, $out_file, $force, $debug );
+
+# TODO: read directly from argument_format.json
 
 # usage
-#TODO: read directly from argument_format.json
 GetOptions(
-  'c|config=s'  => \$yaml_config,
-  's|snpfile=s' => \$snpfile,
-  'v|verbose'   => \$verbose,
-  'h|help'      => \$help,
-  'o|out=s'     => \$out_file,
-  'f|force'     => \$force,
-  'd|debug'     => \$debug,
+  'c|config=s'   => \$yaml_config,
+  's|snpfile=s'  => \$snpfile,
+  'v|verbose'    => \$verbose,
+  'l|location=s' => \$db_dir,
+  'h|help'       => \$help,
+  'o|out=s'      => \$out_file,
+  'f|force'      => \$force,
+  'd|debug'      => \$debug,
 );
 
 if ($help) {
@@ -44,7 +46,7 @@ unless ( $yaml_config
   Pod::Usage::pod2usage();
 }
 
-# sanit checking
+# sanity checking
 if ( -f $out_file && !$force ) {
   say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
   exit;
@@ -70,10 +72,11 @@ Log::Any::Adapter->set( 'File', $log_file );
 # create the annotator
 my $annotate_instance = Seq->new(
   {
-    snpfile    => $snpfile,
-    configfile => $yaml_config,
-    out_file   => $out_file,
-    debug      => $debug,
+    configfile    => $yaml_config,
+    debug         => $debug,
+    genome_db_dir => $db_dir,
+    out_file      => $out_file,
+    snpfile       => $snpfile,
   }
 );
 

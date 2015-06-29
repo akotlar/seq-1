@@ -107,13 +107,13 @@ sub write_sql_data {
 
   # set directories
   my $local_dir = File::Spec->canonpath( $self->local_dir );
-  my $cwd = cwd();
+  my $cwd       = cwd();
 
   # set file names
   my $file_with_time   = $now_timestamp . "." . $self->local_file;
   my $target_file      = File::Spec->catfile( $local_dir, $file_with_time );
   my $symlink_original = File::Spec->catfile( ( $cwd, $local_dir ), $file_with_time );
-  my $symlink_target   = File::Spec->catfile( ( $cwd, $local_dir ), $self->local_file );
+  my $symlink_target = File::Spec->catfile( ( $cwd, $local_dir ), $self->local_file );
 
   # make target dir
   make_path($local_dir) if $self->act;
@@ -122,7 +122,7 @@ sub write_sql_data {
 
   # write data
   $self->_logger->info( "sql wrote data to: " . $target_file ) if $self->verbose;
-  
+
   # link files
   if ( $self->act ) {
     chdir $local_dir || die "cannot change to $local_dir";

@@ -391,7 +391,8 @@ sub _build_header {
   }
   map { push @alt_features, $_ } keys %snp_features;
 
-  my @features = qw/ chr pos ref_base type alleles allele_counts genomic_annotation_code annotation_type
+  my @features =
+    qw/ chr pos ref_base type alleles allele_counts genomic_annotation_code annotation_type
     codon_number codon_position error_code minor_allele new_aa_residue new_codon_seq
     ref_aa_residue ref_base ref_codon_seq site_type strand transcript_id snp_id /;
 

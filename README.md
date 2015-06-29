@@ -160,5 +160,5 @@ The main genome directories are organized like so:
 			+-- genome_raw_dir (?needed?)
 			+-- genome_index_dir
 
-The `local_dir` (used for the trac`ks) is stand alone and should be an absolute
+The `local_dir` (used for the tracks) is stand alone and should be an absolute
 path.
