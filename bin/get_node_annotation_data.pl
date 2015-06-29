@@ -55,4 +55,5 @@ for my $node (@nodes) {
 
 unlink $out_script_file;
 
-print ">>> IF NOTHING SEEMS TO BE WORKING MAKE SURE YOUR ARE RUNNING THIS FROM THE HEAD NODE (node00). <<<\n\n";
+print
+  ">>> IF NOTHING SEEMS TO BE WORKING MAKE SURE YOUR ARE RUNNING THIS FROM THE HEAD NODE (node00). <<<\n\n";

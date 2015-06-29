@@ -11,15 +11,12 @@ use Moose 2;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 
 use Carp qw/ croak /;
-use namespace::autoclean;
-use Seq::Annotate;
-
-use Redis;
 use Cpanel::JSON::XS;
-# use Coro;
-# use AnyEvent;
-
 use DDP;
+use namespace::autoclean;
+use Redis;
+
+use Seq::Annotate;
 
 with 'Seq::Role::IO', 'MooX::Role::Logger';
 
@@ -54,45 +51,45 @@ has debug => (
 );
 
 has messageChannelHref => (
-  is      => 'ro',
-  isa     => 'HashRef',
+  is        => 'ro',
+  isa       => 'HashRef',
   traits    => ['Hash'],
-  required => 0,
+  required  => 0,
   predicate => 'wants_to_publish_messages',
-  handles => {channelInfo => 'get'} 
+  handles   => { channelInfo => 'get' }
 );
 
-#vars that are not initialized at construction
+# vars that are not initialized at construction
 has _message_publisher => (
-  is  => 'ro',
+  is       => 'ro',
   required => 0,
   init_arg => undef,
   builder  => '_build_message_publisher',
-  handles  => { _publishMessage => 'publish'}
+  handles  => { _publishMessage => 'publish' }
 );
 
 has _out_fh => (
-  is      => 'ro',
-  lazy    => 1,
+  is       => 'ro',
+  lazy     => 1,
   init_arg => undef,
-  builder => '_build_out_fh',
+  builder  => '_build_out_fh',
 );
 
 has _count_key => (
-  is      => 'ro',
-  isa     => 'Str',
-  lazy    => 1,
+  is       => 'ro',
+  isa      => 'Str',
+  lazy     => 1,
   init_arg => undef,
-  default => 'count',
+  default  => 'count',
 );
 
 has del_sites => (
-  is      => 'rw',
-  isa     => 'HashRef',
+  is       => 'rw',
+  isa      => 'HashRef',
   init_arg => undef,
-  default => sub { {} },
-  traits  => ['Hash'],
-  handles => {
+  default  => sub { {} },
+  traits   => ['Hash'],
+  handles  => {
     set_del_site     => 'set',
     get_del_site     => 'get',
     keys_del_sites   => 'keys',
@@ -102,12 +99,12 @@ has del_sites => (
 );
 
 has ins_sites => (
-  is      => 'rw',
-  isa     => 'HashRef',
+  is       => 'rw',
+  isa      => 'HashRef',
   init_arg => undef,
-  default => sub { {} },
-  traits  => ['Hash'],
-  handles => {
+  default  => sub { {} },
+  traits   => ['Hash'],
+  handles  => {
     set_ins_site     => 'set',
     get_ins_site     => 'get',
     keys_ins_sites   => 'keys',
@@ -117,12 +114,12 @@ has ins_sites => (
 );
 
 has snp_sites => (
-  is      => 'rw',
-  isa     => 'HashRef',
+  is       => 'rw',
+  isa      => 'HashRef',
   init_arg => undef,
-  default => sub { {} },
-  traits  => ['Hash'],
-  handles => {
+  default  => sub { {} },
+  traits   => ['Hash'],
+  handles  => {
     set_snp_site     => 'set',
     get_snp_site     => 'get',
     keys_snp_sites   => 'keys',
@@ -132,12 +129,12 @@ has snp_sites => (
 );
 
 has genes_annotated => (
-  is      => 'rw',
-  isa     => 'HashRef',
+  is       => 'rw',
+  isa      => 'HashRef',
   init_arg => undef,
-  default => sub { {} },
-  traits  => ['Hash'],
-  handles => {
+  default  => sub { {} },
+  traits   => ['Hash'],
+  handles  => {
     set_gene_ann    => 'set',
     get_gene_ann    => 'get',
     keys_gene_ann   => 'keys',
@@ -145,24 +142,16 @@ has genes_annotated => (
   },
 );
 
-my $redisHost  = 'localhost';
-my $redisPort  = '6379';
-sub _build_message_publisher
-{
-  my $self = shift;
-
-  return Redis->new(host => $redisHost, port => $redisPort);
-}
+my $redisHost = 'localhost';
+my $redisPort = '6379';
 
 =head2 annotation_snpfile
 
-annotate_snpfile - method called on Seq object to annotate the snpfile that 
-  was supplied to the object at construction; 
+B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
 
 =cut
 
-sub annotate_snpfile 
-{
+sub annotate_snpfile {
   my $self = shift;
 
   croak "specify a snpfile to annotate\n" unless $self->snpfile_path;
@@ -170,8 +159,7 @@ sub annotate_snpfile
   $self->_logger->info("about to load annotation data");
   say "about to load annotation data" if $self->debug;
 
-  if($self->wants_to_publish_messages)
-  {
+  if ( $self->wants_to_publish_messages ) {
     $self->_publish_message("about to load annotation data");
   }
   $self->_publish_message("about to load annotation data");
@@ -185,7 +173,7 @@ sub annotate_snpfile
     }
   );
 
-  # cache import hashes that are otherwise obtained via method calls 
+  # cache import hashes that are otherwise obtained via method calls
   #   - does this speed things up?
   #
   my $chrs_aref     = $annotator->genome_chrs;
@@ -193,33 +181,31 @@ sub annotate_snpfile
   my $next_chr_href = $annotator->next_chr;
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
-  
+
   my $summary_href;
 
   $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
 
-  if($self->wants_to_publish_messages)
-  {
-    $self->_publish_message("finished loading assembly " . $annotator->genome_name)
+  if ( $self->wants_to_publish_messages ) {
+    $self->_publish_message( "finished loading assembly " . $annotator->genome_name );
   }
 
   # attributes / header
   my @header = $annotator->all_header;
-  push @header, ( qw/ heterozygotes_ids homozygote_ids /);
+  push @header, (qw/ heterozygotes_ids homozygote_ids /);
 
   # variables
-  my ( %header, %ids, @sample_ids, @all_annotations) = ();
+  my ( %header, %ids, @sample_ids, @all_annotations ) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
 
   #if we want to publish messages, publish only ever so often
   #more efficient to declare for all instead of checking if we want to publish
-  my $i = 0; 
+  my $i        = 0;
   my $interval = 200;
 
   # let the annotation begin
-  while ( my $line = $snpfile_fh->getline ) 
-  {
+  while ( my $line = $snpfile_fh->getline ) {
     chomp $line;
 
     # taint check the snpfile's data
@@ -231,9 +217,8 @@ sub annotate_snpfile
     my @fields = split( /\t/, $clean_line );
 
     # for snpfile, define columns for expected header fields and ids
-    if (!%header) 
-    {
-      if ($. == 1 ) {
+    if ( !%header ) {
+      if ( $. == 1 ) {
         %header = map { $fields[$_] => $_ } ( 0 .. 5 );
         for my $i ( 6 .. $#fields ) {
           $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
@@ -260,45 +245,39 @@ sub annotate_snpfile
     my $abs_pos;
 
     # determine the absolute position of the base to annotate
-    if ( $chr eq $last_chr ) 
-    {
+    if ( $chr eq $last_chr ) {
       $abs_pos = $chr_offset + $pos - 1;
     }
-    else 
-    {
+    else {
       $chr_offset = $chr_len_href->{$chr};
       $chr_index  = $chr_index{$chr};
       $next_chr   = $next_chr_href->{$chr};
-      if ( defined $next_chr ) 
-      {
+      if ( defined $next_chr ) {
         $next_chr_offset = $chr_len_href->{$next_chr};
       }
-      else 
-      {
+      else {
         $next_chr        = -9;
         $next_chr_offset = $genome_len;
       }
 
       # say join " ", $chr, $pos, $chr_offset, $next_chr, $next_chr_offset;
 
-      unless ( defined $chr_offset and defined $chr_index ) 
-      {
+      unless ( defined $chr_offset and defined $chr_index ) {
         croak "unrecognized chromosome: $chr\n";
       }
       $abs_pos = $chr_offset + $pos - 1;
     }
 
-    if ( $abs_pos > $next_chr_offset ) 
-    {
+    if ( $abs_pos > $next_chr_offset ) {
       my $err_msg = qq{ERROR: $chr:$pos is beyond the end of $chr $next_chr_offset\n};
-      $self->_logger->error( $err_msg );
+      $self->_logger->error($err_msg);
       croak $err_msg;
     }
 
     # save the current chr for next iteration of the loop
     $last_chr = $chr;
 
-    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator 
+    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
     #   later (hets currently ignored)
     my ( $het_ids, $hom_ids, $hom_ids_href ) =
       $self->_get_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
@@ -312,8 +291,7 @@ sub annotate_snpfile
     #   p $hom_ids;
     # }
 
-    if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) 
-    {
+    if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
       my $method = lc 'set_' . $type . '_site';
 
       $self->$method( $abs_pos => [ $chr, $pos ] );
@@ -337,7 +315,7 @@ sub annotate_snpfile
         $record_href->{heterozygotes_ids} = $het_ids || 'NA';
         $record_href->{homozygote_ids}    = $hom_ids || 'NA';
 
-        $self->_summarize($record_href, $summary_href, \@sample_ids, $hom_ids_href);
+        $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
 
         my @record;
         for my $attr (@header) {
@@ -356,11 +334,9 @@ sub annotate_snpfile
       }
     }
 
-    if($i == $interval)
-    {
+    if ( $i == $interval ) {
       $i = 0;
-      if($self->wants_to_publish_messages)
-      {
+      if ( $self->wants_to_publish_messages ) {
         $self->_publish_message("finished annotating position $pos");
       }
     }
@@ -373,28 +349,38 @@ sub annotate_snpfile
   my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
 
   p $summary_href if $self->debug;
-  # TODO: decide how to return data or do we just print it out...
-  #   - print conservation scores...
-  
-  #TODO: decide on the final return value, at a minimum we need the sample-level summary
-  return $summary_href; #we may want to consider returning the full experiment hash, in case we do interesting things.
+
+  # TODO: decide on the final return value, at a minimum we need the sample-level summary
+  #       we may want to consider returning the full experiment hash, in case we do interesting things.
+  return $summary_href;
 }
 
-sub _build_out_fh 
-{
+sub _build_message_publisher {
+  my $self = shift;
+
+  return Redis->new( host => $redisHost, port => $redisPort );
+}
+
+=head2
+
+B<_build_out_fh> - returns a filehandle and allow users to give us a directory or a
+filepath, if directory use some sensible default
+
+=cut
+
+sub _build_out_fh {
   my $self        = shift;
   my $output_path = $self->out_file_path;
-  #allow users to give us a directory or a filepath, if directory use some sensible default
-  #TODO: make the sensible default based on the input file name
-  if ($output_path) 
-  {
-    if($self->out_file->is_file)
-    {
+
+  # TODO: make the sensible default based on the input file name
+  if ($output_path) {
+    if ( $self->out_file->is_file ) {
       return $self->get_write_bin_fh($output_path);
     }
-    elsif($self->out_file->is_dir) #this is actually the only option, but only if we specify AbsPath type, and this is fragile
+    elsif ( $self->out_file->is_dir
+      ) # this is actually the only option, but only if we specify AbsPath type, and this is fragile
     {
-      my $output_path = $self->out_file->child("SeqantOutput." . time )->stringify;
+      my $output_path = $self->out_file->child( "SeqantOutput." . time )->stringify;
 
       return $self->get_write_bin_fh($output_path);
     }
@@ -402,8 +388,7 @@ sub _build_out_fh
   return \*STDOUT;
 }
 
-sub _get_annotator 
-{
+sub _get_annotator {
   my $self           = shift;
   my $abs_configfile = File::Spec->rel2abs( $self->configfile );
   my $abs_db_dir     = File::Spec->rel2abs( $self->db_dir );
@@ -414,33 +399,24 @@ sub _get_annotator
   return Seq::Annotate->new_with_config( { configfile => $abs_configfile } );
 }
 
-sub _print_annotations 
-{
- my ( $self, $annotations_aref, $header_aref ) = @_;
+sub _print_annotations {
+  my ( $self, $annotations_aref, $header_aref ) = @_;
 
- # print header
- say { $self->_out_fh } join "\t", @$header_aref;
+  # print header
+  say { $self->_out_fh } join "\t", @$header_aref;
 
- # print entries
- for my $entry_aref ( @$annotations_aref ) {
-   say { $self->_out_fh } join "\t", @$entry_aref;
- }
+  # print entries
+  for my $entry_aref (@$annotations_aref) {
+    say { $self->_out_fh } join "\t", @$entry_aref;
+  }
 }
 
-sub _publish_message
-{
-  my ($self,$message) = @_;
-  #TODO:check performance of the array merge
-  #benefit is indirection, cost may be too high?
-  $self->_publishMessage(
-    $self->channelInfo('messageChannel'),
-    encode_json(
-      {
-        %{$self->channelInfo('recordLocator')},
-        message=>$message
-      } 
-    )
-  )
+sub _publish_message {
+  my ( $self, $message ) = @_;
+
+  # TODO: check performance of the array merge benefit is indirection, cost may be too high?
+  $self->_publishMessage( $self->channelInfo('messageChannel'),
+    encode_json( { %{ $self->channelInfo('recordLocator') }, message => $message } ) );
 }
 
 sub _summarize {
@@ -454,9 +430,11 @@ sub _summarize {
     $summary_href->{$id}{$site_type}{$count_key} += 1;
     $summary_href->{$id}{$site_type}{$annotation_code}{$count_key} += 1;
   }
-  #run statistics code maybe, unless we wait for end to save function calls
-  #statistics code may include compound phylop/phastcons scores for the sample, or just tr:tv
-  #here we will use $hom_ids_href, and if needed we can add $het_ids_href
+
+  # run statistics code maybe, unless we wait for end to save function calls
+  # statistics code may include compound phylop/phastcons scores for the sample,
+  # or just tr:tv here we will use $hom_ids_href, and if needed we can add
+  # $het_ids_href
 
   return;
 }

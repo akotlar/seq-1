@@ -102,8 +102,8 @@ sub _build_str_genome {
             $wanted_chr = 1;
           }
           else {
-          $self->_logger->info(
-            "skipping unrecognized chromsome while building gneome str: $chr ");
+            $self->_logger->info(
+              "skipping unrecognized chromsome while building gneome str: $chr ");
             $wanted_chr = 0;
           }
         }
@@ -113,13 +113,16 @@ sub _build_str_genome {
 
         # warn if a single file does not appear to have a vaild chromosome - concern
         #   is that it's not in fasta format
-        if ($. == 2 and !$wanted_chr ) {
-          (my $err_msg = qq{WARNING: found data for $chr in $local_file but 
+        if ( $. == 2 and !$wanted_chr ) {
+          (
+            my $err_msg =
+              qq{WARNING: found data for $chr in $local_file but 
             '$chr' is not a valid chromsome for $genome_name; ensure chromsomes
-            are in fasta format")}) =~ s/\n/ /xmi;
-          $self->_logger->info( $err_msg );
+            are in fasta format")}
+          ) =~ s/\n/ /xmi;
+          $self->_logger->info($err_msg);
           warn $err_msg;
-         }
+        }
       }
     }
 
