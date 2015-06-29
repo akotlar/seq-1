@@ -151,6 +151,8 @@ use Redis;
 
     my $redis = Redis->new(host => $redisHost, port => $redisPort);
     
+    my $inputHref = {};
+
     my $log;
     try
     {
@@ -166,7 +168,7 @@ use Redis;
       $jobDetailsHref = decode_json( $submittedJobArray[1] );
 
 
-      my $inputHref = coerceInputs($jobDetailsHref);
+      $inputHref = coerceInputs($jobDetailsHref);
 
       # set log file
       my $log_name = join '.', 'annotation', 'jobID',
@@ -215,6 +217,16 @@ use Redis;
 
       $log->error($_);
       
+      $redis->publish( 
+        $inputHref->{messageChannelHref}->{messageChannel},
+        encode_json( 
+          {
+            %{$inputHref->{messageChannelHref}->{recordLocator} },
+            message => "Error: $_"
+          } 
+        )
+      );
+
       handleJobFailure($jobID, $jobKey, $redis);
     };
 
@@ -230,7 +242,17 @@ use Redis;
       {
         say "Error in decoding returned JSON $_";
 
-       $log->error($_);
+        $redis->publish( 
+          $inputHref->{messageChannelHref}->{messageChannel},
+          encode_json( 
+            {
+              %{$inputHref->{messageChannelHref}->{recordLocator} },
+              message => "Error in decoding returned JSON $_"
+            } 
+          )
+        );
+
+        $log->error($_);
 
         handleJobFailure($jobID, $jobKey, $redis);
       };
