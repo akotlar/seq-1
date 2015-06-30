@@ -112,6 +112,7 @@ sub _check_essential_header {
     my $err_msg = "snp annotation file missing essential header information: "
       . join ", ", (sort keys %missing_attr);
     $self->_logger->error($err_msg);
+    unlink $self->dbm_file;
     croak $err_msg;
   }
   else {

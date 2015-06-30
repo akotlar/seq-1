@@ -31,26 +31,7 @@ sub build_snp_db {
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
   make_path($index_dir) unless -f $index_dir;
 
-  # snp sites
-  my $snp_name = join( ".", $self->name, $wanted_chr, 'snp', 'dat' );
-  my $snp_file = File::Spec->catfile( $index_dir, $snp_name );
-
-  # check to see if we need to make the site range file
-  return if $self->_has_site_range_file($snp_file);
-
-  # dbm file
-  my $dbm_name = join ".", $self->name, $wanted_chr, $self->type, 'kch';
-  my $dbm_file = File::Spec->catfile( $index_dir, $dbm_name );
-
-  $self->_logger->info("dbm_file: $dbm_file");
-
-  my $db = Seq::KCManager->new(
-    filename => $dbm_file,
-    mode     => 'create',
-    # chosed as ~ 50% of the largest number of SNPs on a chr (chr 2)
-    bnum => 3_000_000,
-    msiz => 512_000_000,
-  );
+  my ( $snp_name, $snp_file, $dbm_name, $dbm_file, $db );
 
   $self->_logger->info("adding entries for $wanted_chr");
 
@@ -67,10 +48,30 @@ sub build_snp_db {
     next unless $clean_line;
     my @fields = split /\t/, $clean_line;
 
+    # if there is no header hash assume we're at the begining of the file
     if ( !%header ) {
       %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
-       $self->_check_essential_header( \%header, [ qw/ chrom chromStart chromEnd name / ] );
-       next;
+
+      # check if we have enough data to proceed with the build
+      $self->_check_essential_header( \%header, [ qw/ chrom chromStart chromEnd name / ] );
+
+      # snp sites
+      $snp_name = join( ".", $self->name, $wanted_chr, 'snp', 'dat' );
+      $snp_file = File::Spec->catfile( $index_dir, $snp_name );
+      # check to see if we need to make the site range file
+      return if $self->_has_site_range_file($snp_file);
+
+      # dbm file
+      $dbm_name = join ".", $self->name, $wanted_chr, $self->type, 'kch';
+      $dbm_file = File::Spec->catfile( $index_dir, $dbm_name );
+      $self->_logger->info("dbm_file: $dbm_file");
+      $db = Seq::KCManager->new(
+       filename => $dbm_file,
+       mode     => 'create',
+       # chosed as ~ 50% of the largest number of SNPs on a chr (chr 2)
+       bnum => 3_000_000,
+       msiz => 512_000_000,
+      );
     }
 
     # process wanted chr
