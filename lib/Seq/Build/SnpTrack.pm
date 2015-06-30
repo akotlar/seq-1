@@ -69,7 +69,7 @@ sub build_snp_db {
 
     if ( !%header ) {
       %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
-       $self->_check_essential_header(%header);
+       $self->_check_essential_header(%header, [ qw/ chrom chromStart chromEnd name / ] );
        next;
     }
 
@@ -135,22 +135,7 @@ sub build_snp_db {
   $self->_logger->info("finished building snp site db for chr: $wanted_chr");
 }
 
-sub _check_essential_header {
-  my ( $self, $header_href ) = @_;
-  my %missing_attr;
-  for my $req_attr (qw/ chrom chromStart chromEnd name /) {
-    $missing_attr{$req_attr}++ unless exists $header_href->{$req_attr};
-  }
-  if ( %missing_attr ) {
-    my $err_msg = "snp annotation file missing essential header information: "
-      . join ", ", (sort keys %missing_attr);
-    $self->_logger->error($err_msg);
-    croak $err_msg;
-  }
-  else {
-    return;
-  }
-}
+
 
 __PACKAGE__->meta->make_immutable;
 

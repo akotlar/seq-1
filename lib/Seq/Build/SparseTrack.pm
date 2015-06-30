@@ -102,6 +102,23 @@ sub _get_range_list {
   return \@pairs;
 }
 
+sub _check_essential_header {
+  my ( $self, $header_href, $req_header_aref ) = @_;
+  my %missing_attr;
+  for my $req_attr (@$req_header_aref) {
+    $missing_attr{$req_attr}++ unless exists $header_href->{$req_attr};
+  }
+  if ( %missing_attr ) {
+    my $err_msg = "snp annotation file missing essential header information: "
+      . join ", ", (sort keys %missing_attr);
+    $self->_logger->error($err_msg);
+    croak $err_msg;
+  }
+  else {
+    return;
+  }
+}
+
 __PACKAGE__->meta->make_immutable;
 
 1;
