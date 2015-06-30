@@ -86,6 +86,12 @@ sub build_gene_db_for_chr {
 
   my ( $self, $chr ) = @_;
 
+  # read gene data for the chromosome
+  #   if there is no usable data then we will bail out and not blank files
+  #   will be created
+  my $chr_data_aref = $self->_get_gene_data($chr);
+  $self->_logger->info( "finished reading data for " . $chr );
+
   # output
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
   make_path($index_dir) unless -f $index_dir;
@@ -129,10 +135,6 @@ sub build_gene_db_for_chr {
   # my $gene_region_fh = $self->get_write_fh($gene_region_file);
   # say {$gene_region_fh} $self->in_gene_val;
 
-  # this is an array of hashes
-  my $chr_data_aref = $self->_get_gene_data($chr);
-
-  $self->_logger->info( "finished reading data for " . $chr );
 
   for my $gene_href (@$chr_data_aref) {
 
