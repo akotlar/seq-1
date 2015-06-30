@@ -50,11 +50,11 @@ sub build_snp_db {
   my ( %header, @snp_sites, @insert_data );
   while ( my $line = $in_fh->getline ) {
     chomp $line;
-
-    say $line;
     
+    say $line;
+
     # taint check
-    my $clean_line = $self->clean_line($line);
+    my $clean_line = $self->less_safe_clean($line);
     next unless $clean_line;
 
     my @fields = split /\t/, $clean_line;
