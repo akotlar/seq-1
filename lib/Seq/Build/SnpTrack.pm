@@ -49,11 +49,14 @@ sub build_snp_db {
 
   my ( %header, @snp_sites, @insert_data );
   while ( my $line = $in_fh->getline ) {
-
-    # taint check
     chomp $line;
+
+    say $line;
+    
+    # taint check
     my $clean_line = $self->clean_line($line);
     next unless $clean_line;
+
     my @fields = split /\t/, $clean_line;
 
     # if there is no header hash assume we're at the begining of the file
@@ -88,6 +91,8 @@ sub build_snp_db {
       my @s_allele_freqs = sort { $b <=> $a } @allele_freqs;
       $min_allele_freq = sprintf( "%0.6f", 1 - $s_allele_freqs[0] );
     }
+
+    say $line;
 
     foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} ) {
       my $chr      = $data{chrom};
