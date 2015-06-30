@@ -69,6 +69,8 @@ sub build_snp_db {
 
     if ( !%header ) {
       %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
+       $self->_check_essential_header(%header);
+       next;
     }
 
     # process wanted chr
@@ -84,41 +86,39 @@ sub build_snp_db {
       $min_allele_freq = sprintf( "%0.6f", 1 - $s_allele_freqs[0] );
     }
 
-    if ( $data{name} =~ m/^rs(\d+)/ ) {
-      foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} ) {
-        my $chr      = $data{chrom};
-        my $snp_id   = $data{name};
-        my $abs_pos  = $self->get_abs_pos( $chr, $pos );
-        my $base     = $self->get_base( $abs_pos, 1 );
-        my $snp_site = Seq::Site::Snp->new(
-          {
-            abs_pos  => $abs_pos,
-            snp_id   => $snp_id,
-            ref_base => $base,
-          }
-        );
-
-        my %feature_hash = map { $_ => $data{$_} } ( $self->all_features );
-
-        # this is a total hack - MAF might be nice to have but doesn't fit into the
-        # present framework well since it's not a 'feature' we retrieve but rather
-        # it's calculated... since you get about the same info with alleleFreqs
-        # I'm not really sure it's even needed.
-        $feature_hash{maf} = $min_allele_freq if ($min_allele_freq);
-
-        $snp_site->set_snp_feature(%feature_hash);
-
-        push @snp_sites, $abs_pos;
-
-        my $site_href = $snp_site->as_href;
-
-        $db->db_put( $abs_pos, $site_href );
-
-        if ( $self->counter > $self->bulk_insert_threshold ) {
-          say {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
-          @snp_sites = ();
-          $self->reset_counter;
+    foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} ) {
+      my $chr      = $data{chrom};
+      my $snp_id   = $data{name};
+      my $abs_pos  = $self->get_abs_pos( $chr, $pos );
+      my $base     = $self->get_base( $abs_pos, 1 );
+      my $snp_site = Seq::Site::Snp->new(
+        {
+          abs_pos  => $abs_pos,
+          snp_id   => $snp_id,
+          ref_base => $base,
         }
+      );
+
+      my %feature_hash = map { $_ => $data{$_} } ( $self->all_features );
+
+      # this is a total hack - MAF might be nice to have but doesn't fit into the
+      # present framework well since it's not a 'feature' we retrieve but rather
+      # it's calculated... since you get about the same info with alleleFreqs
+      # I'm not really sure it's even needed.
+      $feature_hash{maf} = $min_allele_freq if ($min_allele_freq);
+
+      $snp_site->set_snp_feature(%feature_hash);
+
+      push @snp_sites, $abs_pos;
+
+      my $site_href = $snp_site->as_href;
+
+      $db->db_put( $abs_pos, $site_href );
+
+      if ( $self->counter > $self->bulk_insert_threshold ) {
+        say {$snp_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
+        @snp_sites = ();
+        $self->reset_counter;
       }
     }
     $self->inc_counter;
@@ -133,6 +133,23 @@ sub build_snp_db {
   # hasher will not crash if there are no entries (after the initial idx mask)
   say {$snp_fh} '';
   $self->_logger->info("finished building snp site db for chr: $wanted_chr");
+}
+
+sub _check_essential_header {
+  my ( $self, $header_href ) = @_;
+  my %missing_attr;
+  for my $req_attr (qw/ chrom chromStart chromEnd name /) {
+    $missing_attr{$req_attr}++ unless exists $header_href->{$req_attr};
+  }
+  if ( %missing_attr ) {
+    my $err_msg = "snp annotation file missing essential header information: "
+      . join ", ", (sort keys %missing_attr);
+    $self->_logger->error($err_msg);
+    croak $err_msg;
+  }
+  else {
+    return;
+  }
 }
 
 __PACKAGE__->meta->make_immutable;

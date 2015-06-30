@@ -47,8 +47,10 @@ sub _get_gene_data {
   while ( my $line = $in_fh->getline ) {
     chomp $line;
     my @fields = split( /\t/, $line );
-    if ( $. == 1 ) {
+    if ( !%header ) {
       map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
+      $self->_check_essential_header(%header,
+        [ qw/ chrom chromStart chromEnd name cdsEnd cdsStart exonEnds strand txEnd txStart / ] );
       next;
     }
     my %data = map { $_ => $fields[ $header{$_} ] }
