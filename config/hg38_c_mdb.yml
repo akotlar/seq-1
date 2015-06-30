@@ -83,7 +83,6 @@ sparse_tracks:
     features:
       - name
       - disease
-
 genome_sized_tracks:
   - name: hg38
     type: genome

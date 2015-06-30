@@ -86,8 +86,6 @@ sub build_snp_db {
       $min_allele_freq = sprintf( "%0.6f", 1 - $s_allele_freqs[0] );
     }
 
-    say $line;
-
     foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} ) {
       my $chr      = $data{chrom};
       my $snp_id   = $data{name};
