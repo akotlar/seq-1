@@ -69,7 +69,7 @@ sub build_snp_db {
 
     if ( !%header ) {
       %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
-       $self->_check_essential_header(%header, [ qw/ chrom chromStart chromEnd name / ] );
+       $self->_check_essential_header( \%header, [ qw/ chrom chromStart chromEnd name / ] );
        next;
     }
 

@@ -377,8 +377,10 @@ sub _build_out_fh {
     if ( $self->out_file->is_file ) {
       return $self->get_write_bin_fh($output_path);
     }
-    elsif ( $self->out_file->is_dir
-      ) # this is actually the only option, but only if we specify AbsPath type, and this is fragile
+    elsif ( $self->out_file->is_dir )
+      # TODO: Alex, can you clarify what you meant here?
+      #   this is actually the only option, but only if we specify AbsPath type,
+      #   and this is fragile
     {
       my $output_path = $self->out_file->child( "SeqantOutput." . time )->stringify;
 
