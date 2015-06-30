@@ -50,14 +50,8 @@ sub build_snp_db {
   my ( %header, @snp_sites, @insert_data );
   while ( my $line = $in_fh->getline ) {
     chomp $line;
-    
-    say $line;
 
-    # taint check
-    my $clean_line = $self->less_safe_clean($line);
-    next unless $clean_line;
-
-    my @fields = split /\t/, $clean_line;
+    my @fields = split /\t/, $line;
 
     # if there is no header hash assume we're at the begining of the file
     if ( !%header ) {

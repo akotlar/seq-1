@@ -79,9 +79,10 @@ sparse_tracks:
     local_dir: /ssd/twingo/sandbox/hg38/raw/snp
     local_file: hg38.neurodegen_mutation_db.txt
     name: neurodb
+    sql_statement: ''
     features:
       - name
-      - disease 
+      - disease
 
 genome_sized_tracks:
   - name: hg38
