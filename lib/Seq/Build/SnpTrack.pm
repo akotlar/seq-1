@@ -31,13 +31,13 @@ sub build_snp_db {
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
   make_path($index_dir) unless -f $index_dir;
 
-  # input: snp sites
+  # output: snp sites
   my $snp_name = join( ".", $self->name, $wanted_chr, 'snp', 'dat' );
   my $snp_file = File::Spec->catfile( $index_dir, $snp_name );
   # check if we need to make the site range file
-  #   skip build if this is present
-  #   TODO: need a --force option here
-  return if $self->_has_site_range_file($snp_file);
+  #   skip build if site range file is present or we're forced to overwrite
+  return if $self->_has_site_range_file($snp_file) and !$self->force;
+  my $snp_fh;
 
   my ( $dbm_name, $dbm_file, $db );
 
@@ -74,7 +74,7 @@ sub build_snp_db {
       # create site-range file
       #   NOTE: 1st line needs to be value that should be added to encoded
       #         genome for these sites
-      my $snp_fh = $self->get_write_fh($snp_file);
+      $snp_fh = $self->get_write_fh($snp_file);
       say {$snp_fh} $self->in_snp_val;
     }
 

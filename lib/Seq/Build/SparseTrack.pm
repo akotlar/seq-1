@@ -61,6 +61,12 @@ has bulk_insert_threshold => (
   default => 10_000,
 );
 
+has force => (
+  is => 'ro',
+  isa => 'Bool',
+  default => 0,
+);
+
 sub _has_site_range_file {
   my ( $self, $file ) = @_;
   if ( -s $file ) {

@@ -128,10 +128,12 @@ sub build_gene_db_for_chr {
   # my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
   # my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
 
-  # check if we've already build site range files
-  return
-    if ( $self->_has_site_range_file($gan_file)
-    && $self->_has_site_range_file($ex_file) );
+  # check if we've already build site range files unless we are forced to overwrite
+  unless ( $self->force ) {
+    return
+      if ( $self->_has_site_range_file($gan_file)
+      && $self->_has_site_range_file($ex_file) );
+  }
 
   # 1st line needs to be value that should be added to encoded genome for these sites
   my $gan_fh = $self->get_write_fh($gan_file);
