@@ -77,12 +77,14 @@ sparse_tracks:
       - ReviewStatus
   - type: snp
     local_dir: /ssd/twingo/sandbox/hg38/raw/snp
-    local_file: hg38.neurodegen_mutation_db.txt
+    local_file: hg38.neuro_mutdb.txt
     name: neurodb
-    sql_statement: ''
+    sql_statement: 
     features:
       - name
-      - disease
+      - mutation
+      - site
+      - ref
 genome_sized_tracks:
   - name: hg38
     type: genome
