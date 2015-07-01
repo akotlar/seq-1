@@ -79,7 +79,6 @@ sparse_tracks:
     local_dir: /ssd/twingo/sandbox/hg38/raw/snp
     local_file: hg38.neuro_mutdb.txt
     name: neurodb
-    sql_statement:
     features:
       - name
       - exon_name
