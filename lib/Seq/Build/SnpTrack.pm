@@ -43,10 +43,6 @@ sub build_snp_db {
 
   $self->_logger->info("adding entries for $wanted_chr");
 
-  # 1st line needs to be value that should be added to encoded genome for these sites
-  my $snp_fh = $self->get_write_fh($snp_file);
-  say {$snp_fh} $self->in_snp_val;
-
   my ( %header, @snp_sites, @insert_data );
   while ( my $line = $in_fh->getline ) {
     chomp $line;
@@ -74,6 +70,12 @@ sub build_snp_db {
         bnum => 3_000_000,
         msiz => 512_000_000,
       );
+
+      # create site-range file
+      #   NOTE: 1st line needs to be value that should be added to encoded
+      #         genome for these sites
+      my $snp_fh = $self->get_write_fh($snp_file);
+      say {$snp_fh} $self->in_snp_val;
     }
 
     # process wanted chr
