@@ -122,17 +122,26 @@ path.
 We are assuming the data is fetched and in the directories that are specified by
 the configuration file.
 
+The following will build all databases sequentially.
+
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /path/to/output --type transcript_db &> hg38.transcript_db.log
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /path/to/output --type snp_db &> hg38.snp_db.log
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /path/to/output --type gene_db &> hg38.gene_db.log
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /path/to/output --type genome --hasher ./bin/genome_hasher &> hg38.genome.log
+
+The following approach will generate shell scripts to allow parallel building.
+
 		# write scripts to build the gene and snp dbs
 		./bin/run_all_build.pl -b ./bin/build_genome_assembly.pl -c ./ex/hg38_c_mdb.yml -l /path/to/output
 
 		# build the transcript db
-		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /ssd/twingo/sandbox/ --type transcript_db
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /path/to/output --type transcript_db
 
 		# build conserv score tracks
-		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /ssd/twingo/sandbox/ --type conserv
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /path/to/output --type conserv
 
 		# build genome index
-		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /ssd/twingo/sandbox/ --type genome
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --location /path/to/output --type genome
 
 TODO: add information about how to build CADD scores.
 
