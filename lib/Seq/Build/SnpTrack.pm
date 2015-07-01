@@ -54,7 +54,7 @@ sub build_snp_db {
       %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
 
       # do we have the essential keys?
-      $self->_check_header_keys( \%header, [ qw/ chrom chromStart chromEnd name / ] );
+      $self->_check_header_keys( \%header, [qw/ chrom chromStart chromEnd name /] );
 
       # do we have the optinally specified keys?
       $self->_check_header_keys( \%header, [ $self->all_features ] );
@@ -139,8 +139,6 @@ sub build_snp_db {
   say {$snp_fh} '';
   $self->_logger->info("finished building snp site db for chr: $wanted_chr");
 }
-
-
 
 __PACKAGE__->meta->make_immutable;
 

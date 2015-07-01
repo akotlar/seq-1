@@ -142,7 +142,6 @@ sub build_gene_db_for_chr {
   # my $gene_region_fh = $self->get_write_fh($gene_region_file);
   # say {$gene_region_fh} $self->in_gene_val;
 
-
   for my $gene_href (@$chr_data_aref) {
 
     my $gene = Seq::Gene->new($gene_href);

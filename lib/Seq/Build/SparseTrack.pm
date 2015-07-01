@@ -63,8 +63,8 @@ has bulk_insert_threshold => (
 );
 
 has force => (
-  is => 'ro',
-  isa => 'Bool',
+  is      => 'ro',
+  isa     => 'Bool',
   default => 0,
 );
 
@@ -115,10 +115,12 @@ sub _check_header_keys {
   for my $req_attr (@$req_header_aref) {
     $missing_attr{$req_attr}++ unless exists $header_href->{$req_attr};
   }
-  if ( %missing_attr ) {
+  if (%missing_attr) {
 
-    my $err_msg = sprintf("annotation misssing expected header information for %s %s chr %s: ",
-      $self->name, $self->type, $self->wanted_chr) . join ", ", (sort keys %missing_attr);
+    my $err_msg =
+      sprintf( "annotation misssing expected header information for %s %s chr %s: ",
+      $self->name, $self->type, $self->wanted_chr )
+      . join ", ", ( sort keys %missing_attr );
     $self->_logger->error($err_msg);
     unlink $self->dbm_file;
     croak $err_msg;
