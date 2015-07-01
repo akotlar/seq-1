@@ -102,7 +102,7 @@ sub _get_range_list {
   return \@pairs;
 }
 
-sub _check_essential_header {
+sub _check_header_keys {
   my ( $self, $header_href, $req_header_aref ) = @_;
   my %missing_attr;
   for my $req_attr (@$req_header_aref) {

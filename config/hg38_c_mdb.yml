@@ -79,10 +79,10 @@ sparse_tracks:
     local_dir: /ssd/twingo/sandbox/hg38/raw/snp
     local_file: hg38.neuro_mutdb.txt
     name: neurodb
-    sql_statement: 
+    sql_statement:
     features:
       - name
-      - mutation
+      - exon_name
       - site
       - ref
 genome_sized_tracks:

@@ -57,8 +57,11 @@ sub build_snp_db {
     if ( !%header ) {
       %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
 
-      # check if we have enough data to proceed with the build
-      $self->_check_essential_header( \%header, [ qw/ chrom chromStart chromEnd name / ] );
+      # do we have the essential keys?
+      $self->_check_header_keys( \%header, [ qw/ chrom chromStart chromEnd name / ] );
+
+      # do we have the optinally specified keys?
+      $self->_check_header_keys( \%header, [ $self->all_features ] );
 
       # create dbm file
       $dbm_name = join ".", $self->name, $wanted_chr, $self->type, 'kch';

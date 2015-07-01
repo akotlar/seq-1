@@ -49,6 +49,10 @@ around 'sql_statement' => sub {
   my $self     = shift;
   my $new_stmt = "";
 
+  # handle blank sql statements
+  return unless $self->$orig(@_);
+
+  # make substitutions into the sql statements
   if ( $self->type eq 'snp' ) {
     my $snp_table_fields_str = join( ", ", @snp_track_fields, @{ $self->features } );
     if ( $self->$orig(@_) =~ m/\_snp\_fields/xm ) {

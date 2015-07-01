@@ -1,4 +1,4 @@
-chrom	chromStart	chromEnd	name	mutation	site	ref
+chrom	chromStart	chromEnd	exon_name	name	site	ref
 chr3	87144730	87144731	EX1 	g.-101C>T()	[CHMP2B (g.-101C>T)](http://www.molgen.ua.ac.be/ADMutations/Default.cfm/?MT=1&ML=0&Page=Mutations&ID=598 "Mutation Details") Not pathogenic	[Kaivorinne AL, 2010](http://www.molgen.ua.ac.be/ADMutations/Default.cfm/?MT=1&ML=0&Page=PublicationsByMut&ID=598 "View Citation Details")
 chr17	44345338	44345339	IVS1 Complete protein	g.-3826G>C(IVS1+5G>C)	[GRN IVS1+5G>C (g.-3826G>C)](http://www.molgen.ua.ac.be/ADMutations/Default.cfm/?MT=1&ML=0&Page=Mutations&ID=266 "Mutation Details")	[Cruts M, 2006 Brouwers N, 2007](http://www.molgen.ua.ac.be/ADMutations/Default.cfm/?MT=1&ML=0&Page=PublicationsByMut&ID=266 "View Citation Details")
 chr17	44345336	44345337	IVS1 Complete protein	g.-3828A>T(IVS1+3A>T)	[GRN IVS1+3A>T (g.-3828A>T)](http://www.molgen.ua.ac.be/ADMutations/Default.cfm/?MT=1&ML=0&Page=Mutations&ID=340 "Mutation Details")	[Le Ber I, 2007](http://www.molgen.ua.ac.be/ADMutations/Default.cfm/?MT=1&ML=0&Page=PublicationsByMut&ID=340 "View Citation Details")

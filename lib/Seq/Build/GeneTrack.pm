@@ -48,9 +48,15 @@ sub _get_gene_data {
     chomp $line;
     my @fields = split( /\t/, $line );
     if ( !%header ) {
+
       map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
-      $self->_check_essential_header( \%header,
+
+      # do we have the required keys?
+      $self->_check_header_keys( \%header,
         [ qw/ chrom chromStart chromEnd name cdsEnd cdsStart exonEnds strand txEnd txStart / ] );
+
+      # do we have the optinally specified keys?
+      $self->_check_header_keys( \%header, [ $self->all_features ] );
       next;
     }
     my %data = map { $_ => $fields[ $header{$_} ] }
