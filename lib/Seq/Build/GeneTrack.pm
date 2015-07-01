@@ -49,11 +49,10 @@ sub _get_gene_data {
     my @fields = split( /\t/, $line );
     if ( !%header ) {
 
-      map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
+      %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
 
       # do we have the required keys?
-      $self->_check_header_keys( \%header,
-        [ qw/ chrom chromStart chromEnd name cdsEnd cdsStart exonEnds strand txEnd txStart / ] );
+      $self->_check_header_keys( \%header, [ keys %ucsc_table_lu ] );
 
       # do we have the optinally specified keys?
       $self->_check_header_keys( \%header, [ $self->all_features ] );
