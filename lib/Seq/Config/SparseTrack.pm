@@ -8,6 +8,7 @@ package Seq::Config::SparseTrack;
 
 use Moose 2;
 use Moose::Util::TypeConstraints;
+use Carp qw/ croak /;
 
 use namespace::autoclean;
 
