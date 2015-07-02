@@ -69,6 +69,22 @@ has _genome_cadd => (
   builder => '_load_cadd',
 );
 
+=property @private {HashRef} _cadd_lookup
+
+  Defines delegate @method @public get_cadd_index
+
+=cut
+
+=method get_cadd_index
+  
+  Delegate on behalf of @param _cadd_lookup. 
+  
+  my $key = join ":", $ref_base, $base_in_sample;
+  $self->get_cadd_index($key)
+  
+  see L<Moose::Meta::Attribute::Native::Trait::Hash> 
+
+=cut
 has _cadd_lookup => (
   is      => 'ro',
   isa     => 'HashRef',
@@ -78,6 +94,11 @@ has _cadd_lookup => (
   builder => '_build_cadd_lookup',
 );
 
+=property @public {ArrayRef<ArrayRef<Seq::KCManager>>} _cadd_lookup
+
+  Defines delegate @method @private _all_dbm_gene
+
+=cut
 has dbm_gene => (
   is      => 'ro',
   isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
@@ -162,8 +183,8 @@ sub get_cadd_score {
   my $key = join ":", $ref, $allele;
   my $i = $self->get_cadd_index($key);
   if ( $self->debug ) {
-    p $key;
-    p $i;
+    say "Cadd score key:"; p $key;
+    say "Cadd score index:"; p $i;
   }
   if ( defined $i ) {
     my $cadd_track = $self->_get_cadd_track($i);
@@ -518,7 +539,7 @@ sub get_snp_annotation {
     # get data; need to add new base to href to create the obj with wanted
     #   data, like proper AA substitution
     $gene_site->{minor_allele} = $new_base;
-    my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs;
+    my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs(ref $gene_site, $self->name);
 
     # merge data
     $gene_site_ann_href = $self->_join_href( $gene_site_ann_href, $gan );

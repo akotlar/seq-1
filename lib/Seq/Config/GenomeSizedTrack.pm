@@ -2,9 +2,35 @@ use 5.10.0;
 use strict;
 use warnings;
 
+#TODO: Clarify whether gan / $in_gan refers to knownGene annotations.
 package Seq::Config::GenomeSizedTrack;
 # ABSTRACT: Configure a genome sized track
 # VERSION
+
+=head1 DESCRIPTION 
+
+  @class B<Seq::Config::GenomeSizedTrack>
+ 
+  A genome sized track is one that contains a {Char} for every position in the haploid genome. 
+  All bases are hashed by whether or not they contain corresponding annotations. This class provides getters and setters
+  for the management of these hashes
+  
+  Seq::Config::GenomeSizedTrack->new($gst)
+
+Used in:
+
+=for :list 
+* @class Seq::Assembly
+    Seq::Assembly is used in @class Seq::Annotate, which is used in @class Seq.pm
+
+Extended in: 
+
+=for :list 
+* @class Seq::Build::GenomeSizedTrackStr
+* @class Seq::GenomeSizedTrackChar
+* @class Seq::Fetch::Sql
+
+=cut
 
 use Moose 2;
 use Moose::Util::TypeConstraints;
@@ -12,42 +38,164 @@ use Moose::Util::TypeConstraints;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
+use DDP;
+
+=type GenomeSizedTrackType
+
+GenomeSizedTrack members are not stored in the database, are kept on disk in binary representations instead. 
+We provide three different general kinds of genome sized tracks:
+=for :list
+
+1. genome
+  A binary representation of the (.fasta|.fa) reference assembly (haploid). 
+  Only one genome type GenomeSizedTrackType may be defined for any one assembly, since there can be only one reference
+  for a given build/.
+
+2. score
+  Any WigFix format score. The score cannot exceed 8-bit {Char}, values 0-255. If score does not fit within this range,
+  must be coerced, see C<Seq::Config::GenomeSizedTrack::BUILDARGS> coercion of PhastCons and PhyloP scorse.
+
+  Any number of score type GenomeSizedTrackType may be defined on any one assembly.
+
+3. cadd
+  A genome-wide .bed format-based type. The first implementation of this is CADD
+  See L<http://cadd.gs.washington.edu>
+
+genome & score type file format:
+=for :list
+
+1. A .idx file
+  Binary represnetation of the data at each position in the genome. For genome type this is the IUPAC base.
+  For score type this is the score at that position.
+2. A .yml file
+  YAML format offsets corresponding to {chr# : first_position_exclusive_of_this_chr}. Used to calculate the position
+  that one should to in the .idx file.
+
+cadd type file format:
+  
+  1. N number of files, representating N possible genome-wide states. In the case of CADD scores, N=3, as each SNP can
+  have up to three transition states (4 based - 1 reference base)
+
+  See use in L<Seq::Annotate>
+
+TODO: Check if Seq::Config::GenomeSizedTrack::BUILDARGS makes sense as a representation of 
+"BUILDARGS method of this class"
+TODO: Clarify whether offset is inclusive or exclusive, and triple check that offset is used because the pos given
+  in the snpfile is relative to the chromosome, and that is used for seeking.
+=cut
 enum GenomeSizedTrackType => [ 'genome', 'score', 'cadd' ];
 
 my ( @idx_codes, @idx_base, @idx_in_gan, @idx_in_gene, @idx_in_exon, @idx_in_snp );
 my %base_char_2_txt = ( '0' => 'N', '1' => 'A', '2' => 'C', '3' => 'G', '4' => 'T' );
+
+# feature values representing whether something is in an annotated gene, in an exon, in a gene, or in a snp
+# combinations of these values will reveal combinations of propeties, see line ~110
 my @in_gan  = qw/ 0 8 /; # is gene annotated
 my @in_exon = qw/ 0 16 /;
 my @in_gene = qw/ 0 32 /;
 my @in_snp  = qw/ 0 64 /;
 
 # we will use 0 to indicate absence and undef to indicate an error
+# each position in the genome can take on a max value of 255 {Char}
+# the maximum sum we allow is 255, although the current program uses only 116
 for ( my $i = 0; $i < 256; $i++ ) {
   $idx_codes[$i] = $idx_base[$i] = $idx_in_gan[$i] = $idx_in_gene[$i] =
     $idx_in_exon[$i] = $idx_in_snp[$i] = undef;
 }
 
-foreach my $base_char ( keys %base_char_2_txt ) {
-  foreach my $snp (@in_snp) {
-    foreach my $gene (@in_gene) {
-      foreach my $exon (@in_exon) {
-        foreach my $gan (@in_gan) {
+# fill properties
+# iterate over all of the keys in %base_char_2_txt @values 0...4
+foreach my $base_char ( keys %base_char_2_txt ) 
+{
+  #iterate over @in_snp elements @values 0,8
+  foreach my $snp (@in_snp) 
+  {
+    #iterate over @in_exon elements @values 0,16
+    foreach my $gene (@in_gene) 
+    {
+      #iterate over @in_gene elements @values 0,32
+      foreach my $exon (@in_exon) 
+      {
+        #iterate over @in_snp elements @values 0,64
+        foreach my $gan (@in_gan) 
+        {
+          #$base_char gets duck types as an {Int}
           my $char_code = $base_char + $gan + $gene + $exon + $snp;
+
           my $txt_base  = $base_char_2_txt{$base_char};
           $idx_base[$char_code]    = $txt_base;
-          $idx_in_gan[$char_code]  = ($gan) ? 1 : 0;
+
+          #equivalent to testing ($gan) ? 1 : 0 is !!$gan
+          #these values are combinations of the iterated values
+          #and a 0 feature value always corresponds to 
+          $idx_in_gan[$char_code]  = ($gan) ? 1 : 0; 
           $idx_in_gene[$char_code] = ($gene) ? 1 : 0;
           $idx_in_exon[$char_code] = ($exon) ? 1 : 0;
           $idx_in_snp[$char_code]  = ($snp) ? 1 : 0;
+
+          #@example:
+          # 0 + 0 + 0 + 64 == 'N',no gan, not in a gene, not in an exon, is a snp
         }
       }
     }
   }
 }
 
-# basic features
+=property @public @required {Str} name
+
+  The feature name. This is defined directly in the input config file.
+
+  @example:
+  =for :list
+  * PhastCons
+  * PhyloP
+  * CADD
+
+=cut
 has name => ( is => 'ro', isa => 'Str', required => 1, );
+
+=property @public @required {GenomeSizedTrackType<Str>} type
+
+  The type of feature
+  
+  @values:
+
+  =for :list
+  * genome
+    Only one feature of this type may exist
+  * score
+    The 1 binary, 1 offset file format. @example: PhyloP
+  * cadd
+    The N binary file format @example: CADD
+    
+=cut
 has type => ( is => 'ro', isa => 'GenomeSizedTrackType', required => 1, );
+
+=property {ArrayRef<Str>} genome_chrs
+
+  An array reference holding the list of chromosomes in this organism/build's genome representation. This value comes
+  directly from the user inputted config file.
+
+Used in:
+
+=for :list
+* bin/make_fake_genome.pl
+* bin/read_genome.pl
+* bin/run_all_build.pl
+* @class Seq::Annotate
+* @class Seq::Assembly
+* @class Seq::Build::GenomeSizedTrackStr
+* @class Seq::Build
+* @class Seq::Fetch
+
+=cut
+
+=method all_genome_chrs
+ 
+  Returns all of the elements of the @property {ArrayRef<str>} C<genome_chrs> as an array (not an array reference).
+  $self->all_genome_chrs
+
+=cut
 has genome_chrs => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
@@ -181,11 +329,46 @@ sub get_idx_in_exon {
   return $idx_in_exon[$char];
 }
 
+=method @public get_idx_in_snp
+  
+  Takes an integer code representing the features at a genomic position. 
+  Returns a 1 if this position is a snp, or 0 if not
+  
+  $self->get_idx_in_snp($site_code)
+  
+  See the anonymous routine ~line 100 that fills $idx_in_snp.
+
+Used in @class Seq::Annotate
+
+@requires @private {Array<Bool>} $idx_in_snp
+
+@param {Int} $char
+
+@returns {Bool} @values 0, 1
+
+=cut
 sub get_idx_in_snp {
   my ( $self, $char ) = @_;
   return $idx_in_snp[$char];
 }
 
+=method @public get_idx_in_snp
+  
+  Takes an integer code representing the genomic position, and returns a 1 if we have a genome annotation for this 
+  position (knownGene, or 0 if not
+  $self->get_idx_in_snp($site_code)
+  
+  See the anonymous routine ~line 100 that fills $idx_in_snp.
+
+Used in @class Seq::Annotate
+
+@requires @private {Array<Bool>} $idx_in_snp
+
+@param {Int} $char
+
+@returns {Bool} @values 0, 1
+
+=cut
 sub in_gan_val {
   my $self = @_;
   return $in_gan[1];
@@ -206,29 +389,63 @@ sub in_snp_val {
   return $in_snp[1];
 }
 
+=constructor 
+
+  Overrides BUILDARGS construction function in order to set default values for (if not set): 
+
+  =for :list
+  * @property {Int} score_R
+  * @property {Int} score_min
+  * @property {Int} score_max
+
+@requires
+
+=for :list
+* @property {Str} type
+* @property {Str} name
+
+@returns {$class->SUPER::BUILDARGS}
+
+#TODO: Documentation: decide whether this is equivalent to around, if so, maybe switch because better documented
+#TODO: Documentation:  determine whether this is truly overriding the function
+=cut
 sub BUILDARGS {
   my $class = shift;
   my $href  = $_[0];
   if ( scalar @_ > 1 || reftype($href) ne "HASH" ) {
     confess "Error: $class expects hash reference.\n";
   }
-  else {
+  else 
+  {
     my %hash;
-    if ( $href->{type} eq "score" ) {
-      if ( $href->{name} eq "phastCons" ) {
-        $hash{score_R}   = 254;
+  
+    #TODO: check whether 255 or 254 correct here; set @ 255, which was state prior to this commit for CADD only
+    #TODO: note that $hash{score_R}   = 255 for CADD, 254 for as 'score' $href->{type} 
+    $hash{score_R} =  254; # ternary, subtle allowance of score_R == 0
+    
+    if ( $href->{type} eq "score" ) 
+    {
+      if ( $href->{name} eq "phastCons" ) 
+      {  
         $hash{score_min} = 0;
         $hash{score_max} = 1;
       }
-      elsif ( $href->{name} eq "phyloP" ) {
-        $hash{score_R}   = 254;
+      elsif ( $href->{name} eq "phyloP" ) 
+      {
         $hash{score_min} = -30;
         $hash{score_max} = 30;
       }
     }
-
+    elsif ( $href->{type} eq "cadd" ) 
+    {
+      #TODO: remove this score_R def once we decide on whether 255 or 254 is correct
+      $hash{score_R}   = 255; 
+      $hash{score_min} = 0;
+      $hash{score_max} = 85;
+    }
+    
     # if score_R, score_min, or score_max are set by the caller then the
-    # following will override it
+    # following will override the defaults
     for my $attr ( keys %$href ) {
       $hash{$attr} = $href->{$attr};
     }

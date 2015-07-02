@@ -37,7 +37,7 @@ genome_chrs:
   - chrY
 genome_raw_dir: ./hg38/raw
 genome_index_dir: ./hg38/index
-genome_db_dir: /ssd/twingo/sandbox
+genome_db_dir: /Users/alex/Documents/seqant_databases
 
 sparse_tracks:
   - type: gene

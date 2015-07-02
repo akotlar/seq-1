@@ -63,6 +63,7 @@ has messageChannelHref => (
 has _message_publisher => (
   is       => 'ro',
   required => 0,
+  lazy     => 1,
   init_arg => undef,
   builder  => '_build_message_publisher',
   handles  => { _publishMessage => 'publish' }
@@ -154,6 +155,14 @@ B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
 sub annotate_snpfile {
   my $self = shift;
 
+  if($self->debug)
+  {
+    say "The self meta is (checking to see how has_method works:";
+    p $self->meta;
+
+    say "Does this object have method no_del_sites: " . $self->meta->has_method('no_del_sites');
+
+  }
   croak "specify a snpfile to annotate\n" unless $self->snpfile_path;
 
   $self->_logger->info("about to load annotation data");
@@ -162,7 +171,6 @@ sub annotate_snpfile {
   if ( $self->wants_to_publish_messages ) {
     $self->_publish_message("about to load annotation data");
   }
-  $self->_publish_message("about to load annotation data");
   # $self->_logger->info("about to load annotation data");
   my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
 
@@ -415,7 +423,7 @@ sub _publish_message {
   my ( $self, $message ) = @_;
 
   # TODO: check performance of the array merge benefit is indirection, cost may be too high?
-  $self->_publishMessage( $self->channelInfo('messageChannel'),
+  $self->publish( $self->channelInfo('messageChannel'),
     encode_json( { %{ $self->channelInfo('recordLocator') }, message => $message } ) );
 }
 
