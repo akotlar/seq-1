@@ -38,8 +38,14 @@ use Seq::Config::SparseTrack;
 
 with 'Seq::Role::ConfigFromFile';
 
-my $attributes = my qw/ genome_name genome_description genome_chrs genome_index_dir
+my @_attributes = qw/ genome_name genome_description genome_chrs genome_index_dir
       genome_hasher genome_scorer debug wanted_chr genome_db_dir debug/;
+has _attributes => (
+  is => 'ro',
+  isa => 'ArrayRef',
+  init_arg => undef,
+  default => sub{return \@_attributes}
+);
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
@@ -157,7 +163,7 @@ sub BUILDARGS {
         croak sprintf( "unrecognized genome track type %s\n", $gst->{type} );
       }
     }
-    for my $attrib ($attributes)
+    for my $attrib (@{$href->{_attributes} } )
     {
       $hash{$attrib} = $href->{$attrib};
     }

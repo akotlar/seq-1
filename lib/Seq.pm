@@ -173,9 +173,9 @@ sub annotate_snpfile {
     say "The self meta is (checking to see how has_method works:";
     p $self->meta;
 
-    say "Does this object have method no_del_sites: " . $self->meta->has_method('no_del_sites');
-
+    say "Does this object have method no_del_sites: " . !!$self->meta->has_method('no_del_sites');
   }
+  
   croak "specify a snpfile to annotate\n" unless $self->snpfile_path;
 
   $self->_logger->info("about to load annotation data");

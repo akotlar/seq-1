@@ -268,7 +268,7 @@ has proc_clean_cmds => (
 # for conservation scores
 has score_min => (
   is  => 'ro',
-  isa => 'Num',
+  isa => 'Num'
 );
 
 has score_max => (
@@ -450,40 +450,36 @@ sub in_snp_val {
 @returns {$class->SUPER::BUILDARGS}
 
 =cut
+#TODO: move away from this in favor of read only accesssor
 sub BUILD {
   my $self = shift;
 
   return if(!($self->type eq "score" or $self->type eq "cadd") );
-   
-  if(!defined($self->score_min) or !defined($self->score_max) )
-  {
-    $self->_set_default_feature_score_range();
-  }
   
   $self->_validate_feature_score_range();
 }
 
 sub _set_default_feature_score_range
 {
-  my $self = shift;
+  my $href = shift;
 
-  if ( $self->type eq "score" ) 
+  if ( $href->{type} eq "score" ) 
   {
-    if ( $self->name eq "phastCons" ) 
+    if ( $href->{name} eq "phastCons" ) 
     {  
-      $self->score_min = 0;
-      $self->score_max = 1;
+      $href->{score_min} = 0;
+      $href->{score_max} = 1;
     }
-    elsif ( $self->name eq "phyloP" ) 
+    elsif ( $href->{name} eq "phyloP" ) 
     {
-      $self->score_min = -30;
-      $self->score_max = 30;
+      $href->{score_min} = -30;
+      $href->{score_max} = 30;
     }
   }
-  elsif ( $self->type eq "cadd" ) 
+  elsif ( $href->{type} eq "cadd" ) 
   {
-    $self->score_min = 0;
-    $self->score_max = 85;
+    $href->{score_min} = 0;
+    $href->{score_max} = 85;
   }
 }
 
@@ -493,10 +489,17 @@ sub _validate_feature_score_range
   my $self = shift;
 
   #TODO: set range for genome_scorer.c and Seq package from single config.
-  croak("FATAL ERROR: We believe score_R must be within 5 - 255, check genome_scorer.c for current range")
-    unless ($self->score_R < 256 and $self->score_R >= 5);
+  unless($self->score_R < 256 and $self->score_R >= 5)
+  {
+    $self->_logger->error("FATAL ERROR: We believe score_R must be within 5 - 255, check genome_scorer.c for current range");
+    croak("FATAL ERROR: We believe score_R must be within 5 - 255, check genome_scorer.c for current range");
+  }
 
-  warn "score_min and score_max are 0" if($self->score_min == 0 and $self->score_max == 0);
+  if($self->score_min == 0 and $self->score_max == 0)
+  {
+    warn "score_min and score_max are 0";
+    $self->_logger->warn("score_min and score_max are 0");
+  }
 }
 
 #TODO: Documentation: decide whether this is equivalent to around, if so, maybe switch because better documented
@@ -508,6 +511,7 @@ sub BUILDARGS {
   }
   else 
   {
+    _set_default_feature_score_range( $href );
     return $class->SUPER::BUILDARGS( $href );
   }
 }
