@@ -6,30 +6,28 @@ package Seq::Site::Annotation;
 # ABSTRACT: Class for seralizing annotation sites
 # VERSION
 
-=head1 @class Seq::Config::SparseTrack 
- 
-  Base class that decorates Seq::Build sql statements (@method sql_statement), and performs feature formatting
+=head1 DESCRIPTION
+
+  @class B<Seq::Site::Annotation>
+  
+  TODO: Check description
+  Annotation - specific class, that defines the categories of things we output in our annotation (column headers),
+
 
 Used in:
 
 =begin :list 
-* @class Seq::Assembly
-    Seq::Assembly extended in:   
-  
-  =begin :list  
-  * @class Seq::Annotate
-      Seq::Annotate used in Seq.pm only
-  * @class Seq::Build
-  =end :list
+* @class Seq::Annotate
+    Which is used in:
+
+    =begin :list
+    * bin/annotate_ref_site.pl
+    * bin/read_genome_with_dbs.pl
+    * @class Seq
+    =end :list  
 =end :list
 
-Extended in:
-
-=for :list
-* @class Seq::Build::SparseTrack
-* @class Seq::Build::GeneTrack
-* @class Seq::Build::SnpTrack
-* @class Seq::Build::TxTrack 
+Extended in: None 
 
 =cut
 
@@ -42,9 +40,17 @@ my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_s
   codon_number codon_position ref_aa_residue error_code alt_names
   genotype new_codon_seq new_aa_residue annotation_type );
 
-extends extends 'Seq::Site::Gene';
+extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
 
+=type non_missing_base_type<Str> 
+  
+  Type constraint that allows only @values 'A','C','G','T' 
+
+  This excludes N, which is coded as a 0 {Char} @value 
+    @see Seq::Config::GenomeSizedTrack @variable %base_char_2_txt
+
+=cut
 enum non_missing_base_types => [qw( A C G T )];
 
 has minor_allele => (

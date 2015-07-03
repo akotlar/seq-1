@@ -1,6 +1,19 @@
 package Seq::Fetch::Sql;
 # ABSTRACT: Class for managing mysql database connections, with convenience functions for querying & inserting records
+=head1 DESCRIPTION
+  
+  @class Seq::Fetch::Sql
+  #TODO: Check description
 
+  @example
+
+Used in:
+=for :list
+* Seq::Fetch
+
+Extended by: None
+
+=cut
 use 5.10.0;
 use Carp;
 use Cwd;

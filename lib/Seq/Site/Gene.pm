@@ -5,7 +5,53 @@ use warnings;
 package Seq::Site::Gene;
 # ABSTRACT: Class for seralizing gene sites
 # VERSION
+=head1 DESCRIPTION
+  
+  @class Seq::Site::Gene
+  #TODO: Check description
 
+  @example
+  $gene_site{abs_pos}       = $self->get_transcript_abs_position($i);
+  $gene_site{alt_names}     = $self->alt_names;
+  $gene_site{ref_base}      = $self->get_base_transcript_seq( $i, 1 );
+  $gene_site{error_code}    = $self->transcript_error;
+  $gene_site{transcript_id} = $self->transcript_id;
+  $gene_site{strand}        = $self->strand;
+
+  # is site coding
+  if ( $site_annotation =~ m/[ACGT]/ ) {
+    $gene_site{site_type}      = 'Coding';
+    $gene_site{codon_number}   = 1 + int( ( $coding_base_count / 3 ) );
+    $gene_site{codon_position} = $coding_base_count % 3;
+    my $codon_start = $i - $gene_site{codon_position};
+    my $codon_end   = $codon_start + 2;
+
+    #say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
+    for ( my $j = $codon_start; $j <= $codon_end; $j++ ) {
+      $gene_site{ref_codon_seq} .= $self->get_base_transcript_seq( $j, 1 );
+    }
+    $coding_base_count++;
+  }
+  elsif ( $site_annotation eq '5' ) {
+    $gene_site{site_type} = '5UTR';
+  }
+  elsif ( $site_annotation eq '3' ) {
+    $gene_site{site_type} = '3UTR';
+  }
+  elsif ( $site_annotation eq '0' ) {
+    $gene_site{site_type} = 'non-coding RNA';
+  my $site = Seq::Site::Gene->new( \%gene_site );
+
+Used in:
+=for :list
+* Seq::Gene
+* 
+
+Extended by:
+=for :list
+* Seq::Site::Annotation
+
+=cut
 use Moose 2;
 use Moose::Util::TypeConstraints;
 
@@ -14,6 +60,7 @@ use namespace::autoclean;
 extends 'Seq::Site';
 
 #<<< No perltidy
+#TODO: some these attributes are defined in multiple places, including Seq/Site/Annotation.pm, can we combine them
 my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
     codon_number codon_position ref_aa_residue error_code alt_names );
 
@@ -36,6 +83,8 @@ my %Eu_codon_2_aa = (
   "TTA" => "L", "TTC" => "F", "TTG" => "L", "TTT" => "F"
 );
 
+=type {Str} GeneSiteType 
+=cut 
 enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                        'Splice Donor', 'Splice Acceptor' ];
 enum StrandType   => [ '+', '-' ];
@@ -130,6 +179,7 @@ sub _set_ref_aa_residue {
 }
 
 # this function is really for storing in mongo db collection
+#TODO: can we get rid of this, since defined in Seq/Build/GeneTrack.pm, and also Seq/Config/SparseTrack.pm
 sub as_href {
   my $self = shift;
   my %hash;

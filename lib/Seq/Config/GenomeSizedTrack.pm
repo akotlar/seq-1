@@ -1,6 +1,7 @@
 use 5.10.0;
 use strict;
 use warnings;
+use Carp qw/ croak /;
 
 #TODO: Clarify whether gan / $in_gan refers to knownGene annotations.
 package Seq::Config::GenomeSizedTrack;
@@ -10,12 +11,19 @@ package Seq::Config::GenomeSizedTrack;
 =head1 DESCRIPTION 
 
   @class B<Seq::Config::GenomeSizedTrack>
- 
+  
+  TODO:Check description
   A genome sized track is one that contains a {Char} for every position in the haploid genome. 
   All bases are hashed by whether or not they contain corresponding annotations. This class provides getters and setters
   for the management of these hashes
+
+  This class can be consumed directly: 
   
-  Seq::Config::GenomeSizedTrack->new($gst)
+    @example Seq::Config::GenomeSizedTrack->new($gst)
+
+  Or as a Type Constraint:
+
+    @example has => some_property ( isa     => 'ArrayRef[Seq::Config::GenomeSizedTrack]' )
 
 Used in:
 
@@ -86,6 +94,14 @@ TODO: Clarify whether offset is inclusive or exclusive, and triple check that of
 enum GenomeSizedTrackType => [ 'genome', 'score', 'cadd' ];
 
 my ( @idx_codes, @idx_base, @idx_in_gan, @idx_in_gene, @idx_in_exon, @idx_in_snp );
+
+=variable {Hash} @private %base_char_2_txt
+
+  Provides {Int} values for each possible base type. These values must fit in within {Char} 0-255 when summed up
+  across all of the combinations of values found in feature category variables: @in_gan, @in_exon, @in_gene, @in_snp 
+
+  @see Seq::Site::Annotation @type non_missing_base_types
+=cut 
 my %base_char_2_txt = ( '0' => 'N', '1' => 'A', '2' => 'C', '3' => 'G', '4' => 'T' );
 
 # feature values representing whether something is in an annotated gene, in an exon, in a gene, or in a snp
@@ -260,11 +276,24 @@ has score_max => (
   isa => 'Num',
 );
 
+=property @public score_R
+
+  The number of radians the raw score will get divided into. This MUST NOT EXCEED the max R found in genome_scorer.c
+
+=cut
 has score_R => (
   is  => 'ro',
-  isa => 'Num'
+  isa => 'Num',
+  default => 255
 );
 
+=property @private {Float} _score_beta
+  
+  Standardized value for a particular feature type, such as CADD, PhyloP, or PhastCons.
+
+  Calculated in the builder @function _build_score_beta, lazily, meaning only when $self->_score_beta is called.
+
+=cut
 has _score_beta => (
   is      => 'ro',
   isa     => 'Num',
@@ -281,11 +310,22 @@ has _score_lu => (
   builder => '_build_score_lu',
 );
 
+=method @private _build_score_lu
+
+  Precompute all possible scores, for efficient lookup
+
+@returns {HashRef}
+  The look up table, keyed on the full range of allowed radian values (value steps)
+
+#TODO: Check if it's correct to say "Radian" values.
+=cut
 sub _build_score_lu {
   my $self = shift;
+
   my %score_lu =
     map { $_ => ( ( ( $_ - 1 ) / $self->_score_beta ) + $self->score_min ) }
-    ( 1 .. 254 );
+    # score_R may be lower than 255 but it will _never_ be higher b/c checked in BUILD TO BE WRITTEN
+    ( 1 .. $self->score_R ); 
   $score_lu{'0'} = 'NA';
 
   return \%score_lu;
@@ -354,19 +394,7 @@ sub get_idx_in_snp {
 
 =method @public get_idx_in_snp
   
-  Takes an integer code representing the genomic position, and returns a 1 if we have a genome annotation for this 
-  position (knownGene, or 0 if not
-  $self->get_idx_in_snp($site_code)
-  
-  See the anonymous routine ~line 100 that fills $idx_in_snp.
-
-Used in @class Seq::Annotate
-
-@requires @private {Array<Bool>} $idx_in_snp
-
-@param {Int} $char
-
-@returns {Bool} @values 0, 1
+  @see get_idx_in_snp
 
 =cut
 sub in_gan_val {
@@ -374,16 +402,31 @@ sub in_gan_val {
   return $in_gan[1];
 }
 
+=method @public get_idx_in_snp
+  
+  @see get_idx_in_snp
+
+=cut
 sub in_exon_val {
   my $self = @_;
   return $in_exon[1];
 }
 
+=method @public get_idx_in_snp
+  
+  @see get_idx_in_snp
+
+=cut
 sub in_gene_val {
   my $self = @_;
   return $in_gene[1];
 }
 
+=method @public get_idx_in_snp
+  
+  @see get_idx_in_snp
+
+=cut
 sub in_snp_val {
   my $self = @_;
   return $in_snp[1];
@@ -406,9 +449,57 @@ sub in_snp_val {
 
 @returns {$class->SUPER::BUILDARGS}
 
-#TODO: Documentation: decide whether this is equivalent to around, if so, maybe switch because better documented
-#TODO: Documentation:  determine whether this is truly overriding the function
 =cut
+sub BUILD {
+  my $self = shift;
+
+  return if(!($self->type eq "score" or $self->type eq "cadd") );
+   
+  if(!defined($self->score_min) or !defined($self->score_max) )
+  {
+    $self->_set_default_feature_score_range();
+  }
+  
+  $self->_validate_feature_score_range();
+}
+
+sub _set_default_feature_score_range
+{
+  my $self = shift;
+
+  if ( $self->type eq "score" ) 
+  {
+    if ( $self->name eq "phastCons" ) 
+    {  
+      $self->score_min = 0;
+      $self->score_max = 1;
+    }
+    elsif ( $self->name eq "phyloP" ) 
+    {
+      $self->score_min = -30;
+      $self->score_max = 30;
+    }
+  }
+  elsif ( $self->type eq "cadd" ) 
+  {
+    $self->score_min = 0;
+    $self->score_max = 85;
+  }
+}
+
+#TODO: consider changing the min score_R to 5
+sub _validate_feature_score_range
+{
+  my $self = shift;
+
+  #TODO: set range for genome_scorer.c and Seq package from single config.
+  croak("FATAL ERROR: We believe score_R must be within 5 - 255, check genome_scorer.c for current range")
+    unless ($self->score_R < 256 and $self->score_R >= 5);
+
+  warn "score_min and score_max are 0" if($self->score_min == 0 and $self->score_max == 0);
+}
+
+#TODO: Documentation: decide whether this is equivalent to around, if so, maybe switch because better documented
 sub BUILDARGS {
   my $class = shift;
   my $href  = $_[0];
@@ -417,39 +508,7 @@ sub BUILDARGS {
   }
   else 
   {
-    my %hash;
-  
-    #TODO: check whether 255 or 254 correct here; set @ 255, which was state prior to this commit for CADD only
-    #TODO: note that $hash{score_R}   = 255 for CADD, 254 for as 'score' $href->{type} 
-    $hash{score_R} =  254; # ternary, subtle allowance of score_R == 0
-    
-    if ( $href->{type} eq "score" ) 
-    {
-      if ( $href->{name} eq "phastCons" ) 
-      {  
-        $hash{score_min} = 0;
-        $hash{score_max} = 1;
-      }
-      elsif ( $href->{name} eq "phyloP" ) 
-      {
-        $hash{score_min} = -30;
-        $hash{score_max} = 30;
-      }
-    }
-    elsif ( $href->{type} eq "cadd" ) 
-    {
-      #TODO: remove this score_R def once we decide on whether 255 or 254 is correct
-      $hash{score_R}   = 255; 
-      $hash{score_min} = 0;
-      $hash{score_max} = 85;
-    }
-    
-    # if score_R, score_min, or score_max are set by the caller then the
-    # following will override the defaults
-    for my $attr ( keys %$href ) {
-      $hash{$attr} = $href->{$attr};
-    }
-    return $class->SUPER::BUILDARGS( \%hash );
+    return $class->SUPER::BUILDARGS( $href );
   }
 }
 

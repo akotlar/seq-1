@@ -5,7 +5,30 @@ use warnings;
 package Seq::Build;
 # ABSTRACT: A class for building a binary representation of a genome assembly
 # VERSION
+=head1 DESCRIPTION
+  
+  @class Seq::Build
+  #TODO: Check description
+  Build the annotation databases, as prescribed by the genome assembly.
+  
+  @example
 
+Uses: 
+=for :list
+* @class Seq::Build::SnpTrack
+* @class Seq::Build::GeneTrack
+* @class Seq::Build::TxTrack
+* @class Seq::Build::GenomeSizedTrackStr
+* @class Seq::KCManager
+* @role Seq::Role::IO
+
+Used in:
+=for :list
+* /bin/build_genome_assembly.pl 
+
+Extended in: None
+
+=cut
 use Moose 2;
 
 use Carp qw/ croak /;

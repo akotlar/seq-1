@@ -7,6 +7,45 @@ package Seq::Annotate;
 # ABSTRACT: Builds a plain text genome used for binary genome creation
 # VERSION
 
+=head1 DESCRIPTION Seq::Annotate
+ 
+  Contains helper functions for genome annotation. 
+
+Used in:
+
+=begin :list 
+* bin/annotate_ref_site.pl
+* bin/read_genome_with_dbs.pl
+* @class Seq::Config::GenomeSizedTrack
+* @class Seq::Site::Annotation
+* @class Seq
+  The class which gets called to complete the annotation. Used in:
+
+  =begin :list
+  * bin/annotate_snpfile.pl
+    Basic command line annotator function. TODO: superceede with Interface.pm
+  * bin/annotate_snpfile_socket_server.pl
+    Basic socket/multi-core annotator (one annotation instance per core, non-blocking). TODO: superceede w/ Interface.pm
+  * bin/redis_queue_server.pl
+    Multi-core/process annotation job listener. Spawns Seq jobs
+  =end :list
+=end :list
+
+Extended in: None
+
+Extends: @class Seq::Assembly
+
+Uses:
+=for :list
+* @class Seq::GenomeSizedTrackChar
+* @class Seq::KCManager
+* @class Seq::Site::Annotation
+* @class Seq::Site::Snp
+* @role Seq::Role::IO
+
+TODO: extend this description
+=cut 
+
 use Moose 2;
 use Carp qw/ croak /;
 use Path::Tiny qw/ path /;
@@ -24,14 +63,21 @@ use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::ConfigFromFile', 'Seq::Role::IO', 'MooX::Role::Logger';
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
-has genome_index_dir => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1
-);
+# TODO: remove when decide it's safe; already defined in Seq::Assembly, which this extends
+# has genome_index_dir => (
+#   is       => 'ro',
+#   isa      => 'Str',
+#   required => 1
+# );
 
+=property @private {Seq::GenomeSizedTrackChar<Str>} _genome
+
+  The full string representation of the genome
+
+@see @class Seq::GenomeSizedTrackChar
+=cut
 has _genome => (
   is       => 'ro',
   isa      => 'Seq::GenomeSizedTrackChar',
@@ -57,6 +103,7 @@ has _genome_scores => (
   builder => '_load_scores',
 );
 
+#TODO: should this also be of Seq::GenomeSizedTrackChar type constraint?
 has _genome_cadd => (
   is      => 'ro',
   isa     => 'ArrayRef',
@@ -203,6 +250,8 @@ sub _load_cadd_score {
   # index dir
   my $index_dir = $self->genome_index_dir;
 
+  #TODO: ??kotlar should we allow this to be set by the user. There may be cadd-like scores that define transition states
+  # and therefore use more than 1 binary genome-sized track
   for my $i ( 0 .. 2 ) {
 
     # idx file
@@ -332,6 +381,7 @@ sub _load_genome {
   }
 }
 
+#TODO: can this be combiend with the CADD type, since that is also a genome sized track?
 sub _load_scores {
   my $self = shift;
   my @score_tracks;

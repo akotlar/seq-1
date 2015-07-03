@@ -6,6 +6,29 @@ package Seq::Role::IO;
 
 # ABSTRACT: A moose role for all of our file handle needs
 # VERSION
+=head1 DESCRIPTION
+  
+  @role Seq::Role::IO
+  #TODO: Check description
+
+  @example with 'Seq::Role::IO'
+
+Used in:
+=for :list
+* Seq/Build/GeneTrack.pm
+* Seq/Build/GenomeSizedTrackStr.pm
+* Seq/Build/SnpTrack.pm
+* Seq/Build/TxTrack.pm
+* Seq/Build.pm
+* Seq/Fetch/Sql.pm
+* Seq/GenomeSizedTrackChar.pm
+* Seq/KCManager.pm
+* Seq/Role/ConfigFromFile.pm
+* Seq
+
+Extended by: None
+
+=cut
 
 use Moose::Role;
 

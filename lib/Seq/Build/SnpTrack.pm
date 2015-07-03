@@ -5,6 +5,23 @@ use warnings;
 package Seq::Build::SnpTrack;
 # ABSTRACT: Builds a snp track using dbSnp data, derived from UCSC
 # VERSION
+=head1 DESCRIPTION
+  
+  @class Seq::Build::SnpTrack
+
+  #TODO: Check description
+  A single-function, no public property class, which inserts type: snp SparseTrack records into a database. 
+  Currently the snp data comes from dbSNP.
+
+  @example  my $snp_db = Seq::Build::SnpTrack->new($record);
+
+Used in:
+=for :list
+* Seq::Build
+
+Extended by: None
+
+=cut
 
 use Moose 2;
 

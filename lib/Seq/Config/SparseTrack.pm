@@ -2,7 +2,9 @@ use 5.10.0;
 use strict;
 use warnings;
 
-=head1 @class Seq::Config::SparseTrack 
+=head1 DESCRIPTION
+
+  @class B<Seq::Config::SparseTrack>
  
   Base class that decorates @class Seq::Build sql statements (@method sql_statement), and performs feature formatting
 

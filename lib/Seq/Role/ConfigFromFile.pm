@@ -5,6 +5,23 @@ use warnings;
 package Seq::Role::ConfigFromFile;
 # ABSTRACT: A moose role for configuring a class from a YAML file
 # VERSION
+=head1 DESCRIPTION
+  
+  @role Seq::Role::ConfigFromFile 
+  #TODO: Check description
+
+  @example with 'Seq::Role::ConfigFromFile'
+
+Used in:
+=for :list
+* Seq::Annotate
+* Seq::Assembly
+* Seq::Fetch
+
+Extended by: None
+
+=cut
+
 
 use Moose::Role 2;
 use MooseX::Types::Path::Tiny qw/ Path /;

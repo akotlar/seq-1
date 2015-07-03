@@ -5,6 +5,24 @@ use warnings;
 package Seq::Build::GeneTrack;
 # ABSTRACT: Builds Gene Tracks and places into MongoDB instance.
 # VERSION
+=head1 DESCRIPTION 
+
+  @class B<Seq::Build::GeneTrack>
+  
+  TODO: Describe
+
+Used in: 
+
+=for :list
+* Seq::Build: 
+* Seq::Config::SparseTrack
+    The base class for building, annotating sparse track features. 
+    Used by @class Seq::Assembly, . 
+    Extended by @class Seq::Build::SparseTrack, @class Seq::Fetch::Sql,
+
+Extended in: None
+
+=cut
 
 use Moose 2;
 

@@ -5,6 +5,26 @@ use warnings;
 package Seq::Assembly;
 # ABSTRACT: A class for assembly information
 # VERSION
+=head1 DESCRIPTION
+  
+  @class B<Seq::Assembly>
+  #TODO: Check description
+  
+  @example
+
+Used in: None
+
+Extended by:
+=for :list
+* Seq::Annotate
+* Seq::Build
+
+Uses:
+=for :list
+* Seq::Config::GenomeSizedTrack
+* Seq::Config::SparseTrack
+
+=cut
 
 use Moose 2;
 
@@ -18,10 +38,26 @@ use Seq::Config::SparseTrack;
 
 with 'Seq::Role::ConfigFromFile';
 
+my $attributes = my qw/ genome_name genome_description genome_chrs genome_index_dir
+      genome_hasher genome_scorer debug wanted_chr genome_db_dir debug/;
+
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_db_dir      => ( is => 'ro', isa => 'Str', required => 1, );
+
+=property @public {Str} genome_index_dir
+  
+  The path (relative or absolute) to the index folder, which contains the binary reference genome file, chr offset file,
+  the 'gene' type database (current extension .kch, but could be any, like .dbm, depending on the database engine used),
+  binary 'score' type sparse_track files, 'score' type offset files, and 'cadd' type binary spare_track files.
+
+  Defined in the required input yaml config file, as a key : value pair, and is injected automatically by
+  @role Seq::Role::ConfigFromFile
+
+@example genome_index_dir: ./hg38/index
+=cut
 has genome_index_dir   => ( is => 'ro', isa => 'Str', required => 1, );
+
 has genome_chrs        => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
@@ -56,11 +92,18 @@ has gene_tracks => (
     add_gene_track  => 'push',
   },
 );
+=property @public dbm_dry_run
+
+  Deprecated: If you just wanted to test annotation without the database engine locally installed.
+  Allowed you to skup writing a (KyotoCabinet or BerkleyDB) file. For testing.
+
+=cut
 has dbm_dry_run => (
   is      => 'ro',
   isa     => 'Bool',
   default => 0,
 );
+
 has debug => (
   is      => 'ro',
   isa     => 'Bool',
@@ -114,10 +157,7 @@ sub BUILDARGS {
         croak sprintf( "unrecognized genome track type %s\n", $gst->{type} );
       }
     }
-    for my $attrib (
-      qw/ genome_name genome_description genome_chrs genome_index_dir
-      genome_hasher genome_scorer debug wanted_chr genome_db_dir debug/
-      )
+    for my $attrib ($attributes)
     {
       $hash{$attrib} = $href->{$attrib};
     }

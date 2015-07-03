@@ -5,6 +5,21 @@ use warnings;
 package Seq::KCManager;
 # ABSTRACT: Manages KyotoCabinet db
 # VERSION
+=head1 DESCRIPTION
+  
+  @class B<Seq::KCManager>
+  #TODO: Check description
+
+  @example
+
+Used in:
+=for :list
+* Seq::Annotate
+* Seq::Build::GeneTrack
+
+Extended by: None
+
+=cut
 
 use Moose 2;
 use Moose::Util::TypeConstraints;

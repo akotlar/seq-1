@@ -5,6 +5,20 @@ use warnings;
 package Seq::Build::TxTrack;
 # ABSTRACT: Builds Gene Tracks and places into BerkeleyDB instance.
 # VERSION
+=head1 DESCRIPTION
+  
+  @class Seq::Build::TxTrack
+  #TODO: Check description
+
+  @example
+
+Used in:
+=for :list
+* Seq::Build
+
+Extended by: None
+
+=cut
 
 use Moose 2;
 

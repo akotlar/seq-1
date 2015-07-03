@@ -6,6 +6,19 @@ package Seq;
 
 # ABSTRACT: A class for kickstarting building or annotating things
 # VERSION
+=head1 DESCRIPTION
+  
+  @class B<Seq>
+  #TODO: Check description
+  From where all annotation originates
+  
+  @example
+
+Used in: None
+
+Extended by: None
+
+=cut
 
 use Moose 2;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;

@@ -1,5 +1,18 @@
 package Seq::Fetch::Files;
+=head1 DESCRIPTION
+  
+  @class Seq::Fetch::Files
+  #TODO: Check description
 
+  @example
+
+Used in:
+=for :list
+* Seq::Fetch
+
+Extended by: None
+
+=cut
 use 5.10.0;
 use Carp;
 use File::Path;
