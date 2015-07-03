@@ -22,6 +22,7 @@ Extended by: None
 
 use Moose 2;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
+use Path::Tiny;
 
 use Carp qw/ croak /;
 use Cpanel::JSON::XS;
@@ -54,7 +55,8 @@ has out_file => (
   isa      => AbsPath,
   coerce   => 1,
   required => 0,
-  handles  => { out_file_path => 'stringify' }
+  predicate => 'has_out_file',
+  handles  => { output_path => 'stringify' }
 );
 
 has debug => (
@@ -391,24 +393,15 @@ filepath, if directory use some sensible default
 
 sub _build_out_fh {
   my $self        = shift;
-  my $output_path = $self->out_file_path;
-
-  # TODO: make the sensible default based on the input file name
-  if ($output_path) {
-    if ( $self->out_file->is_file ) {
-      return $self->get_write_bin_fh($output_path);
-    }
-    elsif ( $self->out_file->is_dir )
-      # TODO: Alex, can you clarify what you meant here?
-      #   this is actually the only option, but only if we specify AbsPath type,
-      #   and this is fragile
-    {
-      my $output_path = $self->out_file->child( "SeqantOutput." . time )->stringify;
-
-      return $self->get_write_bin_fh($output_path);
-    }
+  
+  if(!$self->has_out_file)
+  {
+    say "Did not find a file or directory path in Seq.pm _build_out_fh" if $self->debug;
+    return \*STDOUT;
   }
-  return \*STDOUT;
+
+  #can't use is_file or is_dir check before file made, unless it alraedy exists
+  return $self->get_write_bin_fh($self->output_path);
 }
 
 sub _get_annotator {
