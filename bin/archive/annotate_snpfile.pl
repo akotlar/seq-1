@@ -77,7 +77,6 @@ try
     {
       configfile    => $yaml_config,
       debug         => $debug,
-      genome_db_dir => $db_dir,
       out_file      => $out_file,
       snpfile       => $snpfile,
     }

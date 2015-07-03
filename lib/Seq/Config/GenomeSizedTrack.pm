@@ -491,14 +491,14 @@ sub _validate_feature_score_range
   #TODO: set range for genome_scorer.c and Seq package from single config.
   unless($self->score_R < 256 and $self->score_R >= 5)
   {
-    $self->_logger->error("FATAL ERROR: We believe score_R must be within 5 - 255, check genome_scorer.c for current range");
+    #$self->_logger->error("FATAL ERROR: We believe score_R must be within 5 - 255, check genome_scorer.c for current range");
     croak("FATAL ERROR: We believe score_R must be within 5 - 255, check genome_scorer.c for current range");
   }
 
   if($self->score_min == 0 and $self->score_max == 0)
   {
     warn "score_min and score_max are 0";
-    $self->_logger->warn("score_min and score_max are 0");
+    #$self->_logger->warn("score_min and score_max are 0");
   }
 }
 

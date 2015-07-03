@@ -38,6 +38,9 @@ package Seq::Config::SparseTrack;
 use Moose 2;
 use Moose::Util::TypeConstraints;
 use Carp qw/ croak /;
+#TODO: kotlar: I think we could use MooseX::Types::Path::Tiny qw/AbsFile AbsPath AbsDir/;
+# because this will allow us to automatically check whether the dir/file exists
+# If we wish to use a more duck-typing approach, Str is fine
 
 use namespace::autoclean;
 
@@ -83,9 +86,12 @@ has features => (
 );
 
 # file information
-has genome_index_dir => ( is => 'ro', isa => 'Str', );
-has local_dir        => ( is => 'ro', isa => 'Str', required => 1, );
-has local_file       => ( is => 'ro', isa => 'Str', required => 1, );
+#TODO: kotlar: By not checkign the file system here, we couple SparseTrack and GenomeSizedTrack to Assembly.pm.
+# since this is really where genome_index_dir is held for all other classes, we should explicitly 
+# check things here not in Annotate.pm
+has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1 );
+has local_dir        => ( is => 'ro', isa => 'Str', required => 1 );
+has local_file       => ( is => 'ro', isa => 'Str', required => 1 );
 
 =function sql_statement (private,)
   

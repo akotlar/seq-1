@@ -32,6 +32,7 @@ use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 use Scalar::Util qw/ reftype /;
 use YAML::XS qw/ Load /;
+use DDP;
 
 with 'Seq::Role::IO', 'MooseX::Getopt';
 
@@ -59,6 +60,12 @@ sub new_with_config {
   }
   else {
     croak "new_with_config() expects configfile";
+  }
+
+  if($opts->{debug} )
+  {
+    say "Here are the built args from config that we have in new_with_config in ConfigFromFile.pm";
+    p %opts;
   }
 
   $class->new( \%opts );

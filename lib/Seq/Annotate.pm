@@ -182,6 +182,26 @@ has _header => (
   handles => { all_header => 'elements' },
 );
 
+=property @public {Bool} has_cadd_track
+  
+  Records whether or not we have a cadd_track.
+
+=cut
+=method set_cadd
+  
+  Delegates the Moose "set" method, which Sets the value to 1 and returns 1.
+
+=cut
+=method set_cadd
+  
+  Delegates the Moose "set" method, which Sets the value of has_cadd_track to 1 and returns 1.
+  
+=cut
+=method unset_cadd
+  
+  Delegates the Moose "unset" method, which Sets the value of has_cadd_track to 0 and returns 0.
+  
+=cut
 has has_cadd_track => (
   is      => 'rw',
   isa     => 'Bool',
@@ -196,10 +216,17 @@ has has_cadd_track => (
 sub _load_cadd {
   my $self = shift;
 
-  for my $gst ( $self->all_genome_sized_tracks ) {
-    if ( $gst->type eq 'cadd' ) {
+  for my $gst ( $self->all_genome_sized_tracks ) 
+  {
+    if ( $gst->type eq 'cadd' ) 
+    {
       $self->set_cadd;
       return $self->_load_cadd_score($gst);
+    }
+    else
+    {
+      #without this line, _genome_cadd fails type constraint
+      return [];
     }
   }
   $self->unset_cadd;
@@ -294,6 +321,14 @@ sub _load_cadd_score {
     $self->_logger->info("read cadd track ($genome_length) from $idx_name");
   }
   $self->set_cadd;
+
+  if($self->debug)
+  {
+    say "Got to the end of _load_cadd_score. Here is our cadd_scores array";
+    p @cadd_scores;
+  }
+  
+
   return \@cadd_scores;
 }
 
@@ -622,6 +657,10 @@ sub get_snp_annotation {
   if ( $self->has_cadd_track ) {
     $record->{cadd} =
       $self->get_cadd_score( $abs_pos, $ref_site_annotation->{ref_base}, $new_base );
+  }
+  else
+  {
+    say "We don't have a cadd track" if $self->debug;
   }
 
   for my $attr (@header) {

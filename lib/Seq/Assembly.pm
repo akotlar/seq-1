@@ -28,7 +28,7 @@ Uses:
 
 use Moose 2;
 
-use Carp qw/ croak /;
+use Carp qw/ croak confess/;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use Path::Tiny qw/ path /;
@@ -40,18 +40,13 @@ use DDP;
 
 with 'Seq::Role::ConfigFromFile';
 
+#TODO: kotlar; I removed genome_db_dir, since what we really want is genome_index_dir, and that is already required
 my @_attributes = qw/ genome_name genome_description genome_chrs genome_index_dir
-      genome_hasher genome_scorer debug wanted_chr genome_db_dir debug/;
-has _attributes => (
-  is => 'ro',
-  isa => 'ArrayRef',
-  init_arg => undef,
-  default => sub{return \@_attributes}
-);
+      genome_hasher genome_scorer debug wanted_chr debug/; #removed genome_db_dir
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_db_dir      => ( is => 'ro', isa => 'Str', required => 1, );
+#has genome_db_dir      => ( is => 'ro', isa => 'Str', required => 1, );
 
 =property @public {Str} genome_index_dir
   
@@ -61,7 +56,8 @@ has genome_db_dir      => ( is => 'ro', isa => 'Str', required => 1, );
 
   Defined in the required input yaml config file, as a key : value pair, and is injected automatically by
   @role Seq::Role::ConfigFromFile
-
+  
+  This is really a directory, and so is checked in Seq::Annotate::BUILDARGS
 @example genome_index_dir: ./hg38/index
 =cut
 has genome_index_dir   => ( is => 'ro', isa => 'Str', required => 1, );
@@ -129,17 +125,30 @@ sub BUILDARGS {
     my %hash;
 
     # to avoid subtle chdir issues in a multi-user env, just make the genome_index_dir correct from the getgo
-    $href->{genome_index_dir} =
-      path( $href->{genome_index_dir} )->absolute( $href->{genome_db_dir} );
+    # $href->{genome_index_dir} =
+    #   path( $href->{genome_index_dir} )->absolute( $href->{genome_db_dir} );
     # makes or returns undef, errors are trapped & exception thrown on error
     # TODO: you're 100% right but this can be a bit cryptic when it happens ... i.e., how can the error msg
     #       be helpful to the user?
-    $href->{genome_index_dir}->mkpath;
+
+    # genome_db_dir is not needed here, since ->absolute will already use the cwd, which is changed into using
+    # -l | --location | genome_db_dir by functions that call Assembly.pm
+    $href->{genome_index_dir} = path( $href->{genome_index_dir} )->absolute; 
+
+    if(!$href->{genome_index_dir}->is_dir)
+    {
+      confess("genome_index_dir is a file!!") if $href->{genome_index_dir}->is_file;
+      $href->{genome_index_dir}->mkpath or confess("Sorry, making the directory genome_index_dir failed!!");
+    }
+    
     $href->{genome_index_dir} = $href->{genome_index_dir}->stringify;
 
+    say "The absolute genome_index_dir path is " .$href->{genome_index_dir} if $href->{debug};
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) 
     {
       $sparse_track->{genome_name} = $href->{genome_name};
+      #kotlar: subtle bug, Seq::Config::SparseTrack wasn't requiring genome_index_dir
+      $sparse_track->{genome_index_dir} = $href->{genome_index_dir};
       if ( $sparse_track->{type} eq "gene" ) {
         push @{ $hash{gene_tracks} }, Seq::Config::SparseTrack->new($sparse_track);
       }
@@ -164,6 +173,8 @@ sub BUILDARGS {
           p $gst;
         }
         push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
+
+        say "We got past Seq::Config::GenomeSizedTrack instantiation" if $href->{debug};
       }
       # elsif ( $gst->{type} eq 'cadd' ) {
       #   $gst->{genome_chrs}      = $href->{genome_chrs};
@@ -174,9 +185,8 @@ sub BUILDARGS {
         croak sprintf( "unrecognized genome track type %s\n", $gst->{type} );
       }
     }
-    for my $attrib (@{$href->{_attributes} } )
+    for my $attrib (@_attributes )
     {
-      say "Attrib is ". $attrib;
       $hash{$attrib} = $href->{$attrib};
     }
     return $class->SUPER::BUILDARGS( \%hash );
