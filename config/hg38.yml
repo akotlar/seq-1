@@ -1,7 +1,10 @@
 # hg38 annotated with UCSC knownGene, snp141, phastCons and phyloP
 #
 # special commands:
+#  _add_file    => >>
 #  _asterisk    => *
+#  _chr         => specific chr (e.g., chr1..chrY)
+#  _dir         => type
 #  _gene_fields => $gene_fields_str
 #  _snp_fields  => $snp_fields_str
 #
@@ -29,7 +32,6 @@ genome_chrs:
   - chr18
   - chr19
   - chr20
-  - chr22
   - chr21
   - chr22
   - chrM
@@ -37,12 +39,12 @@ genome_chrs:
   - chrY
 genome_raw_dir: ./hg38/raw
 genome_index_dir: ./hg38/index
-genome_db_dir: /Users/alex/Documents/seqant_databases
 
+# sparse tracks
 sparse_tracks:
   - type: gene
-    local_dir: /ssd/twingo/sandbox/hg38/raw/gene
-    local_file: hg38.knownGene.txt
+    local_dir: ./hg38/raw/gene
+    local_file: hg38.txt
     name: knownGene
     sql_statement: SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name
     features:
@@ -55,31 +57,23 @@ sparse_tracks:
       - description
       - rfamAcc
   - type: snp
-    local_dir: /ssd/twingo/sandbox/hg38/raw/snp
-    local_file: hg38.snp141.txt
+    local_dir: ./hg38/raw/snp/
+    local_file: hg38.txt
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141
     features:
       - name
-      - alleleFreqCount
-      - alleles
-      - alleleFreqs
-  - type: snp
-    local_dir: /ssd/twingo/sandbox/hg38/raw/snp
-    local_file: hg38.clinvar.txt
+  - type: clinvar
+    local_dir: ./hg38/raw/gene
+    local_file: hg38.txt
     name: clinvar
-    sql_statement: SELECT _asterisk FROM Clinvar
+    sql_statement: SELECT * FROM Clinvar
     features:
       - name
-      - ClinicalSignificance
-      - Cytogenic
-      - PhenotypeID
-      - ReviewStatus
-
 genome_sized_tracks:
   - name: hg38
     type: genome
-    local_dir: /ssd/twingo/sandbox/hg38/raw/seq
+    local_dir: ./hg38/raw/seq/
     local_files:
       - chr1.fa.gz
       - chr2.fa.gz
@@ -135,25 +129,35 @@ genome_sized_tracks:
        - chrY.fa.gz
   - name: phastCons
     type: score
-    local_dir: /ssd/twingo/sandbox/hg38/raw/phastCons
+    local_dir: ./hg38/raw/phastCons
     local_files:
-      - hg38.phastCons7way.wigFix.gz
+      - hg38.txt.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phastCons7way/
     remote_files:
       - hg38.phastCons7way.wigFix.gz
+    proc_init_cmds:
+      - split_wigFix.py _asterisk.wigFix.gz
+    proc_chrs_cmds:
+      - create_cons.py _chr _dir
+      - cat _chr._dir _add_file _dir.txt
+      - rm _chr._dir
+      - rm _chr
+    proc_clean_cmds:
+      - gzip phastCons.txt
   - name: phyloP
     type: score
-    local_dir: /ssd/twingo/sandbox/hg38/raw/phyloP
+    local_dir: ./hg38/raw/phyloP
     local_files:
-      - hg38.phyloP7way.wigFix.gz
+      - hg38.txt.gz
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP7way/
     remote_files:
       - hg38.phyloP7way.wigFix.gz
-  - name: cadd
-    type: cadd
-    local_dir: /ssd/twingo/sandbox/hg38/raw/cadd
-    local_files:
-     - hg38.cadd.gz
-    remote_dir: NA
-    remote_files:
-     - NA
+    proc_init_cmds:
+      - split_wigFix.py _asterisk.wigFix.gz
+    proc_chrs_cmds:
+      - create_cons.py _chr _dir
+      - cat _chr._dir _add_file _dir.txt
+      - rm _chr._dir
+      - rm _chr
+    proc_clean_cmds:
+      - gzip phyloP.txt

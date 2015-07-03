@@ -25,6 +25,7 @@ Extended by:
 =cut
 use Moose 2;
 
+use Carp qw/ croak /;
 use namespace::autoclean;
 
 use Seq::Build::GenomeSizedTrackStr;
@@ -80,6 +81,12 @@ has bulk_insert_threshold => (
   default => 10_000,
 );
 
+has force => (
+  is      => 'ro',
+  isa     => 'Bool',
+  default => 0,
+);
+
 sub _has_site_range_file {
   my ( $self, $file ) = @_;
   if ( -s $file ) {
@@ -119,6 +126,27 @@ sub _get_range_list {
   }
   push @pairs, join( "\t", $start, $last_site );
   return \@pairs;
+}
+
+sub _check_header_keys {
+  my ( $self, $header_href, $req_header_aref ) = @_;
+  my %missing_attr;
+  for my $req_attr (@$req_header_aref) {
+    $missing_attr{$req_attr}++ unless exists $header_href->{$req_attr};
+  }
+  if (%missing_attr) {
+
+    my $err_msg =
+      sprintf( "annotation misssing expected header information for %s %s chr %s: ",
+      $self->name, $self->type, $self->wanted_chr )
+      . join ", ", ( sort keys %missing_attr );
+    $self->_logger->error($err_msg);
+    unlink $self->dbm_file;
+    croak $err_msg;
+  }
+  else {
+    return;
+  }
 }
 
 __PACKAGE__->meta->make_immutable;

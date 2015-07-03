@@ -65,8 +65,15 @@ sub _get_gene_data {
   while ( my $line = $in_fh->getline ) {
     chomp $line;
     my @fields = split( /\t/, $line );
-    if ( $. == 1 ) {
-      map { $header{ $fields[$_] } = $_ } ( 0 .. $#fields );
+    if ( !%header ) {
+
+      %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
+
+      # do we have the required keys?
+      $self->_check_header_keys( \%header, [ keys %ucsc_table_lu ] );
+
+      # do we have the optinally specified keys?
+      $self->_check_header_keys( \%header, [ $self->all_features ] );
       next;
     }
     my %data = map { $_ => $fields[ $header{$_} ] }
@@ -102,6 +109,12 @@ sub build_gene_db_for_chr {
 
   my ( $self, $chr ) = @_;
 
+  # read gene data for the chromosome
+  #   if there is no usable data then we will bail out and not blank files
+  #   will be created
+  my $chr_data_aref = $self->_get_gene_data($chr);
+  $self->_logger->info( "finished reading data for " . $chr );
+
   # output
   my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
   make_path($index_dir) unless -f $index_dir;
@@ -132,10 +145,12 @@ sub build_gene_db_for_chr {
   # my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
   # my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
 
-  # check if we've already build site range files
-  return
-    if ( $self->_has_site_range_file($gan_file)
-    && $self->_has_site_range_file($ex_file) );
+  # check if we've already build site range files unless we are forced to overwrite
+  unless ( $self->force ) {
+    return
+      if ( $self->_has_site_range_file($gan_file)
+      && $self->_has_site_range_file($ex_file) );
+  }
 
   # 1st line needs to be value that should be added to encoded genome for these sites
   my $gan_fh = $self->get_write_fh($gan_file);
@@ -144,11 +159,6 @@ sub build_gene_db_for_chr {
   say {$ex_fh} $self->in_exon_val;
   # my $gene_region_fh = $self->get_write_fh($gene_region_file);
   # say {$gene_region_fh} $self->in_gene_val;
-
-  # this is an array of hashes
-  my $chr_data_aref = $self->_get_gene_data($chr);
-
-  $self->_logger->info( "finished reading data for " . $chr );
 
   for my $gene_href (@$chr_data_aref) {
 

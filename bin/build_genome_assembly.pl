@@ -20,8 +20,8 @@ use Seq::Build;
 my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help,
   $wanted_chr );
 
-my $genome_hasher_bin = './genome_hasher';
-my $genome_scorer_bin = './genome_scorer';
+my $genome_hasher_bin = './bin/genome_hasher';
+my $genome_scorer_bin = './bin/genome_scorer';
 
 # cmd to method
 my %cmd_2_method = (
