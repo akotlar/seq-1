@@ -424,6 +424,10 @@ sub _load_genome_sized_track {
   # read yml chr offsets
   my $chr_len_href = LoadFile($yml_file);
 
+  if($self->debug)
+  {
+    say "Do we have genome_chrs ? : " . !!$self->genome_chrs;
+  }
   my $obj = Seq::GenomeSizedTrackChar->new(
     {
       name          => $gst->name,

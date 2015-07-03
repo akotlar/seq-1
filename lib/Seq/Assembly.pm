@@ -36,6 +36,8 @@ use Path::Tiny qw/ path /;
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
 
+use DDP;
+
 with 'Seq::Role::ConfigFromFile';
 
 my @_attributes = qw/ genome_name genome_description genome_chrs genome_index_dir
@@ -135,7 +137,8 @@ sub BUILDARGS {
     $href->{genome_index_dir}->mkpath;
     $href->{genome_index_dir} = $href->{genome_index_dir}->stringify;
 
-    for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
+    for my $sparse_track ( @{ $href->{sparse_tracks} } ) 
+    {
       $sparse_track->{genome_name} = $href->{genome_name};
       if ( $sparse_track->{type} eq "gene" ) {
         push @{ $hash{gene_tracks} }, Seq::Config::SparseTrack->new($sparse_track);
@@ -147,11 +150,19 @@ sub BUILDARGS {
         croak sprintf( "unrecognized genome track type %s\n", $sparse_track->{type} );
       }
     }
-    for my $gst ( @{ $href->{genome_sized_tracks} } ) {
+    for my $gst ( @{ $href->{genome_sized_tracks} } ) 
+    {
       if ( $gst->{type} eq 'genome' or $gst->{type} eq 'score' or $gst->{type} eq 'cadd' )
       {
         $gst->{genome_chrs}      = $href->{genome_chrs};
         $gst->{genome_index_dir} = $href->{genome_index_dir};
+
+        if($href->{debug})
+        {
+          say "We are in the " .$gst->{type}." portion of the loop";
+          say "Here is what we are passing to Seq::Config::GenomeSizedTrack";
+          p $gst;
+        }
         push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
       }
       # elsif ( $gst->{type} eq 'cadd' ) {
@@ -165,6 +176,7 @@ sub BUILDARGS {
     }
     for my $attrib (@{$href->{_attributes} } )
     {
+      say "Attrib is ". $attrib;
       $hash{$attrib} = $href->{$attrib};
     }
     return $class->SUPER::BUILDARGS( \%hash );
