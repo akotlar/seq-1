@@ -122,12 +122,8 @@ int main(int argc, char *argv[])
 
   if( (filelist = fopen(argv[2],"r")) == (FILE *)NULL)
   {
-    printf("\nCan't open %s for reading \n",argv[2]);
+    printf("\n Can't open %s for reading \n",argv[2]);
     exit(1);
-  }
-  else
-  {
-    printf("\nOpened %s for reading.\n", argv[2]);
   }
 
   fgets(sss,4095,filelist);
@@ -142,7 +138,7 @@ int main(int argc, char *argv[])
 	 used[i]   = 0;
 
   /*
-   * these are acceptable codes - recall powers of 2 allow bitwise or comparisons
+   * these are acceptable codes - powers of 2 and allow bitwise or comparisons
    */
   used[8]   = 1;
   used[16]  = 1;
@@ -156,12 +152,8 @@ int main(int argc, char *argv[])
     token = strtok(sss," \n\t");
     if( (thisfile = fopen(token,"r")) == (FILE *)NULL)
     {
-      printf("\nCan't open %s for reading.\n",token);
+      printf("\n Can't open %s for reading \n",token);
       exit(1);
-    }
-    else
-    {
-      printf("\nOpened %s for reading...", token);
     }
     fgets(sss,4095,thisfile);
     int this_add = (char)atoi(sss);
@@ -175,7 +167,6 @@ int main(int argc, char *argv[])
     {
   		printf("\n You gave a value of %d which is not a power of 2. \n",this_add);
     }
-    
     // initially, I thought we'd only have one file per annotation type, but it
     // tunred out to make more sense that there are multiple files per site type
     // so turning off setting the 'used' flag.
@@ -219,7 +210,6 @@ int main(int argc, char *argv[])
   	  len2 = strlen(sss);
     }
     fclose(thisfile);
-    printf(" done.\n");
 
     sss[0] = '\0';
     if(!feof(filelist))

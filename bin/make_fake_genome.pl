@@ -91,14 +91,8 @@ else {
 
 # read config file, setup names for genome and chrs
 my $config_href = LoadFile($config_file) || croak "cannot load $config_file: $!";
-
-my $genome    = $config_href->{genome_name};
-my $chrs_aref = $config_href->{genome_chrs};
-
-unless ( $genome and $chrs_aref ) {
-  say "cannot determine genome and/or chromosomes of genome from: $config_file";
-  exit(1);
-}
+my $genome      = $config_href->{genome_name};
+my $chrs_aref   = $config_href->{genome_chrs};
 
 # choose gene and snp track names
 my ( $gene_track_name, $snp_track_name );
@@ -110,11 +104,6 @@ for my $track ( @{ $config_href->{sparse_tracks} } ) {
     $snp_track_name = $track->{name};
   }
   last if ( $gene_track_name && $snp_track_name );
-}
-
-unless ( $gene_track_name and $snp_track_name ) {
-  say "cannot determine gene and snp track names from: $config_file";
-  exit(1);
 }
 
 # setup UCSC connection

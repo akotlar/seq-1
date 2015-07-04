@@ -5,21 +5,6 @@ use warnings;
 package Seq::Site;
 # ABSTRACT: Base class for seralizing all sites.
 # VERSION
-=head1 DESCRIPTION
-  
-  @class B<Seq::Site>
-  #TODO: Check description
-
-  @example
-
-Used in: None
-
-Extended in:
-=for :list
-* Seq::Site::Gene
-* Seq::Site::Snp
-
-=cut
 
 use Moose 2;
 use Moose::Util::TypeConstraints;

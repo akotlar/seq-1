@@ -1,6 +1,4 @@
 #!perl -T
-
-#TODO: update to use Seq::GenomeSizedTrackChar instead of Seq::Build::GenomeSizedTrackChar
 use 5.10.0;
 use strict;
 use warnings;

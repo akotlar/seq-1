@@ -5,21 +5,6 @@ use warnings;
 package Seq::Role::Serialize;
 # ABSTRACT: A moose role for serializing data
 # VERSION
-=head1 DESCRIPTION
-  
-  @role B<Seq::Role::Serialize> 
-  #TODO: Check description
-
-  @example
-
-Used in:
-=for :list
-* Seq/Site/Annotation.pm 
-* Seq/Site/Snp.pm
-
-Extended by: None
-
-=cut
 
 use Moose::Role 2;
 
@@ -43,7 +28,7 @@ sub as_href_with_NAs {
     #  say join( ". .", $name, $type_constraint );
     #  say "this attrib: " . $attr->name . " has value: ";
     #  p $self->$name;
-    if ( defined $self->$name ) {
+    if ( $attr->has_value($self) && $self->$name ) {
       if ( $type_constraint eq 'HashRef' ) {
         map { $obj{"$name.$_"} = $self->$name->{$_} } keys %{ $self->$name };
       }
