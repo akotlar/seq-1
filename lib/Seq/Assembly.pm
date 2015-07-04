@@ -143,7 +143,7 @@ sub BUILDARGS {
         my $err_msg =
           sprintf( "ERROR: '%s' exists and is a file.", $href->{genome_index_dir} );
         warn $err_msg . "\n";
-        $self->_logger->error($err_is_a_file);
+        $class->_logger->error($err_msg);
         exit 1;
       }
 
@@ -152,7 +152,7 @@ sub BUILDARGS {
         my $err_msg = sprintf( "ERROR: failed to create genome_index_dir: '%s'",
           $href->{genome_index_dir} );
         warn $err_msg . "\n";
-        $self->_logger->error($err_msg);
+        $class->_logger->error($err_msg);
         exit 1;
       }
     }
@@ -163,7 +163,7 @@ sub BUILDARGS {
       my $msg =
         sprintf( "The absolute genome_index_dir path is %s", $href->{genome_index_dir} );
       say $msg;
-      $self->_logger->info($msg);
+      $class->_logger->info($msg);
     }
 
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
