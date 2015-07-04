@@ -6,6 +6,31 @@ package Seq::Site::Annotation;
 # ABSTRACT: Class for seralizing annotation sites
 # VERSION
 
+=head1 DESCRIPTION
+
+  @class B<Seq::Site::Annotation>
+  
+  TODO: Check description
+  Annotation - specific class, that defines the categories of things we output in our annotation (column headers),
+
+
+Used in:
+
+=begin :list 
+* @class Seq::Annotate
+    Which is used in:
+
+    =begin :list
+    * bin/annotate_ref_site.pl
+    * bin/read_genome_with_dbs.pl
+    * @class Seq
+    =end :list  
+=end :list
+
+Extended in: None 
+
+=cut
+
 use Moose 2;
 use Moose::Util::TypeConstraints;
 
@@ -15,9 +40,17 @@ my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_s
   codon_number codon_position ref_aa_residue error_code alt_names
   genotype new_codon_seq new_aa_residue annotation_type );
 
-extends extends 'Seq::Site::Gene';
+extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
 
+=type non_missing_base_type<Str> 
+  
+  Type constraint that allows only @values 'A','C','G','T' 
+
+  This excludes N, which is coded as a 0 {Char} @value 
+    @see Seq::Config::GenomeSizedTrack @variable %base_char_2_txt
+
+=cut
 enum non_missing_base_types => [qw( A C G T )];
 
 has minor_allele => (
@@ -55,11 +88,40 @@ sub BUILD {
   $self->annotation_type;
 }
 
+=method @private _set_new_codon_seq 
+
+  Sets the value of new_codon_seq; used in @class Seq::Site::Annotation @method @private _set_annotation_type
+  to call codon Silent, Replacement, or Non-Coding if non-reference
+
+@requires:
+
+=for :list
+* @property {Int|undef} $self->codon_position
+  declared in @class Seq::Site::Gene  
+    Seq::Site::Gene also used in @class Seq::Gene
+      Seq::Gene is used by @class Seq::Build::GeneTrack && @class Seq::Build::TxTrack
+
+* @property {Str|undef} $self->ref_codon_seq
+  declared in @classSeq::Site::Gene  
+
+* @property {non_missing_base_types} $self->minor_allele : 
+
+@returns {Str|void}
+
+=cut
+
+=type {Str} non_missing_base_types 
+  
+  Custom Str type, enforced by Moose::Util::TypeConstraints. Defines non-ambiguous, non-heterozygote base codes
+
+@values 'A','C','G' or 'T'
+
+=cut
 sub _set_new_codon_seq {
   my $self      = shift;
   my $new_codon = $self->ref_codon_seq;
   if ($new_codon) {
-    substr( $new_codon, ( $self->codon_position ), 1, $self->minor_allele );
+    substr( $new_codon, ( $self->codon_position ), 1, $self->minor_allele );  
     return $new_codon;
   }
   else {
@@ -67,11 +129,38 @@ sub _set_new_codon_seq {
   }
 }
 
+=method @private _set_new_aa_residue
+  
+  Takes the $new_codon (held in property new_codon_seq), and returns the corresponding single-letter amino acid code
+
+@requires:
+
+=for :list
+* @property {Str|undef} $self->new_codon_seq (optional)
+* @method $self->codon_2_aa 
+    Defined in Seq::Site::Gene
+
+@returns {Str|undef} 
+=cut
 sub _set_new_aa_residue {
   my $self = shift;
   return $self->codon_2_aa( $self->new_codon_seq );
 }
 
+=method @private _set_annotation_type
+    
+    Takes the single-letter amino acid code if present
+
+@requires:
+
+=for :list
+* @property {Str} $self->new_aa_residue
+* @property {Str} $self->new_aa_residue 
+    Defined in @class Seq::Site::Gene
+
+@returns {Str} @values 'Silent', 'Replacement', 'Non-Coding'
+
+=cut
 sub _set_annotation_type {
   my $self = shift;
   if ( $self->new_aa_residue ) {
@@ -87,6 +176,13 @@ sub _set_annotation_type {
   }
 }
 
+=method @override @public serializable_attributes
+  
+  Overloads the serializable_attributes sub found in Seq::Site::Gene and required by @role Seq::Role::Serialize
+
+@returns {Array<String>}
+
+=cut
 override seralizable_attributes => sub {
   return @attributes;
 };

@@ -6,9 +6,23 @@ package Seq;
 
 # ABSTRACT: A class for kickstarting building or annotating things
 # VERSION
+=head1 DESCRIPTION
+  
+  @class B<Seq>
+  #TODO: Check description
+  From where all annotation originates
+  
+  @example
+
+Used in: None
+
+Extended by: None
+
+=cut
 
 use Moose 2;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
+use Path::Tiny;
 
 use Carp qw/ croak /;
 use Cpanel::JSON::XS;
@@ -41,7 +55,8 @@ has out_file => (
   isa      => AbsPath,
   coerce   => 1,
   required => 0,
-  handles  => { out_file_path => 'stringify' }
+  predicate => 'has_out_file',
+  handles  => { output_path => 'stringify' }
 );
 
 has debug => (
@@ -63,6 +78,7 @@ has messageChannelHref => (
 has _message_publisher => (
   is       => 'ro',
   required => 0,
+  lazy     => 1,
   init_arg => undef,
   builder  => '_build_message_publisher',
   handles  => { _publishMessage => 'publish' }
@@ -154,6 +170,14 @@ B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
 sub annotate_snpfile {
   my $self = shift;
 
+  if($self->debug)
+  {
+    say "The self meta is (checking to see how has_method works:";
+    p $self->meta;
+
+    say "Does this object have method no_del_sites: " . !!$self->meta->has_method('no_del_sites');
+  }
+  
   croak "specify a snpfile to annotate\n" unless $self->snpfile_path;
 
   $self->_logger->info("about to load annotation data");
@@ -162,7 +186,6 @@ sub annotate_snpfile {
   if ( $self->wants_to_publish_messages ) {
     $self->_publish_message("about to load annotation data");
   }
-  $self->_publish_message("about to load annotation data");
   # $self->_logger->info("about to load annotation data");
   my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
 
@@ -370,24 +393,15 @@ filepath, if directory use some sensible default
 
 sub _build_out_fh {
   my $self        = shift;
-  my $output_path = $self->out_file_path;
-
-  # TODO: make the sensible default based on the input file name
-  if ($output_path) {
-    if ( $self->out_file->is_file ) {
-      return $self->get_write_bin_fh($output_path);
-    }
-    elsif ( $self->out_file->is_dir )
-      # TODO: Alex, can you clarify what you meant here?
-      #   this is actually the only option, but only if we specify AbsPath type,
-      #   and this is fragile
-    {
-      my $output_path = $self->out_file->child( "SeqantOutput." . time )->stringify;
-
-      return $self->get_write_bin_fh($output_path);
-    }
+  
+  if(!$self->has_out_file)
+  {
+    say "Did not find a file or directory path in Seq.pm _build_out_fh" if $self->debug;
+    return \*STDOUT;
   }
-  return \*STDOUT;
+
+  #can't use is_file or is_dir check before file made, unless it alraedy exists
+  return $self->get_write_bin_fh($self->output_path);
 }
 
 sub _get_annotator {
@@ -417,7 +431,7 @@ sub _publish_message {
   my ( $self, $message ) = @_;
 
   # TODO: check performance of the array merge benefit is indirection, cost may be too high?
-  $self->_publishMessage( $self->channelInfo('messageChannel'),
+  $self->publish( $self->channelInfo('messageChannel'),
     encode_json( { %{ $self->channelInfo('recordLocator') }, message => $message } ) );
 }
 

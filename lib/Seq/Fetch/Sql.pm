@@ -1,5 +1,19 @@
 package Seq::Fetch::Sql;
+# ABSTRACT: Class for managing mysql database connections, with convenience functions for querying & inserting records
+=head1 DESCRIPTION
+  
+  @class Seq::Fetch::Sql
+  #TODO: Check description
 
+  @example
+
+Used in:
+=for :list
+* Seq::Fetch
+
+Extended by: None
+
+=cut
 use 5.10.0;
 use Carp;
 use Cwd;
@@ -34,6 +48,19 @@ has password => ( is => 'ro', isa => 'Str', );
 has port     => ( is => 'ro', isa => 'Int', );
 has socket   => ( is => 'ro', isa => 'Str', );
 
+=method @public sub dbh
+
+  Build database object, and return a handle object  
+
+Called in: none
+
+@params:
+
+@return {DBI}
+  A connection object
+
+#TODO: either finish the annotation or remove the package.
+=cut
 sub dbh {
   my $self = shift;
   my $dsn  = $self->dsn;

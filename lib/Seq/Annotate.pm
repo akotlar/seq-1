@@ -7,6 +7,45 @@ package Seq::Annotate;
 # ABSTRACT: Builds a plain text genome used for binary genome creation
 # VERSION
 
+=head1 DESCRIPTION Seq::Annotate
+ 
+  Contains helper functions for genome annotation. 
+
+Used in:
+
+=begin :list 
+* bin/annotate_ref_site.pl
+* bin/read_genome_with_dbs.pl
+* @class Seq::Config::GenomeSizedTrack
+* @class Seq::Site::Annotation
+* @class Seq
+  The class which gets called to complete the annotation. Used in:
+
+  =begin :list
+  * bin/annotate_snpfile.pl
+    Basic command line annotator function. TODO: superceede with Interface.pm
+  * bin/annotate_snpfile_socket_server.pl
+    Basic socket/multi-core annotator (one annotation instance per core, non-blocking). TODO: superceede w/ Interface.pm
+  * bin/redis_queue_server.pl
+    Multi-core/process annotation job listener. Spawns Seq jobs
+  =end :list
+=end :list
+
+Extended in: None
+
+Extends: @class Seq::Assembly
+
+Uses:
+=for :list
+* @class Seq::GenomeSizedTrackChar
+* @class Seq::KCManager
+* @class Seq::Site::Annotation
+* @class Seq::Site::Snp
+* @role Seq::Role::IO
+
+TODO: extend this description
+=cut 
+
 use Moose 2;
 use Carp qw/ croak /;
 use Path::Tiny qw/ path /;
@@ -24,14 +63,21 @@ use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::ConfigFromFile', 'Seq::Role::IO', 'MooX::Role::Logger';
+with 'Seq::Role::IO', 'MooX::Role::Logger';
 
-has genome_index_dir => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1
-);
+# TODO: remove when decide it's safe; already defined in Seq::Assembly, which this extends
+# has genome_index_dir => (
+#   is       => 'ro',
+#   isa      => 'Str',
+#   required => 1
+# );
 
+=property @private {Seq::GenomeSizedTrackChar<Str>} _genome
+
+  The full string representation of the genome
+
+@see @class Seq::GenomeSizedTrackChar
+=cut
 has _genome => (
   is       => 'ro',
   isa      => 'Seq::GenomeSizedTrackChar',
@@ -57,6 +103,7 @@ has _genome_scores => (
   builder => '_load_scores',
 );
 
+#TODO: should this also be of Seq::GenomeSizedTrackChar type constraint?
 has _genome_cadd => (
   is      => 'ro',
   isa     => 'ArrayRef',
@@ -69,6 +116,22 @@ has _genome_cadd => (
   builder => '_load_cadd',
 );
 
+=property @private {HashRef} _cadd_lookup
+
+  Defines delegate @method @public get_cadd_index
+
+=cut
+
+=method get_cadd_index
+  
+  Delegate on behalf of @param _cadd_lookup. 
+  
+  my $key = join ":", $ref_base, $base_in_sample;
+  $self->get_cadd_index($key)
+  
+  see L<Moose::Meta::Attribute::Native::Trait::Hash> 
+
+=cut
 has _cadd_lookup => (
   is      => 'ro',
   isa     => 'HashRef',
@@ -78,6 +141,11 @@ has _cadd_lookup => (
   builder => '_build_cadd_lookup',
 );
 
+=property @public {ArrayRef<ArrayRef<Seq::KCManager>>} _cadd_lookup
+
+  Defines delegate @method @private _all_dbm_gene
+
+=cut
 has dbm_gene => (
   is      => 'ro',
   isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
@@ -114,6 +182,26 @@ has _header => (
   handles => { all_header => 'elements' },
 );
 
+=property @public {Bool} has_cadd_track
+  
+  Records whether or not we have a cadd_track.
+
+=cut
+=method set_cadd
+  
+  Delegates the Moose "set" method, which Sets the value to 1 and returns 1.
+
+=cut
+=method set_cadd
+  
+  Delegates the Moose "set" method, which Sets the value of has_cadd_track to 1 and returns 1.
+  
+=cut
+=method unset_cadd
+  
+  Delegates the Moose "unset" method, which Sets the value of has_cadd_track to 0 and returns 0.
+  
+=cut
 has has_cadd_track => (
   is      => 'rw',
   isa     => 'Bool',
@@ -128,10 +216,17 @@ has has_cadd_track => (
 sub _load_cadd {
   my $self = shift;
 
-  for my $gst ( $self->all_genome_sized_tracks ) {
-    if ( $gst->type eq 'cadd' ) {
+  for my $gst ( $self->all_genome_sized_tracks ) 
+  {
+    if ( $gst->type eq 'cadd' ) 
+    {
       $self->set_cadd;
       return $self->_load_cadd_score($gst);
+    }
+    else
+    {
+      #without this line, _genome_cadd fails type constraint
+      return [];
     }
   }
   $self->unset_cadd;
@@ -162,8 +257,8 @@ sub get_cadd_score {
   my $key = join ":", $ref, $allele;
   my $i = $self->get_cadd_index($key);
   if ( $self->debug ) {
-    p $key;
-    p $i;
+    say "Cadd score key:"; p $key;
+    say "Cadd score index:"; p $i;
   }
   if ( defined $i ) {
     my $cadd_track = $self->_get_cadd_track($i);
@@ -182,6 +277,8 @@ sub _load_cadd_score {
   # index dir
   my $index_dir = $self->genome_index_dir;
 
+  #TODO: ??kotlar should we allow this to be set by the user. There may be cadd-like scores that define transition states
+  # and therefore use more than 1 binary genome-sized track
   for my $i ( 0 .. 2 ) {
 
     # idx file
@@ -224,6 +321,14 @@ sub _load_cadd_score {
     $self->_logger->info("read cadd track ($genome_length) from $idx_name");
   }
   $self->set_cadd;
+
+  if($self->debug)
+  {
+    say "Got to the end of _load_cadd_score. Here is our cadd_scores array";
+    p @cadd_scores;
+  }
+  
+
   return \@cadd_scores;
 }
 
@@ -311,6 +416,7 @@ sub _load_genome {
   }
 }
 
+#TODO: can this be combiend with the CADD type, since that is also a genome sized track?
 sub _load_scores {
   my $self = shift;
   my @score_tracks;
@@ -353,6 +459,10 @@ sub _load_genome_sized_track {
   # read yml chr offsets
   my $chr_len_href = LoadFile($yml_file);
 
+  if($self->debug)
+  {
+    say "Do we have genome_chrs ? : " . !!$self->genome_chrs;
+  }
   my $obj = Seq::GenomeSizedTrackChar->new(
     {
       name          => $gst->name,
@@ -518,7 +628,7 @@ sub get_snp_annotation {
     # get data; need to add new base to href to create the obj with wanted
     #   data, like proper AA substitution
     $gene_site->{minor_allele} = $new_base;
-    my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs;
+    my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs(ref $gene_site, $self->name);
 
     # merge data
     $gene_site_ann_href = $self->_join_href( $gene_site_ann_href, $gan );
@@ -547,6 +657,10 @@ sub get_snp_annotation {
   if ( $self->has_cadd_track ) {
     $record->{cadd} =
       $self->get_cadd_score( $abs_pos, $ref_site_annotation->{ref_base}, $new_base );
+  }
+  else
+  {
+    say "We don't have a cadd track" if $self->debug;
   }
 
   for my $attr (@header) {

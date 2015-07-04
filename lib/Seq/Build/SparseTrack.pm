@@ -5,7 +5,24 @@ use warnings;
 package Seq::Build::SparseTrack;
 # ABSTRACT: Base class for sparse track building
 # VERSION
+=head1 DESCRIPTION
+  
+  @class Seq::Build::SparseTrack
+  #TODO: Check description
+  A Seq::Build package specific class, used to define the disk location of the input 
+  
+  @example
 
+Used in:
+=for :list
+*
+
+Extended by:
+=for :list
+* Seq/Build/GeneTrack.pm
+* Seq/Build/TxTrack.pm
+
+=cut
 use Moose 2;
 
 use Carp qw/ croak /;
@@ -17,17 +34,19 @@ extends 'Seq::Config::SparseTrack';
 
 with 'MooX::Role::Logger';
 
-has genome_index_dir => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
+#TODO: commented out, remove when considered safe; already found in 'Seq::Config::SparseTrack';
+# has genome_index_dir => (
+#   is       => 'ro',
+#   isa      => 'Str',
+#   required => 1,
+# );
 
-has genome_name => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
+#TODO: commented out, remove when considered safe; already found in 'Seq::Config::SparseTrack';
+# has genome_name => (
+#   is       => 'ro',
+#   isa      => 'Str',
+#   required => 1,
+# );
 
 has genome_track_str => (
   is       => 'ro',

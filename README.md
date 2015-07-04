@@ -25,7 +25,6 @@ genome_name: hg38
 genome_description: human
 genome_chrs:
   - chr1
-genome_db_dir: sandbox
 genome_index_dir: ./hg38/index
 host: 127.0.0.1
 port: 27107
@@ -110,7 +109,7 @@ genome_sized_tracks:
 The main genome directories are organized like so (and specified in the configuration
 file):
 
-		genome_db_dir
+		location (-l|--location, passed via command line)
 			+-- genome_raw_dir (?needed?)
 			+-- genome_index_dir
 

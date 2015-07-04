@@ -6,6 +6,24 @@ package Seq::Role::Genome;
 
 # ABSTRACT: A moose role for getting the 0-indexed absolute position in the genome
 # VERSION
+=head1 DESCRIPTION 
+
+  @role B<Seq::Role::Genome>
+  
+  TODO:Check description
+  A Moose Role that defines how to find a base in the reference genome
+  
+  package <Package Name> with "Seq::Role::Genome"
+
+Used in: 
+
+=for :list
+* Seq::Build::GenomeSizedTrackStr
+* Seq::GenomeSizedTrackChar
+
+Extended in: None
+
+=cut
 
 use Moose::Role;
 
@@ -18,12 +36,6 @@ use Carp;
 sub get_abs_pos {
   # state $check = compile( Object, Str, Int );
   my ( $class, $chr, $pos ) = @_;
-
-  # confess "get_abs_pos() requires method exists_chr_len()"
-  #   unless $class->meta->find_method_by_name('exists_chr_len');
-  #
-  # confess "get_abs_pos() requires method genome_length()"
-  #   unless $class->meta->find_method_by_name('genome_length');
 
   confess "can't find chr: $chr in build" unless $class->exists_chr_len($chr);
   confess sprintf( "ERROR: get_abs_pos() chr (%s) and pos (%d) should be within %d",

@@ -5,6 +5,22 @@ use warnings;
 package Seq::Build::GenomeSizedTrackStr;
 # ABSTRACT: Builds a plain text genome used for binary genome creation
 # VERSION
+=head1 DESCRIPTION
+
+  @class B<Seq::Build::GenomeSizedTrackStr>
+
+  TODO: Add description
+  Stores a String representation of a genome, as well as the length of each chromosome in the genome.
+  Is a single responsibility class with no public functions. 
+
+Used in:
+=for :list
+* Seq/Build/SparseTrack
+* Seq/Build
+
+Extended in: None
+
+=cut
 
 use Moose 2;
 
@@ -34,6 +50,7 @@ has genome_seq => (
 );
 
 # stores the 1-indexed length of each chromosome
+#TODO: enumerate where this is used, and make sure we're consistent with 0 vs 1 index
 has chr_len => (
   is      => 'rw',
   isa     => 'HashRef[Str]',
