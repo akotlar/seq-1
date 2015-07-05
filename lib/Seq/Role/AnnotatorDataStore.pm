@@ -53,12 +53,13 @@ sub load_track_data {
       print "\nThe data of the $track_file_name index 0 key is shared\n";
     }
 
-    return $self->getSeq($track_file_name)
-      ;                                  #returns anonymous array [\$seq,$track_length]
+    #returns anonymous array [\$seq,$track_length]
+    return $self->getSeq($track_file_name);
   }
 
-  lock( $self->{_genomeDataHref} )
-    ; #if we need finer control, like per property, use threads::sempahore
+  # Alex, could you describe what you're doing here? to provide context for your
+  # comment: if we need finer control, like per property, use threads::sempahore
+  lock( $self->{_genomeDataHref} );
 
   my $track_file_path = path( $track_file_folder, $track_file_name )->stringify;
 
@@ -71,6 +72,7 @@ sub load_track_data {
 
   $seqRef->[0] = '';
   $seqRef->[1] = $track_length;
+
   # error check the idx_file
   croak "ERROR: expected file: '$track_file_path' is empty." unless $track_length;
 
