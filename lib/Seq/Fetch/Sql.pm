@@ -1,9 +1,9 @@
 package Seq::Fetch::Sql;
-# ABSTRACT: Class for managing mysql database connections, with convenience functions for querying & inserting records
+# ABSTRACT: This class fetches and cleans genomic data from sql servers.
 =head1 DESCRIPTION
-  
+
   @class Seq::Fetch::Sql
-  #TODO: Check description
+  # TODO: Check description
 
   @example
 
@@ -50,7 +50,7 @@ has socket   => ( is => 'ro', isa => 'Str', );
 
 =method @public sub dbh
 
-  Build database object, and return a handle object  
+  Build database object, and return a handle object
 
 Called in: none
 
