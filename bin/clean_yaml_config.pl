@@ -39,7 +39,7 @@ if ($untaint) {
     if ( $_ =~ /\A#/ ) {
       say "ignoring comment in $config_file: $_";
     }
-    elsif ( $_ =~ m/\A([\-\=\:\/\t\s\w.]+)\z/xm ) {
+    elsif ( $_ =~ m/\A([\-\=\:\/\t\s\w.]+)\Z/ ) {
       $cleaned_txt .= $1 . "\n";
     }
     elsif ( $_ =~ m/\A\s*\Z/ ) {

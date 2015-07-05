@@ -6,36 +6,35 @@ use warnings;
 
 use lib './lib';
 use Carp;
-use DDP;
 use Getopt::Long;
-use File::Spec;
+use Path::Tiny;
 use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
-use YAML::XS qw/ LoadFile /;
 
-use Seq::Annotate;
+use DDP;
+
+use Seq;
 
 Log::Any::Adapter->set('Stdout');
 
-my ( $snpfile, $yaml_file, $db_location, $verbose, $help, $out_file, $force,
-  $debug );
+my ( $snpfile, $yaml_config, $db_location, $verbose, $help, $out_file );
 my ( $wanted_chr, $pos_from, $pos_to );
 
 #
 # usage
 #
 GetOptions(
-  'c|config=s'   => \$yaml_file,
+  'c|config=s'   => \$yaml_config,
   's|snpfile=s'  => \$snpfile,
   'l|location=s' => \$db_location,
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
   'o|out=s'      => \$out_file,
   'chr=s'        => \$wanted_chr,
-  'f|from=s'     => \$pos_from,
-  't|to=s'       => \$pos_to,
+  'f|from=n'     => \$pos_from,
+  't|to=n'       => \$pos_to,
 );
 
 if ($help) {
@@ -43,59 +42,44 @@ if ($help) {
   exit;
 }
 
-unless ( $yaml_file
-  and $wanted_chr
+unless ( $yaml_config
+  and defined $wanted_chr
   and defined $pos_from
-  and $pos_to
+  and defined $pos_to
   and -d $db_location )
 {
   Pod::Usage::pod2usage();
 }
 
-# sanity check
-unless ( -d $db_location ) {
-  say "ERROR: Expected '$db_location' to be a directory.";
-  exit;
-}
-unless ( -f $yaml_file ) {
-  say "ERROR: Expected '$yaml_file' to be a file.";
-  exit;
-}
+croak "expected '$yaml_config' to be a file" unless -f $yaml_config;
+
+# need to give absolute path to avoid placing it in an odd location (e.g., where
+# the genome is located)
+#$out_file = path($out_file)->absolute->stringify;
 
 # clean up position
-$pos_from =~ s/_|,//g;
-$pos_to =~ s/_|,//g;
+$pos_from =~ s/\_|\,//g;
+$pos_to =~ s/\_|\,//g;
 
 # sanity check position
 if ( $pos_from >= $pos_to ) {
   say "Error: 'from' ('$pos_from') is greater than 'to' ('$pos_to')\n";
   exit;
 }
-# get abs file paths
-$yaml_file   = File::Spec->rel2abs($yaml_file);
-$db_location = File::Spec->rel2abs($db_location);
 
-chdir($db_location) || croak "ERROR: cannot change to $db_location";
+# get absolute paths for files
+$db_location = path($db_location)->absolute;
+$yaml_config = path($yaml_config)->absolute;
 
-# read config file to determine genome name for loging and to check validity of config
-my $config_href = LoadFile($yaml_file)
-  || die "ERROR: Cannot read YAML file - $yaml_file: $!\n";
+# change to the root dir of the database
+chdir($db_location) || die "cannot change to $db_location: $!";
 
-# set log file
-my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
-my $log_file = File::Spec->rel2abs( ".", $log_name );
-say "writing log file here: $log_file" if $verbose;
-Log::Any::Adapter->set( 'File', $log_file );
+# load configuration file
+my $assembly = Seq::Annotate->new_with_config( { configfile => $yaml_config } );
 
-# create Seq::Annotate object
-my $assembly = Seq::Annotate->new_with_config( { configfile => $yaml_file } );
-
-# get ref annotations
-my $abs_pos = $assembly->get_abs_pos( $wanted_chr, $pos_from )
-  || croak "could not find location: $wanted_chr, $pos_from";
 for my $i ( $pos_from .. $pos_to ) {
+  my $abs_pos = $assembly->get_abs_pos( $wanted_chr, $i );
   my $href = $assembly->get_ref_annotation($abs_pos);
-  $abs_pos++;
   p $href;
 }
 
@@ -119,17 +103,9 @@ the annotations for the sites in the snpfile.
 
 =over 8
 
-=item B<--chr>
+=item B<-s>, B<--snp>
 
-Chromsome: "chr22"
-
-=item B<--from>
-
-From: start position
-
-=item B<--to>
-
-To: end position
+Snp: snpfile
 
 =item B<-c>, B<--config>
 

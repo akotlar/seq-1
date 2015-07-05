@@ -5,30 +5,7 @@ use warnings;
 package Seq::Build;
 # ABSTRACT: A class for building a binary representation of a genome assembly
 # VERSION
-=head1 DESCRIPTION
-  
-  @class Seq::Build
-  #TODO: Check description
-  Build the annotation databases, as prescribed by the genome assembly.
-  
-  @example
 
-Uses: 
-=for :list
-* @class Seq::Build::SnpTrack
-* @class Seq::Build::GeneTrack
-* @class Seq::Build::TxTrack
-* @class Seq::Build::GenomeSizedTrackStr
-* @class Seq::KCManager
-* @role Seq::Role::IO
-
-Used in:
-=for :list
-* /bin/build_genome_assembly.pl 
-
-Extended in: None
-
-=cut
 use Moose 2;
 
 use Carp qw/ croak /;
@@ -42,7 +19,8 @@ use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
 use Seq::Build::TxTrack;
 use Seq::Build::GenomeSizedTrackStr;
-use Seq::KCManager;
+use Seq::BDBManager;
+use Seq::MongoManager;
 
 use DDP;
 
@@ -69,20 +47,6 @@ has genome_scorer => (
   default => 'genome_scorer',
 );
 
-has wanted_chr => (
-  is      => 'ro',
-  isa     => 'Maybe[Str]',
-  default => undef,
-);
-
-sub BUILD {
-  my $self = shift;
-  $self->_logger->info( "loading genome of size " . $self->genome_length );
-  $self->_logger->info( "genome_hasher: " . $self->genome_hasher );
-  $self->_logger->info( "genmoe_scoreer: " . $self->genome_scorer );
-  $self->_logger->info( "wanted_chr: " . $self->wanted_chr );
-}
-
 sub _build_genome_str_track {
   my $self = shift;
   for my $gst ( $self->all_genome_sized_tracks ) {
@@ -101,31 +65,43 @@ sub _build_genome_str_track {
   }
 }
 
+sub _save_bdb {
+  my ( $self, $name ) = @_;
+  my $dir = File::Spec->canonpath( $self->genome_index_dir );
+  my $file = File::Spec->catfile( $dir, $name );
+
+  make_path($dir) unless -f $dir;
+
+  return $file;
+}
+
 sub build_snp_sites {
   my $self = shift;
 
   $self->_logger->info('begining to build snp tracks');
+  my %snp_sites;
+  if ( $self->snp_tracks ) {
+    for my $snp_track ( $self->all_snp_tracks ) {
 
-  my $wanted_chr = $self->wanted_chr;
+      # create file for bdb
+      my $snp_track_bdb = join( '.', $snp_track->name, $snp_track->type, 'db' );
 
-  for my $snp_track ( $self->all_snp_tracks ) {
-
-    # extract keys from snp_track for creation of Seq::Build::SnpTrack
-    my $record = $snp_track->as_href;
-
-    for my $chr ( $self->all_genome_chrs ) {
-
-      # skip to the next chr if we specified a chr to build
-      # and this chr isn't the one we specified
-      next unless $wanted_chr && $wanted_chr eq $chr;
+      # extract keys from snp_track for creation of Seq::Build::SnpTrack
+      my $record = $snp_track->as_href;
 
       # add additional keys to the hashref for Seq::Build::SnpTrack
       $record->{genome_track_str} = $self->genome_str_track;
       $record->{genome_index_dir} = $self->genome_index_dir;
       $record->{genome_name}      = $self->genome_name;
-      $record->{genome_chrs}      = $self->genome_chrs;
+      $record->{no_bdb_insert}    = $self->no_bdb_insert,
+        $record->{bdb_connection} = Seq::BDBManager->new(
+        {
+          filename      => $self->_save_bdb($snp_track_bdb),
+          no_bdb_insert => $self->no_bdb_insert,
+        }
+        );
       my $snp_db = Seq::Build::SnpTrack->new($record);
-      $snp_db->build_snp_db($chr);
+      $snp_db->build_snp_db;
     }
   }
   $self->_logger->info('finished building snp tracks');
@@ -138,6 +114,9 @@ sub build_transcript_db {
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
+    # create file for bdb
+    my $gene_track_seq_db = join( '.', $gene_track->name, $gene_track->type, 'seq.db' );
+
     # extract keys from snp_track for creation of Seq::Build::TxTrack
     my $record = $gene_track->as_href;
 
@@ -146,6 +125,14 @@ sub build_transcript_db {
     $record->{genome_index_dir} = $self->genome_index_dir;
     $record->{genome_name}      = $self->genome_name;
     $record->{name}             = $gene_track->name;
+    $record->{no_bdb_insert}    = $self->no_bdb_insert,
+      $record->{bdb_connection} = Seq::BDBManager->new(
+      {
+        filename      => $self->_save_bdb($gene_track_seq_db),
+        no_bdb_insert => $self->no_bdb_insert,
+      }
+      );
+
     my $gene_db = Seq::Build::TxTrack->new($record);
     $gene_db->insert_transcript_seq;
   }
@@ -153,32 +140,33 @@ sub build_transcript_db {
 }
 
 sub build_gene_sites {
-  my ( $self, $chr ) = @_;
+  my $self = shift;
+  # build gene tracks - these are gene annotation tracks downloaded from UCSC
+  # e.g., knownGene
 
   $self->_logger->info('begining to build gene track');
 
-  my $wanted_chr = $self->wanted_chr;
-
   for my $gene_track ( $self->all_gene_tracks ) {
+
+    # create a file for bdb
+    my $gene_track_db = join( '.', $gene_track->name, $gene_track->type, 'db' );
 
     # extract keys to the hashref for Seq::Build::GeneTrack
     my $record = $gene_track->as_href;
 
-    for my $chr ( $self->all_genome_chrs ) {
+    # extra keys from snp_track for creation of Seq::Build::GeneTrack
+    $record->{genome_track_str} = $self->genome_str_track;
+    $record->{genome_index_dir} = $self->genome_index_dir;
+    $record->{genome_name}      = $self->genome_name;
+    $record->{bdb_connection}   = Seq::BDBManager->new(
+      {
+        filename      => $self->_save_bdb($gene_track_db),
+        no_bdb_insert => $self->no_bdb_insert,
+      }
+    );
 
-      # skip to the next chr if we specified a chr to build and this chr isn't
-      #   the one we specified
-      next unless $wanted_chr && $wanted_chr eq $chr;
-
-      # extra keys from snp_track for creation of Seq::Build::GeneTrack
-      $record->{genome_track_str} = $self->genome_str_track;
-      $record->{genome_index_dir} = $self->genome_index_dir;
-      $record->{genome_name}      = $self->genome_name;
-
-      my $wanted_chr = $self->wanted_chr;
-      my $gene_db    = Seq::Build::GeneTrack->new($record);
-      $gene_db->build_gene_db_for_chr($chr);
-    }
+    my $gene_db = Seq::Build::GeneTrack->new($record);
+    $gene_db->build_gene_db;
   }
   $self->_logger->info('finished building gene track');
 }
@@ -238,8 +226,6 @@ sub build_conserv_scores_index {
 sub build_genome_index {
   my $self = shift;
 
-  $self->_logger->info('begining to build indexed genome');
-
   # build needed tracks, which write ranges for snp and gene sites
   $self->build_snp_sites;
   $self->build_gene_sites;
@@ -251,11 +237,11 @@ sub build_genome_index {
   # prepare idx file and file list needed to make indexed genome
   my $idx_name       = join( ".", $self->genome_name, 'genome', 'idx' );
   my $file_list_name = join( ".", $self->genome_name, 'genome', 'list' );
-  my $idx_file         = File::Spec->catfile( $index_dir, $idx_name );
-  my $region_list_file = File::Spec->catfile( $index_dir, $file_list_name );
-  my $file_list_fh     = $self->get_write_fh($region_list_file);
+  my $idx_file       = File::Spec->catfile( $index_dir, $idx_name );
+  my $file_list_file = File::Spec->catfile( $index_dir, $file_list_name );
+  my $file_list_fh   = $self->get_write_fh($file_list_file);
 
-  my @region_files;
+  my @file_list_files;
 
   $self->_logger->info('writing genome file list');
 
@@ -267,38 +253,27 @@ sub build_genome_index {
   my $genome_str_name = join ".", $self->genome_name, 'genome', 'str', 'dat';
   my $genome_str_file = File::Spec->catfile( $index_dir, $genome_str_name );
 
-  # gather files for each chr
-  for my $chr ( $self->all_genome_chrs ) {
-
-    # snp sites
+  if ( $self->snp_tracks ) {
     for my $snp_track ( $self->all_snp_tracks ) {
-      my $snp_name = join( ".", $snp_track->name, $chr, 'snp', 'dat' );
-      push @region_files, File::Spec->catfile( $index_dir, $snp_name );
-    }
-
-    # gene annotation and exon positions
-    for my $gene_track ( $self->all_gene_tracks ) {
-      my $gan_name  = join( ".", $gene_track->name, $chr, 'gan',  'dat' );
-      my $exon_name = join( ".", $gene_track->name, $chr, 'exon', 'dat' );
-      push @region_files, File::Spec->catfile( $index_dir, $gan_name );
-      push @region_files, File::Spec->catfile( $index_dir, $exon_name );
-
+      my $snp_name = join( ".", $snp_track->name, 'snp', 'dat' );
+      push @file_list_files, File::Spec->catfile( $index_dir, $snp_name );
     }
   }
 
-  # gather gene region site file
   for my $gene_track ( $self->all_gene_tracks ) {
+    my $gan_name         = join( ".", $gene_track->name, 'gan',         'dat' );
+    my $exon_name        = join( ".", $gene_track->name, 'exon',        'dat' );
     my $gene_region_name = join( ".", $gene_track->name, 'gene_region', 'dat' );
-    push @region_files, File::Spec->catfile( $index_dir, $gene_region_name );
+    push @file_list_files, File::Spec->catfile( $index_dir, $gan_name );
+    push @file_list_files, File::Spec->catfile( $index_dir, $exon_name );
+    push @file_list_files, File::Spec->catfile( $index_dir, $gene_region_name );
   }
-
-  # write file locations
-  say {$file_list_fh} join "\n", @region_files;
+  say {$file_list_fh} join "\n", @file_list_files;
 
   # get abs path to genome_hasher
   my $genome_hasher = File::Spec->canonpath( $self->genome_hasher );
 
-  my $cmd = qq{$genome_hasher $genome_str_file $region_list_file $idx_file};
+  my $cmd = qq{ $genome_hasher $genome_str_file $file_list_file $idx_file };
 
   $self->_logger->info("running command: $cmd");
 
