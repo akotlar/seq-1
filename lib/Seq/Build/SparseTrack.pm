@@ -5,6 +5,7 @@ use warnings;
 package Seq::Build::SparseTrack;
 # ABSTRACT: Base class for sparse track building
 # VERSION
+
 =head1 DESCRIPTION
   
   @class Seq::Build::SparseTrack
@@ -23,6 +24,7 @@ Extended by:
 * Seq/Build/TxTrack.pm
 
 =cut
+
 use Moose 2;
 
 use Carp qw/ croak /;
