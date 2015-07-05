@@ -106,8 +106,8 @@ genome_sized_tracks:
 
 # directory structure
 
-The main genome directories are organized like so (and specified in the configuration
-file):
+The main genome directories are organized like so (and specified in the
+configuration file):
 
 		location (-l|--location, passed via command line)
 			+-- genome_raw_dir (?needed?)
@@ -146,19 +146,24 @@ TODO: add information about how to build CADD scores.
 
 # adding customized Snp Tracks to an assembly
 
-While either the GeneTrack or SnpTrack could be used to add Sparse genomic data
-to an assembly. It is most straightforward to add sparse data as a SnpTrack.
+While either the GeneTrack or SnpTrack could be used to add sparse genomic data
+to an assembly, it is most straightforward to add sparse data as a SnpTrack. The
+procedure is to prepare a tab-delimited file with the desired data that follows
+an extended bed file format (described below); define the features you wish
+to include as annotations in the configuration file; and, run the builder script
+twice - first to create the track data and second to build the binary genome
+that is aware of your custom track.
 
 1. prepare a tab-delimited file
 
 The essential columns are: `chrom chromStart chromEnd name`. These are the same
-columns as a 4-column bedfile. There is no requirement that those columns be in
+columns as a 4-column bed file. There is no requirement that those columns be in
 any particular order or that they are the only columns in the file. The only
-essential thing is that they are present. Additional information to be included
-as part of the annotation may be in separate columns, and you will specify which
-columns will be included in the genome assembly configuration file. It is worth
-emphasizing that not all of the columns in a file need to be used to create the
-SnpTrack.
+essential thing is that they are present and named in the header _exactly_ as
+described above. Additional information to be included as part of the annotation
+should be in separate labeled columns. You must specify which columns to include
+in the genome assembly configuration file and columns that are not specified
+will be ignored.
 
 2. add the SnpTrack data to the configuration file. For example,
 
@@ -178,10 +183,10 @@ if there is no column with a specified name.
 
 3. run the builder script to build the database
 
-You will need to, at least, make the annotation database, and to be safe, make the
-binary genome files again afterward to update the locations of known SNPs. The
-following example supposes that you only have data on chromosome 5 and that you
-are adding to an existing assembly.
+You will need to, at least, make the annotation database, and to be safe, you
+should remake the encoded binary genome files to update the locations of known
+SNPs. The following example supposes that you only have data on chromosome 5 and
+that you are adding to an existing assembly.
 
 		# create new database
 		build_genome_assembly.pl --config hg38_c_mdb.yml --location /path/to/output --type snp_db --wanted_chr chr5
