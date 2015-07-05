@@ -5,6 +5,20 @@ use warnings;
 package Seq::Build::TxTrack;
 # ABSTRACT: Builds Gene Tracks and places into BerkeleyDB instance.
 # VERSION
+=head1 DESCRIPTION
+  
+  @class Seq::Build::TxTrack
+  #TODO: Check description
+
+  @example
+
+Used in:
+=for :list
+* Seq::Build
+
+Extended by: None
+
+=cut
 
 use Moose 2;
 
@@ -21,9 +35,6 @@ with 'Seq::Role::IO';
 sub insert_transcript_seq {
   my $self = shift;
 
-  # defensively drop anything if the collection already exists
-  # $self->mongo_connection->_mongo_collection( $self->name )->drop;
-
   # input
   my $local_dir  = File::Spec->canonpath( $self->local_dir );
   my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
@@ -38,6 +49,21 @@ sub insert_transcript_seq {
   my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
   my $gene_region_fh = $self->get_write_fh($gene_region_file);
   say {$gene_region_fh} $self->in_gene_val;
+
+  # dbm file
+  my $dbm_name = join ".", $self->name, $self->type, 'tx', 'kch';
+  my $dbm_file = File::Spec->catfile( $index_dir, $dbm_name );
+
+  # create dbm object
+  my $db = Seq::KCManager->new(
+    filename => $dbm_file,
+    mode     => 'create',
+    # bnum => bucket number => 50-400% of expected items in the hash is optimal
+    # annotated sites for hg38 is 22727477 (chr1) to 13222 (chrM) with avg of
+    # 9060664 and sd of 4925631; thus, took ~1/2 of maximal number of entries
+    bnum => 1_000_000,
+    msiz => 512_000_000,
+  );
 
   my %ucsc_table_lu = (
     name       => 'transcript_id',
@@ -89,7 +115,7 @@ sub insert_transcript_seq {
       peptide_seq             => $gene->peptide,
     };
 
-    $self->db_put( $record_href->{transcript_id}, $record_href );
+    $db->db_put( $record_href->{transcript_id}, $record_href );
 
     say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
   }

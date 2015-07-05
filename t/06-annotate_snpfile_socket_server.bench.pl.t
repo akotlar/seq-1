@@ -20,6 +20,10 @@ use IO::Socket;
 use Cpanel::JSON::XS;
 use Data::Dumper;
 
+use Try::Tiny;
+
+use Benchmark qw(:all);
+
 use Seq;
 
 my $semSTDOUT : shared;
@@ -37,25 +41,7 @@ my $Qdone = new Thread::Queue;
 
 my $done : shared = 0;
 
-sub coerce_inputs {
-  my $userChoicesHref = shift;
-
-  my $out_file = $userChoicesHref->{o} || $userChoicesHref->{outfile} | "";
-  my $force    = $userChoicesHref->{f} || $userChoicesHref->{force};
-  my $db_location = $userChoicesHref->{location}
-    || $userChoicesHref->{l} | get_db_path($userChoicesHref);
-  my $snpfile =
-    $userChoicesHref->{s} || $userChoicesHref->{snpfile} || $userChoicesHref->{infile};
-  my $yaml_config =
-       $userChoicesHref->{c}
-    || $userChoicesHref->{config}
-    || get_yaml_config_path($userChoicesHref);
-  # my $verbose     = $userChoicesHref->{v}        || $userChoicesHref->{verbose};
-  my $debug = $userChoicesHref->{d} || $userChoicesHref->{debug};
-
-  return ( $snpfile, $yaml_config, $out_file, $debug );
-}
-
+#
 sub worker {
   my $tid = threads->tid;
 
@@ -75,8 +61,14 @@ sub worker {
       %user_choices = %{ $JSONObject->decode($buffer) };
 
       print Dumper( \%user_choices );
+      my $out_file    = $user_choices{o}        || $user_choices{outfile} | "";
+      my $force       = $user_choices{f}        || $user_choices{force};
+      my $db_location = $user_choices{location} || $user_choices{l} | "";
+      my $snpfile     = $user_choices{s}        || $user_choices{snpfile} || "";
+      my $yaml_config = $user_choices{c}        || $user_choices{config} || "";
+      my $verbose     = $user_choices{v}        || $user_choices{verbose};
+      my $debug       = $user_choices{d}        || $user_choices{debug};
 
-      my ( $snpfile, $yaml_config, $out_file, $debug ) = coerce_inputs( \%user_choices );
       # sanity checks mostly now not needed, will be checked in Seq.pm using MooseX:Type:Path:Tiny
       if ( -f $out_file && !$force ) {
         say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
@@ -96,18 +88,34 @@ sub worker {
       say "writing log file here: $log_file" if $verbose;
       Log::Any::Adapter->set( 'File', $log_file );
 
-      # create the annotator
-      my $annotate_instance = Seq->new(
-        {
-          snpfile    => $snpfile,
-          configfile => $yaml_config,
-          out_file   => $out_file,
-          debug      => $debug,
-        }
-      );
+      try {
+        # create the annotator
+        my $annotate_instance = Seq->new(
+          {
+            snpfile    => $snpfile,
+            configfile => $yaml_config,
+            out_file   => $out_file,
+            debug      => $debug,
+          }
+        );
+        cmpthese(
+          50,
+          {
+            a => sub {
 
-      # annotate the snp file
-      $annotate_instance->annotate_snpfile;
+              # annotate the snp file
+              $annotate_instance->annotate_snpfile;
+            }
+          }
+        );
+      }
+      catch {
+        #print "caught error: $_"; # not $@
+        } finally {
+        if (@_) {
+          print "The try block died with: @_\n";
+        }
+        };
 
       print "Done!";
 

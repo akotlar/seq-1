@@ -6,6 +6,30 @@ package Seq::GenomeSizedTrackChar;
 # ABSTRACT: Decodes genome sized char tracks - genomes, scores, etc.
 # VERSION
 
+=head1 DESCRIPTION 
+
+  @class B<Seq::GenomeSizedTrackChar>
+ 
+  The class that stores the complete reference genome 
+  
+  Seq::Config::GenomeSizedTrack->new($gst)
+
+Used in:
+
+=for :list 
+* bin/read_genome.pl
+* @class Seq::Annotate
+* @class Seq::Config::GenomeSizedTrack
+
+Extended in: 
+
+=for :list 
+* @class Seq::Build::GenomeSizedTrackStr
+* @class Seq::GenomeSizedTrackChar
+* @class Seq::Fetch::Sql
+
+=cut
+
 use Moose 2;
 
 use Carp qw/ confess croak /;
@@ -25,6 +49,8 @@ has genome_length => (
   isa => 'Int',
 );
 
+# stores the 0-indexed length of each chromosome
+# TODO: 0-indexed length doesn't make sense unless we're looking @ #@length rather than scalar @length
 has chr_len => (
   is      => 'rw',
   isa     => 'HashRef[Str]',
@@ -35,19 +61,84 @@ has chr_len => (
   },
 );
 
-# stores the 0-indexed length of each chromosome
+
+=property @public {StrRef} char_seq
+
+  Stores one binary genome sized track as a scalar reference (reference to a 3.2B base string). This can be the reference
+  genome, one of the 3 CADD score binary indices (one for each base change possibility), or a genome-size 'score' type
+  like PhastCons or PhyloP
+
+Used in:
+
+=for :list 
+* @class Seq::Annotate
+    Seq::Annotate sets the char_seq values on line 286
+* @class Seq:::GenomeSizedTrackChar
+
+@example from @class Seq::Annotate _load_cadd_score:
+  
+  my $index_dir = $self->genome_index_dir;
+  my $idx_name = join( ".", $gst->type, $i );
+  my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
+  my $idx_fh = $self->get_read_fh($idx_file);
+  $seq = '';
+  read $idx_fh, $seq, $genome_length;
+
+# TODO: check whether this should be required => 1
+=cut
 has char_seq => (
   is  => 'ro',
   isa => 'ScalarRef',
+  #??kotlar: should it be required => 1 
 );
 
-# holds a subroutine that converts chars to a score for the track, which is
-#   used to decode the score
-sub char2score {
-  my ( $self, $char ) = shift;
-  return ( ( ( $char - 1 ) / $self->score_beta ) + $self->score_min );
-}
+=method @public char2score
 
+ Converts a char value at a particular base into a score for a feature, such as CADD, PhyloP, or PhastCons.
+
+@param $char
+  
+  The {Char} value of a certain base in the input snpfile
+
+@requires {Int} $char
+
+  Currently a value range of 0-255 per base (0 == falsy, indicates no features)
+
+=for :list
+* @property score_beta
+    Defined in Seq::Config::GenomeSizedTrack?
+* @property score_min
+    Defined in Seq::Config::GenomeSizedTrack
+
+@see Seq::Config::GenomeSizedTrack @property score_beta 
+
+@returns {Float}
+#TODO: Commented out, isn't in use as far as we know. However, this will cause test
+#/t/03-build_genome_sized_track_char.t to fail, since it uses this function is checked for existence
+#HOWEVER, this test is outdated, look for non existant package Build::GenomeSizedTrackChar
+# sub char2score {
+#   my ( $self, $char ) = shift; 
+#   say "score_beta is " . $self->score_beta if $self->debug;
+
+#   return ( ( ( $char - 1 ) / $self->score_beta ) + $self->score_min );
+# }
+
+=method @public get_base
+  
+  Returns the 0 indexed 
+@param $pos
+  The absolute 
+@requires
+=for :list
+* @property genome_length
+* @property char_seq
+    The full binary genome sized track
+
+@ returns {Str} representing the value at that position. Could be a base (if fetching reference) (or an annotation
+score?)
+
+#TODO: check if an annotation score can really be returned
+=cut
 sub get_base {
   my ( $self, $pos ) = @_;
   state $genome_length = $self->genome_length;
@@ -56,15 +147,21 @@ sub get_base {
     unless $pos >= 0 and $pos < $genome_length;
 
   # position here is not adjusted for the Zero versus 1 index issue
+  # this means that we need to a 0 indexed geno
   return unpack( 'C', substr( ${ $self->char_seq }, $pos, 1 ) );
 }
 
+=method @public get_score
+
+=cut
 sub get_score {
   my ( $self, $pos ) = @_;
 
   confess "get_score() requires absolute genomic position (0-index)"
     unless defined $pos;
-  confess "get_score() called on non-score track" unless $self->type eq 'score';
+  confess "get_score() called on non-score track"
+    unless $self->type eq 'score'
+    or $self->type eq 'cadd';
 
   my $char            = $self->get_base($pos);
   my $score           = $self->get_score_lu($char);
@@ -72,35 +169,41 @@ sub get_score {
   return $formatted_score;
 }
 
-sub BUILDARGS {
-  my $class = shift;
-  my $href  = $_[0];
-  if ( scalar @_ > 1 || reftype($href) ne "HASH" ) {
-    confess "Error: $class expects hash reference.\n";
-  }
-  else {
-    my %hash;
-    if ( $href->{type} eq "score" ) {
-      if ( $href->{name} eq "phastCons" ) {
-        $hash{score_R}   = 254;
-        $hash{score_min} = 0;
-        $hash{score_max} = 1;
-      }
-      elsif ( $href->{name} eq "phyloP" ) {
-        $hash{score_R}   = 254;
-        $hash{score_min} = -30;
-        $hash{score_max} = 30;
-      }
-    }
+#TODO: delete when we decide it's safe. This is replaced by the Seq::Config::GenomeSizedTrack BUILDARGS
+# sub BUILDARGS {
+#   my $class = shift;
+#   my $href  = $_[0];
+#   if ( scalar @_ > 1 || reftype($href) ne "HASH" ) {
+#     confess "Error: $class expects hash reference.\n";
+#   }
+#   else {
+#     my %hash;
+#     if ( $href->{type} eq "score" ) {
+#       if ( $href->{name} eq "phastCons" ) {
+#         $hash{score_R}   = 254;
+#         $hash{score_min} = 0;
+#         $hash{score_max} = 1;
+#       }
+#       elsif ( $href->{name} eq "phyloP" ) {
+#         $hash{score_R}   = 254;
+#         $hash{score_min} = -30;
+#         $hash{score_max} = 30;
+#       }
+#     }
+#     elsif ( $href->{type} eq "cadd" ) {
+#       $hash{score_R}   = 255;
+#       $hash{score_min} = 0;
+#       $hash{score_max} = 85;
+#     }
 
-    # if score_R, score_min, or score_max are set by the caller then the
-    # following will override it
-    for my $attr ( keys %$href ) {
-      $hash{$attr} = $href->{$attr};
-    }
-    return $class->SUPER::BUILDARGS( \%hash );
-  }
-}
+#     # if score_R, score_min, or score_max are set by the caller then the
+#     # following will override the defaults
+#     for my $attr ( keys %$href ) {
+#       $hash{$attr} = $href->{$attr};
+#     }
+#     return $class->SUPER::BUILDARGS( \%hash );
+#   }
+# }
 
 __PACKAGE__->meta->make_immutable;
 

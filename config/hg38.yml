@@ -69,7 +69,7 @@ sparse_tracks:
     name: clinvar
     sql_statement: SELECT * FROM Clinvar
     features:
-      - name 
+      - name
 genome_sized_tracks:
   - name: hg38
     type: genome
