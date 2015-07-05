@@ -653,8 +653,9 @@ sub get_snp_annotation {
     # get data; need to add new base to href to create the obj with wanted
     #   data, like proper AA substitution
     $gene_site->{minor_allele} = $new_base;
-    my $gan = Seq::Site::Annotation->new($gene_site)
-      ->as_href_with_NAs( ref $gene_site, $self->name );
+    
+    #TODO: optimize this function by passing ref $gene_site, $self->name instead of checking type
+    my $gan = Seq::Site::Annotation->new($gene_site)->as_href_with_NAs;
 
     # merge data
     $gene_site_ann_href = $self->_join_href( $gene_site_ann_href, $gan );
@@ -666,6 +667,7 @@ sub get_snp_annotation {
   for my $snp_site (@$snp_aref) {
 
     # get data
+    #TODO: optimize this function by passing ref $gene_site, $self->name instead of checking type
     my $san = Seq::Site::Snp->new($snp_site)->as_href_with_NAs;
 
     # merge data
