@@ -5,10 +5,14 @@ use warnings;
 package Seq::Build::TxTrack;
 # ABSTRACT: Builds Gene Tracks and places into BerkeleyDB instance.
 # VERSION
+
 =head1 DESCRIPTION
-  
+
   @class Seq::Build::TxTrack
-  #TODO: Check description
+  This class takes tab-delimited gene track information (as might be prepared
+  by the Seq::Fetch and Seq::Fetch::* packages) and 1) creates a database of all
+  Seq::Gene objects and 2) creates a file that enumerates the ranges of genes
+  within the genome for `genome_hasher`.
 
   @example
 
