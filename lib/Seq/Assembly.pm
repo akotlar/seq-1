@@ -135,35 +135,12 @@ sub BUILDARGS {
     my %hash;
 
     $href->{genome_index_dir} = path( $href->{genome_index_dir} )->absolute;
-
-    # is genome_index_dir a directory?
-    if ( !$href->{genome_index_dir}->is_dir ) {
-      # is the supplied genome_index_dir a file?
-      if ( $href->{genome_index_dir}->is_file ) {
-        my $err_msg =
-          sprintf( "ERROR: '%s' exists and is a file.", $href->{genome_index_dir} );
-        warn $err_msg . "\n";
-        $class->_logger->error($err_msg);
-        exit 1;
-      }
-
-      # make the specified genome_index_dir.
-      if ( $href->{genome_index_dir}->mkpath ) {
-        my $err_msg = sprintf( "ERROR: failed to create genome_index_dir: '%s'",
-          $href->{genome_index_dir} );
-        warn $err_msg . "\n";
-        $class->_logger->error($err_msg);
-        exit 1;
-      }
-    }
-
     $href->{genome_index_dir} = $href->{genome_index_dir}->stringify;
 
     if ( $href->{debug} ) {
       my $msg =
         sprintf( "The absolute genome_index_dir path is %s", $href->{genome_index_dir} );
       say $msg;
-      $class->_logger->info($msg);
     }
 
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
