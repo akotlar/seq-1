@@ -5,13 +5,21 @@ use warnings;
 package Seq::Build::SnpTrack;
 # ABSTRACT: Builds a snp track using dbSnp data, derived from UCSC
 # VERSION
+
 =head1 DESCRIPTION
-  
+
   @class Seq::Build::SnpTrack
 
-  #TODO: Check description
-  A single-function, no public property class, which inserts type: snp SparseTrack records into a database. 
-  Currently the snp data comes from dbSNP.
+  # TODO: Check description
+  A single-function, no public property class, which inserts type: snp
+  SparseTrack records into a database.
+
+  The input files may be any tab-delimited files with the following basic
+  structure: `chrom, start, stop, name`. All columns should have a header and
+  any additional columns should be defined as a `feature` in the configuration
+  file. By default, the Seq::Fetch and Seq::Fetch::* packages will download and
+  write the data in the proper format from a sql server (e.g., UCSC's public
+  mysql server).
 
   @example  my $snp_db = Seq::Build::SnpTrack->new($record);
 
@@ -51,6 +59,7 @@ sub build_snp_db {
   # output: snp sites
   my $snp_name = join( ".", $self->name, $wanted_chr, 'snp', 'dat' );
   my $snp_file = File::Spec->catfile( $index_dir, $snp_name );
+
   # check if we need to make the site range file
   #   skip build if site range file is present or we're forced to overwrite
   return if $self->_has_site_range_file($snp_file) and !$self->force;
