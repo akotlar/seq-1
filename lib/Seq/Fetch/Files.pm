@@ -1,8 +1,11 @@
 package Seq::Fetch::Files;
+
 =head1 DESCRIPTION
-  
+
   @class Seq::Fetch::Files
-  #TODO: Check description
+  This class fetches raw files from remote locations (e.g., UCSC genome browser
+  rsync server) that are required to build the genome assembly sepcified in the
+  configuration file. 
 
   @example
 
@@ -13,6 +16,7 @@ Used in:
 Extended by: None
 
 =cut
+
 use 5.10.0;
 use Carp;
 use File::Path;
@@ -79,13 +83,6 @@ sub fetch_files {
     my $cmd_txt = join " ", @$cmd;
     $self->_logger->info( "rsync cmd: " . $cmd_txt ) if $self->verbose;
     system $cmd_txt if $self->act || $self->_logger->error( "failed: " . $cmd_txt );
-
-    # not sure why this is failing...
-    #   if ($self->act) {
-    #     $rsync_obj->exec( $cmd_href )
-    #       || croak "cannot fetch data for $file: $!, with cmd: "
-    #         . join " ", @$cmd;
-    #   }
   }
 }
 
