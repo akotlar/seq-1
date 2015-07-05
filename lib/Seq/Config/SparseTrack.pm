@@ -5,19 +5,20 @@ use warnings;
 =head1 DESCRIPTION
 
   @class B<Seq::Config::SparseTrack>
- 
-  Base class that decorates @class Seq::Build sql statements (@method sql_statement), and performs feature formatting
+
+  Base class that decorates @class Seq::Build sql statements (@method
+  sql_statement) and performs feature formatting.
 
 Used in:
 
-=begin :list 
+=begin :list
 * @class Seq::Assembly
-    Seq::Assembly @extends  
-  
-      =begin :list  
+    Seq::Assembly @extends
+
+      =begin :list
       * @class Seq::Annotate
           Seq::Annotate used in @class Seq only
-  
+
   * @class Seq::Build
   =end :list
 =end :list
@@ -28,7 +29,7 @@ Used in:
 * @class Seq::Build::SparseTrack
 * @class Seq::Build::GeneTrack
 * @class Seq::Build::SnpTrack
-* @class Seq::Build::TxTrack 
+* @class Seq::Build::TxTrack
 
 =cut
 package Seq::Config::SparseTrack;
@@ -38,11 +39,17 @@ package Seq::Config::SparseTrack;
 use Moose 2;
 use Moose::Util::TypeConstraints;
 use Carp qw/ croak /;
-#TODO: kotlar: I think we could use MooseX::Types::Path::Tiny qw/AbsFile AbsPath AbsDir/;
-# because this will allow us to automatically check whether the dir/file exists
-# If we wish to use a more duck-typing approach, Str is fine
-
 use namespace::autoclean;
+
+# TODO: kotlar: I think we could use MooseX::Types::Path::Tiny
+# qw/AbsFile AbsPath AbsDir/; because this will allow us to automatically check
+# whether the dir/file exists if we wish to use a more duck-typing approach.
+# NOTE: Alex, I'll need to think about this. Part of the problem is that we're
+#       using this in 3 different scenerios - fetching (only need the raw data),
+#       building (will create the db files), and annotation (definitely need the
+#       raw data). Validating should only be done in the right context; it might
+#       be worth considering making an Annotate::GeneTrack, etc. that does the
+#       validation for the annotation context
 
 enum SparseTrackType => [ 'gene', 'snp' ];
 
@@ -65,16 +72,17 @@ has name => ( is => 'ro', isa => 'Str',             required => 1, );
 has type => ( is => 'ro', isa => 'SparseTrackType', required => 1, );
 has sql_statement => ( is => 'ro', isa => 'Str', );
 
-=property @required {ArrayRef<str>} features  
+=property @required {ArrayRef<str>} features
 
-  This attribute is defined in the config yaml file, in the structure { spare_stracks => features => [] }
+  Defined in the configuration file in the heading feature.
+  { sparse_tracks => features => [] }
 
-@example  
+@example
 
 =for :list
 * 'mRNA'
 * 'spID'
-* 'geneSymbol' 
+* 'geneSymbol'
 
 =cut
 has features => (
@@ -86,22 +94,25 @@ has features => (
 );
 
 # file information
-#TODO: kotlar: By not checkign the file system here, we couple SparseTrack and GenomeSizedTrack to Assembly.pm.
-# since this is really where genome_index_dir is held for all other classes, we should explicitly 
-# check things here not in Annotate.pm
+# NOTE: Alex, I'm not really following you here - what's the antecedant of
+#       'things'?
+# TODO: kotlar: By not checkign the file system here, we couple SparseTrack and
+# GenomeSizedTrack to Assembly.pm. since this is really where genome_index_dir
+# is held for all other classes, we should explicitly check things here not in
+# Annotate.pm.
 has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1 );
 has local_dir        => ( is => 'ro', isa => 'Str', required => 1 );
 has local_file       => ( is => 'ro', isa => 'Str', required => 1 );
 
 =function sql_statement (private,)
-  
+
 Construction-time @property sql_statement modifier
 
 @requires:
 
 =begin :list
 * @property {Str} $self->type
-    
+
     @values:
 
     =begin :list
@@ -109,7 +120,7 @@ Construction-time @property sql_statement modifier
     2. 'gene'
     =end :list
 
-* @property {ArrarRef<Str>} $self->features 
+* @property {ArrarRef<Str>} $self->features
 * @property {Str} $self->sql_statement (returned by $self->$orig(@_) )
 * @param {Str} @snp_track_fields (global)
 =end :list
@@ -132,24 +143,28 @@ around 'sql_statement' => sub {
     # \_ matches the character _ literally
     # snp matches the characters snp literally (case sensitive)
     # \_ matches the character _ literally
+
+    # NOTE: the following just defines the perl regex spec and could be removed.
     # fields matches the characters fields literally (case sensitive)
     # x modifier: extended. Spaces and text after a # in the pattern are ignored
-    # m modifier: multi-line. Causes ^ and $ to match the begin/end of each line (not only begin/end of string)
-    if ( $self->$orig(@_) =~ m/\_snp\_fields/xm ) 
+    # m modifier: multi-line. Causes ^ and $ to match the begin/end of each line
+    #             (not only begin/end of string)
+    if ( $self->$orig(@_) =~ m/\_snp\_fields/xm )
     {
-      #substitute _snp_fields in statement for the comma separated string of snp_track_fields and SparseTrack features
+      # substitute _snp_fields in statement for the comma separated string of
+      # snp_track_fields and SparseTrack features
       ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/xm;
     }
-    elsif ( $self->$orig(@_) =~ m/_asterisk/xm ) 
+    elsif ( $self->$orig(@_) =~ m/_asterisk/xm )
     {
       ( $new_stmt = $self->$orig(@_) ) =~ s/\_asterisk/\*/xm;
     }
   }
-  elsif ( $self->type eq 'gene' ) 
+  elsif ( $self->type eq 'gene' )
   {
     my $gene_table_fields_str = join( ", ", @gene_track_fields, @{ $self->features } );
-    
-    if ( $self->$orig(@_) =~ m/\_gene\_fields/xm ) 
+
+    if ( $self->$orig(@_) =~ m/\_gene\_fields/xm )
     {
       ( $new_stmt = $self->$orig(@_) ) =~ s/\_gene\_fields/$gene_table_fields_str/xm;
     }
@@ -165,13 +180,14 @@ Called in:
 
 =for :list
 * @class Seq::Build::SnpTrack
-* @class Seq::Build::TxTrack 
+* @class Seq::Build::TxTrack
 
 @requires:
 
 =for :list
-* {Str} $self->type (required by class constructor, guaranteed to be available) 
-* {ArrarRef<Str>} $self->features (required by class constructor, guaranteed to be available)
+* {Str} $self->type (required by class constructor, guaranteed to be available)
+* {ArrarRef<Str>} $self->features (required by class constructor, guaranteed to
+  be available)
 
 @returns {ArrayRef|void}
 
@@ -191,9 +207,9 @@ sub snp_fields_aref {
 
 =method @public snp_fields_aref
 
-  Returns array reference containing all (attribute_name => attribute_value}
+  Returns array reference containing all {attribute_name => attribute_value}
 
-Called in: 
+Called in:
 
 =for :list
 * @class Seq::Build::GeneTrack
@@ -202,8 +218,10 @@ Called in:
 @requires:
 
 =for :list
-* @property {Str} $self->type (required by class constructor, guaranteed to be available) 
-* @property {ArrarRef<Str>} $self->features (required by class constructor, guaranteed to be available)
+* @property {Str} $self->type (required by class constructor, guaranteed to be
+  available)
+* @property {ArrarRef<Str>} $self->features (required by class constructor,
+  guaranteed to be available)
 
 @returns {ArrayRef|void}
 
@@ -221,8 +239,8 @@ sub gene_fields_aref {
 }
 
 =method @public as_href
- 
-  Returns hash reference containing all (attribute_name => attribute_value}
+
+  Returns hash reference containing all {attribute_name => attribute_value}
 
 Used in:
 
@@ -231,9 +249,7 @@ Used in:
 * @class Seq::Build::SnpTrack
 * @class Seq::Build
 
-@requires @method $self-meta->get_all_attributes 
-  Moose function. Returns 1 if $method_name exists as property in @property $self->{attributes}, 
-  including all has=>property() declarations in the object on which SparseTrack was called
+Uses Moose built-in meta method.
 
 @returns {HashRef}
 
