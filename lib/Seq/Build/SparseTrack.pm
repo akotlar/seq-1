@@ -7,11 +7,11 @@ package Seq::Build::SparseTrack;
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @class Seq::Build::SparseTrack
   #TODO: Check description
-  A Seq::Build package specific class, used to define the disk location of the input 
-  
+  A Seq::Build package specific class, used to define the disk location of the input
+
   @example
 
 Used in:
@@ -137,7 +137,6 @@ sub _check_header_keys {
     $missing_attr{$req_attr}++ unless exists $header_href->{$req_attr};
   }
   if (%missing_attr) {
-
     my $err_msg =
       sprintf( "annotation misssing expected header information for %s %s chr %s: ",
       $self->name, $self->type, $self->wanted_chr )
