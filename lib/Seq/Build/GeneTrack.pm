@@ -5,19 +5,20 @@ use warnings;
 package Seq::Build::GeneTrack;
 # ABSTRACT: Builds Gene Tracks and places into MongoDB instance.
 # VERSION
-=head1 DESCRIPTION 
+
+=head1 DESCRIPTION
 
   @class B<Seq::Build::GeneTrack>
-  
+
   TODO: Describe
 
-Used in: 
+Used in:
 
 =for :list
-* Seq::Build: 
+* Seq::Build:
 * Seq::Config::SparseTrack
-    The base class for building, annotating sparse track features. 
-    Used by @class Seq::Assembly, . 
+    The base class for building, annotating sparse track features.
+    Used by @class Seq::Build
     Extended by @class Seq::Build::SparseTrack, @class Seq::Fetch::Sql,
 
 Extended in: None
@@ -145,23 +146,21 @@ sub build_gene_db_for_chr {
   # my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
   # my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
 
-  # check if we've already build site range files unless we are forced to overwrite
+  # check if we've already build site range files unless forced to overwrite
   unless ( $self->force ) {
     return
       if ( $self->_has_site_range_file($gan_file)
       && $self->_has_site_range_file($ex_file) );
   }
 
-  # 1st line needs to be value that should be added to encoded genome for these sites
+  # NOTE: 1st line needs to be value that should be added to encoded genome for
+  #       the sites listed in the file
   my $gan_fh = $self->get_write_fh($gan_file);
   say {$gan_fh} $self->in_gan_val;
   my $ex_fh = $self->get_write_fh($ex_file);
   say {$ex_fh} $self->in_exon_val;
-  # my $gene_region_fh = $self->get_write_fh($gene_region_file);
-  # say {$gene_region_fh} $self->in_gene_val;
 
   for my $gene_href (@$chr_data_aref) {
-
     my $gene = Seq::Gene->new($gene_href);
     $gene->set_alt_names( %{ $gene_href->{_alt_names} } );
 
@@ -189,13 +188,16 @@ sub build_gene_db_for_chr {
     }
 
     # exonic annotations need to be written to both gan and exon files
-    # - add a final blank line to the region file; this is a bit of a hack so
-    # the c hasher will not crash if there are no entries (after the initial
-    # idx mask)
-    say {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) }, "";
-    say {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) }, "";
-    # say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
+    say {$ex_fh} join "\n",  @{ $self->_get_range_list( \@ex_sites ) };
+    say {$gan_fh} join "\n", @{ $self->_get_range_list( \@ex_sites ) };
   }
+
+  # - add a final blank line to the region file; this is a bit of a hack so
+  # the c hasher will not crash if there are no entries (after the initial
+  # idx mask)
+  print {$ex_fh} "\n";
+  print {$gan_fh} "\n";
+
   $self->_logger->info('finished building gene site db');
 }
 
