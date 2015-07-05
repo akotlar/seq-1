@@ -3,17 +3,18 @@ use strict;
 use warnings;
 
 package Seq::Build;
-# ABSTRACT: A class for building a binary representation of a genome assembly
+# ABSTRACT: A class for building all files associated with a genome assembly
 # VERSION
+
 =head1 DESCRIPTION
-  
+
   @class Seq::Build
   #TODO: Check description
   Build the annotation databases, as prescribed by the genome assembly.
-  
+
   @example
 
-Uses: 
+Uses:
 =for :list
 * @class Seq::Build::SnpTrack
 * @class Seq::Build::GeneTrack
@@ -24,11 +25,12 @@ Uses:
 
 Used in:
 =for :list
-* /bin/build_genome_assembly.pl 
+* /bin/build_genome_assembly.pl
 
 Extended in: None
 
 =cut
+
 use Moose 2;
 
 use Carp qw/ croak /;
