@@ -5,13 +5,14 @@ use warnings;
 package Seq::Build::GenomeSizedTrackStr;
 # ABSTRACT: Builds a plain text genome used for binary genome creation
 # VERSION
+
 =head1 DESCRIPTION
 
   @class B<Seq::Build::GenomeSizedTrackStr>
 
   TODO: Add description
   Stores a String representation of a genome, as well as the length of each chromosome in the genome.
-  Is a single responsibility class with no public functions. 
+  Is a single responsibility class with no public functions.
 
 Used in:
 =for :list
@@ -50,7 +51,8 @@ has genome_seq => (
 );
 
 # stores the 1-indexed length of each chromosome
-#TODO: enumerate where this is used, and make sure we're consistent with 0 vs 1 index
+# TODO: enumerate where this is used, and make sure we're consistent with 0 vs 1 index
+# NOTE: this is only used for building - e.g., Seq::Build, Seq::Build::* packages
 has chr_len => (
   is      => 'rw',
   isa     => 'HashRef[Str]',
@@ -133,10 +135,10 @@ sub _build_str_genome {
         if ( $. == 2 and !$wanted_chr ) {
           (
             my $err_msg =
-              qq{WARNING: found data for $chr in $local_file but 
+              qq{WARNING: found data for $chr in $local_file but
             '$chr' is not a valid chromsome for $genome_name; ensure chromsomes
             are in fasta format")}
-          ) =~ s/\n/ /xmi;
+          ) =~ s/\n/ /xms;
           $self->_logger->info($err_msg);
           warn $err_msg;
         }
