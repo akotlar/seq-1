@@ -69,7 +69,9 @@ ok( $package->can('meta'), "$package has a meta() method" )
   or BAIL_OUT("$package does not have a meta() method.");
 
 # check read-only attribute have read but no write methods
-has_ro_attr( $package, $_ ) for ( qw ( name type genome_chrs local_dir local_files remote_dir remote_files ) );
+for my $attr ( qw/ name type genome_chrs local_dir local_files remote_dir remote_files / ) {
+  has_ro_attr( $package, $attr );
+}
 
 # check type constraints - Str
 for my $attr_name (qw( name local_dir remote_dir )) {
