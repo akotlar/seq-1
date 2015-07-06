@@ -301,6 +301,7 @@ has local_files => (
   isa     => 'ArrayRef[Str]',
   traits  => ['Array'],
   handles => { all_local_files  => 'elements', },
+  default => sub { [] },
 );
 
 has raw_genome_files => (
