@@ -56,6 +56,7 @@ try
   }
 
   # get absolute path
+  $snpfile     = File::Spec->rel2abs($snpfile);
   $out_file    = File::Spec->rel2abs($out_file);
   $yaml_config = File::Spec->rel2abs($yaml_config);
   say "writing annotation data here: $out_file" if $verbose;
@@ -71,6 +72,8 @@ try
   my $log_file = File::Spec->rel2abs( ".", $log_name );
   say "writing log file here: $log_file" if $verbose;
   Log::Any::Adapter->set( 'File', $log_file );
+
+  chdir $db_dir || die "cannot change to $db_dir";
 
   # create the annotator
   my $annotate_instance = Seq->new(
