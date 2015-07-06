@@ -168,9 +168,11 @@ sub BUILDARGS {
           say "Here is what we are passing to Seq::Config::GenomeSizedTrack";
           p $gst;
         }
-        push @{ $hash{genome_sized_tracks} }, Seq::Config::GenomeSizedTrack->new($gst);
+        my $obj = Seq::Config::GenomeSizedTrack->new($gst);
 
-        say "We got past Seq::Config::GenomeSizedTrack instantiation" if $href->{debug};
+        push @{ $hash{genome_sized_tracks} }, $obj;
+
+        p $obj if $href->{debug};
       }
       else {
         croak sprintf( "unrecognized genome track type %s\n", $gst->{type} );
