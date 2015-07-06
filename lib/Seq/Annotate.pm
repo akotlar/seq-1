@@ -388,14 +388,21 @@ sub _build_dbm_snp {
     my @array = ();
     for my $chr ( $self->all_genome_chrs ) {
       my $db_name = join ".", $snp_track->name, $chr, $snp_track->type, 'kch';
-      push @array,
-        Seq::KCManager->new(
+      if (-f $db_name ) {
+        push @array, Seq::KCManager->new(
         {
           filename => $self->_get_dbm_file($db_name),
           mode     => 'read',
         }
         );
+      }
+      else {
+        push @array, undef;
+      }
     }
+
+    p @array;
+
     push @snp_tracks, \@array;
   }
   return \@snp_tracks;
@@ -599,9 +606,12 @@ sub get_ref_annotation {
   if ($gan) {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
+      p $kch if $self->debug;
+      
+      # if there's no file for the track then it will be undef
+      next unless defined $kch;
       my $rec = $kch->db_get($abs_pos);
       if ($self->debug) {
-        p $kch;
         print "\n\nThis is rec:\n\n";
         p $rec;
       }
