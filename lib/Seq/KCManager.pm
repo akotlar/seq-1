@@ -65,7 +65,7 @@ has msiz => (
 
 has _db => (
   is      => 'ro',
-  isa     => 'KyotoCabinet::DB',
+  isa     => 'Maybe[KyotoCabinet::DB]',
   lazy    => 1,
   builder => '_build_db',
 );
@@ -130,10 +130,16 @@ sub db_put {
 
 sub db_get {
   my ( $self, $key ) = @_;
+  my $dbm = $self->_db;
 
-  my $val = $self->_db->get($key);
-  if ( defined $val ) {
-    return decode_json $val;
+  if ( defined $dbm ) {
+    my $val = $dbm->get($key);
+    if ( defined $val ) {
+      return decode_json $val;
+    }
+    else {
+      return;
+    }
   }
   else {
     return;
