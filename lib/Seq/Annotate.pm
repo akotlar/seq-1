@@ -368,8 +368,7 @@ sub _build_dbm_gene {
     my @array;
     for my $chr ( $self->all_genome_chrs ) {
       my $db_name = join ".", $gene_track->name, $chr, $gene_track->type, 'kch';
-      push @array,
-        Seq::KCManager->new(
+        push @array,Seq::KCManager->new(
         {
           filename => $self->_get_dbm_file($db_name),
           mode     => 'read',
@@ -388,16 +387,12 @@ sub _build_dbm_snp {
     my @array = ();
     for my $chr ( $self->all_genome_chrs ) {
       my $db_name = join ".", $snp_track->name, $chr, $snp_track->type, 'kch';
-      if (-f $db_name ) {
         push @array, Seq::KCManager->new(
         {
           filename => $self->_get_dbm_file($db_name),
           mode     => 'read',
         }
         );
-      }
-      else {
-        push @array, undef;
       }
     }
 
