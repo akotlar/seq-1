@@ -130,10 +130,18 @@ sub db_put {
 
 sub db_get {
   my ( $self, $key ) = @_;
+
+  # the reason we need to check the existance of the db has to do with that we
+  # allow non-existant file names to be used in creating the object and since
+  # the creation of the _db attribute is done in a lazy way we may never need to
+  # bother checking the file system or opening the databse.
   my $dbm = $self->_db;
 
+  # does dbm doesn't exist?
   if ( defined $dbm ) {
     my $val = $dbm->get($key);
+
+    # does the value exist within the dbm?
     if ( defined $val ) {
       return decode_json $val;
     }
