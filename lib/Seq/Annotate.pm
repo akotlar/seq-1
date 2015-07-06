@@ -600,10 +600,11 @@ sub get_ref_annotation {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
       my $rec = $kch->db_get($abs_pos);
-      p $kch if $self->debug;
-      print "\n\nThis is rec:\n\n";
-      p $rec if $self->debug;
-
+      if ($self->debug) {
+        p $kch;
+        print "\n\nThis is rec:\n\n";
+        p $rec;
+      }
       push @gene_data, @$rec if defined $rec;
     }
     $record{gene_data} = \@gene_data;
@@ -614,9 +615,10 @@ sub get_ref_annotation {
     for my $snp_dbs ( $self->_all_dbm_snp ) {
       my $kch = $snp_dbs->[$chr_index];
       my $rec = $kch->db_get($abs_pos);
-      p $kch if $self->debug;
-      p $rec if $self->debug;
-
+      if ($self->debug) {
+        p $kch;
+        p $rec;
+      }
       push @snp_data, @$rec if defined $rec;
     }
     $record{snp_data} = \@snp_data;
