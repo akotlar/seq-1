@@ -44,6 +44,7 @@ Extended in:
 
 use Moose 2;
 use Moose::Util::TypeConstraints;
+use MooseX::Types::Path::Tiny qw/ Path AbsFile AbsPath AbsPaths/;
 
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
@@ -150,13 +151,13 @@ for ( my $i = 0; $i < 256; $i++ ) {
 # fill properties
 # iterate over all of the keys in %base_char_2_txt @values 0...4
 foreach my $base_char ( keys %base_char_2_txt ) {
-  #iterate over @in_snp elements @values 0,8
+  #iterate over @in_snp elements @values 0,64
   foreach my $snp (@in_snp) {
     #iterate over @in_exon elements @values 0,16
     foreach my $gene (@in_gene) {
       #iterate over @in_gene elements @values 0,32
       foreach my $exon (@in_exon) {
-        #iterate over @in_snp elements @values 0,64
+        #iterate over @in_snp elements @values 0,8
         foreach my $gan (@in_gan) {
           #$base_char gets duck types as an {Int}
           my $char_code = $base_char + $gan + $gene + $exon + $snp;
@@ -257,36 +258,72 @@ has next_chr => (
 );
 
 # file stuff
-has genome_index_dir => ( is => 'ro', isa => 'Str', );
-has local_dir        => ( is => 'ro', isa => 'Str', );
-has local_files      => (
+has genome_index_dir => ( is => 'ro', isa => Path, coerce => 1, );
+
+# I favor removing genome_raw_dir and requiring the local_dir only be used
+has genome_raw_dir   => ( is => 'ro', isa => Path, coerce => 1, );
+has local_dir        => ( is => 'ro', isa => Path, coerce => 1, );
+
+has genome_str_file => (
+  is => 'ro',
+  isa => AbsPath,
+  builder => '_build_genome_str_file',
+  lazy => 1,
+  coerce => 1,
+);
+has genome_bin_file => (
+  is => 'ro',
+  isa => AbsPath,
+  builder => '_build_genome_bin_file',
+  lazy => 1,
+  coerce => 1,
+);
+
+sub _build_genome_str_file {
+  my $self = shift;
+  my $ext = 'str.dat';
+  my $base_dir = $self->genome_index_dir;
+  my $file = join ".", $self->name, $self->type, $ext;
+  return $base_dir->child($file);
+}
+
+sub _build_genome_bin_file {
+  my $self = shift;
+  my $ext = 'idx';
+  my $base_dir = $self->genome_index_dir;
+  my $file = join ".", $self->name, $self->type, $ext;
+  return $base_dir->child($file);
+}
+
+# this is the list of things passed to the class
+has local_files => (
   is      => 'ro',
   isa     => 'ArrayRef[Str]',
   traits  => ['Array'],
-  handles => {
-    all_local_files  => 'elements',
-    first_local_file => 'shift',
-  },
-);
-has remote_dir => ( is => 'ro', isa => 'Str' );
-has remote_files => (
-  is     => 'ro',
-  isa    => 'ArrayRef[Str]',
-  traits => ['Array'],
+  handles => { all_local_files  => 'elements', },
 );
 
-# for processing scripts
-has proc_init_cmds => (
-  is     => 'ro',
-  isa    => 'ArrayRef[Str]',
-  traits => ['Array'],
+has raw_genome_files => (
+  is => 'ro',
+  isa => AbsPaths,
+  builder => '_build_raw_genome_files',
+  traits  => ['Array'],
+  handles => { all_raw_genome_files  => 'elements', },
+  coerce  => 1,
 );
-has proc_chrs_cmds => (
-  is     => 'ro',
-  isa    => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
-has proc_clean_cmds => (
+
+sub _build_raw_genome_files {
+  my $self = shift;
+  my @array;
+  my $base_dir = $self->local_dir;
+  for my $file ( $self->all_local_files ) {
+    push @array, $base_dir->child($file);
+  }
+  return \@array;
+}
+
+has remote_dir => ( is => 'ro', isa => 'Str' );
+has remote_files => (
   is     => 'ro',
   isa    => 'ArrayRef[Str]',
   traits => ['Array'],
@@ -531,27 +568,21 @@ sub BUILDARGS {
     confess "Error: $class expects hash reference.\n";
   }
   else {
-    _set_default_feature_score_range($href);
-    return $class->SUPER::BUILDARGS($href);
-  }
-}
-
-sub _set_default_feature_score_range {
-  my $href = shift;
-
-  if ( $href->{type} eq "score" ) {
-    if ( $href->{name} eq "phastCons" ) {
+    if ( $href->{type} eq "score" ) {
+      if ( $href->{name} eq "phastCons" ) {
+        $href->{score_min} = 0;
+        $href->{score_max} = 1;
+      }
+      elsif ( $href->{name} eq "phyloP" ) {
+        $href->{score_min} = -30;
+        $href->{score_max} = 30;
+      }
+    }
+    elsif ( $href->{type} eq "cadd" ) {
       $href->{score_min} = 0;
-      $href->{score_max} = 1;
+      $href->{score_max} = 85;
     }
-    elsif ( $href->{name} eq "phyloP" ) {
-      $href->{score_min} = -30;
-      $href->{score_max} = 30;
-    }
-  }
-  elsif ( $href->{type} eq "cadd" ) {
-    $href->{score_min} = 0;
-    $href->{score_max} = 85;
+    return $class->SUPER::BUILDARGS($href);
   }
 }
 
