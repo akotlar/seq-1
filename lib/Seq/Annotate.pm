@@ -152,7 +152,7 @@ has _cadd_lookup => (
 
 has dbm_gene => (
   is      => 'ro',
-  isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
+  isa     => 'ArrayRef[ArrayRef[Maybe[Seq::KCManager]]]',
   builder => '_build_dbm_gene',
   traits  => ['Array'],
   handles => { _all_dbm_gene => 'elements', },
@@ -161,7 +161,7 @@ has dbm_gene => (
 
 has dbm_snp => (
   is      => 'ro',
-  isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
+  isa     => 'ArrayRef[ArrayRef[Maybe[Seq::KCManager]]]',
   builder => '_build_dbm_snp',
   traits  => ['Array'],
   handles => { _all_dbm_snp => 'elements', },
@@ -401,7 +401,7 @@ sub _build_dbm_snp {
       }
     }
 
-    p @array;
+    p @array if $self->debug;
 
     push @snp_tracks, \@array;
   }
@@ -607,7 +607,7 @@ sub get_ref_annotation {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
       p $kch if $self->debug;
-      
+
       # if there's no file for the track then it will be undef
       next unless defined $kch;
       my $rec = $kch->db_get($abs_pos);
