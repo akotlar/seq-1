@@ -393,13 +393,10 @@ sub _build_dbm_snp {
           mode     => 'read',
         }
         );
-      }
     }
-
-    p @array if $self->debug;
-
     push @snp_tracks, \@array;
   }
+  p @snp_tracks if $self->debug;
   return \@snp_tracks;
 }
 
