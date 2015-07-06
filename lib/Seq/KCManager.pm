@@ -6,7 +6,7 @@ package Seq::KCManager;
 # ABSTRACT: Manages KyotoCabinet db
 # VERSION
 =head1 DESCRIPTION
-  
+
   @class B<Seq::KCManager>
   #TODO: Check description
 
@@ -85,19 +85,25 @@ sub _build_db {
     my $file_with_params = join "#", $self->filename, $params;
     my $db               = new KyotoCabinet::DB;
 
-    if ( !$db->open( $file_with_params, $db->OWRITER | $db->OCREATE ) ) {
-      printf STDERR "open error: %s\n", $db->error;
+    if ( $db->open( $file_with_params, $db->OWRITER | $db->OCREATE ) ) {
+      return $db;
     }
-    return $db;
+    else {
+      printf STDERR "open error: %s\n", $db->error;
+      return;
+    }
   }
   elsif ( $self->mode eq 'read' ) {
     my $file_with_params = join "#", $self->filename, $this_msiz;
     my $db = new KyotoCabinet::DB;
 
-    if ( !$db->open( $file_with_params, $db->OREADER ) ) {
-      printf STDERR "open error: %s\n", $db->error;
+    if ( $db->open( $file_with_params, $db->OREADER ) ) {
+      return $db;
     }
-    return $db;
+    else {
+      printf STDERR "open error: %s\n", $db->error;
+      return;
+    }
   }
   else {
     croak "ERROR: expected mode to be 'read' or 'create' but got: " . $self->mode;
