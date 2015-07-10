@@ -1,13 +1,9 @@
 use 5.10.0;
 use strict;
 use warnings;
-use Carp qw/ croak /;
-
-# TODO: Clarify whether gan / $in_gan refers to knownGene annotations.
-# NOTE: Alex, gan refers to any SparseTrack gene annoation.
 
 package Seq::Config::GenomeSizedTrack;
-# ABSTRACT: Configure a genome sized track
+# ABSTRACT: Configure a genome-sized track
 # VERSION
 
 =head1 DESCRIPTION

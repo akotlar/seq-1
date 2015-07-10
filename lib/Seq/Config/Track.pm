@@ -9,6 +9,7 @@ package Seq::Config::Track;
 use Moose 2;
 use Moose::Util::TypeConstraints;
 use MooseX::Types::Path::Tiny qw/ Path /;
+
 use namespace::autoclean;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ Str Object /;
