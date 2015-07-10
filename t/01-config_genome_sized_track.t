@@ -11,7 +11,7 @@ use Scalar::Util qw( blessed );
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 60;
+plan tests => 39;
 
 # set test genome
 my $ga_config  = path('./config/hg38.yml')->absolute->stringify;
@@ -23,80 +23,32 @@ my $package = "Seq::Config::GenomeSizedTrack";
 # load package
 use_ok($package) || die "$package cannot be loaded";
 
-sub build_obj_data {
-  my $href = shift;
+# check extension of Seq::Config::Track
+check_isa( $package, ['Seq::Config::Track','Moose::Object']);
 
-  my %hash;
-
-  # get essential stuff
-  for my $track ( @{ $config_href->{genome_sized_tracks} } ) {
-    if ( $track->{type} eq "genome") {
-      %hash = map { $_ => $track->{$_} } (qw/ local_dir local_files name remote_dir remote_files type /);
-    }
-  }
-
-  # add additional stuff
-  if ( %hash ) {
-    $hash{genome_raw_dir} = $config_href->{genome_raw_dir}  || 'sandbox';
-    $hash{genome_index_dir} = $config_href->{genome_index_dir} || 'sandbox';
-    $hash{genome_chrs} = $config_href->{genome_chrs};
-  }
-  return \%hash;
-}
-
-my $href = build_obj_data( $config_href );
-
+# object creation
+my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
 my $obj = $package->new( $href );
+ok($obj, 'object creation');
 
-p $obj;
-say $obj->genome_raw_dir;
-say $obj->local_dir;
-say $obj->genome_index_dir;
-say $obj->genome_str_file;
-say $obj->genome_bin_file;
-
-for my $file ( $obj->all_raw_genome_files ) {
-  say $file;
-}
-
-exit; # TODO: remove exit after debugging finished;
-
-# check is moose object
-check_isa( $package, ['Moose::Object'] );
-
-# check package uses Moose
-ok( $package->can('meta'), "$package has a meta() method" )
-  or BAIL_OUT("$package does not have a meta() method.");
-
-# check read-only attribute have read but no write methods
-for my $attr ( qw/ name type genome_chrs local_dir local_files remote_dir remote_files / ) {
+# Attribute tests
+my @inherited_ro_attrs = qw/ name genome_chrs next_chr genome_index_dir
+  genome_raw_dir local_files remote_dir remote_files /;
+my @ro_attrs = qw/ genome_str_file genome_bin_file genome_offset_file _local_files
+  score_min score_max score_R _score_beta _score_lu /;
+for my $attr ( @ro_attrs ) {
   has_ro_attr( $package, $attr );
 }
 
-# check type constraints - Str
-for my $attr_name (qw( name local_dir remote_dir )) {
-  my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
-  is( $attr->type_constraint->name, 'Str', "$attr_name type is Str" );
-}
-
-# check type constraints - ArrayRef[Str]
-for my $attr_name ( qw( genome_chrs local_files remote_files ) ) {
-  my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
-  is( $attr->type_constraint->name,
-    'ArrayRef[Str]', "$attr_name type is ArrayRef[Str]" );
-}
-
 # check type constraints - GenomeSizedTrackType
-for my $attr_name (qw( type )) {
+for my $attr_name (qw/ type /) {
   my $attr = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name,
     'GenomeSizedTrackType', "$attr_name type is GenomeSizedTrackType" );
 }
 
-# check methods
+# Methods tests
 #   1 - index coding:   get_idx_code
 #   2 - index decoding: get_idx_base, get_idx_in_gan, get_idx_in_gene, get_idx_in_exon,
 #                       get_idx_in_snp
@@ -145,11 +97,32 @@ for my $attr_name (qw( type )) {
 
   # check build idx codes
   for my $type ( qw/ base gan gene exon snp / ) {
-    is_deeply( $exp{$type}, $obs{$type}, "got idx correct index codes for $type" );
+    is_deeply( $exp{$type}, $obs{$type}, "idx code for $type" );
   }
 }
 
-p $package;
+sub build_obj_data {
+  my ( $track_type, $type, $href ) = @_;
+
+  my %hash;
+
+  # get essential stuff
+  for my $track ( @{ $config_href->{$track_type} } ) {
+    if ( $track->{type} eq $type) {
+      for my $attr (qw/ name type local_files remote_dir remote_files /) {
+        $hash{$attr} = $track->{$attr} if exists $track->{$attr};
+      }
+    }
+  }
+
+  # add additional stuff
+  if ( %hash ) {
+    $hash{genome_raw_dir} = $config_href->{genome_raw_dir}  || 'sandbox';
+    $hash{genome_index_dir} = $config_href->{genome_index_dir} || 'sandbox';
+    $hash{genome_chrs} = $config_href->{genome_chrs};
+  }
+  return \%hash;
+}
 
 sub check_isa {
   my $class   = shift;
@@ -184,22 +157,4 @@ sub has_ro_attr {
   is( $attr->get_read_method, $name,
     "$name attribute has a reader accessor - $name()" );
   is( $attr->get_write_method, undef, "$name attribute does not have a writer" );
-}
-
-sub has_rw_attr {
-  my $class      = shift;
-  my $name       = shift;
-  my $overridden = shift;
-
-  local $Test::Builder::Level = $Test::Builder::Level + 1;
-
-  my $articled = $overridden ? "an overridden $name" : A($name);
-  ok( $class->meta->has_attribute($name), "$class has $articled attribute" );
-
-  my $attr = $class->meta->get_attribute($name);
-
-  is( $attr->get_read_method, $name,
-    "$name attribute has a reader accessor - $name()" );
-  is( $attr->get_write_method, $name,
-    "$name attribute has a writer accessor - $name()" );
 }

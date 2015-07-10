@@ -44,12 +44,12 @@ Extended in:
 
 use Moose 2;
 use Moose::Util::TypeConstraints;
-use MooseX::Types::Path::Tiny qw/ Path AbsFile AbsPath AbsPaths/;
+use MooseX::Types::Path::Tiny qw/ AbsPath AbsPaths /;
 
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
-use DDP; # for debugging
+extends 'Seq::Config::Track';
 
 =type GenomeSizedTrackType
 
@@ -181,20 +181,6 @@ foreach my $base_char ( keys %base_char_2_txt ) {
   }
 }
 
-=property @public @required {Str} name
-
-  The feature name. This is defined directly in the input config file.
-
-  @example:
-  =for :list
-  * PhastCons
-  * PhyloP
-  * CADD
-
-=cut
-
-has name => ( is => 'ro', isa => 'Str', required => 1, );
-
 =property @public @required {GenomeSizedTrackType<Str>} type
 
   The type of feature
@@ -232,38 +218,6 @@ Used in:
 
 =cut
 
-=method all_genome_chrs
-
-  Returns all of the elements of the @property {ArrayRef<str>} C<genome_chrs>
-  as an array (not an array reference).
-  $self->all_genome_chrs
-
-=cut
-
-has genome_chrs => (
-  is       => 'ro',
-  isa      => 'ArrayRef[Str]',
-  traits   => ['Array'],
-  required => 1,
-  handles  => { all_genome_chrs => 'elements', },
-);
-
-has next_chr => (
-  is      => 'ro',
-  isa     => 'HashRef',
-  traits  => ['Hash'],
-  lazy    => 1,
-  builder => '_build_next_chr',
-  handles => { get_next_chr => 'get', },
-);
-
-# file stuff
-has genome_index_dir => ( is => 'ro', isa => Path, coerce => 1, );
-
-# I favor removing genome_raw_dir and requiring the local_dir only be used
-has genome_raw_dir   => ( is => 'ro', isa => Path, coerce => 1, );
-has local_dir        => ( is => 'ro', isa => Path, coerce => 1, );
-
 has genome_str_file => (
   is => 'ro',
   isa => AbsPath,
@@ -271,6 +225,12 @@ has genome_str_file => (
   lazy => 1,
   coerce => 1,
 );
+
+sub _build_genome_str_file {
+  my $self = shift;
+  return $self->_build_file( 'str.dat' );
+}
+
 has genome_bin_file => (
   is => 'ro',
   isa => AbsPath,
@@ -279,56 +239,50 @@ has genome_bin_file => (
   coerce => 1,
 );
 
-sub _build_genome_str_file {
-  my $self = shift;
-  my $ext = 'str.dat';
-  my $base_dir = $self->genome_index_dir;
-  my $file = join ".", $self->name, $self->type, $ext;
-  return $base_dir->child($file);
-}
-
 sub _build_genome_bin_file {
   my $self = shift;
-  my $ext = 'idx';
+  return $self->_build_file( 'idx' );
+}
+
+has genome_offset_file => (
+  is => 'ro',
+  isa => AbsPath,
+  builder => '_build_genome_offset_file',
+  lazy => 1,
+  coerce => 1,
+);
+
+sub _build_genome_offset_file {
+  my $self = shift;
+  return $self->_build_file( 'yml' );
+}
+
+sub _build_file {
+  my ( $self, $ext ) = @_;
   my $base_dir = $self->genome_index_dir;
   my $file = join ".", $self->name, $self->type, $ext;
   return $base_dir->child($file);
 }
 
-# this is the list of things passed to the class
-has local_files => (
-  is      => 'ro',
-  isa     => 'ArrayRef[Str]',
-  traits  => ['Array'],
-  handles => { all_local_files  => 'elements', },
-  default => sub { [] },
-);
-
-has raw_genome_files => (
+has _local_files => (
   is => 'ro',
   isa => AbsPaths,
   builder => '_build_raw_genome_files',
   traits  => ['Array'],
-  handles => { all_raw_genome_files  => 'elements', },
+  handles => { all_local_files  => 'elements', },
   coerce  => 1,
+  lazy    => 1,
 );
 
 sub _build_raw_genome_files {
   my $self = shift;
   my @array;
-  my $base_dir = $self->local_dir;
-  for my $file ( $self->all_local_files ) {
-    push @array, $base_dir->child($file);
+  my $base_dir = $self->genome_raw_dir;
+  for my $file ( @{ $self->local_files } ) {
+    push @array, $base_dir->child($self->type)->child($file);
   }
   return \@array;
 }
-
-has remote_dir => ( is => 'ro', isa => 'Str' );
-has remote_files => (
-  is     => 'ro',
-  isa    => 'ArrayRef[Str]',
-  traits => ['Array'],
-);
 
 # for conservation scores
 has score_min => (
@@ -407,19 +361,6 @@ sub _build_score_lu {
 sub _build_score_beta {
   my $self = shift;
   return ( ( $self->score_R - 1 ) / ( $self->score_max - $self->score_min ) );
-}
-
-sub _build_next_chr {
-  my $self = shift;
-
-  my %next_chrs;
-  my @chrs = $self->all_genome_chrs;
-  for my $i ( 0 .. $#chrs ) {
-    if ( defined $chrs[ $i + 1 ] ) {
-      $next_chrs{ $chrs[$i] } = $chrs[ $i + 1 ];
-    }
-  }
-  return \%next_chrs;
 }
 
 sub get_idx_base {
