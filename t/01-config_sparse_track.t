@@ -11,7 +11,7 @@ use YAML qw/ LoadFile /;
 
 use DDP;
 
-plan tests => 40;
+plan tests => 27;
 
 # set test genome
 my $ga_config  = path('./config/hg38.yml')->absolute->stringify;

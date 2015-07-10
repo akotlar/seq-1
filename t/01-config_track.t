@@ -28,8 +28,8 @@ my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
 my $obj = $package->new( $href );
 
 # attribute tests
-my @ro_attrs = qw/ name genome_chrs next_chr genome_index_dir genome_raw_dir
-                  local_files remote_dir remote_files /;
+my @ro_attrs = qw/ name genome_chrs next_chr genome_index_dir
+  genome_raw_dir local_files remote_dir remote_files /;
 for my $attr ( @ro_attrs ) {
   has_ro_attr( $package, $attr );
 }

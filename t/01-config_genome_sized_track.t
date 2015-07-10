@@ -3,8 +3,6 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use DDP;
-use File::Copy;
 use Lingua::EN::Inflect qw( A PL_N );
 use Path::Tiny;
 use Scalar::Util qw( blessed );
@@ -32,10 +30,8 @@ my $obj = $package->new( $href );
 ok($obj, 'object creation');
 
 # Attribute tests
-my @inherited_ro_attrs = qw/ name genome_chrs next_chr genome_index_dir
-  genome_raw_dir local_files remote_dir remote_files /;
-my @ro_attrs = qw/ genome_str_file genome_bin_file genome_offset_file _local_files
-  score_min score_max score_R _score_beta _score_lu /;
+my @ro_attrs = qw/ genome_str_file genome_bin_file genome_offset_file
+  _local_files score_min score_max score_R _score_beta _score_lu /;
 for my $attr ( @ro_attrs ) {
   has_ro_attr( $package, $attr );
 }
