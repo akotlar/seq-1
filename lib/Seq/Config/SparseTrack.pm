@@ -1,6 +1,11 @@
 use 5.10.0;
 use strict;
 use warnings;
+use Carp qw/ croak /;
+
+package Seq::Config::SparseTrack;
+# ABSTRACT: Configure a sparse traack
+# VERSION
 
 =head1 DESCRIPTION
 
@@ -32,24 +37,26 @@ Used in:
 * @class Seq::Build::TxTrack
 
 =cut
-package Seq::Config::SparseTrack;
-# ABSTRACT: Configure a sparse traack
-# VERSION
 
 use Moose 2;
 use Moose::Util::TypeConstraints;
-use Carp qw/ croak /;
-use namespace::autoclean;
+use MooseX::Types::Path::Tiny qw/ AbsPath AbsPaths /;
 
-# TODO: kotlar: I think we could use MooseX::Types::Path::Tiny
-# qw/AbsFile AbsPath AbsDir/; because this will allow us to automatically check
-# whether the dir/file exists if we wish to use a more duck-typing approach.
-# NOTE: Alex, I'll need to think about this. Part of the problem is that we're
-#       using this in 3 different scenerios - fetching (only need the raw data),
-#       building (will create the db files), and annotation (definitely need the
-#       raw data). Validating should only be done in the right context; it might
-#       be worth considering making an Annotate::GeneTrack, etc. that does the
-#       validation for the annotation context
+use namespace::autoclean;
+use Type::Params qw/ compile /;
+use Types::Standard qw/ Str Object /;
+
+extends 'Seq::Config::Track';
+
+=type SparseTrackType
+
+=for :list
+
+1. gene
+
+2. snp
+
+=cut
 
 enum SparseTrackType => [ 'gene', 'snp' ];
 
@@ -58,19 +65,32 @@ my @gene_track_fields = qw( chrom     strand    txStart   txEnd
   cdsStart  cdsEnd    exonCount exonStarts
   exonEnds  name );
 
-# genome assembly info
-has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_chrs => (
-  is      => 'ro',
-  isa     => 'ArrayRef[Str]',
-  traits  => ['Array'],
-  handles => { all_genome_chrs => 'elements', },
-);
+# use: $self->get_kch_file( $chr );
+# use: $self->get_dat_file( $chr );
 
 # track information
-has name => ( is => 'ro', isa => 'Str',             required => 1, );
 has type => ( is => 'ro', isa => 'SparseTrackType', required => 1, );
 has sql_statement => ( is => 'ro', isa => 'Str', );
+
+has _local_files => (
+  is => 'ro',
+  isa => AbsPaths,
+  builder => '_build_raw_track_files',
+  traits  => ['Array'],
+  handles => { all_local_files  => 'elements', },
+  coerce  => 1,
+  lazy    => 1,
+);
+
+sub _build_raw_track_files {
+  my $self = shift;
+  my @array;
+  my $base_dir = $self->genome_raw_dir;
+  for my $file ( @{ $self->local_files } ) {
+    push @array, $base_dir->child($self->type)->child($file);
+  }
+  return \@array;
+}
 
 =property @required {ArrayRef<str>} features
 
@@ -92,17 +112,6 @@ has features => (
   traits   => ['Array'],
   handles  => { all_features => 'elements', },
 );
-
-# file information
-# NOTE: Alex, I'm not really following you here - what's the antecedant of
-#       'things'?
-# TODO: kotlar: By not checkign the file system here, we couple SparseTrack and
-# GenomeSizedTrack to Assembly.pm. since this is really where genome_index_dir
-# is held for all other classes, we should explicitly check things here not in
-# Annotate.pm.
-has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1 );
-has local_dir        => ( is => 'ro', isa => 'Str', required => 1 );
-has local_file       => ( is => 'ro', isa => 'Str', required => 1 );
 
 =function sql_statement (private,)
 
@@ -171,6 +180,25 @@ around 'sql_statement' => sub {
   }
   return $new_stmt;
 };
+
+sub get_kch_file {
+  state $check = compile( Object, Str );
+  my ($self, $chr) = $check->(@_);
+  return $self->_get_file( $chr, 'kch' );
+}
+
+sub get_dat_file {
+  state $check = compile( Object, Str );
+  my ($self, $chr) = $check->(@_);
+  return $self->_get_file( $chr, 'dat' );
+}
+
+sub _get_file {
+  my ($self, $chr, $ext) = @_;
+  my $base_dir = $self->genome_index_dir;
+  my $file_name = sprintf("%s.%s.%s.%s", $self->name, $self->type, $chr, $ext );
+  return $base_dir->child($file_name)->absolute->stringify;
+}
 
 =method @public snp_fields_aref
 

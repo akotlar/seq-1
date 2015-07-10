@@ -3,22 +3,19 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use File::Copy;
-use Lingua::EN::Inflect qw/ A PL_N /;
+use Lingua::EN::Inflect qw( A PL_N );
 use Path::Tiny;
+use Scalar::Util qw( blessed );
 use Test::More;
+use YAML qw/ LoadFile /;
+
+use DDP;
 
 plan tests => 40;
 
 # set test genome
-my $hg38_node03_config = path('./config/hg38_node03.yml')->absolute->stringify;
-my $hg38_local_config  = path('./config/hg38_local.yml')->absolute->stringify;
-
-# setup testing enviroment
-{
-  make_path('./sandbox') unless -d './sandbox';
-  chdir("./sandbox");
-}
+my $ga_config  = path('./config/hg38.yml')->absolute->stringify;
+my $config_href = LoadFile( $ga_config );
 
 my $package = "Seq::Config::SparseTrack";
 
@@ -26,23 +23,13 @@ my $package = "Seq::Config::SparseTrack";
 use_ok($package) || die "$package cannot be loaded";
 
 # check is moose object
-check_isa( $package, ['Moose::Object'] );
+check_isa( $package, ['Seq::Config::Track','Moose::Object']);
 
-# check package uses Moose
-ok( $package->can('meta'), "$package has a meta() method" )
-  or BAIL_OUT("$package does not have a meta() method.");
-
-# check read-only attribute have read but no write methods
-has_ro_attr( $package, $_ )
-  for (qw/ local_dir local_file name type features sql_statement /);
-
-# check type constraints - Str
-for my $attr_name (qw/ local_dir local_file name sql_statement /) {
-  my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
-  is( $attr->type_constraint->name, 'Str', "$attr_name type is Str" );
+# Attribute tests
+my @ro_attrs = qw/ type sql_statement features /;
+for my $attr ( @ro_attrs ) {
+  has_ro_attr( $package, $attr );
 }
-
 # check type constraints - SparseTrackType
 for my $attr_name (qw/ type /) {
   my $attr = $package->meta->get_attribute($attr_name);
@@ -52,32 +39,49 @@ for my $attr_name (qw/ type /) {
 }
 
 {
-  # check snp sparse track
+  # object creation
+  my $href = build_obj_data( 'sparse_tracks', 'snp', $config_href );
   my @features = qw/ alleleFreqCount alleles alleleFreqs /;
+  $href->{features} = \@features;
+  my $obj = $package->new( $href );
+  ok($obj, 'object creation');
+
+  # local files
+  my $exp_path = path($config_href->{genome_raw_dir})->child('./snp/hg38.snp141.txt')->absolute;
+  is_deeply( $obj->all_local_files, $exp_path, 'local_files');
+
+  $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.kch')->absolute;
+  is( $obj->get_kch_file( 'chr1' ), $exp_path, 'method: get_kch_file');
+
+  $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.dat')->absolute;
+  is ($obj->get_dat_file( 'chr1' ), $exp_path, 'method: get_dat_file');
+
+  # check snp sparse track
+
   my $st       = $package->new(
     {
       name          => 'snp141',
       type          => 'snp',
       sql_statement => 'SELECT _snp_fields FROM hg38.snp141',
       features      => \@features,
-      local_dir     => './hg38/raw/snp',
-      local_file    => 'snp141.txt.gz',
+      local_file    => ['snp141.txt.gz'],
+      genome_chrs   => $config_href->{genome_chrs},
     }
   );
 
   my $sql_stmt =
     q{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141};
-  is( $sql_stmt, $st->sql_statement, 'Sql statement' );
+  is( $sql_stmt, $st->sql_statement, '(snp_track) method: Sql statement' );
 
   my @all_snp_fields = qw/ chrom chromStart chromEnd name /;
   push @all_snp_fields, @features;
 
-  is_deeply( \@all_snp_fields, $st->snp_fields_aref, 'Got Snp Fields Aref' );
+  is_deeply( \@all_snp_fields, $st->snp_fields_aref, '(snp_track) method: Snp Fields Aref' );
 
-  is( undef, $st->gene_fields_aref, 'Got Gene Fields Aref' );
+  is( undef, $st->gene_fields_aref, '(snp_track) method: Gene Fields Aref' );
 
   my @got_features = $st->all_features;
-  is_deeply( \@features, \@got_features, 'got features' );
+  is_deeply( \@features, \@got_features, '(snp_track) method: features' );
 }
 
 {
@@ -92,28 +96,50 @@ for my $attr_name (qw/ type /) {
       sql_statement =>
         'SELECT _gene_fields FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name',
       features   => \@features,
-      local_dir  => './hg38/raw/gene',
-      local_file => 'knownGene.txt.gz',
+      genome_chrs   => $config_href->{genome_chrs},
     }
   );
 
   my $sql_stmt =
     q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd, exonCount, exonStarts, exonEnds, name, mRNA, spID, spDisplayID, geneSymbol, refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name};
 
-  is( $sql_stmt, $st->sql_statement, 'Sql statement' );
+  is( $sql_stmt, $st->sql_statement, '(gene_track) method: Sql statement' );
 
   my @all_gene_fields =
     qw/ chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds name /;
 
   push @all_gene_fields, @features;
 
-  is_deeply( \@all_gene_fields, $st->gene_fields_aref, 'Got Gene Fields Aref' );
+  is_deeply( \@all_gene_fields, $st->gene_fields_aref, '(gene_track) method: Gene Fields Aref' );
 
-  is( undef, $st->snp_fields_aref, 'Got Snp Fields Aref' );
+  is( undef, $st->snp_fields_aref, '(gene_track) method: Snp Fields Aref' );
 
   my @got_features = $st->all_features;
 
-  is_deeply( \@features, \@got_features, 'got features' );
+  is_deeply( \@features, \@got_features, '(gene_track) method: features' );
+}
+
+sub build_obj_data {
+  my ( $track_type, $type, $href ) = @_;
+
+  my %hash;
+
+  # get essential stuff
+  for my $track ( @{ $config_href->{$track_type} } ) {
+    if ( $track->{type} eq $type) {
+      for my $attr (qw/ name type local_files remote_dir remote_files /) {
+        $hash{$attr} = $track->{$attr} if exists $track->{$attr};
+      }
+    }
+  }
+
+  # add additional stuff
+  if ( %hash ) {
+    $hash{genome_raw_dir} = $config_href->{genome_raw_dir}  || 'sandbox';
+    $hash{genome_index_dir} = $config_href->{genome_index_dir} || 'sandbox';
+    $hash{genome_chrs} = $config_href->{genome_chrs};
+  }
+  return \%hash;
 }
 
 sub check_isa {
@@ -149,22 +175,4 @@ sub has_ro_attr {
   is( $attr->get_read_method, $name,
     "$name attribute has a reader accessor - $name()" );
   is( $attr->get_write_method, undef, "$name attribute does not have a writer" );
-}
-
-sub has_rw_attr {
-  my $class      = shift;
-  my $name       = shift;
-  my $overridden = shift;
-
-  local $Test::Builder::Level = $Test::Builder::Level + 1;
-
-  my $articled = $overridden ? "an overridden $name" : A($name);
-  ok( $class->meta->has_attribute($name), "$class has $articled attribute" );
-
-  my $attr = $class->meta->get_attribute($name);
-
-  is( $attr->get_read_method, $name,
-    "$name attribute has a reader accessor - $name()" );
-  is( $attr->get_write_method, $name,
-    "$name attribute has a writer accessor - $name()" );
 }
