@@ -86,10 +86,8 @@ sub _build_raw_local_files {
   my $self     = shift;
   my @array    = ();
   my $base_dir = $self->genome_raw_dir;
-  if ($base_dir) {
-    for my $file ( @{ $self->local_files } ) {
-      push @array, $base_dir->child( $self->type )->child($file);
-    }
+  for my $file ( @{ $self->local_files } ) {
+    push @array, $base_dir->child( $self->type )->child($file);
   }
   return \@array;
 }

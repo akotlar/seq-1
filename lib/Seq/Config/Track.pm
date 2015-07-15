@@ -61,8 +61,8 @@ has next_chr => (
   handles => { get_next_chr => 'get', },
 );
 
-has genome_index_dir => ( is => 'ro', isa => Path, coerce => 1, );
-has genome_raw_dir   => ( is => 'ro', isa => Path, coerce => 1, );
+has genome_index_dir => ( is => 'ro', isa => Path, coerce => 1, default => "index" );
+has genome_raw_dir   => ( is => 'ro', isa => Path, coerce => 1, default => "raw" );
 
 has local_files => (
   is      => 'ro',
