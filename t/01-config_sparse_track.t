@@ -9,9 +9,7 @@ use Scalar::Util qw( blessed );
 use Test::More;
 use YAML qw/ LoadFile /;
 
-use DDP;
-
-plan tests => 27;
+plan tests => 29;
 
 # set test genome
 my $ga_config  = path('./config/hg38.yml')->absolute->stringify;
@@ -39,36 +37,52 @@ for my $attr_name (qw/ type /) {
 }
 
 {
-  # object creation
+  # Generic object creation
   my $href = build_obj_data( 'sparse_tracks', 'snp', $config_href );
   my @features = qw/ alleleFreqCount alleles alleleFreqs /;
   $href->{features} = \@features;
   my $obj = $package->new( $href );
   ok($obj, 'object creation');
 
-  # local files
-  my $exp_path = path($config_href->{genome_raw_dir})->child('./snp/hg38.snp141.txt')->absolute;
-  is_deeply( $obj->all_local_files, $exp_path, 'local_files');
-
-  $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.kch')->absolute;
-  is( $obj->get_kch_file( 'chr1' ), $exp_path, 'method: get_kch_file');
-
-  $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.dat')->absolute;
-  is ($obj->get_dat_file( 'chr1' ), $exp_path, 'method: get_dat_file');
-
-  # check snp sparse track
-
+  # snp sparse track
   my $st       = $package->new(
     {
-      name          => 'snp141',
-      type          => 'snp',
-      sql_statement => 'SELECT _snp_fields FROM hg38.snp141',
-      features      => \@features,
-      local_file    => ['snp141.txt.gz'],
-      genome_chrs   => $config_href->{genome_chrs},
+      name           => 'snp141',
+      type           => 'snp',
+      sql_statement  => 'SELECT _snp_fields FROM hg38.snp141',
+      features       => \@features,
+      local_files    => ['snp141.txt.gz'],
+      genome_chrs    => $config_href->{genome_chrs},
+      # purposefully missing genome_raw_dir to test all_local_files
+      #genome_raw_dir => $config_href->{genome_raw_dir},
     }
   );
 
+  # local raw files
+  my $exp_path = path($config_href->{genome_raw_dir})->child('./snp/hg38.snp141.txt')->absolute;
+  is_deeply( $obj->all_local_files, $exp_path, 'local_files');
+
+  # raw local files without a genome_raw_dir
+  is( $st->all_local_files , 0, 'all_local_files with missing genome_raw_dir');
+
+  # local index files
+  $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.kch')->absolute;
+  is( $obj->get_kch_file( 'chr1' ), $exp_path, 'method: get_kch_file (index file)');
+  $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.dat')->absolute;
+  is ($obj->get_dat_file( 'chr1' ), $exp_path, 'method: get_dat_file (index file)');
+
+  # as_href (to be used to create objects in other contexts beyond the configuration step)
+  {
+    # need to clean up the path (b/c of Path::Tiny), and add remote_files to the href to
+    # make the data appear as as_href() ought to produce
+    my $test_href = $href;
+    $test_href->{genome_index_dir} =~ s/\A[\.\/]+//;
+    $test_href->{genome_raw_dir} =~ s/\A[\.\/]+//;
+    $test_href->{remote_files} = [];
+    is_deeply($obj->as_href, $test_href, 'method: as_href');
+  }
+
+  # check snp track specific stuff
   my $sql_stmt =
     q{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141};
   is( $sql_stmt, $st->sql_statement, '(snp_track) method: Sql statement' );

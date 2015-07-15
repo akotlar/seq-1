@@ -73,21 +73,23 @@ has type => ( is => 'ro', isa => 'SparseTrackType', required => 1, );
 has sql_statement => ( is => 'ro', isa => 'Str', );
 
 has _local_files => (
-  is => 'ro',
-  isa => AbsPaths,
-  builder => '_build_raw_track_files',
+  is      => 'ro',
+  isa     => AbsPaths,
+  builder => '_build_raw_local_files',
   traits  => ['Array'],
-  handles => { all_local_files  => 'elements', },
+  handles => { all_local_files => 'elements', },
   coerce  => 1,
   lazy    => 1,
 );
 
-sub _build_raw_track_files {
-  my $self = shift;
-  my @array;
+sub _build_raw_local_files {
+  my $self     = shift;
+  my @array    = ();
   my $base_dir = $self->genome_raw_dir;
-  for my $file ( @{ $self->local_files } ) {
-    push @array, $base_dir->child($self->type)->child($file);
+  if ($base_dir) {
+    for my $file ( @{ $self->local_files } ) {
+      push @array, $base_dir->child( $self->type )->child($file);
+    }
   }
   return \@array;
 }
@@ -105,6 +107,7 @@ sub _build_raw_track_files {
 * 'geneSymbol'
 
 =cut
+
 has features => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
@@ -137,6 +140,7 @@ Construction-time @property sql_statement modifier
 @return {Str}
 
 =cut
+
 around 'sql_statement' => sub {
   my $orig     = shift;
   my $self     = shift;
@@ -158,23 +162,19 @@ around 'sql_statement' => sub {
     # x modifier: extended. Spaces and text after a # in the pattern are ignored
     # m modifier: multi-line. Causes ^ and $ to match the begin/end of each line
     #             (not only begin/end of string)
-    if ( $self->$orig(@_) =~ m/\_snp\_fields/xm )
-    {
+    if ( $self->$orig(@_) =~ m/\_snp\_fields/xm ) {
       # substitute _snp_fields in statement for the comma separated string of
       # snp_track_fields and SparseTrack features
       ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/xm;
     }
-    elsif ( $self->$orig(@_) =~ m/_asterisk/xm )
-    {
+    elsif ( $self->$orig(@_) =~ m/_asterisk/xm ) {
       ( $new_stmt = $self->$orig(@_) ) =~ s/\_asterisk/\*/xm;
     }
   }
-  elsif ( $self->type eq 'gene' )
-  {
+  elsif ( $self->type eq 'gene' ) {
     my $gene_table_fields_str = join( ", ", @gene_track_fields, @{ $self->features } );
 
-    if ( $self->$orig(@_) =~ m/\_gene\_fields/xm )
-    {
+    if ( $self->$orig(@_) =~ m/\_gene\_fields/xm ) {
       ( $new_stmt = $self->$orig(@_) ) =~ s/\_gene\_fields/$gene_table_fields_str/xm;
     }
   }
@@ -183,20 +183,20 @@ around 'sql_statement' => sub {
 
 sub get_kch_file {
   state $check = compile( Object, Str );
-  my ($self, $chr) = $check->(@_);
+  my ( $self, $chr ) = $check->(@_);
   return $self->_get_file( $chr, 'kch' );
 }
 
 sub get_dat_file {
   state $check = compile( Object, Str );
-  my ($self, $chr) = $check->(@_);
+  my ( $self, $chr ) = $check->(@_);
   return $self->_get_file( $chr, 'dat' );
 }
 
 sub _get_file {
-  my ($self, $chr, $ext) = @_;
+  my ( $self, $chr, $ext ) = @_;
   my $base_dir = $self->genome_index_dir;
-  my $file_name = sprintf("%s.%s.%s.%s", $self->name, $self->type, $chr, $ext );
+  my $file_name = sprintf( "%s.%s.%s.%s", $self->name, $self->type, $chr, $ext );
   return $base_dir->child($file_name)->absolute->stringify;
 }
 
@@ -220,6 +220,7 @@ Called in:
 @returns {ArrayRef|void}
 
 =cut
+
 sub snp_fields_aref {
   my $self = shift;
   if ( $self->type eq 'snp' ) {
@@ -254,6 +255,7 @@ Called in:
 @returns {ArrayRef|void}
 
 =cut
+
 sub gene_fields_aref {
   my $self = shift;
   if ( $self->type eq 'gene' ) {
@@ -268,7 +270,8 @@ sub gene_fields_aref {
 
 =method @public as_href
 
-  Returns hash reference containing all {attribute_name => attribute_value}
+  Returns hash reference containing data needed to create BUILD and annotate
+  stuff... (i.e., no internals and not all public attributes)
 
 Used in:
 
@@ -282,14 +285,19 @@ Uses Moose built-in meta method.
 @returns {HashRef}
 
 =cut
+
 sub as_href {
   my $self = shift;
   my %hash;
-  for my $attr ( $self->meta->get_all_attributes ) {
-    my $name = $attr->name;
-    if ( defined $self->$name ) {
-      if ( $self->$name ) {
-        $hash{$name} = $self->$name;
+  my @attrs = qw/ name features genome_chrs genome_index_dir genome_raw_dir
+    local_files remote_files type/;
+  for my $attr (@attrs) {
+    if ( defined $self->$attr ) {
+      if ( $self->$attr eq 'genome_index_dir' or $self->$attr eq 'genome_raw_dir' ) {
+        $hash{$attr} = $self->stringify;
+      }
+      elsif ( $self->$attr ) {
+        $hash{$attr} = $self->$attr;
       }
     }
   }

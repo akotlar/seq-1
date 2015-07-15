@@ -72,13 +72,12 @@ has local_files => (
 
 has remote_dir => ( is => 'ro', isa => 'Str' );
 has remote_files => (
-  is     => 'ro',
-  isa    => 'ArrayRef',
-  traits => ['Array'],
-  handles => { all_remote_files  => 'elements', },
+  is      => 'ro',
+  isa     => 'ArrayRef',
+  traits  => ['Array'],
+  handles => { all_remote_files => 'elements', },
   default => sub { [] },
 );
-
 
 sub _build_next_chr {
   my $self = shift;

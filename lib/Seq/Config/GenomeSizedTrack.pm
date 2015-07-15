@@ -215,42 +215,42 @@ Used in:
 =cut
 
 has genome_str_file => (
-  is => 'ro',
-  isa => AbsPath,
+  is      => 'ro',
+  isa     => AbsPath,
   builder => '_build_genome_str_file',
-  lazy => 1,
-  coerce => 1,
+  lazy    => 1,
+  coerce  => 1,
 );
 
 sub _build_genome_str_file {
   my $self = shift;
-  return $self->_build_file( 'str.dat' );
+  return $self->_build_file('str.dat');
 }
 
 has genome_bin_file => (
-  is => 'ro',
-  isa => AbsPath,
+  is      => 'ro',
+  isa     => AbsPath,
   builder => '_build_genome_bin_file',
-  lazy => 1,
-  coerce => 1,
+  lazy    => 1,
+  coerce  => 1,
 );
 
 sub _build_genome_bin_file {
   my $self = shift;
-  return $self->_build_file( 'idx' );
+  return $self->_build_file('idx');
 }
 
 has genome_offset_file => (
-  is => 'ro',
-  isa => AbsPath,
+  is      => 'ro',
+  isa     => AbsPath,
   builder => '_build_genome_offset_file',
-  lazy => 1,
-  coerce => 1,
+  lazy    => 1,
+  coerce  => 1,
 );
 
 sub _build_genome_offset_file {
   my $self = shift;
-  return $self->_build_file( 'yml' );
+  return $self->_build_file('yml');
 }
 
 sub _build_file {
@@ -261,11 +261,11 @@ sub _build_file {
 }
 
 has _local_files => (
-  is => 'ro',
-  isa => AbsPaths,
+  is      => 'ro',
+  isa     => AbsPaths,
   builder => '_build_raw_genome_files',
   traits  => ['Array'],
-  handles => { all_local_files  => 'elements', },
+  handles => { all_local_files => 'elements', },
   coerce  => 1,
   lazy    => 1,
 );
@@ -275,7 +275,7 @@ sub _build_raw_genome_files {
   my @array;
   my $base_dir = $self->genome_raw_dir;
   for my $file ( @{ $self->local_files } ) {
-    push @array, $base_dir->child($self->type)->child($file);
+    push @array, $base_dir->child( $self->type )->child($file);
   }
   return \@array;
 }
@@ -484,7 +484,7 @@ sub _validate_feature_score_range {
   # TODO: set range for genome_scorer.c and Seq package from single config.
   unless ( $self->score_R < 256 and $self->score_R >= 5 ) {
     my $err_msg =
-      "FATAL ERROR: We believe score_R must be within 5 - 255, check genome_scorer.c for current range";
+      "FATAL ERROR: score_R should be between 5 - 255";
     $self->_logger->error($err_msg);
     croak $err_msg;
   }
@@ -523,6 +523,45 @@ sub BUILDARGS {
     return $class->SUPER::BUILDARGS($href);
   }
 }
+
+=method @public as_href
+
+  Returns hash reference containing data needed to create BUILD and annotate
+  stuff... (i.e., no internals and not all public attributes)
+
+Used in:
+
+=for :list
+* @class Seq::Build::GeneTrack
+* @class Seq::Build::SnpTrack
+* @class Seq::Build
+
+Uses Moose built-in meta method.
+
+@returns {HashRef}
+
+=cut
+
+# TODO: edit as_href to export data needed for BUILD and annotation stuff
+
+sub as_href {
+  my $self = shift;
+  my %hash;
+  my @attrs = qw/ name features genome_chrs genome_index_dir genome_raw_dir
+    local_files remote_files type/;
+  for my $attr (@attrs) {
+    if ( defined $self->$attr ) {
+      if ( $self->$attr eq 'genome_index_dir' or $self->$attr eq 'genome_raw_dir' ) {
+        $hash{$attr} = $self->stringify;
+      }
+      elsif ( $self->$attr ) {
+        $hash{$attr} = $self->$attr;
+      }
+    }
+  }
+  return \%hash;
+}
+
 
 __PACKAGE__->meta->make_immutable;
 
