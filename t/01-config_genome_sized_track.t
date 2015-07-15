@@ -25,11 +25,6 @@ use_ok($package) || die "$package cannot be loaded";
 # check extension of Seq::Config::Track
 check_isa( $package, ['Seq::Config::Track','Moose::Object']);
 
-# object creation
-my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
-my $obj = $package->new( $href );
-ok($obj, 'object creation');
-
 # Attribute tests
 my @ro_attrs = qw/ genome_str_file genome_bin_file genome_offset_file
   _local_files score_min score_max score_R _score_beta _score_lu /;
@@ -44,6 +39,11 @@ for my $attr_name (qw/ type /) {
   is( $attr->type_constraint->name,
     'GenomeSizedTrackType', "$attr_name type is GenomeSizedTrackType" );
 }
+
+# object creation
+my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
+my $obj = $package->new( $href );
+ok($obj, 'object creation');
 
 {
   # as_href
