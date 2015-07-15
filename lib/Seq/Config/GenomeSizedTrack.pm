@@ -547,12 +547,12 @@ Uses Moose built-in meta method.
 sub as_href {
   my $self = shift;
   my %hash;
-  my @attrs = qw/ name features genome_chrs genome_index_dir genome_raw_dir
-    local_files remote_files type/;
+  my @attrs = qw/ name genome_chrs genome_index_dir genome_raw_dir
+    local_files remote_files remote_dir type/;
   for my $attr (@attrs) {
     if ( defined $self->$attr ) {
       if ( $self->$attr eq 'genome_index_dir' or $self->$attr eq 'genome_raw_dir' ) {
-        $hash{$attr} = $self->stringify;
+        $hash{$attr} = $self->$attr->absolute->stringify;
       }
       elsif ( $self->$attr ) {
         $hash{$attr} = $self->$attr;

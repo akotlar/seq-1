@@ -9,7 +9,8 @@ use Scalar::Util qw( blessed );
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 39;
+use Data::Dump qw/ dump /;
+plan tests => 42;
 
 # set test genome
 my $ga_config  = path('./config/hg38.yml')->absolute->stringify;
@@ -42,6 +43,20 @@ for my $attr_name (qw/ type /) {
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name,
     'GenomeSizedTrackType', "$attr_name type is GenomeSizedTrackType" );
+}
+
+{
+  # as_href
+  my $test_href = $href;
+  $test_href->{genome_index_dir} =~ s/\A[\.\/]+//;
+  $test_href->{genome_raw_dir} =~ s/\A[\.\/]+//;
+  is_deeply( $test_href, $obj->as_href, 'method: as_href' );
+
+  # re-make obj with data from as_href
+  my $new_obj_data_href = $obj->as_href;
+  my $new_obj = $package->new( $new_obj_data_href );
+  ok ($new_obj, 'created obj using data from as_href');
+  is_deeply( $obj, $new_obj, 'new object == old obj');
 }
 
 # Methods tests

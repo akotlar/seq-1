@@ -9,7 +9,7 @@ use Scalar::Util qw( blessed );
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 29;
+plan tests => 32;
 
 # set test genome
 my $ga_config  = path('./config/hg38.yml')->absolute->stringify;
@@ -81,6 +81,16 @@ for my $attr_name (qw/ type /) {
     $test_href->{genome_raw_dir} =~ s/\A[\.\/]+//;
     $test_href->{remote_files} = [];
     is_deeply($obj->as_href, $test_href, 'method: as_href');
+
+    # re-make obj with data from as_href
+    my $new_obj_data_href = $obj->as_href;
+    my $new_obj = $package->new( $new_obj_data_href );
+    ok ($new_obj, 'created obj using data from as_href');
+
+    # NOTE: since all_local_files is made when called (i.e., lazy) comparing the old and new object
+    #       will fail without first calling all_local_files on the new object to populate that
+    is_deeply( $obj->all_local_files, $new_obj->all_local_files, 'new object makes all_local_files()');
+    is_deeply( $obj, $new_obj, 'new object == old obj');
   }
 
   # check snp track specific stuff
