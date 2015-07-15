@@ -62,8 +62,9 @@ for my $attr_name (qw/ type /) {
   my $exp_path = path($config_href->{genome_raw_dir})->child('./snp/hg38.snp141.txt')->absolute;
   is_deeply( $obj->all_local_files, $exp_path, 'local_files');
 
-  # raw local files without a genome_raw_dir
-  is( $st->all_local_files , 0, 'all_local_files with missing genome_raw_dir');
+  # raw local files using default genome_index_dir
+  $exp_path = path(".")->child('raw/snp/snp141.txt.gz')->absolute;
+  is_deeply( $st->all_local_files , $exp_path, 'all_local_files with missing genome_raw_dir');
 
   # local index files
   $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.kch')->absolute;
