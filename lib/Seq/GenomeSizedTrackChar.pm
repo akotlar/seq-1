@@ -6,24 +6,24 @@ package Seq::GenomeSizedTrackChar;
 # ABSTRACT: Decodes genome sized char tracks - genomes, scores, etc.
 # VERSION
 
-=head1 DESCRIPTION 
+=head1 DESCRIPTION
 
   @class B<Seq::GenomeSizedTrackChar>
- 
-  The class that stores the complete reference genome 
-  
+
+  The class that stores the complete reference genome
+
   Seq::Config::GenomeSizedTrack->new($gst)
 
 Used in:
 
-=for :list 
+=for :list
 * bin/read_genome.pl
 * @class Seq::Annotate
 * @class Seq::Config::GenomeSizedTrack
 
-Extended in: 
+Extended in:
 
-=for :list 
+=for :list
 * @class Seq::Build::GenomeSizedTrackStr
 * @class Seq::GenomeSizedTrackChar
 * @class Seq::Fetch::Sql
@@ -44,39 +44,34 @@ use DDP;
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome';
 
-has genome_length => (
-  is  => 'rw',
-  isa => 'Int',
-);
-
-# stores the 0-indexed length of each chromosome
-# TODO: 0-indexed length doesn't make sense unless we're looking @ #@length rather than scalar @length
+# stores the 0-indexed off-set of each chromosome
 has chr_len => (
-  is      => 'rw',
+  is      => 'ro',
   isa     => 'HashRef[Str]',
   traits  => ['Hash'],
   handles => {
     exists_chr_len     => 'exists',
     char_genome_length => 'get',
   },
+  required => 1,
 );
-
 
 =property @public {StrRef} char_seq
 
-  Stores one binary genome sized track as a scalar reference (reference to a 3.2B base string). This can be the reference
-  genome, one of the 3 CADD score binary indices (one for each base change possibility), or a genome-size 'score' type
-  like PhastCons or PhyloP
+  Stores one binary genome sized track as a scalar reference (reference to a
+  3.2B base string). This can be the reference genome, one of the 3 CADD score
+  binary indices (one for each base change possibility), or a genome-size
+  'score' type like PhastCons or PhyloP
 
 Used in:
 
-=for :list 
+=for :list
 * @class Seq::Annotate
     Seq::Annotate sets the char_seq values on line 286
 * @class Seq:::GenomeSizedTrackChar
 
 @example from @class Seq::Annotate _load_cadd_score:
-  
+
   my $index_dir = $self->genome_index_dir;
   my $idx_name = join( ".", $gst->type, $i );
   my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
@@ -84,64 +79,35 @@ Used in:
   $seq = '';
   read $idx_fh, $seq, $genome_length;
 
-# TODO: check whether this should be required => 1
 =cut
 has char_seq => (
   is  => 'ro',
   isa => 'ScalarRef',
-  #??kotlar: should it be required => 1 
+  required => 1,
 );
 
-=method @public char2score
-
- Converts a char value at a particular base into a score for a feature, such as CADD, PhyloP, or PhastCons.
-
-@param $char
-  
-  The {Char} value of a certain base in the input snpfile
-
-@requires {Int} $char
-
-  Currently a value range of 0-255 per base (0 == falsy, indicates no features)
-
-=for :list
-* @property score_beta
-    Defined in Seq::Config::GenomeSizedTrack?
-* @property score_min
-    Defined in Seq::Config::GenomeSizedTrack
-
-@see Seq::Config::GenomeSizedTrack @property score_beta 
-
-@returns {Float}
-#TODO: Commented out, isn't in use as far as we know. However, this will cause test
-#/t/03-build_genome_sized_track_char.t to fail, since it uses this function is checked for existence
-#HOWEVER, this test is outdated, look for non existant package Build::GenomeSizedTrackChar
-# sub char2score {
-#   my ( $self, $char ) = shift; 
-#   say "score_beta is " . $self->score_beta if $self->debug;
-
-#   return ( ( ( $char - 1 ) / $self->score_beta ) + $self->score_min );
-# }
+sub _get_genome_length {
+  my $self = shift;
+  return length ${ $self->char_seq };
+}
 
 =method @public get_base
-  
-  Returns the 0 indexed 
+
+  Returns the 0 indexed
 @param $pos
-  The absolute 
+  The absolute
 @requires
 =for :list
 * @property genome_length
 * @property char_seq
     The full binary genome sized track
 
-@ returns {Str} representing the value at that position. Could be a base (if fetching reference) (or an annotation
-score?)
+@ returns {Str} in the form of a Char representing the value at that position.
 
-#TODO: check if an annotation score can really be returned
 =cut
 sub get_base {
   my ( $self, $pos ) = @_;
-  state $genome_length = $self->genome_length;
+  state $genome_length = $self->_get_genome_length;
 
   confess "get_base() expects a position between 0 and $genome_length, got $pos."
     unless $pos >= 0 and $pos < $genome_length;
@@ -168,42 +134,6 @@ sub get_score {
   my $formatted_score = ( $score eq 'NA' ) ? $score : sprintf( "%0.3f", $score );
   return $formatted_score;
 }
-
-#TODO: delete when we decide it's safe. This is replaced by the Seq::Config::GenomeSizedTrack BUILDARGS
-# sub BUILDARGS {
-#   my $class = shift;
-#   my $href  = $_[0];
-#   if ( scalar @_ > 1 || reftype($href) ne "HASH" ) {
-#     confess "Error: $class expects hash reference.\n";
-#   }
-#   else {
-#     my %hash;
-#     if ( $href->{type} eq "score" ) {
-#       if ( $href->{name} eq "phastCons" ) {
-#         $hash{score_R}   = 254;
-#         $hash{score_min} = 0;
-#         $hash{score_max} = 1;
-#       }
-#       elsif ( $href->{name} eq "phyloP" ) {
-#         $hash{score_R}   = 254;
-#         $hash{score_min} = -30;
-#         $hash{score_max} = 30;
-#       }
-#     }
-#     elsif ( $href->{type} eq "cadd" ) {
-#       $hash{score_R}   = 255;
-#       $hash{score_min} = 0;
-#       $hash{score_max} = 85;
-#     }
-
-#     # if score_R, score_min, or score_max are set by the caller then the
-#     # following will override the defaults
-#     for my $attr ( keys %$href ) {
-#       $hash{$attr} = $href->{$attr};
-#     }
-#     return $class->SUPER::BUILDARGS( \%hash );
-#   }
-# }
 
 __PACKAGE__->meta->make_immutable;
 
