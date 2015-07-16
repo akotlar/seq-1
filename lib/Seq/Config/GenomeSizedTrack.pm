@@ -498,9 +498,6 @@ sub _validate_feature_score_range {
   }
 }
 
-# NOTE: Alex, I don't think you can use around for BUILDARGS.
-# TODO: Documentation: decide whether this is equivalent to around, if so, maybe
-#       switch because better documented
 sub BUILDARGS {
   my $class = shift;
   my $href  = $_[0];
