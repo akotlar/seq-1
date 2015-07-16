@@ -283,12 +283,14 @@ sub _build_raw_genome_files {
 # for conservation scores
 has score_min => (
   is  => 'ro',
-  isa => 'Num'
+  isa => 'Num',
+  default => 0,
 );
 
 has score_max => (
   is  => 'ro',
   isa => 'Num',
+  default => 255,
 );
 
 =property @public score_R
