@@ -38,17 +38,15 @@ extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
 sub _get_gene_data {
-  my ( $self, $chr ) = @_;
+  my ( $self, $wanted_chr ) = @_;
 
   # to return gene data
   my @gene_data;
 
-  $self->_logger->info("starting to build gene site db for: $chr");
+  $self->_logger->info("starting to build gene site db for: $wanted_chr");
 
-  # input
-  my $local_dir  = File::Spec->canonpath( $self->local_dir );
-  my $local_file = File::Spec->catfile( $local_dir, $self->local_file );
-  my $in_fh      = $self->get_read_fh($local_file);
+  # input files
+  my @input_files = $self->all_local_files;
 
   my %ucsc_table_lu = (
     name       => 'transcript_id',
@@ -63,74 +61,73 @@ sub _get_gene_data {
   );
   my ( %header, %transcript_start_sites );
 
-  while ( my $line = $in_fh->getline ) {
-    chomp $line;
-    my @fields = split( /\t/, $line );
-    if ( !%header ) {
+  for my $input_file ( @input_files ) {
+    my $in_fh = $self->get_read_fh( $input_file );
+    while ( my $line = $in_fh->getline ) {
+      chomp $line;
+      my @fields = split( /\t/, $line );
+      if ( !%header ) {
 
-      %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
+        %header = map { $fields[$_] => $_ } ( 0 .. $#fields );
 
-      # do we have the required keys?
-      $self->_check_header_keys( \%header, [ keys %ucsc_table_lu ] );
+        # do we have the required keys?
+        $self->_check_header_keys( \%header, [ keys %ucsc_table_lu ] );
 
-      # do we have the optinally specified keys?
-      $self->_check_header_keys( \%header, [ $self->all_features ] );
-      next;
+        # do we have the optinally specified keys?
+        $self->_check_header_keys( \%header, [ $self->all_features ] );
+        next;
+      }
+      my %data = map { $_ => $fields[ $header{$_} ] }
+        ( @{ $self->gene_fields_aref }, $self->all_features );
+
+      # this also has the byproduct of skipping weird chromosomes
+      next unless $data{chrom} eq $wanted_chr;
+
+      # prepare basic gene data
+      my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
+      $gene_data{exon_ends}   = [ split( /\,/, $gene_data{exon_ends} ) ];
+      $gene_data{exon_starts} = [ split( /\,/, $gene_data{exon_starts} ) ];
+      $gene_data{genome_track} = $self->genome_track_str;
+
+      # prepare alternative names for gene
+      #   - the basic problem is that the type constraint on alt_names wants
+      #   the hash to contain strings; without the ($data{$_}) ? $data{$_} : 'NA'
+      #   there were some keys with blank values
+      #   - this feels like a hack to accomidate the type constraint on alt_names
+      #   attributes and will increase the db size; may just drop the keys without
+      #   data in the future but it's running now so will hold off for the time
+      #   being.
+      my %alt_names = map { $_ => ( $data{$_} ) ? $data{$_} : 'NA' if exists $data{$_} }
+        ( $self->all_features );
+      $gene_data{_alt_names} = \%alt_names;
+
+      push @gene_data, \%gene_data;
     }
-    my %data = map { $_ => $fields[ $header{$_} ] }
-      ( @{ $self->gene_fields_aref }, $self->all_features );
-
-    # this also has the byproduct of skipping weird chromosomes
-    next unless $data{chrom} eq $chr;
-
-    # prepare basic gene data
-    my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
-    $gene_data{exon_ends}   = [ split( /\,/, $gene_data{exon_ends} ) ];
-    $gene_data{exon_starts} = [ split( /\,/, $gene_data{exon_starts} ) ];
-    $gene_data{genome_track} = $self->genome_track_str;
-
-    # prepare alternative names for gene
-    #   - the basic problem is that the type constraint on alt_names wants
-    #   the hash to contain strings; without the ($data{$_}) ? $data{$_} : 'NA'
-    #   there were some keys with blank values
-    #   - this feels like a hack to accomidate the type constraint on alt_names
-    #   attributes and will increase the db size; may just drop the keys without
-    #   data in the future but it's running now so will hold off for the time
-    #   being.
-    my %alt_names = map { $_ => ( $data{$_} ) ? $data{$_} : 'NA' if exists $data{$_} }
-      ( $self->all_features );
-    $gene_data{_alt_names} = \%alt_names;
-
-    push @gene_data, \%gene_data;
   }
   return \@gene_data;
 }
 
 sub build_gene_db_for_chr {
 
-  my ( $self, $chr ) = @_;
+  my ( $self, $wanted_chr ) = @_;
 
   # read gene data for the chromosome
-  #   if there is no usable data then we will bail out and not blank files
+  #   if there is no usable data then we will bail out and no blank files
   #   will be created
-  my $chr_data_aref = $self->_get_gene_data($chr);
-  $self->_logger->info( "finished reading data for " . $chr );
+  my $chr_data_aref = $self->_get_gene_data($wanted_chr);
+  $self->_logger->info( "finished reading data for $wanted_chr" );
 
-  # output
-  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path($index_dir) unless -f $index_dir;
+  # prepare output dir, as needed
+  $self->genome_index_dir->mkpath unless ( -d $self->genome_index_dir );
 
   # flanking site range file
-  my $gan_name = join ".", $self->name, $chr, 'gan', 'dat';
-  my $gan_file = File::Spec->catfile( $index_dir, $gan_name );
+  my $gan_file = $self->get_dat_file( $wanted_chr, 'gan' );
 
   # exon site range file
-  my $ex_name = join ".", $self->name, $chr, 'exon', 'dat';
-  my $ex_file = File::Spec->catfile( $index_dir, $ex_name );
+  my $ex_file = $self->get_dat_file( $wanted_chr, 'exon' );
 
   # dbm file
-  my $dbm_name = join ".", $self->name, $chr, $self->type, 'kch';
-  my $dbm_file = File::Spec->catfile( $index_dir, $dbm_name );
+  my $dbm_file = $self->get_kch_file( $wanted_chr );
 
   my $db = Seq::KCManager->new(
     filename => $dbm_file,
@@ -198,7 +195,7 @@ sub build_gene_db_for_chr {
   print {$ex_fh} "\n";
   print {$gan_fh} "\n";
 
-  $self->_logger->info('finished building gene site db');
+  $self->_logger->info("finished building gene site for $wanted_chr");
 }
 
 __PACKAGE__->meta->make_immutable;
