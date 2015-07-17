@@ -36,20 +36,6 @@ extends 'Seq::Config::SparseTrack';
 
 with 'MooX::Role::Logger';
 
-#TODO: commented out, remove when considered safe; already found in 'Seq::Config::SparseTrack';
-# has genome_index_dir => (
-#   is       => 'ro',
-#   isa      => 'Str',
-#   required => 1,
-# );
-
-#TODO: commented out, remove when considered safe; already found in 'Seq::Config::SparseTrack';
-# has genome_name => (
-#   is       => 'ro',
-#   isa      => 'Str',
-#   required => 1,
-# );
-
 has genome_track_str => (
   is       => 'ro',
   isa      => 'Seq::Build::GenomeSizedTrackStr',
@@ -58,11 +44,6 @@ has genome_track_str => (
     'get_abs_pos', 'get_base',    'exists_chr_len', 'genome_length',
     'in_gan_val',  'in_exon_val', 'in_gene_val',    'in_snp_val'
   ],
-);
-
-has dbm_file => (
-  is  => 'ro',
-  isa => 'Str',
 );
 
 has counter => (
@@ -142,7 +123,6 @@ sub _check_header_keys {
       $self->name, $self->type, $self->wanted_chr )
       . join ", ", ( sort keys %missing_attr );
     $self->_logger->error($err_msg);
-    unlink $self->dbm_file;
     croak $err_msg;
   }
   else {
