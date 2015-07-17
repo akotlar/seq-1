@@ -250,7 +250,7 @@ has genome_offset_file => (
 
 sub _build_genome_offset_file {
   my $self = shift;
-  return $self->_build_file('yml');
+  return $self->_build_file('chr_len.dat');
 }
 
 sub _build_file {

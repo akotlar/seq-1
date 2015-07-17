@@ -14,6 +14,8 @@ use namespace::autoclean;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ Str Object /;
 
+with 'MooX::Role::Logger'; #TODO: test whether all child classes will inherit
+
 =property @public @required {Str} name
 
   The track name. This is defined directly in the input config file.
