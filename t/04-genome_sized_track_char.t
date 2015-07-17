@@ -25,7 +25,7 @@ my $package = "Seq::GenomeSizedTrackChar";
 # load package
 use_ok($package) || die "$package cannot be loaded";
 
-# check is a moose object
+# check extends
 check_isa( $package,
   [ 'Seq::Config::GenomeSizedTrack', 'Seq::Config::Track', 'Moose::Object' ] );
 
@@ -84,7 +84,7 @@ for my $attr_name (qw( chr_len )) {
       ? sprintf( "%0.3f", ( ( $_[0] - 128 ) / ( 127 / 30 ) ) )
       : undef;
   };
-  
+
   # score creation / retrieval
   my (@exp_scores, @obs_scores);
   for my $i ( @test_scores ) {

@@ -84,7 +84,13 @@ has char_seq => (
   is  => 'ro',
   isa => 'ScalarRef',
   required => 1,
+  builder => '_build_char_seq',
 );
+
+sub _build_char_seq {
+  # TODO: Move build functionality here for all char string genomes instead of
+  #       loading them in the build package
+}
 
 sub _get_genome_length {
   my $self = shift;
