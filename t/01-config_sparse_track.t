@@ -67,10 +67,10 @@ for my $attr_name (qw/ type /) {
   is_deeply( $st->all_local_files , $exp_path, 'all_local_files with missing genome_raw_dir');
 
   # local index files
-  $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.kch')->absolute;
+  $exp_path = path($config_href->{genome_index_dir})->child('snp141.chr1.snp.kch')->absolute;
   is( $obj->get_kch_file( 'chr1' ), $exp_path, 'method: get_kch_file (index file)');
-  $exp_path = path($config_href->{genome_index_dir})->child('snp141.snp.chr1.dat')->absolute;
-  is ($obj->get_dat_file( 'chr1' ), $exp_path, 'method: get_dat_file (index file)');
+  $exp_path = path($config_href->{genome_index_dir})->child('snp141.chr1.snp.dat')->absolute;
+  is ($obj->get_dat_file( 'chr1', $obj->type ), $exp_path, 'method: get_dat_file (index file)');
 
   # as_href (to be used to create objects in other contexts beyond the configuration step)
   {
