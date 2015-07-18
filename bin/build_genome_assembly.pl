@@ -18,7 +18,7 @@ use DDP;
 use Seq::Build;
 
 my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help,
-  $wanted_chr );
+  $wanted_chr, $force, $debug);
 
 my $genome_hasher_bin = './bin/genome_hasher';
 my $genome_scorer_bin = './bin/genome_scorer';
@@ -39,6 +39,8 @@ GetOptions(
   't|type=s'     => \$build_type,
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
+  'f|force'      => \$force,
+  'd|debug'      => \$debug,
   'hasher=s'     => \$genome_hasher_bin,
   'scorer=s'     => \$genome_scorer_bin,
   'wanted_chr=s' => \$wanted_chr,
@@ -64,16 +66,13 @@ $db_location       = path($db_location)->absolute->stringify;
 $genome_hasher_bin = path($genome_hasher_bin)->absolute->stringify;
 $genome_scorer_bin = path($genome_scorer_bin)->absolute->stringify;
 
-if ( -d $db_location ) {
-  chdir($db_location) || croak "cannot change to dir: $db_location: $!\n";
-}
-else {
-  croak "expected location of db to be a directory instead got: $db_location\n";
-}
-
-if ( !$wanted_chr ) {
-  $wanted_chr = 'all';
-}
+# this should all be contained within the package now
+# if ( -d $db_location ) {
+#   chdir($db_location) || croak "cannot change to dir: $db_location: $!\n";
+# }
+# else {
+#   croak "expected location of db to be a directory instead got: $db_location\n";
+# }
 
 # read config file to determine genome name for log and check validity
 my $config_href = LoadFile($yaml_config);
@@ -83,6 +82,8 @@ my $builder_options_href = {
   genome_scorer => $genome_scorer_bin,
   genome_hasher => $genome_hasher_bin,
   wanted_chr    => $wanted_chr,
+  force         => $force,
+  debug         => $debug
 };
 
 if ( $method and $config_href ) {
