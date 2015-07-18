@@ -2,6 +2,11 @@ use 5.10.0;
 use strict;
 use warnings;
 
+# DEPRECIATED PACKAGE
+# DEPRECIATED PACKAGE
+# DEPRECIATED PACKAGE
+# DEPRECIATED PACKAGE
+
 package Seq::Build::TxTrack;
 # ABSTRACT: Builds Gene Tracks and places into BerkeleyDB instance.
 # VERSION
