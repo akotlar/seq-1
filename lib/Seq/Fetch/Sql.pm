@@ -33,7 +33,6 @@ my $mos           = localtime->mon() + 1;
 my $day           = localtime->mday;
 my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, $day );
 
-has genome_name => ( is => 'ro', isa => 'Str', required => 1, );
 has act         => ( is => 'ro', isa => 'Bool', );
 has verbose     => ( is => 'ro', isa => 'Bool', );
 has dsn => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
@@ -64,7 +63,7 @@ Called in: none
 sub dbh {
   my $self = shift;
   my $dsn  = $self->dsn;
-  $dsn .= ":" . $self->genome_name;
+  $dsn .= ":" . $self->name;
   $dsn .= ";host=" . $self->host if $self->host;
   $dsn .= ";port=" . $self->port if $self->port;
   $dsn .= ";mysql_socket=" . $self->port_num if $self->socket;
