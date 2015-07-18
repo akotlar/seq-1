@@ -133,12 +133,9 @@ sub _build_str_genome {
         # warn if a file does not appear to have a vaild chromosome - concern
         #   that it's not in fasta format
         if ( $. == 2 and !$wanted_chr ) {
-          (
-            my $err_msg =
-              qq{WARNING: found data for $chr in $file but
-            '$chr' is not a valid chromsome for $genome_name; ensure chromsomes
-            are in fasta format")}
-          ) =~ s/\n/ /xms;
+          my $err_msg = sprintf("WARNING: Found %s in %s but '%s' is not a valid chromsome for %s.
+            You might want to ensure %s is a valid fasta file.", $chr, $file, $self->name, $file);
+          $err_msg =~ s/[\s\n]+/ /xms;
           $self->_logger->info($err_msg);
           warn $err_msg;
         }
