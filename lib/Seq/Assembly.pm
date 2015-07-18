@@ -124,6 +124,12 @@ has debug => (
   default => 0,
 );
 
+has force => (
+  is      => 'ro',
+  isa     => 'Bool',
+  default => 0,
+);
+
 sub BUILDARGS {
   my $class = shift;
   my $href  = $_[0];
