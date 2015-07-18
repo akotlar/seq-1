@@ -107,6 +107,68 @@ sub _get_gene_data {
   return \@gene_data;
 }
 
+sub build_tx_db_for_genome {
+  my ( $self, $wanted_chr ) = @_;
+
+  # read gene data for the chromosome
+  #   if there is no usable data then we will bail out and no blank files
+  #   will be created
+  my $chr_data_aref = $self->_get_gene_data($wanted_chr);
+  $self->_logger->info( "finished reading data for $wanted_chr" );
+
+  # prepare output dir, as needed
+  $self->genome_index_dir->mkpath unless ( -d $self->genome_index_dir );
+
+  # $gene region site range file
+  my $gene_region_file = $self->get_dat_file( 'genome', 'tx' );
+
+  # dbm file
+  my $dbm_file = $self->get_kch_file( 'genome', 'tx' );
+
+  # check if we've already build site range files unless forced to overwrite
+  unless ( $self->force ) {
+    return if $self->_has_site_range_file($gene_region_file);
+  }
+
+  # write header for region file
+  my $gene_region_fh = $self->get_write_fh($gene_region_file);
+  say {$gene_region_fh} $self->in_gene_val;
+
+  # create dbm object
+  my $db = Seq::KCManager->new(
+    filename => $dbm_file,
+    mode     => 'create',
+    # bnum => bucket number => 50-400% of expected items in the hash is optimal
+    # annotated sites for hg38 is 22727477 (chr1) to 13222 (chrM) with avg of
+    # 9060664 and sd of 4925631; thus, took ~1/2 of maximal number of entries
+    bnum => 1_000_000,
+    msiz => 512_000_000,
+  );
+  for my $gene_href (@$chr_data_aref) {
+    my $gene = Seq::Gene->new($gene_href);
+    $gene->set_alt_names( %{ $gene_href->{_alt_names} } );
+    my $record_href = {
+      coding_start            => $gene->coding_start,
+      coding_end              => $gene->coding_end,
+      exon_starts             => $gene->exon_starts,
+      exon_ends               => $gene->exon_ends,
+      transcript_start        => $gene->transcript_start,
+      transcript_end          => $gene->transcript_end,
+      transcript_id           => $gene->transcript_id,
+      transcript_seq          => $gene->transcript_seq,
+      transcript_annotation   => $gene->transcript_annotation,
+      transcript_abs_position => $gene->transcript_abs_position,
+      peptide_seq             => $gene->peptide,
+    };
+
+    # save gene attr in dbm
+    $db->db_put( $record_href->{transcript_id}, $record_href );
+
+    # save tx start/stop for gene
+    say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
+  }
+}
+
 sub build_gene_db_for_chr {
 
   my ( $self, $wanted_chr ) = @_;
@@ -129,6 +191,13 @@ sub build_gene_db_for_chr {
   # dbm file
   my $dbm_file = $self->get_kch_file( $wanted_chr );
 
+  # check if we've already build site range files unless forced to overwrite
+  unless ( $self->force ) {
+    return
+      if ( $self->_has_site_range_file($gan_file)
+      && $self->_has_site_range_file($ex_file) );
+  }
+
   my $db = Seq::KCManager->new(
     filename => $dbm_file,
     mode     => 'create',
@@ -139,17 +208,7 @@ sub build_gene_db_for_chr {
     msiz => 512_000_000,
   );
 
-  # gene region files - moved to package: seq::build::txtrack
-  # my $gene_region_name = join( ".", $self->name, 'gene_region', 'dat' );
-  # my $gene_region_file = File::Spec->catfile( $index_dir, $gene_region_name );
-
-  # check if we've already build site range files unless forced to overwrite
-  unless ( $self->force ) {
-    return
-      if ( $self->_has_site_range_file($gan_file)
-      && $self->_has_site_range_file($ex_file) );
-  }
-
+  # write header for region file
   # NOTE: 1st line needs to be value that should be added to encoded genome for
   #       the sites listed in the file
   my $gan_fh = $self->get_write_fh($gan_file);
