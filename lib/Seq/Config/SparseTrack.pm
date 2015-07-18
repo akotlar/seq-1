@@ -182,8 +182,9 @@ around 'sql_statement' => sub {
 sub _get_file {
   my ( $self, $chr, $var, $ext ) = @_;
 
-  # check the desired chromosome is an acceptable chr
-  unless ( grep { /\A$chr\z/ } ( $self->all_genome_chrs ) ) {
+  # the chr may either be 'genome' (for the entire transcript db) or a chromosome
+  # defined by the configuration file for the organism
+  unless ( $chr eq 'genome' || grep { /\A$chr\z/ } ( $self->all_genome_chrs ) ) {
     my $msg = sprintf("Error: asked to create file for unknown chromosome %s", $chr);
     say $msg;
     $self->_logger->error($msg);
