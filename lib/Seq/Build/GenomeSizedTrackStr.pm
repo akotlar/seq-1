@@ -66,7 +66,9 @@ has chr_len => (
 
 sub BUILD {
   my $self = shift;
-  $self->_logger->info( join "\t", 'genome length', $self->genome_length );
+  my $msg = sprintf("genome length: %d", $self->genome_length );
+  $self->_logger->info( $msg );
+  say $msg;
 }
 
 sub _build_str_genome {
@@ -74,15 +76,10 @@ sub _build_str_genome {
 
   $self->_logger->info('starting to build string genome');
 
-  my $local_dir   = File::Spec->canonpath( $self->local_dir );
-  my @local_files = $self->all_local_files;
-
-  # setup genome string files
-  my $dir              = File::Spec->canonpath( $self->genome_index_dir );
-  my $chr_len_name     = join ".", $self->name, $self->type, 'chr_len', 'dat';
-  my $genome_name      = join ".", $self->name, $self->type, 'str', 'dat';
-  my $chr_len_file     = File::Spec->catfile( $dir, $chr_len_name );
-  my $genome_file      = File::Spec->catfile( $dir, $genome_name );
+  # prepare output dir, as needed, and files
+  $self->genome_index_dir->mkpath unless ( -d $self->genome_index_dir );
+  my $chr_len_file     = $self->genome_offset_file;
+  my $genome_file      = $self->genome_str_file;
   my $genome_file_size = -s $genome_file;
   my $genome_str       = '';
 
@@ -98,17 +95,19 @@ sub _build_str_genome {
     $self->_logger->info('read chrome length offsets');
   }
   else {
-
     $self->_logger->info("building genome string");
 
     # hash to hold temporary chromosome strings
     my %seq_of_chr;
 
-    for ( my $i = 0; $i < @local_files; $i++ ) {
-      my $file        = $local_files[$i];
-      my $local_file  = File::Spec->catfile( $local_dir, $file );
-      my $in_fh       = $self->get_read_fh($local_file);
-      my @file_fields = split( /\./, $file );
+    for my $file ( $self->all_local_files ) {
+      unless ( -f $file ) {
+        my $msg = "ERROR: cannot find $file";
+        $self->_logger->error($msg);
+        say $msg;
+        exit(1);
+      }
+      my $in_fh       = $self->get_read_fh($file);
       my $wanted_chr  = 0;
       my $chr;
 
@@ -121,8 +120,9 @@ sub _build_str_genome {
             $wanted_chr = 1;
           }
           else {
-            $self->_logger->info(
-              "skipping unrecognized chromsome while building gneome str: $chr ");
+            my $msg = "skipping unrecognized chromsome: $chr";
+            $self->_logger->warn( $msg );
+            warn $msg . "\n";
             $wanted_chr = 0;
           }
         }
@@ -130,12 +130,12 @@ sub _build_str_genome {
           $seq_of_chr{$chr} .= uc $1;
         }
 
-        # warn if a single file does not appear to have a vaild chromosome - concern
-        #   is that it's not in fasta format
+        # warn if a file does not appear to have a vaild chromosome - concern
+        #   that it's not in fasta format
         if ( $. == 2 and !$wanted_chr ) {
           (
             my $err_msg =
-              qq{WARNING: found data for $chr in $local_file but
+              qq{WARNING: found data for $chr in $file but
             '$chr' is not a valid chromsome for $genome_name; ensure chromsomes
             are in fasta format")}
           ) =~ s/\n/ /xms;
