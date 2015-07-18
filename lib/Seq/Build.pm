@@ -81,7 +81,7 @@ sub BUILD {
   my $self = shift;
   $self->_logger->info( "loading genome of size " . $self->genome_length );
   $self->_logger->info( "genome_hasher: " . $self->genome_hasher );
-  $self->_logger->info( "genmoe_scoreer: " . $self->genome_scorer );
+  $self->_logger->info( "genome_scoreer: " . $self->genome_scorer );
   $self->_logger->info( "wanted_chr: " . $self->wanted_chr );
 }
 
@@ -103,11 +103,34 @@ sub _build_genome_str_track {
   }
 }
 
+sub build_transcript_db {
+  my $self = shift;
+
+  $self->_logger->info('begining to build transcripts');
+
+  for my $gene_track ( $self->all_gene_tracks ) {
+
+    my $msg = sprintf("begining gene tx db, '%s'", $gene_track->name);
+    $self->_logger->info( $msg ) if $self->debug;
+
+    # extract keys from snp_track for creation of Seq::Build::TxTrack
+    my $record = $gene_track->as_href;
+
+    # add additional keys to the hashref for Seq::Build::TxTrack
+    $record->{genome_track_str} = $self->genome_str_track;
+    my $gene_db = Seq::Build::GeneTrack->new($record);
+    $gene_db->build_tx_db_for_genome;
+
+    $msg = sprintf("finished gene tx db, '%s'", $gene_track->name);
+    $self->_logger->info( $msg ) if $self->debug;
+  }
+  $self->_logger->info('finished building transcripts');
+}
+
 sub build_snp_sites {
   my $self = shift;
 
   $self->_logger->info('begining to build snp tracks');
-
   my $wanted_chr = $self->wanted_chr;
 
   for my $snp_track ( $self->all_snp_tracks ) {
@@ -119,39 +142,23 @@ sub build_snp_sites {
 
       # skip to the next chr if we specified a chr to build
       # and this chr isn't the one we specified
-      next unless $wanted_chr && $wanted_chr eq $chr;
+      if ( defined $wanted_chr ) {
+        next unless $wanted_chr eq $chr;
+      }
 
-      # add additional keys to the hashref for Seq::Build::SnpTrack
+      my $msg = sprintf("begining snp db, '%s', for chrom '%s'", $snp_track->name, $chr);
+      $self->_logger->info( $msg ) if $self->debug;
+
+      # Seq::Build::SnpTrack needs the string genome
       $record->{genome_track_str} = $self->genome_str_track;
-      $record->{genome_index_dir} = $self->genome_index_dir;
-      $record->{genome_name}      = $self->genome_name;
-      $record->{genome_chrs}      = $self->genome_chrs;
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db($chr);
+
+      $msg = sprintf("finished snp db, '%s', for chrom '%s'", $snp_track->name, $chr);
+      $self->_logger->info( $msg ) if $self->debug;
     }
   }
   $self->_logger->info('finished building snp tracks');
-}
-
-sub build_transcript_db {
-  my $self = shift;
-
-  $self->_logger->info('begining to build transcripts');
-
-  for my $gene_track ( $self->all_gene_tracks ) {
-
-    # extract keys from snp_track for creation of Seq::Build::TxTrack
-    my $record = $gene_track->as_href;
-
-    # add additional keys to the hashref for Seq::Build::TxTrack
-    $record->{genome_track_str} = $self->genome_str_track;
-    $record->{genome_index_dir} = $self->genome_index_dir;
-    $record->{genome_name}      = $self->genome_name;
-    $record->{name}             = $gene_track->name;
-    my $gene_db = Seq::Build::TxTrack->new($record);
-    $gene_db->insert_transcript_seq;
-  }
-  $self->_logger->info('finished building transcripts');
 }
 
 sub build_gene_sites {
@@ -170,16 +177,20 @@ sub build_gene_sites {
 
       # skip to the next chr if we specified a chr to build and this chr isn't
       #   the one we specified
-      next unless $wanted_chr && $wanted_chr eq $chr;
+      if ( defined $wanted_chr ) {
+        next unless $wanted_chr eq $chr;
+      }
 
-      # extra keys from snp_track for creation of Seq::Build::GeneTrack
+      my $msg = sprintf("begining gene db, '%s', for chrom '%s'", $gene_track->name, $chr);
+      $self->_logger->info( $msg ) if $self->debug;
+
+      # Seq::Build::GeneTrack needs the string genome
       $record->{genome_track_str} = $self->genome_str_track;
-      $record->{genome_index_dir} = $self->genome_index_dir;
-      $record->{genome_name}      = $self->genome_name;
-
-      my $wanted_chr = $self->wanted_chr;
-      my $gene_db    = Seq::Build::GeneTrack->new($record);
+      my $gene_db = Seq::Build::GeneTrack->new($record);
       $gene_db->build_gene_db_for_chr($chr);
+
+      $msg = sprintf("finished gene db, '%s', for chrom '%s'", $gene_track->name, $chr);
+      $self->_logger->info( $msg ) if $self->debug;
     }
   }
   $self->_logger->info('finished building gene track');
@@ -187,6 +198,8 @@ sub build_gene_sites {
 
 sub build_conserv_scores_index {
   my $self = shift;
+
+  # TODO: update to use Config::GenomeSizedTrack
 
   $self->_logger->info('begining to build conservation scores');
 
@@ -240,6 +253,8 @@ sub build_conserv_scores_index {
 sub build_genome_index {
   my $self = shift;
 
+  # TODO: update to use Config::GenomeSizedTrack
+
   $self->_logger->info('begining to build indexed genome');
 
   # build needed tracks, which write ranges for snp and gene sites
@@ -290,7 +305,7 @@ sub build_genome_index {
 
   # gather gene region site file
   for my $gene_track ( $self->all_gene_tracks ) {
-    my $gene_region_name = join( ".", $gene_track->name, 'gene_region', 'dat' );
+    my $gene_region_name = join( ".", $gene_track->name, 'tx', 'gene_region', 'dat' );
     push @region_files, File::Spec->catfile( $index_dir, $gene_region_name );
   }
 
