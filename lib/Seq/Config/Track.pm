@@ -22,9 +22,8 @@ with 'MooX::Role::Logger'; #TODO: test whether all child classes will inherit
 
   @example:
   =for :list
-  * PhastCons
-  * PhyloP
-  * CADD
+  * gene
+  * snp
 
 =cut
 
