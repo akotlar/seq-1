@@ -191,7 +191,7 @@ sub _get_file {
     exit(1);
   }
   my $base_dir = $self->genome_index_dir;
-  my $file_name = sprintf( "%s.%s.%s.%s", $self->name, $chr, $var, $ext );
+  my $file_name = sprintf( "%s.%s.%s.%s.%s", $self->name, $self->type, $chr, $var, $ext );
   return $base_dir->child($file_name)->absolute->stringify;
 }
 
