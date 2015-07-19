@@ -113,11 +113,11 @@ sub _build_genome_str_track {
 sub build_transcript_db {
   my $self = shift;
 
-  $self->_logger->info('begining to build transcripts');
+  $self->_logger->info('build transcripts: start');
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
-    my $msg = sprintf( "begining gene tx db, '%s'", $gene_track->name );
+    my $msg = sprintf( "start gene tx db, '%s'", $gene_track->name );
     $self->_logger->info($msg) if $self->debug;
 
     # extract keys from snp_track for creation of Seq::Build::TxTrack
@@ -131,13 +131,13 @@ sub build_transcript_db {
     $msg = sprintf( "finished gene tx db, '%s'", $gene_track->name );
     $self->_logger->info($msg) if $self->debug;
   }
-  $self->_logger->info('finished building transcripts');
+  $self->_logger->info('build transcripts: done');
 }
 
 sub build_snp_sites {
   my $self = shift;
 
-  $self->_logger->info('begining to build snp tracks');
+  $self->_logger->info('build snp tracks: start');
   my $wanted_chr = $self->wanted_chr;
 
   for my $snp_track ( $self->all_snp_tracks ) {
@@ -153,7 +153,8 @@ sub build_snp_sites {
         next unless $wanted_chr eq $chr;
       }
 
-      my $msg = sprintf( "begining snp db, '%s', for chrom '%s'", $snp_track->name, $chr );
+      my $msg = sprintf( "snp db, '%s', for chrom '%s': start",
+        $snp_track->name, $chr );
       $self->_logger->info($msg) if $self->debug;
 
       # Seq::Build::SnpTrack needs the string genome
@@ -161,17 +162,18 @@ sub build_snp_sites {
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db($chr);
 
-      $msg = sprintf( "finished snp db, '%s', for chrom '%s'", $snp_track->name, $chr );
+      $msg = sprintf( "snp db, '%s', for chrom '%s':done ",
+        $snp_track->name, $chr );
       $self->_logger->info($msg) if $self->debug;
     }
   }
-  $self->_logger->info('finished building snp tracks');
+  $self->_logger->info('build snp tracks: done');
 }
 
 sub build_gene_sites {
   my ( $self, $chr ) = @_;
 
-  $self->_logger->info('begining to build gene track');
+  $self->_logger->info('build gene track: start');
 
   my $wanted_chr = $self->wanted_chr;
 
@@ -188,8 +190,7 @@ sub build_gene_sites {
         next unless $wanted_chr eq $chr;
       }
 
-      my $msg =
-        sprintf( "begining gene db, '%s', for chrom '%s'", $gene_track->name, $chr );
+      my $msg = sprintf( "gene db, '%s', for chrom '%s': start", $gene_track->name, $chr );
       $self->_logger->info($msg) if $self->debug;
 
       # Seq::Build::GeneTrack needs the string genome
@@ -197,11 +198,11 @@ sub build_gene_sites {
       my $gene_db = Seq::Build::GeneTrack->new($record);
       $gene_db->build_gene_db_for_chr($chr);
 
-      $msg = sprintf( "finished gene db, '%s', for chrom '%s'", $gene_track->name, $chr );
+      $msg = sprintf( "gene db, '%s', for chrom '%s': done", $gene_track->name, $chr );
       $self->_logger->info($msg) if $self->debug;
     }
   }
-  $self->_logger->info('finished building gene track');
+  $self->_logger->info('build gene track: done');
 }
 
 sub build_conserv_scores_index {
@@ -209,7 +210,7 @@ sub build_conserv_scores_index {
 
   # TODO: update to use Config::GenomeSizedTrack
 
-  $self->_logger->info('begining to build conservation scores');
+  $self->_logger->info('build conservation scores: start');
 
   # make chr_len hash for binary genome
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
@@ -304,14 +305,14 @@ sub build_conserv_scores_index {
         }
       }
     }
-    $self->_logger->info('finished building conservation scores');
+    $self->_logger->info('build conservation scores: done');
   }
 }
 
 sub build_genome_index {
   my $self = shift;
 
-  $self->_logger->info('begining to build indexed genome');
+  $self->_logger->info('build indexed genome: start');
 
   # build needed tracks, which write ranges for snp and gene sites
   #   NOTE: if the tracks are built then nothing will be done unless force is
@@ -349,7 +350,7 @@ sub build_genome_index {
 
   my @region_files;
 
-  $self->_logger->info('writing genome file list');
+  $self->_logger->info('build indexed genome: writing file list');
 
   # input files for each chr
   # NOTE: cycle through all snp and gene tracks and combine into one file list
@@ -405,7 +406,7 @@ sub build_genome_index {
     croak $msg;
   }
 
-  $self->_logger->info('finished building genome index');
+  $self->_logger->info('build indexed genome: done');
 }
 
 __PACKAGE__->meta->make_immutable;
