@@ -8,7 +8,7 @@ package Seq::Role::IO;
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @role Seq::Role::IO
   #TODO: Check description
 
@@ -37,6 +37,7 @@ use Carp qw/ confess /;
 use IO::File;
 use IO::Compress::Gzip qw/ $GzipError /;
 use IO::Uncompress::Gunzip qw/ $GunzipError /;
+use Scalar::Util qw/ reftype /;
 
 # tried various ways of assigning this to an attrib, with the intention that
 # one could change the taint checking characters allowed but this is the simpliest
@@ -47,6 +48,16 @@ sub get_read_fh {
   my ( $class, $file ) = @_;
 
   my $fh;
+  my $reftype = reftype $file;
+
+  # TODO: should explicitly check it's a Path::Tiny object
+  if ( defined $reftype ) {
+    $file = $file->absolute->stringify;
+    if ( ! -f $file ) {
+      my $msg = sprintf("ERROR: file does not exist for reading: %s", $file)
+    }
+  }
+
   if ( $file =~ m/\.gz\Z/ ) {
     $fh = IO::Uncompress::Gunzip->new($file)
       || confess "\nError: gzip failed: $GunzipError\n";
