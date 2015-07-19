@@ -38,6 +38,7 @@ use Carp qw/ croak /;
 use File::Path qw/ make_path /;
 use File::Spec;
 use namespace::autoclean;
+use Path::Tiny qw/ path /;
 use Scalar::Util qw/ reftype /;
 use YAML::XS qw/ Dump /;
 
@@ -63,49 +64,42 @@ has genome_str_track => (
 has genome_hasher => (
   is      => 'ro',
   isa     => AbsFile,
-  default => './genome_hasher',
+  coerce  => 1,
 );
 
 has genome_scorer => (
   is      => 'ro',
   isa     => AbsFile,
-  default => './genome_scorer',
+  coerce  => 1,
 );
 
 has genome_cadd => (
   is      => 'ro',
   isa     => AbsFile,
-  default => './genome_cadd'
+  coerce  => 1,
 );
 
 has wanted_chr => (
   is      => 'ro',
-  isa     => 'Maybe[Str]',
-  default => undef,
+  isa     => 'Str',
+  default => 0,
 );
 
 sub BUILD {
   my $self = shift;
   $self->_logger->info( "loading genome of size " . $self->genome_length );
   $self->_logger->info( "genome_hasher: " . $self->genome_hasher );
-  $self->_logger->info( "genome_scoreer: " . $self->genome_scorer );
-  $self->_logger->info( "wanted_chr: " . $self->wanted_chr );
+  $self->_logger->info( "genome_scorer: " . $self->genome_scorer );
+  $self->_logger->info( "genome_cadd: " . $self->genome_cadd );
+  $self->_logger->info( "wanted_chr: " . ($self->wanted_chr || 'all') );
 }
 
 sub _build_genome_str_track {
   my $self = shift;
   for my $gst ( $self->all_genome_sized_tracks ) {
     if ( $gst->type eq 'genome' ) {
-      return Seq::Build::GenomeSizedTrackStr->new(
-        {
-          name             => $gst->name,
-          type             => $gst->type,
-          local_dir        => $gst->local_dir,
-          local_files      => $gst->local_files,
-          genome_chrs      => $gst->genome_chrs,
-          genome_index_dir => $self->genome_index_dir,
-        }
-      );
+      my $href = $gst->as_href;
+      return Seq::Build::GenomeSizedTrackStr->new( $href );
     }
   }
 }
@@ -122,6 +116,7 @@ sub build_transcript_db {
 
     # extract keys from snp_track for creation of Seq::Build::TxTrack
     my $record = $gene_track->as_href;
+    $record->{force} = $self->force if $self->force;
 
     # add additional keys to the hashref for Seq::Build::TxTrack
     $record->{genome_track_str} = $self->genome_str_track;
@@ -144,12 +139,13 @@ sub build_snp_sites {
 
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
     my $record = $snp_track->as_href;
+    $record->{force} = $self->force if $self->force;
 
     for my $chr ( $self->all_genome_chrs ) {
 
       # skip to the next chr if we specified a chr to build
       # and this chr isn't the one we specified
-      if ( defined $wanted_chr ) {
+      if ( $wanted_chr ) {
         next unless $wanted_chr eq $chr;
       }
 
@@ -181,12 +177,13 @@ sub build_gene_sites {
 
     # extract keys to the hashref for Seq::Build::GeneTrack
     my $record = $gene_track->as_href;
+    $record->{force} = $self->force if $self->force;
 
     for my $chr ( $self->all_genome_chrs ) {
 
       # skip to the next chr if we specified a chr to build and this chr isn't
       #   the one we specified
-      if ( defined $wanted_chr ) {
+      if ( $wanted_chr ) {
         next unless $wanted_chr eq $chr;
       }
 

@@ -37,8 +37,8 @@ genome_chrs:
   - chrM
   - chrX
   - chrY
-genome_raw_dir: ./hg38/raw
-genome_index_dir: ./hg38/index
+genome_raw_dir: sandbox/hg38/raw
+genome_index_dir: sandbox/hg38/index
 
 # sparse tracks
 sparse_tracks:
@@ -57,14 +57,13 @@ sparse_tracks:
       - description
       - rfamAcc
   - type: snp
-    local_dir: ./hg38/raw/snp/
     local_files:
       - hg38.snp141.txt
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141
     features:
       - name
-  - type: clinvar
+  - type: snp
     local_files:
       - hg38.clinvar.txt
     name: clinvar
@@ -74,7 +73,6 @@ sparse_tracks:
 genome_sized_tracks:
   - name: hg38
     type: genome
-    local_dir: ./hg38/raw/seq/
     local_files:
       - chr1.fa.gz
       - chr2.fa.gz

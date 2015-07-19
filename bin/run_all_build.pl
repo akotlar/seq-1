@@ -17,13 +17,11 @@ use Getopt::Long;
 use File::Spec;
 use Path::Tiny;
 use Pod::Usage;
-use Type::Params qw/ compile /;
-use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
 use YAML::XS qw/ LoadFile /;
 
 # variables
-my ( $verbose, $act, $config_file, $out_ext, $location, $build_assembly );
+my ( $verbose, $act, $config_file, $out_ext, $build_scr );
 my $cwd  = cwd();
 my @type = qw/ genome conserv transcript_db snp_db gene_db /;
 
@@ -33,16 +31,14 @@ die
   unless GetOptions(
   'v|verbose'    => \$verbose,
   'a|act'        => \$act,
-  'b|build=s'    => \$build_assembly,
+  'b|build=s'    => \$build_scr,
   'c|config=s'   => \$config_file,
-  'l|location=s' => \$location,
   ) and $config_file;
 $verbose++ unless $act;
 
 # clean path
-$build_assembly = path($build_assembly)->absolute->stringify;
-$config_file    = path($config_file)->absolute->stringify;
-$location       = path($location)->absolute->stringify;
+$build_scr   = path($build_scr)->absolute->stringify;
+$config_file = path($config_file)->absolute->stringify;
 
 my $config_href = LoadFile($config_file);
 
@@ -50,8 +46,7 @@ my $cmd_fh = IO::File->new( 'build.sh', 'w' );
 
 for my $type (qw/ gene_db snp_db /) {
   for my $chr ( @{ $config_href->{genome_chrs} } ) {
-    my $cmd =
-      qq{$build_assembly --config $config_file --location $location --type $type --wanted_chr $chr};
+    my $cmd = qq{$build_scr --config $config_file --type $type --wanted_chr $chr};
     $cmd .= " --verbose" if $verbose;
     $cmd .= " --act"     if $act;
     my $file_name = Write_script( $type, $chr, $cmd );

@@ -70,7 +70,7 @@ sub build_snp_db {
     my $in_fh = $self->get_write_fh($input_file);
     my ( %header, @snp_sites, @insert_data );
 
-    while ( my $line = $in_fh->geltine ) {
+    while ( my $line = $in_fh->getline ) {
       chomp $line;
 
       my @fields = split /\t/, $line;

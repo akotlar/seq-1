@@ -72,14 +72,16 @@ has force => (
 
 sub _has_site_range_file {
   my ( $self, $file ) = @_;
-  if ( -s $file ) {
-    $self->_logger->info( join " ", 'found', $file, 'skipping build' );
-    return 1;
+  if ( -f $file ) {
+    if ( -s $file ) {
+      my $msg = sprintf("found non-zero file: %s", $file);
+      $self->_logger->info( $msg );
+      return 1;
+    }
   }
-  else {
-    $self->_logger->info( join " ", 'did not find', $file, 'proceeding with build' );
-    return;
-  }
+  my $msg = sprintf("did not find old file or it was empty: %s", $file);
+  $self->_logger->info($msg);
+  return;
 }
 
 sub _get_range_list {

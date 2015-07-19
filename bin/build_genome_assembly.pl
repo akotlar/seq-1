@@ -8,8 +8,6 @@ use Carp qw/ croak /;
 use Getopt::Long;
 use Path::Tiny;
 use Pod::Usage;
-use Type::Params qw/ compile /;
-use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
 use YAML::XS qw/ LoadFile /;
 
@@ -19,11 +17,10 @@ use Seq::Build;
 
 my (
   $yaml_config, $build_type, $db_location, $verbose, $no_bdb,
-  $help,        $wanted_chr, $force,       $debug
+  $help,        $wanted_chr, $force,       $debug,
+  $genome_hasher_bin, $genome_scorer_bin, $genome_cadd_bin,
 );
-
-my $genome_hasher_bin = './bin/genome_hasher';
-my $genome_scorer_bin = './bin/genome_scorer';
+$wanted_chr = 0;
 
 # cmd to method
 my %cmd_2_method = (
@@ -37,7 +34,6 @@ my %cmd_2_method = (
 # usage
 GetOptions(
   'c|config=s'   => \$yaml_config,
-  'l|location=s' => \$db_location,
   't|type=s'     => \$build_type,
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
@@ -53,36 +49,47 @@ if ($help) {
   exit;
 }
 
-unless ( defined $yaml_config
-  and $db_location
-  and exists $cmd_2_method{$build_type} )
-{
+unless ( defined $yaml_config and exists $cmd_2_method{$build_type} ) {
   Pod::Usage::pod2usage();
 }
 
 my $method = $cmd_2_method{$build_type};
 
-# get absolute path for YAML file and db_location
-$yaml_config       = path($yaml_config)->absolute->stringify;
-$db_location       = path($db_location)->absolute->stringify;
-$genome_hasher_bin = path($genome_hasher_bin)->absolute->stringify;
-$genome_scorer_bin = path($genome_scorer_bin)->absolute->stringify;
-
-# this should all be contained within the package now
-# if ( -d $db_location ) {
-#   chdir($db_location) || croak "cannot change to dir: $db_location: $!\n";
-# }
-# else {
-#   croak "expected location of db to be a directory instead got: $db_location\n";
-# }
-
 # read config file to determine genome name for log and check validity
 my $config_href = LoadFile($yaml_config);
+
+# location of the binaries
+#   NOTE: precidence is cmd line > config file > default
+if (exists $config_href->{genome_hasher_bin}) {
+  $genome_hasher_bin = $config_href->{genome_hasher_bin} unless $genome_hasher_bin;
+}
+else {
+    $genome_hasher_bin = "./bin/genome_hasher" unless $genome_hasher_bin;
+}
+if (exists $config_href->{genome_scorer_bin}) {
+  $genome_scorer_bin = $config_href->{genome_scorer_bin} unless $genome_scorer_bin;
+}
+else {
+  $genome_scorer_bin = "./bin/genome_scorer" unless $genome_scorer_bin;
+}
+if (exists $config_href->{genome_cadd_bin}) {
+  $genome_cadd_bin = $config_href->{genome_cadd_bin} unless $genome_cadd_bin;
+}
+else {
+  $genome_cadd_bin = "./bin/genome_cadd" unless $genome_cadd_bin;
+}
+
+# get absolute path for YAML file and db_location
+$yaml_config       = path($yaml_config)->absolute->stringify;
+$genome_hasher_bin = path($genome_hasher_bin)->absolute->stringify;
+$genome_scorer_bin = path($genome_scorer_bin)->absolute->stringify;
+$genome_cadd_bin   = path($genome_cadd_bin)->absolute->stringify;
 
 my $builder_options_href = {
   configfile    => $yaml_config,
   genome_scorer => $genome_scorer_bin,
   genome_hasher => $genome_hasher_bin,
+  genome_cadd_bin => $genome_cadd_bin,
   wanted_chr    => $wanted_chr,
   force         => $force,
   debug         => $debug
@@ -90,10 +97,11 @@ my $builder_options_href = {
 
 if ( $method and $config_href ) {
 
+  $wanted_chr = ($wanted_chr) ? $wanted_chr : 'all';
   # set log file
   my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type,
     $wanted_chr, 'log';
-  my $log_file = path($db_location)->child($log_name)->absolute->stringify;
+  my $log_file = path(".")->child($log_name)->absolute->stringify;
   Log::Any::Adapter->set( 'File', $log_file );
 
   my $builder = Seq::Build->new_with_config($builder_options_href);
@@ -114,9 +122,9 @@ build_genome_assembly - builds a binary genome assembly
 
 build_genome_assembly
   --config <file>
-  --locaiton <path>
   --type <'genome', 'conserv', 'transcript_db', 'snp_db', 'gene_db'>
-
+  [ --wanted_chr ]
+  
 =head1 DESCRIPTION
 
 C<build_genome_assembly.pl> takes a yaml configuration file and reads raw genomic
@@ -137,11 +145,6 @@ or snp_db.
 Config: A YAML genome assembly configuration file that specifies the various
 tracks and data associated with the assembly. This is the same file that is
 used by the Seq Package to annotate snpfiles.
-
-=item B<-l>, B<--location>
-
-Location: Base location of the raw genomic information used to build the
-annotation index.
 
 =item B<-w>, B<--wanted_chr>
 

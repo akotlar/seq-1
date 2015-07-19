@@ -44,7 +44,7 @@ use MooseX::Types::Path::Tiny qw/ AbsPath AbsPaths /;
 
 use namespace::autoclean;
 use Type::Params qw/ compile /;
-use Types::Standard qw/ Str Object /;
+use Types::Standard qw/ Object Maybe Str /;
 
 extends 'Seq::Config::Track';
 
@@ -180,32 +180,50 @@ around 'sql_statement' => sub {
 };
 
 sub _get_file {
-  my ( $self, $chr, $var, $ext ) = @_;
+  state $check = compile( Object, Str, Str, Maybe[Str] );
+  my ( $self, $chr, $ext, $var ) = $check->(@_);
+
+  my $base_dir = $self->genome_index_dir;
+  my $file_name;
 
   # the chr may either be 'genome' (for the entire transcript db) or a chromosome
   # defined by the configuration file for the organism
-  unless ( $chr eq 'genome' || grep { /\A$chr\z/ } ( $self->all_genome_chrs ) ) {
+
+  if ($chr eq 'genome' ) {
+    if ( $var eq 'tx' ) {
+      $file_name = join ".", $self->name, $var, $chr, $ext;
+    }
+    else {
+      $file_name = join ".", $self->name, $self->type, $chr, $ext;
+    }
+  }
+  elsif ( grep { /\A$chr\z/ } ( $self->all_genome_chrs ) ) {
+    if ( $var ) {
+      $file_name = join ".", $self->name, $self->type, $chr, $var, $ext;
+    }
+    else {
+      $file_name = join ".", $self->name, $self->type, $chr, $ext;
+    }
+  }
+  else {
     my $msg = sprintf( "Error: asked to create file for unknown chromosome %s", $chr );
     say $msg;
     $self->_logger->error($msg);
     exit(1);
   }
-  my $base_dir = $self->genome_index_dir;
-  my $file_name =
-    sprintf( "%s.%s.%s.%s.%s", $self->name, $self->type, $chr, $var, $ext );
   return $base_dir->child($file_name)->absolute->stringify;
 }
 
 sub get_dat_file {
-  state $check = compile( Object, Str, Str );
+  state $check = compile( Object, Str, Maybe[Str] );
   my ( $self, $chr, $var ) = $check->(@_);
-  return $self->_get_file( $chr, $var, 'dat' );
+  return $self->_get_file( $chr, 'dat', $var );
 }
 
 sub get_kch_file {
-  state $check = compile( Object, Str );
-  my ( $self, $chr ) = $check->(@_);
-  return $self->_get_file( $chr, $self->type, 'kch' );
+  # state $check = compile( Object, Str, Maybe[Str] );
+  my ( $self, $chr, $var ) = @_;
+  return $self->_get_file( $chr, 'kch', $var );
 }
 
 =method @public snp_fields_aref

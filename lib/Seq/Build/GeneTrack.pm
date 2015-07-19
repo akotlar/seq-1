@@ -37,13 +37,16 @@ use Seq::KCManager;
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
+use DDP;
+
 sub _get_gene_data {
   my ( $self, $wanted_chr ) = @_;
 
   # to return gene data
   my @gene_data;
 
-  $self->_logger->info("starting to build gene site db for: $wanted_chr");
+  my $msg = sprintf( "build gene site db (chr: %s): start", ( $wanted_chr || 'all' ) );
+  $self->_logger->info($msg);
 
   # input files
   my @input_files = $self->all_local_files;
@@ -80,8 +83,13 @@ sub _get_gene_data {
       my %data = map { $_ => $fields[ $header{$_} ] }
         ( @{ $self->gene_fields_aref }, $self->all_features );
 
-      # this also has the byproduct of skipping weird chromosomes
-      next unless $data{chrom} eq $wanted_chr;
+      if ( $wanted_chr ) {
+        next unless $data{chrom} eq $wanted_chr;
+      }
+      else {
+        # skip unassigned or alternative chromosomes
+        next unless grep { /\A$data{chrom}\z/xms } $self->all_genome_chrs;
+      }
 
       # prepare basic gene data
       my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
@@ -108,22 +116,26 @@ sub _get_gene_data {
 }
 
 sub build_tx_db_for_genome {
-  my ( $self, $wanted_chr ) = @_;
+  my $self = shift;
 
   # read gene data for the chromosome
   #   if there is no usable data then we will bail out and no blank files
   #   will be created
-  my $chr_data_aref = $self->_get_gene_data($wanted_chr);
-  $self->_logger->info("finished reading data for $wanted_chr");
+  my $chr_data_aref = $self->_get_gene_data();
+  $self->_logger->info("finished reading data for all chromosomes");
 
   # prepare output dir, as needed
   $self->genome_index_dir->mkpath unless ( -d $self->genome_index_dir );
 
   # $gene region site range file
   my $gene_region_file = $self->get_dat_file( 'genome', 'tx' );
+  my $msg = sprintf("writing to: '%s'", $gene_region_file);
+  $self->_logger->info($msg);
 
   # dbm file
   my $dbm_file = $self->get_kch_file( 'genome', 'tx' );
+  $msg = sprintf("writing to: '%s'", $dbm_file);
+  $self->_logger->info($msg);
 
   # check if we've already build site range files unless forced to overwrite
   unless ( $self->force ) {
@@ -184,12 +196,18 @@ sub build_gene_db_for_chr {
 
   # flanking site range file
   my $gan_file = $self->get_dat_file( $wanted_chr, 'gan' );
+  my $msg = sprintf("writing to: '%s'", $gan_file);
+  $self->_logger->info($msg);
 
   # exon site range file
   my $ex_file = $self->get_dat_file( $wanted_chr, 'exon' );
+  $msg = sprintf("writing to: '%s'", $ex_file);
+  $self->_logger->info($msg);
 
   # dbm file
   my $dbm_file = $self->get_kch_file($wanted_chr);
+  $msg = sprintf("writing to: '%s'", $dbm_file);
+  $self->_logger->info($msg);
 
   # check if we've already build site range files unless forced to overwrite
   unless ( $self->force ) {

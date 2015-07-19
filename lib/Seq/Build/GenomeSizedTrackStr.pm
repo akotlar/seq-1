@@ -31,6 +31,8 @@ use File::Spec;
 use namespace::autoclean;
 use YAML::XS qw/ Dump LoadFile /;
 
+use DDP;
+
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
 
