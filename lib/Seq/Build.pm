@@ -32,6 +32,7 @@ Extended in: None
 =cut
 
 use Moose 2;
+use MooseX::Types::Path::Tiny qw/ AbsFile /
 
 use Carp qw/ croak /;
 use File::Path qw/ make_path /;
@@ -61,14 +62,20 @@ has genome_str_track => (
 
 has genome_hasher => (
   is      => 'ro',
-  isa     => 'Str',
-  default => 'genome_hasher',
+  isa     => AbsFile,
+  default => './genome_hasher',
 );
 
 has genome_scorer => (
   is      => 'ro',
-  isa     => 'Str',
-  default => 'genome_scorer',
+  isa     => AbsFile,
+  default => './genome_scorer',
+);
+
+has genome_cadd => (
+  is => 'ro',
+  isa => AbsPath,
+  default => './genome_cadd'
 );
 
 has wanted_chr => (
@@ -207,44 +214,88 @@ sub build_conserv_scores_index {
   my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
 
   # prepare index dir
-  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path($index_dir) unless -f $index_dir;
+  my $index_dir = $self->genome_index_dir->absolute->stringify;
+  $self->genome_index->mk_path unless -f $index_dir;
 
   # write conservation scores
   if ( $self->genome_sized_tracks ) {
     foreach my $gst ( $self->all_genome_sized_tracks ) {
-      next unless $gst->type eq 'score';
 
-      # make chromosome start offsets for binary genome
-      my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
+    if ( $gst->type eq 'score' ) {
 
       # write chromosome offsets
-      my $chr_offset_name = join( ".", $gst->name, $gst->type, 'yml' );
-      my $chr_offset_file = File::Spec->catfile( $index_dir, $chr_offset_name );
-      my $chr_offset_fh = $self->get_write_fh($chr_offset_file);
+      my $chr_offset_file = $gst->genome_offset_file;
+      my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
       print {$chr_offset_fh} Dump( \%chr_len );
 
-      # set idx file
-      my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
-      my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
+      # local file
+      my @local_files = $gst->all_local_files;
+      unless (scalar @local_files == 1 && $local_files[0] =~ m/wigFix/) {
+        my $msg = sprintf("expected 1 local file to build but found %d: %s",
+          scalar @local_files, join ("\t", @local_files) );
+        $self->_logger->error($msg);
+        croak $msg;
+      }
 
-      # find file
-      my $local_dir = File::Spec->canonpath( $gst->local_dir );
-      my $local_file = File::Spec->catfile( $local_dir, $gst->first_local_file );
-
-      croak "expected file to be a wigFix file" unless $local_file =~ m/wigFix/;
-
-      # set path to binary encoder
-      my $genome_scorer = File::Spec->canonpath( $self->genome_scorer );
-      my $cmd = join " ", $genome_scorer, $self->genome_length, $chr_offset_file,
-        $local_file, $gst->score_max, $gst->score_min, $gst->score_R, $idx_file;
+      # build cmd for external encoder
+      my $cmd = join " ", $self->genome_scorer, $self->genome_length, $chr_offset_file,
+        $local_files[0], $gst->score_max, $gst->score_min, $gst->score_R,
+        $gst->genome_bin_file;
 
       $self->_logger->info("running command: $cmd");
 
       my $exit_code = system $cmd;
 
-      croak "error encoding genome with $genome_scorer: $exit_code" if $exit_code;
-      croak "error making encoded genome - did not find $idx_file " unless -f $idx_file;
+      if ( $exit_code ) {
+        my $msg = sprintf("error encoding genome with %s: %d",
+          $self->genome_scorer, $exit_code);
+        $self->_logger->error($msg)
+        croak $msg;
+      }
+      elsif (!-f $self->genome_bin_file) {
+        my $msg = sprintf("ERROR: did not find expected output '%s'",
+          $gst->genome_bin_file);
+        $self->_logger->error($msg)
+        croak $msg;
+      }
+    }
+    elsif ( $gst->track eq 'cadd' ) {
+
+      # write chromosome offsets
+      my $chr_offset_file = $gst->genome_offset_file;
+      my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
+      print {$chr_offset_fh} Dump( \%chr_len );
+
+      # local file
+      my @local_files = $gst->all_local_files;
+      unless (scalar @local_files == 1 && $local_files[0] =~ m/cadd/) {
+        my $msg = sprintf("expected 1 local file to build but found %d: %s",
+          scalar @local_files, join ("\t", @local_files) );
+        $self->_logger->error($msg);
+        croak $msg;
+      }
+
+      # build cmd for external encoder
+      my $cmd = join " ", $self->genome_cadd, $self->genome_length, $chr_offset_file,
+        $local_files[0], $gst->score_max, $gst->score_min, $gst->score_R,
+        $gst->genome_bin_file;
+
+      $self->_logger->info("running command: $cmd");
+
+      my $exit_code = system $cmd;
+
+      if ( $exit_code ) {
+        my $msg = sprintf("error encoding genome with %s: %d",
+          $self->genome_cadd, $exit_code);
+        $self->_logger->error($msg)
+        croak $msg;
+      }
+      elsif (!-f $self->genome_bin_file) {
+        my $msg = sprintf("ERROR: did not find expected output '%s'",
+          $gst->genome_bin_file);
+        $self->_logger->error($msg)
+        croak $msg;
+      }
     }
   }
   $self->_logger->info('finished building conservation scores');
@@ -253,22 +304,39 @@ sub build_conserv_scores_index {
 sub build_genome_index {
   my $self = shift;
 
-  # TODO: update to use Config::GenomeSizedTrack
-
   $self->_logger->info('begining to build indexed genome');
 
   # build needed tracks, which write ranges for snp and gene sites
+  #   NOTE: if the tracks are built then nothing will be done unless force is
+  #         true in which case the tracks will be rebuilt
   $self->build_snp_sites;
   $self->build_gene_sites;
+  $self->build_transcript_db;
 
   # prepare index dir
-  my $index_dir = File::Spec->canonpath( $self->genome_index_dir );
-  make_path($index_dir) unless -f $index_dir;
+  my $index_dir = $self->genome_index_dir->absolute->stringify;
+  $self->genome_index->mk_path unless -f $index_dir;
 
-  # prepare idx file and file list needed to make indexed genome
-  my $idx_name       = join( ".", $self->genome_name, 'genome', 'idx' );
-  my $file_list_name = join( ".", $self->genome_name, 'genome', 'list' );
-  my $idx_file         = File::Spec->catfile( $index_dir, $idx_name );
+  # get genome configuration object
+  #   NOTE: needed for genome_offset_file(), genome_bin_file(), and
+  #         genome_str_file() methods
+  my $genome_build_obj;
+  foreach my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'genome' ) {
+      $genome_build_obj = $gst;
+    }
+  }
+
+  # make chromosome start offsets for binary genome
+  my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
+
+  # write chromosome offsets
+  my $chr_offset_file = $genome_build_obj->genome_offset_file;
+  my $chr_offset_fh = $self->get_write_fh($chr_offset_file);
+  print {$chr_offset_fh} Dump( \%chr_len );
+
+  # prepare file that will list all regions to be added
+  my $file_list_name   = join( ".", $self->genome_name, 'genome', 'list' );
   my $region_list_file = File::Spec->catfile( $index_dir, $file_list_name );
   my $file_list_fh     = $self->get_write_fh($region_list_file);
 
@@ -276,63 +344,59 @@ sub build_genome_index {
 
   $self->_logger->info('writing genome file list');
 
-  # cycle through all snp and gene tracks and check that we have a file for them
-  # in the index dir; write a file with all of them plus the sequence file
-  # and that off to genome_hasher and check that something was
-
-  # input files
-  my $genome_str_name = join ".", $self->genome_name, 'genome', 'str', 'dat';
-  my $genome_str_file = File::Spec->catfile( $index_dir, $genome_str_name );
-
-  # gather files for each chr
+  # input files for each chr
+  # NOTE: cycle through all snp and gene tracks and combine into one file list
+  #       for genome_hasher
   for my $chr ( $self->all_genome_chrs ) {
 
     # snp sites
     for my $snp_track ( $self->all_snp_tracks ) {
-      my $snp_name = join( ".", $snp_track->name, $chr, 'snp', 'dat' );
-      push @region_files, File::Spec->catfile( $index_dir, $snp_name );
+      push @region_files, $self->get_dat_file( $chr, $snp_track->type );
     }
 
     # gene annotation and exon positions
     for my $gene_track ( $self->all_gene_tracks ) {
-      my $gan_name  = join( ".", $gene_track->name, $chr, 'gan',  'dat' );
-      my $exon_name = join( ".", $gene_track->name, $chr, 'exon', 'dat' );
-      push @region_files, File::Spec->catfile( $index_dir, $gan_name );
-      push @region_files, File::Spec->catfile( $index_dir, $exon_name );
-
+      push @region_files, $self->get_dat_file( $chr, 'gan' );
+      push @region_files, $self->get_dat_file( $chr, 'exon' );
     }
   }
 
-  # gather gene region site file
+  # gather gene region site files
   for my $gene_track ( $self->all_gene_tracks ) {
-    my $gene_region_name = join( ".", $gene_track->name, 'tx', 'gene_region', 'dat' );
-    push @region_files, File::Spec->catfile( $index_dir, $gene_region_name );
+    push @region_files, $self->get_dat_file( 'genome', 'tx' );
+  }
+
+  # check files in region file exist for genome_hasher
+  for my $file ( @region_files ) {
+    if ( ! -f $file ) {
+      my $msg = sprintf("ERROR: expected file: '%s' not found", $file);
+      $self->_logger->error($msg);
+      say $msg;
+    }
   }
 
   # write file locations
   say {$file_list_fh} join "\n", @region_files;
 
-  # get abs path to genome_hasher
-  my $genome_hasher = File::Spec->canonpath( $self->genome_hasher );
-
-  my $cmd = qq{$genome_hasher $genome_str_file $region_list_file $idx_file};
+  my $cmd = join " ", $self->genome_hasher, $genome_build_obj->genome_str_file,
+    $region_list_file, $genome_build_obj->genome_bin_file;
 
   $self->_logger->info("running command: $cmd");
 
   my $exit_code = system $cmd;
 
-  croak "error encoding genome with $genome_hasher: $exit_code" if $exit_code;
-  croak "error making encoded genome - did not find $idx_file " unless -f $idx_file;
-
-  # make chromosome start offsets for binary genome
-  my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
-
-  # write chromosome offsets
-  my $chr_offset_name = join( ".", $self->genome_name, 'genome', 'yml' );
-  my $chr_offset_file = File::Spec->catfile( $index_dir, $chr_offset_name );
-  my $chr_offset_fh = $self->get_write_fh($chr_offset_file);
-
-  print {$chr_offset_fh} Dump( \%chr_len );
+  if ( $exit_code ) {
+    my $msg = sprintf("error encoding genome with %s: %d",
+      $self->genome_cadd, $exit_code);
+    $self->_logger->error($msg)
+    croak $msg;
+  }
+  elsif (!-f $self->genome_bin_file) {
+    my $msg = sprintf("ERROR: did not find expected output '%s'",
+      $gst->genome_bin_file);
+    $self->_logger->error($msg)
+    croak $msg;
+  }
 
   $self->_logger->info('finished building genome index');
 }
