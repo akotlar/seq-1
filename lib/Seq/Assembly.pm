@@ -28,11 +28,13 @@ Uses:
 =cut
 
 use Moose 2;
+use MooseX::Types::Path::Tiny qw/ AbsPath /;
 
 use Carp qw/ croak confess/;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use Path::Tiny qw/ path /;
+
 
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
@@ -42,14 +44,10 @@ use DDP; # for debugging
 with 'Seq::Role::ConfigFromFile', 'MooX::Role::Logger';
 
 my @_attributes = qw/ genome_name genome_description genome_chrs genome_index_dir
-  genome_hasher genome_scorer debug wanted_chr debug/;
+  genome_cadd genome_hasher genome_scorer debug wanted_chr debug force/;
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-
-# TODO: kotlar; I commented out `genome_db_dir`, since what we really want is
-# `genome_index_dir`, and that is already required
-#has genome_db_dir      => ( is => 'ro', isa => 'Str', required => 1, );
 
 =property @public {Str} genome_index_dir
 
@@ -64,10 +62,10 @@ has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
 
   The existance of this directory is checked in Seq::Annotate::BUILDARGS
 
-@example genome_index_dir: ./hg38/index
+@example genome_index_dir: hg38/index
 =cut
 
-has genome_index_dir => ( is => 'ro', isa => 'Str', required => 1, );
+has genome_index_dir => ( is => 'ro', isa => AbsPath, coerce => 1, required => 1, );
 
 has genome_chrs => (
   is       => 'ro',
@@ -140,42 +138,61 @@ sub BUILDARGS {
   else {
     my %hash;
 
-    $href->{genome_index_dir} = path( $href->{genome_index_dir} )->absolute;
-    $href->{genome_index_dir} = $href->{genome_index_dir}->stringify;
+    # NOTE: handle essential directories
+    #   whether they are used depends on the context of subsequent calls
+    for my $req_dir (qw/ genome_index_dir genome_raw_dir/ ) {
+      if ( defined $href->{$req_dir} ) {
+        $href->{$req_dir} = path ( $href->{$req_dir} );
+      }
+      else {
+        $href->{$req_dir} = path( "." );
+        my $msg = sprintf("missing %s; defaulted to: %s",
+          $req_dir, $href->{$req_dir}->absolute->stringify );
+      }
+    }
 
     if ( $href->{debug} ) {
-      my $msg =
-        sprintf( "The absolute genome_index_dir path is %s", $href->{genome_index_dir} );
+      my $msg = sprintf( "genome_index_dir: %s",
+        $href->{genome_index_dir}->absolute->stringify );
+      say $msg;
+      my $msg = sprintf( "genome_raw_dir: %s",
+        $href->{genome_raw_dir}->absolute->stringify );
       say $msg;
     }
 
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
 
-      $sparse_track->{genome_name}      = $href->{genome_name};
-      $sparse_track->{genome_index_dir} = $href->{genome_index_dir};
-      if ( $sparse_track->{type} eq "gene" ) {
+      # give all sparse tracks some needed information
+      for my $attr ( qw/ genome_raw_dir genome_index_dir genome_chrs / ) {
+        $sparse_track->{$attr} = $href->{$attr};
+      }
+
+      if ( $sparse_track->{type} eq 'gene' ) {
         push @{ $hash{gene_tracks} }, Seq::Config::SparseTrack->new($sparse_track);
       }
-      elsif ( $sparse_track->{type} eq "snp" ) {
+      elsif ( $sparse_track->{type} eq 'snp' ) {
         push @{ $hash{snp_tracks} }, Seq::Config::SparseTrack->new($sparse_track);
       }
       else {
         croak sprintf( "unrecognized genome track type %s\n", $sparse_track->{type} );
       }
     }
-    for my $gst ( @{ $href->{genome_sized_tracks} } ) {
-      if ( $gst->{type} eq 'genome' or $gst->{type} eq 'score' or $gst->{type} eq 'cadd' )
-      {
-        $gst->{genome_chrs}      = $href->{genome_chrs};
-        $gst->{genome_index_dir} = $href->{genome_index_dir};
 
+    for my $gst ( @{ $href->{genome_sized_tracks} } ) {
+
+      # give all genome size tracks some needed information
+      for my $attr ( qw/ genome_raw_dir genome_index_dir genome_chrs / ) {
+        $gst->{$attr} = $href->{$attr};
+      }
+
+      if ( $gst->{type} eq 'genome'
+        or $gst->{type} eq 'score'
+        or $gst->{type} eq 'cadd' )
+      {
         if ( $href->{debug} ) {
-          say "We are in the " . $gst->{type} . " portion of the loop";
-          say "Here is what we are passing to Seq::Config::GenomeSizedTrack";
           p $gst;
         }
         my $obj = Seq::Config::GenomeSizedTrack->new($gst);
-
         push @{ $hash{genome_sized_tracks} }, $obj;
 
         p $obj if $href->{debug};
