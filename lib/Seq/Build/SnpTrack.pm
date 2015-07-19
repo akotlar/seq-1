@@ -55,7 +55,7 @@ sub build_snp_db {
 
   # get the names of the output files
   my $snp_dat_file = $self->get_dat_file( $wanted_chr, $self->type );
-  my $dbm_file     = $self->get_kch_file( $wanted_chr );
+  my $dbm_file = $self->get_kch_file($wanted_chr);
 
   # check if we need to make the site range file
   #   skip build if site range file is present or we're forced to overwrite
@@ -66,8 +66,8 @@ sub build_snp_db {
   # variable to hold kch object and
   my ( $db, $snp_dat_fh );
 
-  for my $input_file ( @input_files ) {
-    my $in_fh = $self->get_write_fh( $input_file );
+  for my $input_file (@input_files) {
+    my $in_fh = $self->get_write_fh($input_file);
     my ( %header, @snp_sites, @insert_data );
 
     while ( my $line = $in_fh->geltine ) {

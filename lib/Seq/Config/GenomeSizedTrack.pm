@@ -282,14 +282,14 @@ sub _build_raw_genome_files {
 
 # for conservation scores
 has score_min => (
-  is  => 'ro',
-  isa => 'Num',
+  is      => 'ro',
+  isa     => 'Num',
   default => 0,
 );
 
 has score_max => (
-  is  => 'ro',
-  isa => 'Num',
+  is      => 'ro',
+  isa     => 'Num',
   default => 255,
 );
 
@@ -470,7 +470,6 @@ sub in_snp_val {
 
 # TODO: Alex, could you clarify what you meant here?
 # TODO: move away from this in favor of read only accesssor
-
 sub BUILD {
   my $self = shift;
 
@@ -485,8 +484,7 @@ sub _validate_feature_score_range {
 
   # TODO: set range for genome_scorer.c and Seq package from single config.
   unless ( $self->score_R < 256 and $self->score_R >= 5 ) {
-    my $err_msg =
-      "FATAL ERROR: score_R should be between 5 - 255";
+    my $err_msg = "FATAL ERROR: score_R should be between 5 - 255";
     $self->_logger->error($err_msg);
     croak $err_msg;
   }
@@ -560,7 +558,6 @@ sub as_href {
   }
   return \%hash;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

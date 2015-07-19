@@ -5,6 +5,7 @@ use warnings;
 package Seq::Role::Serialize;
 # ABSTRACT: A moose role for serializing data
 # VERSION
+
 =head1 DESCRIPTION
   
   @role B<Seq::Role::Serialize> 

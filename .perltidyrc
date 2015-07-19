@@ -1,4 +1,4 @@
-# DAGOLDEN .perltidyrc file
+# modified from DAGOLDEN .perltidyrc file
 
 -se     # Errors to STDERR
 

@@ -185,13 +185,14 @@ sub _get_file {
   # the chr may either be 'genome' (for the entire transcript db) or a chromosome
   # defined by the configuration file for the organism
   unless ( $chr eq 'genome' || grep { /\A$chr\z/ } ( $self->all_genome_chrs ) ) {
-    my $msg = sprintf("Error: asked to create file for unknown chromosome %s", $chr);
+    my $msg = sprintf( "Error: asked to create file for unknown chromosome %s", $chr );
     say $msg;
     $self->_logger->error($msg);
     exit(1);
   }
   my $base_dir = $self->genome_index_dir;
-  my $file_name = sprintf( "%s.%s.%s.%s.%s", $self->name, $self->type, $chr, $var, $ext );
+  my $file_name =
+    sprintf( "%s.%s.%s.%s.%s", $self->name, $self->type, $chr, $var, $ext );
   return $base_dir->child($file_name)->absolute->stringify;
 }
 

@@ -5,6 +5,7 @@ use warnings;
 package Seq::Role::ConfigFromFile;
 # ABSTRACT: A moose role for configuring a class from a YAML file
 # VERSION
+
 =head1 DESCRIPTION
   
   @role Seq::Role::ConfigFromFile 
@@ -21,7 +22,6 @@ Used in:
 Extended by: None
 
 =cut
-
 
 use Moose::Role 2;
 use MooseX::Types::Path::Tiny qw/ Path /;
@@ -62,9 +62,9 @@ sub new_with_config {
     croak "new_with_config() expects configfile";
   }
 
-  if($opts->{debug} )
-  {
-    say "Here are the built args from config that we have in new_with_config in ConfigFromFile.pm";
+  if ( $opts->{debug} ) {
+    say
+      "Here are the built args from config that we have in new_with_config in ConfigFromFile.pm";
     p %opts;
   }
 

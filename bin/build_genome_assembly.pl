@@ -17,8 +17,10 @@ use DDP;
 
 use Seq::Build;
 
-my ( $yaml_config, $build_type, $db_location, $verbose, $no_bdb, $help,
-  $wanted_chr, $force, $debug);
+my (
+  $yaml_config, $build_type, $db_location, $verbose, $no_bdb,
+  $help,        $wanted_chr, $force,       $debug
+);
 
 my $genome_hasher_bin = './bin/genome_hasher';
 my $genome_scorer_bin = './bin/genome_scorer';

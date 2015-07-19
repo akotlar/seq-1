@@ -47,8 +47,7 @@ unless ( $yaml_config
   Pod::Usage::pod2usage();
 }
 
-try
-{
+try {
   # sanity checking
   if ( -f $out_file && !$force ) {
     say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
@@ -78,18 +77,17 @@ try
   # create the annotator
   my $annotate_instance = Seq->new(
     {
-      configfile    => $yaml_config,
-      debug         => $debug,
-      out_file      => $out_file,
-      snpfile       => $snpfile,
+      configfile => $yaml_config,
+      debug      => $debug,
+      out_file   => $out_file,
+      snpfile    => $snpfile,
     }
   );
 
   # annotate the snp file
   $annotate_instance->annotate_snpfile;
 }
-catch
-{
+catch {
   say $_;
 }
 __END__

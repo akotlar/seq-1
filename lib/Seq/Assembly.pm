@@ -35,7 +35,6 @@ use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 use Path::Tiny qw/ path /;
 
-
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
 
@@ -140,30 +139,30 @@ sub BUILDARGS {
 
     # NOTE: handle essential directories
     #   whether they are used depends on the context of subsequent calls
-    for my $req_dir (qw/ genome_index_dir genome_raw_dir/ ) {
+    for my $req_dir (qw/ genome_index_dir genome_raw_dir/) {
       if ( defined $href->{$req_dir} ) {
-        $href->{$req_dir} = path ( $href->{$req_dir} );
+        $href->{$req_dir} = path( $href->{$req_dir} );
       }
       else {
-        $href->{$req_dir} = path( "." );
-        my $msg = sprintf("missing %s; defaulted to: %s",
+        $href->{$req_dir} = path(".");
+        my $msg = sprintf( "missing %s; defaulted to: %s",
           $req_dir, $href->{$req_dir}->absolute->stringify );
       }
     }
 
     if ( $href->{debug} ) {
-      my $msg = sprintf( "genome_index_dir: %s",
-        $href->{genome_index_dir}->absolute->stringify );
+      my $msg =
+        sprintf( "genome_index_dir: %s", $href->{genome_index_dir}->absolute->stringify );
       say $msg;
-      my $msg = sprintf( "genome_raw_dir: %s",
-        $href->{genome_raw_dir}->absolute->stringify );
+      my $msg =
+        sprintf( "genome_raw_dir: %s", $href->{genome_raw_dir}->absolute->stringify );
       say $msg;
     }
 
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
 
       # give all sparse tracks some needed information
-      for my $attr ( qw/ genome_raw_dir genome_index_dir genome_chrs / ) {
+      for my $attr (qw/ genome_raw_dir genome_index_dir genome_chrs /) {
         $sparse_track->{$attr} = $href->{$attr};
       }
 
@@ -181,7 +180,7 @@ sub BUILDARGS {
     for my $gst ( @{ $href->{genome_sized_tracks} } ) {
 
       # give all genome size tracks some needed information
-      for my $attr ( qw/ genome_raw_dir genome_index_dir genome_chrs / ) {
+      for my $attr (qw/ genome_raw_dir genome_index_dir genome_chrs /) {
         $gst->{$attr} = $href->{$attr};
       }
 

@@ -5,6 +5,7 @@ use warnings;
 package Seq::Site;
 # ABSTRACT: Base class for seralizing all sites.
 # VERSION
+
 =head1 DESCRIPTION
   
   @class B<Seq::Site>

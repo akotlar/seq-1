@@ -93,9 +93,19 @@ has _genome => (
   ]
 );
 
+sub _load_genome {
+  my $self = shift;
+
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'genome' ) {
+      return $self->_load_genome_sized_track($gst);
+    }
+  }
+}
+
 has _genome_scores => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::GenomeSizedTrackChar]',
+  isa     => 'ArrayRef[Maybe[Seq::GenomeSizedTrackChar]]',
   traits  => ['Array'],
   handles => {
     _all_genome_scores  => 'elements',
@@ -105,10 +115,69 @@ has _genome_scores => (
   builder => '_load_scores',
 );
 
-# TODO: should this also be of Seq::GenomeSizedTrackChar type constraint?
+sub _load_scores {
+  my $self = shift;
+  my @score_tracks;
+
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'score' ) {
+      push @score_tracks, $self->_load_genome_sized_track($gst);
+    }
+  }
+  return \@score_tracks;
+}
+
+sub _load_genome_sized_track {
+  my ( $self, $gst ) = @_;
+
+  # index dir
+  my $index_dir = $self->genome_index_dir;
+
+  # check files exist and are not empty
+  my @msg = $self->_check_genome_sized_files(
+    [ $gst->genome_bin_file, $gst->genome_offset_file ] );
+
+  # if @msg has data then we had some errors; print and halt
+  if (@msg) {
+    $self->_logger->error( join( "\n", @msg ) );
+    croak join( "\n", @msg );
+  }
+
+  my $idx_file = $gst->genome_bin_file;
+  my $idx_fh   = $self->get_read_fh($idx_file);
+  binmode $idx_fh;
+
+  # read genome
+  my $seq           = '';
+  my $genome_length = -s $idx_file;
+  read $idx_fh, $seq, $genome_length;
+
+  # read yml chr offsets
+  my $yml_file     = $gst->genome_offset_file;
+  my $chr_len_href = LoadFile($yml_file);
+
+  my $obj = Seq::GenomeSizedTrackChar->new(
+    {
+      name          => $gst->name,
+      type          => $gst->type,
+      genome_chrs   => $gst->genome_chrs,
+      genome_length => $genome_length,
+      chr_len       => $chr_len_href,
+      char_seq      => \$seq,
+    }
+  );
+
+  my $msg = sprintf( "read genome-sized track '%s' of length %d from file: %s",
+    $gst->name, $genome_length, $idx_file );
+  $self->_logger->info($msg);
+  say $msg if $self->debug;
+
+  return $obj;
+}
+
 has _genome_cadd => (
   is      => 'ro',
-  isa     => 'ArrayRef',
+  isa     => 'ArrayRef[Maybe[Seq::GenomeSizedTrackChar]]',
   traits  => ['Array'],
   handles => {
     _get_cadd_track   => 'get',
@@ -117,6 +186,114 @@ has _genome_cadd => (
   lazy    => 1,
   builder => '_load_cadd',
 );
+
+sub _load_cadd {
+  my $self = shift;
+
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'cadd' ) {
+      $self->set_cadd;
+      return $self->_load_cadd_score($gst);
+    }
+    else {
+      # return arrayref to satisfy the type constraint
+      return [];
+    }
+  }
+}
+
+sub _load_cadd_score {
+  my ( $self, $gst ) = @_;
+
+  my @cadd_scores;
+
+  # index dir
+  my $index_dir = $self->genome_index_dir;
+
+  for my $i ( 0 .. 2 ) {
+
+    # idx file
+    my $idx_file = $gst->cadd_idx_file($i);
+
+    # check files exist and are not empty
+    my @msg = $self->_check_genome_sized_files( [$idx_file] );
+
+    # if @msg has data then we had some errors; print and halt
+    if (@msg) {
+      $self->_logger->error( join( "\n", @msg ) );
+      croak join( "\n", @msg );
+    }
+
+    # read the file
+    my $idx_fh = $self->get_read_fh($idx_file);
+    binmode $idx_fh;
+
+    # read genome
+    my $seq           = '';
+    my $genome_length = -s $idx_file;
+    read $idx_fh, $seq, $genome_length;
+
+    my $obj = Seq::GenomeSizedTrackChar->new(
+      {
+        name          => $gst->name,
+        type          => $gst->type,
+        genome_chrs   => $self->genome_chrs,
+        genome_length => $genome_length,
+        char_seq      => \$seq,
+      }
+    );
+    push @cadd_scores, $obj;
+    my $msg =
+      sprintf( "read cadd track file '%s' of length %d", $idx_file, $genome_length );
+    $self->_logger->info($msg);
+    say $msg if $self->debug;
+  }
+  $self->set_cadd;
+
+  if ( $self->debug ) {
+    say "Got to the end of _load_cadd_score. Here is our cadd_scores array";
+    p @cadd_scores;
+  }
+  return \@cadd_scores;
+}
+
+sub _check_genome_sized_files {
+  my ( $self, $files_aref ) = @_;
+
+  my @msg;
+
+  for my $file (@$files_aref) {
+    if ( !-f $file ) {
+      push @msg, sprintf( "cannot find file: %s", $file );
+    }
+    else {
+      if ( !-s $file ) {
+        push @msg, sprintf( "file '%s' is zero-sized", $file );
+      }
+    }
+  }
+  return \@msg;
+}
+
+sub get_cadd_score {
+  my ( $self, $abs_pos, $ref, $allele ) = @_;
+
+  my $key = join ":", $ref, $allele;
+  my $i = $self->get_cadd_index($key);
+  if ( $self->debug ) {
+    say "Cadd score key:";
+    p $key;
+    say "Cadd score index:";
+    p $i;
+  }
+  if ( defined $i ) {
+    my $cadd_track = $self->_get_cadd_track($i);
+    return $cadd_track->get_score($abs_pos);
+  }
+  else {
+    return 'NA';
+  }
+}
 
 =property @private {HashRef} _cadd_lookup
 
@@ -143,6 +320,25 @@ has _cadd_lookup => (
   lazy    => 1,
   builder => '_build_cadd_lookup',
 );
+
+sub _build_cadd_lookup {
+  my $self = shift;
+
+  my %cadd_lu;
+  my @ref_bases   = qw/ A C G T/;
+  my @input_bases = qw/ A C G T/;
+  for my $ref (@ref_bases) {
+    my $i = 0;
+    for my $input (@input_bases) {
+      if ( $ref ne $input ) {
+        my $key = join ":", $ref, $input;
+        $cadd_lu{$key} = $i;
+        $i++;
+      }
+    }
+  }
+  \%cadd_lu;
+}
 
 =property @public {ArrayRef<ArrayRef<Seq::KCManager>>} _cadd_lookup
 
@@ -223,274 +419,113 @@ has has_cadd_track => (
   }
 );
 
-sub _load_cadd {
-  my $self = shift;
-
-  for my $gst ( $self->all_genome_sized_tracks ) {
-    if ( $gst->type eq 'cadd' ) {
-      $self->set_cadd;
-      return $self->_load_cadd_score($gst);
-    }
-    else {
-      # if there is no CADD track then return an empty ArrayRef to conform to
-      # the type constraint.
-      return [];
-    }
-  }
-  $self->unset_cadd;
-}
-
-sub _build_cadd_lookup {
-  my $self = shift;
-
-  my %cadd_lu;
-  my @ref_bases   = qw/ A C G T/;
-  my @input_bases = qw/ A C G T/;
-  for my $ref (@ref_bases) {
-    my $i = 0;
-    for my $input (@input_bases) {
-      if ( $ref ne $input ) {
-        my $key = join ":", $ref, $input;
-        $cadd_lu{$key} = $i;
-        $i++;
-      }
-    }
-  }
-  \%cadd_lu;
-}
-
-sub get_cadd_score {
-  my ( $self, $abs_pos, $ref, $allele ) = @_;
-
-  my $key = join ":", $ref, $allele;
-  my $i = $self->get_cadd_index($key);
-  if ( $self->debug ) {
-    say "Cadd score key:";
-    p $key;
-    say "Cadd score index:";
-    p $i;
-  }
-  if ( defined $i ) {
-    my $cadd_track = $self->_get_cadd_track($i);
-    return $cadd_track->get_score($abs_pos);
-  }
-  else {
-    return 'NA';
-  }
-}
-
-sub _load_cadd_score {
-  my ( $self, $gst ) = @_;
-
-  my @cadd_scores;
-
-  # index dir
-  my $index_dir = $self->genome_index_dir;
-
-  # NOTE: Alex, I wouldn't for the time being until we have one we would like
-  #       to change ourselves.
-  # TODO: ??kotlar should we allow this to be set by the user. There may be
-  # cadd-like scores that define transition states and therefore use more than
-  # 1 binary genome-sized track
-  for my $i ( 0 .. 2 ) {
-
-    # idx file
-    my $idx_name = join( ".", $gst->type, $i );
-    my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
-
-    # check for a file and bail if none found
-    $self->_logger->info("attempting to load: $idx_file");
-    unless ( -e $idx_file ) {
-      say "empty file: $idx_file";
-      exit;
-      $self->unset_cadd;
-      return \@cadd_scores;
-    }
-
-    # read the file
-    my $idx_fh = $self->get_read_fh($idx_file);
-    binmode $idx_fh;
-
-    # read genome
-    my $seq           = '';
-    my $genome_length = -s $idx_file;
-
-    # error check the idx_file
-    croak "ERROR: expected file: '$idx_file' does not exist." unless -f $idx_file;
-    croak "ERROR: expected file: '$idx_file' is empty." unless $genome_length;
-
-    read $idx_fh, $seq, $genome_length;
-
-    my $obj = Seq::GenomeSizedTrackChar->new(
-      {
-        name          => $gst->name,
-        type          => $gst->type,
-        genome_chrs   => $self->genome_chrs,
-        genome_length => $genome_length,
-        char_seq      => \$seq,
-      }
-    );
-    push @cadd_scores, $obj;
-    $self->_logger->info("read cadd track ($genome_length) from $idx_name");
-  }
-  $self->set_cadd;
-
-  if ( $self->debug ) {
-    say "Got to the end of _load_cadd_score. Here is our cadd_scores array";
-    p @cadd_scores;
-  }
-
-  return \@cadd_scores;
-}
-
-sub _get_dbm_file {
-
-  my ( $self, $name ) = @_;
-  my $file = path( $self->genome_index_dir, $name )->stringify;
-
-  warn "WARNING: expected file: '$file' does not exist." unless -f $file;
-  warn "WARNING: expected file: '$file' is empty." unless $file;
-
-  if ( !$file or !-f $file ) {
-    $self->_logger->warn( "dbm file is either zero-sized or missing: " . $file );
-  }
-  else {
-    $self->_logger->info( "found dbm file: " . $file );
-  }
-
-  return $file;
-}
-
-sub _build_dbm_gene {
-  my $self        = shift;
-  my @gene_tracks = ();
-  for my $gene_track ( $self->all_gene_tracks ) {
-    my @array;
+sub _build_dbm_array {
+  my ( $self, $tracks_aref ) = shift;
+  my @array;
+  for my $track (@$tracks_aref) {
     for my $chr ( $self->all_genome_chrs ) {
-      my $db_name = join ".", $gene_track->name, $chr, $gene_track->type, 'kch';
-        push @array,Seq::KCManager->new(
-        {
-          filename => $self->_get_dbm_file($db_name),
-          mode     => 'read',
-        }
-        );
-    }
-    push @gene_tracks, \@array;
-  }
-  return \@gene_tracks;
-}
-
-sub _build_dbm_snp {
-  my $self = shift;
-  my @snp_tracks;
-  for my $snp_track ( $self->all_snp_tracks ) {
-    my @array = ();
-    for my $chr ( $self->all_genome_chrs ) {
-      my $db_name = join ".", $snp_track->name, $chr, $snp_track->type, 'kch';
-        push @array, Seq::KCManager->new(
-        {
-          filename => $self->_get_dbm_file($db_name),
-          mode     => 'read',
-        }
-        );
-    }
-    push @snp_tracks, \@array;
-  }
-  p @snp_tracks if $self->debug;
-  return \@snp_tracks;
-}
-
-sub _build_dbm_tx {
-  my $self  = shift;
-  my @array = ();
-  for my $gene_track ( $self->all_snp_tracks ) {
-    my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'kch';
-    push @array,
-      Seq::KCManager->new(
-      {
-        filename => $self->_get_dbm_file($db_name),
-        mode     => 'read',
+      my $dbm = $track->get_kch_file($chr);
+      if ( -f $dbm ) {
+        push @array, Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
       }
-      );
+      else {
+        push @array, undef;
+      }
+    }
   }
   return \@array;
 }
 
-sub _load_genome {
+sub _build_dbm_snp {
   my $self = shift;
-
-  for my $gst ( $self->all_genome_sized_tracks ) {
-    if ( $gst->type eq 'genome' ) {
-      return $self->_load_genome_sized_track($gst);
-    }
-  }
+  my $aref = $self->_buld_dbm_array( [ $self->all_snp_tracks ] );
+  return $aref;
 }
 
-# NOTE: Not really because the cadd score is loaded in a different way (i.e.,
-#       there are 3 genoem strings to load not just one, which required changing
-#       the loader.)
-# TODO: can this be combiend with the CADD type, since that is also a genome
-# sized track?
-sub _load_scores {
+sub _build_dbm_gene {
   my $self = shift;
-  my @score_tracks;
-
-  for my $gst ( $self->all_genome_sized_tracks ) {
-    if ( $gst->type eq 'score' ) {
-      push @score_tracks, $self->_load_genome_sized_track($gst);
-    }
-  }
-  return \@score_tracks;
+  my $aref = $self->_buld_dbm_array( [ $self->all_gene_tracks ] );
+  return $aref;
 }
 
-sub _load_genome_sized_track {
-  my ( $self, $gst ) = @_;
-
-  # index dir
-  my $index_dir = $self->genome_index_dir;
-
-  # idx file
-  my $idx_name = join( ".", $gst->name, $gst->type, 'idx' );
-  my $idx_file = File::Spec->catfile( $index_dir, $idx_name );
-  my $idx_fh = $self->get_read_fh($idx_file);
-  binmode $idx_fh;
-
-  # read genome
-  my $seq           = '';
-  my $genome_length = -s $idx_file;
-
-  # error check the idx_file
-  croak "ERROR: expected file: '$idx_file' does not exist." unless -f $idx_file;
-  croak "ERROR: expected file: '$idx_file' is empty." unless $genome_length;
-
-  # read genome index into memory
-  read $idx_fh, $seq, $genome_length;
-
-  # yml file
-  my $yml_name = join( ".", $gst->name, $gst->type, 'yml' );
-  my $yml_file = File::Spec->catfile( $index_dir, $yml_name );
-
-  # read yml chr offsets
-  my $chr_len_href = LoadFile($yml_file);
-
-  if ( $self->debug ) {
-    say "Do we have genome_chrs ? : " . !!$self->genome_chrs;
-  }
-  my $obj = Seq::GenomeSizedTrackChar->new(
-    {
-      name          => $gst->name,
-      type          => $gst->type,
-      genome_chrs   => $self->genome_chrs,
-      genome_length => $genome_length,
-      chr_len       => $chr_len_href,
-      char_seq      => \$seq,
-    }
-  );
-
-  $self->_logger->info(
-    "read genome-sized track (" . $genome_length . ") from $idx_name" );
-  return $obj;
+sub _build_dbm_tx {
+  my $self = shift;
+  my $aref = $self->_buld_dbm_array( [ $self->all_gene_tracks ] );
+  return $aref;
 }
+
+# sub _get_dbm_file {
+#
+#   my ( $self, $name ) = @_;
+#   my $file = path( $self->genome_index_dir, $name )->stringify;
+#
+#   warn "WARNING: expected file: '$file' does not exist." unless -f $file;
+#   warn "WARNING: expected file: '$file' is empty." unless $file;
+#
+#   if ( !$file or !-f $file ) {
+#     $self->_logger->warn( "dbm file is either zero-sized or missing: " . $file );
+#   }
+#   else {
+#     $self->_logger->info( "found dbm file: " . $file );
+#   }
+#
+#   return $file;
+# }
+#
+# sub _build_dbm_gene {
+#   my $self        = shift;
+#   my @gene_tracks = ();
+#   for my $gene_track ( $self->all_gene_tracks ) {
+#     my @array;
+#     for my $chr ( $self->all_genome_chrs ) {
+#       my $db_name = join ".", $gene_track->name, $chr, $gene_track->type, 'kch';
+#         push @array,Seq::KCManager->new(
+#         {
+#           filename => $self->_get_dbm_file($db_name),
+#           mode     => 'read',
+#         }
+#         );
+#     }
+#     push @gene_tracks, \@array;
+#   }
+#   return \@gene_tracks;
+# }
+#
+# sub _build_dbm_snp {
+#   my $self = shift;
+#   my @snp_tracks;
+#   for my $snp_track ( $self->all_snp_tracks ) {
+#     my @array = ();
+#     for my $chr ( $self->all_genome_chrs ) {
+#       my $db_name = join ".", $snp_track->name, $chr, $snp_track->type, 'kch';
+#         push @array, Seq::KCManager->new(
+#         {
+#           filename => $self->_get_dbm_file($db_name),
+#           mode     => 'read',
+#         }
+#         );
+#     }
+#     push @snp_tracks, \@array;
+#   }
+#   p @snp_tracks if $self->debug;
+#   return \@snp_tracks;
+# }
+#
+# sub _build_dbm_tx {
+#   my $self  = shift;
+#   my @array = ();
+#   for my $gene_track ( $self->all_snp_tracks ) {
+#     my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'kch';
+#     push @array,
+#       Seq::KCManager->new(
+#       {
+#         filename => $self->_get_dbm_file($db_name),
+#         mode     => 'read',
+#       }
+#       );
+#   }
+#   return \@array;
+# }
 
 sub _build_header {
   my $self = shift;
@@ -589,9 +624,7 @@ sub get_ref_annotation {
 
   # get scores at site
   for my $gs ( $self->_all_genome_scores ) {
-    my $name  = $gs->name;
-    my $score = $gs->get_score($abs_pos);
-    $record{$name} = $score;
+    $record{ $gs->name } = $gs->get_score($abs_pos);
   }
 
   # get gene annotations at site
@@ -603,7 +636,7 @@ sub get_ref_annotation {
       # if there's no file for the track then it will be undef
       next unless defined $kch;
       my $rec = $kch->db_get($abs_pos);
-      if ($self->debug) {
+      if ( $self->debug ) {
         print "\n\nThis is rec:\n\n";
         p $rec;
       }
@@ -617,7 +650,7 @@ sub get_ref_annotation {
     for my $snp_dbs ( $self->_all_dbm_snp ) {
       my $kch = $snp_dbs->[$chr_index];
       my $rec = $kch->db_get($abs_pos);
-      if ($self->debug) {
+      if ( $self->debug ) {
         p $kch;
         p $rec;
       }
@@ -640,7 +673,7 @@ sub get_snp_annotation {
 
   if ( $ref_site_annotation->{ref_base} ne $ref_base ) {
     my $err_msg = sprintf(
-      "ERROR: At abs pos '%d': input reference base (%s) does not agree stored reference base (%s)",
+      "ERROR: At abs pos '%d', input reference base (%s) does not agree stored reference base (%s)",
       $abs_pos, $ref_base, $ref_site_annotation->{ref_base} );
     say $err_msg;
     $self->_logger->error($err_msg);
@@ -671,7 +704,7 @@ sub get_snp_annotation {
   for my $snp_site (@$snp_aref) {
 
     # get data
-    #TODO: optimize this function by passing ref $gene_site, $self->name instead of checking type
+    # TODO: optimize this function by passing ref $gene_site, $self->name instead of checking type
     my $san = Seq::Site::Snp->new($snp_site)->as_href_with_NAs;
 
     # merge data

@@ -6,6 +6,7 @@ package Seq::Role::IO;
 
 # ABSTRACT: A moose role for all of our file handle needs
 # VERSION
+
 =head1 DESCRIPTION
   
   @role Seq::Role::IO

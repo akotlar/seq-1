@@ -61,8 +61,8 @@ sub _get_gene_data {
   );
   my ( %header, %transcript_start_sites );
 
-  for my $input_file ( @input_files ) {
-    my $in_fh = $self->get_read_fh( $input_file );
+  for my $input_file (@input_files) {
+    my $in_fh = $self->get_read_fh($input_file);
     while ( my $line = $in_fh->getline ) {
       chomp $line;
       my @fields = split( /\t/, $line );
@@ -114,7 +114,7 @@ sub build_tx_db_for_genome {
   #   if there is no usable data then we will bail out and no blank files
   #   will be created
   my $chr_data_aref = $self->_get_gene_data($wanted_chr);
-  $self->_logger->info( "finished reading data for $wanted_chr" );
+  $self->_logger->info("finished reading data for $wanted_chr");
 
   # prepare output dir, as needed
   $self->genome_index_dir->mkpath unless ( -d $self->genome_index_dir );
@@ -177,7 +177,7 @@ sub build_gene_db_for_chr {
   #   if there is no usable data then we will bail out and no blank files
   #   will be created
   my $chr_data_aref = $self->_get_gene_data($wanted_chr);
-  $self->_logger->info( "finished reading data for $wanted_chr" );
+  $self->_logger->info("finished reading data for $wanted_chr");
 
   # prepare output dir, as needed
   $self->genome_index_dir->mkpath unless ( -d $self->genome_index_dir );
@@ -189,7 +189,7 @@ sub build_gene_db_for_chr {
   my $ex_file = $self->get_dat_file( $wanted_chr, 'exon' );
 
   # dbm file
-  my $dbm_file = $self->get_kch_file( $wanted_chr );
+  my $dbm_file = $self->get_kch_file($wanted_chr);
 
   # check if we've already build site range files unless forced to overwrite
   unless ( $self->force ) {

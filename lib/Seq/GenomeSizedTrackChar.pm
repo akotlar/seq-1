@@ -80,11 +80,12 @@ Used in:
   read $idx_fh, $seq, $genome_length;
 
 =cut
+
 has char_seq => (
-  is  => 'ro',
-  isa => 'ScalarRef',
+  is       => 'ro',
+  isa      => 'ScalarRef',
   required => 1,
-  builder => '_build_char_seq',
+  builder  => '_build_char_seq',
 );
 
 sub _build_char_seq {
@@ -111,6 +112,7 @@ sub _get_genome_length {
 @ returns {Str} in the form of a Char representing the value at that position.
 
 =cut
+
 sub get_base {
   my ( $self, $pos ) = @_;
   state $genome_length = $self->_get_genome_length;
@@ -126,6 +128,7 @@ sub get_base {
 =method @public get_score
 
 =cut
+
 sub get_score {
   my ( $self, $pos ) = @_;
 

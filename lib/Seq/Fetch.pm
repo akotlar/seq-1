@@ -5,6 +5,7 @@ use warnings;
 package Seq::Fetch;
 # ABSTRACT: Class for fetching files from UCSC
 # VERSION
+
 =head1 DESCRIPTION
   
   @class B<Seq::Fetch> 
@@ -19,6 +20,7 @@ Used in:
 
 Extended by: None
 =cut
+
 use Moose 2;
 
 use namespace::autoclean;

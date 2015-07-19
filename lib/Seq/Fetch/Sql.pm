@@ -1,5 +1,6 @@
 package Seq::Fetch::Sql;
 # ABSTRACT: This class fetches and cleans genomic data from sql servers.
+
 =head1 DESCRIPTION
 
   @class Seq::Fetch::Sql
@@ -14,6 +15,7 @@ Used in:
 Extended by: None
 
 =cut
+
 use 5.10.0;
 use Carp;
 use Cwd;
@@ -33,9 +35,9 @@ my $mos           = localtime->mon() + 1;
 my $day           = localtime->mday;
 my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, $day );
 
-has act         => ( is => 'ro', isa => 'Bool', );
-has verbose     => ( is => 'ro', isa => 'Bool', );
-has dsn => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
+has act     => ( is => 'ro', isa => 'Bool', );
+has verbose => ( is => 'ro', isa => 'Bool', );
+has dsn     => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
 has host => (
   is       => 'ro',
   isa      => 'Str',
@@ -60,6 +62,7 @@ Called in: none
 
 #TODO: either finish the annotation or remove the package.
 =cut
+
 sub dbh {
   my $self = shift;
   my $dsn  = $self->dsn;

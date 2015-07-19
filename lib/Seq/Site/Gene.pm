@@ -5,6 +5,7 @@ use warnings;
 package Seq::Site::Gene;
 # ABSTRACT: Class for seralizing gene sites
 # VERSION
+
 =head1 DESCRIPTION
   
   @class Seq::Site::Gene
@@ -52,6 +53,7 @@ Extended by:
 * Seq::Site::Annotation
 
 =cut
+
 use Moose 2;
 use Moose::Util::TypeConstraints;
 
@@ -85,6 +87,7 @@ my %Eu_codon_2_aa = (
 
 =type {Str} GeneSiteType 
 =cut 
+
 enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                        'Splice Donor', 'Splice Acceptor' ];
 enum StrandType   => [ '+', '-' ];

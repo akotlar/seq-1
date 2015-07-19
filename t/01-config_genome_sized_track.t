@@ -13,8 +13,8 @@ use Data::Dump qw/ dump /;
 plan tests => 42;
 
 # set test genome
-my $ga_config  = path('./config/hg38.yml')->absolute->stringify;
-my $config_href = LoadFile( $ga_config );
+my $ga_config   = path('./config/hg38.yml')->absolute->stringify;
+my $config_href = LoadFile($ga_config);
 
 # set package name
 my $package = "Seq::Config::GenomeSizedTrack";
@@ -23,12 +23,12 @@ my $package = "Seq::Config::GenomeSizedTrack";
 use_ok($package) || die "$package cannot be loaded";
 
 # check extension of Seq::Config::Track
-check_isa( $package, ['Seq::Config::Track','Moose::Object']);
+check_isa( $package, [ 'Seq::Config::Track', 'Moose::Object' ] );
 
 # Attribute tests
 my @ro_attrs = qw/ genome_str_file genome_bin_file genome_offset_file
   _local_files score_min score_max score_R _score_beta _score_lu /;
-for my $attr ( @ro_attrs ) {
+for my $attr (@ro_attrs) {
   has_ro_attr( $package, $attr );
 }
 
@@ -42,8 +42,8 @@ for my $attr_name (qw/ type /) {
 
 # object creation
 my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
-my $obj = $package->new( $href );
-ok($obj, 'object creation');
+my $obj = $package->new($href);
+ok( $obj, 'object creation' );
 
 {
   # as_href
@@ -54,9 +54,9 @@ ok($obj, 'object creation');
 
   # re-make obj with data from as_href
   my $new_obj_data_href = $obj->as_href;
-  my $new_obj = $package->new( $new_obj_data_href );
-  ok ($new_obj, 'created obj using data from as_href');
-  is_deeply( $obj, $new_obj, 'new object == old obj');
+  my $new_obj           = $package->new($new_obj_data_href);
+  ok( $new_obj, 'created obj using data from as_href' );
+  is_deeply( $obj, $new_obj, 'new object == old obj' );
 }
 
 # Methods tests
@@ -72,12 +72,12 @@ ok($obj, 'object creation');
   my @in_snp  = qw/ 0 64 /;
 
   # store vals for testing
-  my ( %exp, %obs);
+  my ( %exp, %obs );
   foreach my $base_char ( keys %base_char_2_txt ) {
     foreach my $snp (@in_snp) {
       foreach my $gene (@in_gene) {
         foreach my $exon (@in_exon) {
-            foreach my $gan (@in_gan) {
+          foreach my $gan (@in_gan) {
             my $char_code = $base_char + $gan + $gene + $exon + $snp;
             my $txt_base  = $base_char_2_txt{$base_char};
 
@@ -87,19 +87,19 @@ ok($obj, 'object creation');
 
             # gather in gene annotation codes
             push @{ $exp{gan} }, $package->get_idx_in_gan($char_code);
-            push @{ $obs{gan} }, ($gan ? 1 : 0);
+            push @{ $obs{gan} }, ( $gan ? 1 : 0 );
 
             # gather in gene codes
             push @{ $exp{gene} }, $package->get_idx_in_gene($char_code);
-            push @{ $obs{gene} }, ($gene ? 1 : 0);
+            push @{ $obs{gene} }, ( $gene ? 1 : 0 );
 
             # gather in exon codes
             push @{ $exp{exon} }, $package->get_idx_in_exon($char_code);
-            push @{ $obs{exon} }, ($exon ? 1 : 0);
+            push @{ $obs{exon} }, ( $exon ? 1 : 0 );
 
             # gather in snp codes
             push @{ $exp{snp} }, $package->get_idx_in_snp($char_code);
-            push @{ $obs{snp} }, ($snp ? 1 : 0);
+            push @{ $obs{snp} }, ( $snp ? 1 : 0 );
           }
         }
       }
@@ -107,7 +107,7 @@ ok($obj, 'object creation');
   }
 
   # check build idx codes
-  for my $type ( qw/ base gan gene exon snp / ) {
+  for my $type (qw/ base gan gene exon snp /) {
     is_deeply( $exp{$type}, $obs{$type}, "idx code for $type" );
   }
 }
@@ -119,7 +119,7 @@ sub build_obj_data {
 
   # get essential stuff
   for my $track ( @{ $config_href->{$track_type} } ) {
-    if ( $track->{type} eq $type) {
+    if ( $track->{type} eq $type ) {
       for my $attr (qw/ name type local_files remote_dir remote_files /) {
         $hash{$attr} = $track->{$attr} if exists $track->{$attr};
       }
@@ -127,10 +127,10 @@ sub build_obj_data {
   }
 
   # add additional stuff
-  if ( %hash ) {
-    $hash{genome_raw_dir} = $config_href->{genome_raw_dir}  || 'sandbox';
+  if (%hash) {
+    $hash{genome_raw_dir}   = $config_href->{genome_raw_dir}   || 'sandbox';
     $hash{genome_index_dir} = $config_href->{genome_index_dir} || 'sandbox';
-    $hash{genome_chrs} = $config_href->{genome_chrs};
+    $hash{genome_chrs}      = $config_href->{genome_chrs};
   }
   return \%hash;
 }

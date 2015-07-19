@@ -6,6 +6,7 @@ package Seq;
 
 # ABSTRACT: A class for kickstarting building or annotating things
 # VERSION
+
 =head1 DESCRIPTION
   
   @class B<Seq>
@@ -51,12 +52,12 @@ has configfile => (
 );
 
 has out_file => (
-  is       => 'ro',
-  isa      => AbsPath,
-  coerce   => 1,
-  required => 0,
+  is        => 'ro',
+  isa       => AbsPath,
+  coerce    => 1,
+  required  => 0,
   predicate => 'has_out_file',
-  handles  => { output_path => 'stringify' }
+  handles   => { output_path => 'stringify' }
 );
 
 has debug => (
@@ -170,14 +171,14 @@ B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
 sub annotate_snpfile {
   my $self = shift;
 
-  if($self->debug)
-  {
+  if ( $self->debug ) {
     say "The self meta is (checking to see how has_method works:";
     p $self->meta;
 
-    say "Does this object have method no_del_sites: " . !!$self->meta->has_method('no_del_sites');
+    say "Does this object have method no_del_sites: "
+      . !!$self->meta->has_method('no_del_sites');
   }
-  
+
   croak "specify a snpfile to annotate\n" unless $self->snpfile_path;
 
   $self->_logger->info("about to load annotation data");
@@ -392,16 +393,15 @@ filepath, if directory use some sensible default
 =cut
 
 sub _build_out_fh {
-  my $self        = shift;
-  
-  if(!$self->has_out_file)
-  {
+  my $self = shift;
+
+  if ( !$self->has_out_file ) {
     say "Did not find a file or directory path in Seq.pm _build_out_fh" if $self->debug;
     return \*STDOUT;
   }
 
   #can't use is_file or is_dir check before file made, unless it alraedy exists
-  return $self->get_write_bin_fh($self->output_path);
+  return $self->get_write_bin_fh( $self->output_path );
 }
 
 sub _get_annotator {

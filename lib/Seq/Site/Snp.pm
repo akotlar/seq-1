@@ -5,6 +5,7 @@ use warnings;
 package Seq::Site::Snp;
 # ABSTRACT: A class for seralizing Snp sites
 # VERSION
+
 =head1 DESCRIPTION
   
   @class Seq::Site::Snp
@@ -20,6 +21,7 @@ Used in:
 Extended by: None
 
 =cut
+
 use Moose 2;
 
 use namespace::autoclean;

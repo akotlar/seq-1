@@ -6,6 +6,7 @@ package Seq::Role::Genome;
 
 # ABSTRACT: A moose role for getting the 0-indexed absolute position in the genome
 # VERSION
+
 =head1 DESCRIPTION 
 
   @role B<Seq::Role::Genome>

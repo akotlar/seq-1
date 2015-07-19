@@ -5,6 +5,7 @@ use warnings;
 package Seq::Gene;
 # ABSTRACT: Class for creating particular sites for a given gene / transcript
 # VERSION
+
 =head1 DESCRIPTION
   
   @class B<Seq::Gene>
@@ -358,6 +359,7 @@ sub _build_transcript_annotation {
 @returns void
 
 =cut
+
 sub _build_transcript_sites {
   my $self              = shift;
   my @exon_starts       = $self->all_exon_starts;

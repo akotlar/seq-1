@@ -16,8 +16,8 @@ use Data::Dump qw/ dump /;
 plan tests => 19;
 
 # set test genome
-my $ga_config  = path('./config/hg38.yml')->absolute->stringify;
-my $config_href = LoadFile( $ga_config );
+my $ga_config   = path('./config/hg38.yml')->absolute->stringify;
+my $config_href = LoadFile($ga_config);
 
 # test the package's attributes and type constraints
 my $package = "Seq::GenomeSizedTrackChar";
@@ -31,7 +31,7 @@ check_isa( $package,
 
 # Attribute tests for class
 my @ro_attrs = qw/ char_seq chr_len /;
-for my $attr ( @ro_attrs ) {
+for my $attr (@ro_attrs) {
   has_ro_attr( $package, $attr );
 }
 
@@ -55,15 +55,15 @@ for my $attr_name (qw( chr_len )) {
   my $seq = '';
   my %chr_len;
   for my $chr ( @{ $config_href->{genome_chrs} } ) {
-    my $char_seq = pack( 'C', int(rand(4)) ) x int(rand(10) + 1);
+    my $char_seq = pack( 'C', int( rand(4) ) ) x int( rand(10) + 1 );
     $seq .= $char_seq;
     $chr_len{$chr} = length $char_seq;
   }
   my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
   $href->{char_seq} = \$seq;
   $href->{chr_len}  = \%chr_len;
-  my $obj = $package->new( $href );
-  ok($obj, 'object creation');
+  my $obj = $package->new($href);
+  ok( $obj, 'object creation' );
 }
 
 # test charGenome stuff for 'score' type
@@ -86,18 +86,18 @@ for my $attr_name (qw( chr_len )) {
   };
 
   # score creation / retrieval
-  my (@exp_scores, @obs_scores);
-  for my $i ( @test_scores ) {
+  my ( @exp_scores, @obs_scores );
+  for my $i (@test_scores) {
     my $char = $score2char_phyloP->($i);
-    $char_seq .= pack('C', $char);
-    push @exp_scores, sprintf( "%0.3f", $char2score_phyloP->($char));
+    $char_seq .= pack( 'C', $char );
+    push @exp_scores, sprintf( "%0.3f", $char2score_phyloP->($char) );
   }
   my $char_genome_track = $package->new(
     {
-      name          => $track_name,
-      char2score    => $char2score_phyloP,
-      score2char    => $score2char_phyloP,
-      char_seq     => \$char_seq,
+      name        => $track_name,
+      char2score  => $char2score_phyloP,
+      score2char  => $score2char_phyloP,
+      char_seq    => \$char_seq,
       chr_len     => {},
       genome_chrs => [],
       type        => 'score',
@@ -108,7 +108,7 @@ for my $attr_name (qw( chr_len )) {
   is( $char_genome_track->name, $track_name, "$package name set correctly" );
 
   for my $i ( 0 .. $#test_scores ) {
-    push @obs_scores, $char_genome_track->get_score( $i );
+    push @obs_scores, $char_genome_track->get_score($i);
   }
 
   # check score retrieval
@@ -122,7 +122,7 @@ sub build_obj_data {
 
   # get essential stuff
   for my $track ( @{ $config_href->{$track_type} } ) {
-    if ( $track->{type} eq $type) {
+    if ( $track->{type} eq $type ) {
       for my $attr (qw/ name type local_files remote_dir remote_files /) {
         $hash{$attr} = $track->{$attr} if exists $track->{$attr};
       }
@@ -130,10 +130,10 @@ sub build_obj_data {
   }
 
   # add additional stuff
-  if ( %hash ) {
-    $hash{genome_raw_dir} = $config_href->{genome_raw_dir}  || 'sandbox';
+  if (%hash) {
+    $hash{genome_raw_dir}   = $config_href->{genome_raw_dir}   || 'sandbox';
     $hash{genome_index_dir} = $config_href->{genome_index_dir} || 'sandbox';
-    $hash{genome_chrs} = $config_href->{genome_chrs};
+    $hash{genome_chrs}      = $config_href->{genome_chrs};
   }
   return \%hash;
 }

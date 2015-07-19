@@ -5,6 +5,7 @@ use warnings;
 package Seq::KCManager;
 # ABSTRACT: Manages KyotoCabinet db
 # VERSION
+
 =head1 DESCRIPTION
 
   @class B<Seq::KCManager>

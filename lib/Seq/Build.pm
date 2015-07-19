@@ -32,7 +32,7 @@ Extended in: None
 =cut
 
 use Moose 2;
-use MooseX::Types::Path::Tiny qw/ AbsFile /
+use MooseX::Types::Path::Tiny qw/ AbsFile /;
 
 use Carp qw/ croak /;
 use File::Path qw/ make_path /;
@@ -73,8 +73,8 @@ has genome_scorer => (
 );
 
 has genome_cadd => (
-  is => 'ro',
-  isa => AbsPath,
+  is      => 'ro',
+  isa     => AbsFile,
   default => './genome_cadd'
 );
 
@@ -117,8 +117,8 @@ sub build_transcript_db {
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
-    my $msg = sprintf("begining gene tx db, '%s'", $gene_track->name);
-    $self->_logger->info( $msg ) if $self->debug;
+    my $msg = sprintf( "begining gene tx db, '%s'", $gene_track->name );
+    $self->_logger->info($msg) if $self->debug;
 
     # extract keys from snp_track for creation of Seq::Build::TxTrack
     my $record = $gene_track->as_href;
@@ -128,8 +128,8 @@ sub build_transcript_db {
     my $gene_db = Seq::Build::GeneTrack->new($record);
     $gene_db->build_tx_db_for_genome;
 
-    $msg = sprintf("finished gene tx db, '%s'", $gene_track->name);
-    $self->_logger->info( $msg ) if $self->debug;
+    $msg = sprintf( "finished gene tx db, '%s'", $gene_track->name );
+    $self->_logger->info($msg) if $self->debug;
   }
   $self->_logger->info('finished building transcripts');
 }
@@ -153,16 +153,16 @@ sub build_snp_sites {
         next unless $wanted_chr eq $chr;
       }
 
-      my $msg = sprintf("begining snp db, '%s', for chrom '%s'", $snp_track->name, $chr);
-      $self->_logger->info( $msg ) if $self->debug;
+      my $msg = sprintf( "begining snp db, '%s', for chrom '%s'", $snp_track->name, $chr );
+      $self->_logger->info($msg) if $self->debug;
 
       # Seq::Build::SnpTrack needs the string genome
       $record->{genome_track_str} = $self->genome_str_track;
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db($chr);
 
-      $msg = sprintf("finished snp db, '%s', for chrom '%s'", $snp_track->name, $chr);
-      $self->_logger->info( $msg ) if $self->debug;
+      $msg = sprintf( "finished snp db, '%s', for chrom '%s'", $snp_track->name, $chr );
+      $self->_logger->info($msg) if $self->debug;
     }
   }
   $self->_logger->info('finished building snp tracks');
@@ -188,16 +188,17 @@ sub build_gene_sites {
         next unless $wanted_chr eq $chr;
       }
 
-      my $msg = sprintf("begining gene db, '%s', for chrom '%s'", $gene_track->name, $chr);
-      $self->_logger->info( $msg ) if $self->debug;
+      my $msg =
+        sprintf( "begining gene db, '%s', for chrom '%s'", $gene_track->name, $chr );
+      $self->_logger->info($msg) if $self->debug;
 
       # Seq::Build::GeneTrack needs the string genome
       $record->{genome_track_str} = $self->genome_str_track;
       my $gene_db = Seq::Build::GeneTrack->new($record);
       $gene_db->build_gene_db_for_chr($chr);
 
-      $msg = sprintf("finished gene db, '%s', for chrom '%s'", $gene_track->name, $chr);
-      $self->_logger->info( $msg ) if $self->debug;
+      $msg = sprintf( "finished gene db, '%s', for chrom '%s'", $gene_track->name, $chr );
+      $self->_logger->info($msg) if $self->debug;
     }
   }
   $self->_logger->info('finished building gene track');
@@ -220,85 +221,91 @@ sub build_conserv_scores_index {
   # write conservation scores
   if ( $self->genome_sized_tracks ) {
     foreach my $gst ( $self->all_genome_sized_tracks ) {
+      if ( $gst->type eq 'score' ) {
 
-    if ( $gst->type eq 'score' ) {
+        # write chromosome offsets
+        my $chr_offset_file = $gst->genome_offset_file;
+        my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
+        print {$chr_offset_fh} Dump( \%chr_len );
 
-      # write chromosome offsets
-      my $chr_offset_file = $gst->genome_offset_file;
-      my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
-      print {$chr_offset_fh} Dump( \%chr_len );
+        # local file
+        my @local_files = $gst->all_local_files;
+        unless ( scalar @local_files == 1 && $local_files[0] =~ m/wigFix/ ) {
+          my $msg = sprintf(
+            "expected 1 local file to build but found %d: %s",
+            scalar @local_files,
+            join( "\t", @local_files )
+          );
+          $self->_logger->error($msg);
+          croak $msg;
+        }
 
-      # local file
-      my @local_files = $gst->all_local_files;
-      unless (scalar @local_files == 1 && $local_files[0] =~ m/wigFix/) {
-        my $msg = sprintf("expected 1 local file to build but found %d: %s",
-          scalar @local_files, join ("\t", @local_files) );
-        $self->_logger->error($msg);
-        croak $msg;
+        # build cmd for external encoder
+        my $cmd = join " ", $self->genome_scorer, $self->genome_length, $chr_offset_file,
+          $local_files[0], $gst->score_max, $gst->score_min, $gst->score_R,
+          $gst->genome_bin_file;
+
+        $self->_logger->info("running command: $cmd");
+
+        my $exit_code = system $cmd;
+
+        if ($exit_code) {
+          my $msg =
+            sprintf( "error encoding genome with %s: %d", $self->genome_scorer, $exit_code );
+          $self->_logger->error($msg);
+          croak $msg;
+        }
+        elsif ( !-f $self->genome_bin_file ) {
+          my $msg =
+            sprintf( "ERROR: did not find expected output '%s'", $gst->genome_bin_file );
+          $self->_logger->error($msg);
+          croak $msg;
+        }
       }
+      elsif ( $gst->track eq 'cadd' ) {
 
-      # build cmd for external encoder
-      my $cmd = join " ", $self->genome_scorer, $self->genome_length, $chr_offset_file,
-        $local_files[0], $gst->score_max, $gst->score_min, $gst->score_R,
-        $gst->genome_bin_file;
+        # write chromosome offsets
+        my $chr_offset_file = $gst->genome_offset_file;
+        my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
+        print {$chr_offset_fh} Dump( \%chr_len );
 
-      $self->_logger->info("running command: $cmd");
+        # local file
+        my @local_files = $gst->all_local_files;
+        unless ( scalar @local_files == 1 && $local_files[0] =~ m/cadd/ ) {
+          my $msg = sprintf(
+            "expected 1 local file to build but found %d: %s",
+            scalar @local_files,
+            join( "\t", @local_files )
+          );
+          $self->_logger->error($msg);
+          croak $msg;
+        }
 
-      my $exit_code = system $cmd;
+        # build cmd for external encoder
+        my $cmd = join " ", $self->genome_cadd, $self->genome_length, $chr_offset_file,
+          $local_files[0], $gst->score_max, $gst->score_min, $gst->score_R,
+          $gst->genome_bin_file;
 
-      if ( $exit_code ) {
-        my $msg = sprintf("error encoding genome with %s: %d",
-          $self->genome_scorer, $exit_code);
-        $self->_logger->error($msg)
-        croak $msg;
-      }
-      elsif (!-f $self->genome_bin_file) {
-        my $msg = sprintf("ERROR: did not find expected output '%s'",
-          $gst->genome_bin_file);
-        $self->_logger->error($msg)
-        croak $msg;
+        $self->_logger->info("running command: $cmd");
+
+        my $exit_code = system $cmd;
+
+        if ($exit_code) {
+          my $msg =
+            sprintf( "error encoding genome with %s: %d", $self->genome_cadd, $exit_code );
+          $self->_logger->error($msg);
+          croak $msg;
+        }
+        elsif ( !-f $self->genome_bin_file ) {
+          my $msg =
+            sprintf( "ERROR: did not find expected output '%s'", $gst->genome_bin_file );
+          $self->_logger->error($msg);
+          croak $msg;
+        }
       }
     }
-    elsif ( $gst->track eq 'cadd' ) {
-
-      # write chromosome offsets
-      my $chr_offset_file = $gst->genome_offset_file;
-      my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
-      print {$chr_offset_fh} Dump( \%chr_len );
-
-      # local file
-      my @local_files = $gst->all_local_files;
-      unless (scalar @local_files == 1 && $local_files[0] =~ m/cadd/) {
-        my $msg = sprintf("expected 1 local file to build but found %d: %s",
-          scalar @local_files, join ("\t", @local_files) );
-        $self->_logger->error($msg);
-        croak $msg;
-      }
-
-      # build cmd for external encoder
-      my $cmd = join " ", $self->genome_cadd, $self->genome_length, $chr_offset_file,
-        $local_files[0], $gst->score_max, $gst->score_min, $gst->score_R,
-        $gst->genome_bin_file;
-
-      $self->_logger->info("running command: $cmd");
-
-      my $exit_code = system $cmd;
-
-      if ( $exit_code ) {
-        my $msg = sprintf("error encoding genome with %s: %d",
-          $self->genome_cadd, $exit_code);
-        $self->_logger->error($msg)
-        croak $msg;
-      }
-      elsif (!-f $self->genome_bin_file) {
-        my $msg = sprintf("ERROR: did not find expected output '%s'",
-          $gst->genome_bin_file);
-        $self->_logger->error($msg)
-        croak $msg;
-      }
-    }
+    $self->_logger->info('finished building conservation scores');
   }
-  $self->_logger->info('finished building conservation scores');
 }
 
 sub build_genome_index {
@@ -332,13 +339,13 @@ sub build_genome_index {
 
   # write chromosome offsets
   my $chr_offset_file = $genome_build_obj->genome_offset_file;
-  my $chr_offset_fh = $self->get_write_fh($chr_offset_file);
+  my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
   print {$chr_offset_fh} Dump( \%chr_len );
 
   # prepare file that will list all regions to be added
-  my $file_list_name   = join( ".", $self->genome_name, 'genome', 'list' );
+  my $file_list_name = join( ".", $self->genome_name, 'genome', 'list' );
   my $region_list_file = File::Spec->catfile( $index_dir, $file_list_name );
-  my $file_list_fh     = $self->get_write_fh($region_list_file);
+  my $file_list_fh = $self->get_write_fh($region_list_file);
 
   my @region_files;
 
@@ -367,9 +374,9 @@ sub build_genome_index {
   }
 
   # check files in region file exist for genome_hasher
-  for my $file ( @region_files ) {
-    if ( ! -f $file ) {
-      my $msg = sprintf("ERROR: expected file: '%s' not found", $file);
+  for my $file (@region_files) {
+    if ( !-f $file ) {
+      my $msg = sprintf( "ERROR: expected file: '%s' not found", $file );
       $self->_logger->error($msg);
       say $msg;
     }
@@ -385,16 +392,16 @@ sub build_genome_index {
 
   my $exit_code = system $cmd;
 
-  if ( $exit_code ) {
-    my $msg = sprintf("error encoding genome with %s: %d",
-      $self->genome_cadd, $exit_code);
-    $self->_logger->error($msg)
+  if ($exit_code) {
+    my $msg =
+      sprintf( "error encoding genome with %s: %d", $self->genome_cadd, $exit_code );
+    $self->_logger->error($msg);
     croak $msg;
   }
-  elsif (!-f $self->genome_bin_file) {
-    my $msg = sprintf("ERROR: did not find expected output '%s'",
-      $gst->genome_bin_file);
-    $self->_logger->error($msg)
+  elsif ( !-f $self->genome_bin_file ) {
+    my $msg =
+      sprintf( "ERROR: did not find expected output '%s'", $self->genome_bin_file );
+    $self->_logger->error($msg);
     croak $msg;
   }
 

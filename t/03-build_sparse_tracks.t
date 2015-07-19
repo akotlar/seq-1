@@ -19,8 +19,8 @@ my $package = "Seq::Build::SparseTrack";
 say $package;
 
 # set test genome
-my $ga_config  = path('./config/hg38.yml')->absolute->stringify;
-my $config_href = LoadFile( $ga_config );
+my $ga_config   = path('./config/hg38.yml')->absolute->stringify;
+my $config_href = LoadFile($ga_config);
 
 # load package
 use_ok($package) || die "$package cannot be loaded";
@@ -31,15 +31,17 @@ check_isa( $package,
 
 # check attributes and type constraints
 my %attr_types = (
-  genome_track_str => 'Seq::Build::GenomeSizedTrackStr',
-  counter => 'Num',
+  genome_track_str      => 'Seq::Build::GenomeSizedTrackStr',
+  counter               => 'Num',
   bulk_insert_threshold => 'Num',
-  force => 'Bool',
+  force                 => 'Bool',
 );
 for my $attr_name ( sort keys %attr_types ) {
   my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint, "$package has attribute '$attr_name' with a type constraint" );
-  is( $attr->type_constraint->name, $attr_types{$attr_name},
+  ok( $attr->has_type_constraint,
+    "$package has attribute '$attr_name' with a type constraint" );
+  is( $attr->type_constraint->name,
+    $attr_types{$attr_name},
     "attribute '$attr_name' has type '$attr_types{$attr_name}'" );
 }
 
