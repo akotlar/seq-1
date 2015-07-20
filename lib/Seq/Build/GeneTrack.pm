@@ -65,6 +65,13 @@ sub _get_gene_data {
   my ( %header, %transcript_start_sites );
 
   for my $input_file (@input_files) {
+    # check file
+    if ( !-s $input_file ) {
+      my $msg = sprintf("ERROR: expected file is empty or missing, %s", $input_file);
+      $self->_logger->error($msg);
+      say $msg;
+      exit(1);
+    }
     my $in_fh = $self->get_read_fh($input_file);
     while ( my $line = $in_fh->getline ) {
       chomp $line;
