@@ -67,10 +67,10 @@ sub build_snp_db {
   my ( $db, $snp_dat_fh );
 
   for my $input_file (@input_files) {
-    my $in_fh = $self->get_write_fh($input_file);
+    my $in_fh = $self->get_read_fh($input_file);
     my ( %header, @snp_sites, @insert_data );
 
-    while ( my $line = $in_fh->getline ) {
+    while ( my $line = $in_fh->getline() ) {
       chomp $line;
 
       my @fields = split /\t/, $line;

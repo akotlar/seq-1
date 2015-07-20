@@ -198,7 +198,7 @@ sub _get_file {
     }
   }
   elsif ( grep { /\A$chr\z/ } ( $self->all_genome_chrs ) ) {
-    if ( $var ) {
+    if ( $self->type eq 'gene' ) {
       $file_name = join ".", $self->name, $self->type, $chr, $var, $ext;
     }
     else {
@@ -215,8 +215,8 @@ sub _get_file {
 }
 
 sub get_dat_file {
-  state $check = compile( Object, Str, Maybe[Str] );
-  my ( $self, $chr, $var ) = $check->(@_);
+  # state $check = compile( Object, Str, Maybe[Str] );
+  my ( $self, $chr, $var ) = @_;
   return $self->_get_file( $chr, 'dat', $var );
 }
 
