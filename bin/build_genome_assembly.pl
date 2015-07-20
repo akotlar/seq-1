@@ -32,9 +32,9 @@ my %cmd_2_method = (
 );
 
 my %bin_2_default = (
-  genome_cadd   => "./bin/genome_cadd",
-  genome_hasher => "./bin/genome_hasher",
-  genome_scorer => "./bin/genome_scorer",
+  genome_cadd_bin   => "./bin/genome_cadd",
+  genome_hasher_bin => "./bin/genome_hasher",
+  genome_scorer_bin => "./bin/genome_scorer",
 );
 my %bin_2_path = map { $_ => undef } ( keys %bin_2_default );
 
@@ -65,6 +65,8 @@ my $method = $cmd_2_method{$build_type};
 
 # read config file to determine genome name for log and check validity
 my $config_href = LoadFile($yaml_config);
+
+p $config_href;
 
 # location of the binaries
 #   NOTE: precidence is cmd line > config file > default
@@ -98,9 +100,9 @@ $yaml_config = path($yaml_config)->absolute->stringify;
 
 my $builder_options_href = {
   configfile      => $yaml_config,
-  genome_scorer   => $bin_2_path{genome_scorer},
-  genome_hasher   => $bin_2_path{genome_hasher},
-  genome_cadd     => $bin_2_path{genome_cadd},
+  genome_scorer   => $bin_2_path{genome_scorer_bin},
+  genome_hasher   => $bin_2_path{genome_hasher_bin},
+  genome_cadd     => $bin_2_path{genome_cadd_bin},
   wanted_chr      => $wanted_chr,
   force           => $force,
   debug           => $debug,
