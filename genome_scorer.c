@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 
   if((wigfixfile=gzopen(argv[3],"r"))==(gzFile)NULL)
   {
-    printf("\n Can not open file %s which should be the wigfix file for reading\n",sss);
+    printf("\n Can not open file %s which should be the wigfix file for reading\n", argv[3]);
     exit(1);
   }
 
