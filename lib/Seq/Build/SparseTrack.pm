@@ -70,6 +70,12 @@ has force => (
   default => 0,
 );
 
+has debug => (
+  is      => 'ro',
+  isa     => 'Bool',
+  default => 0,
+);
+
 sub _has_site_range_file {
   my ( $self, $file ) = @_;
   if ( -f $file ) {

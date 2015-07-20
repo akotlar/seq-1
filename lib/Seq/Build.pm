@@ -116,7 +116,9 @@ sub build_transcript_db {
 
     # extract keys from snp_track for creation of Seq::Build::TxTrack
     my $record = $gene_track->as_href;
-    $record->{force} = $self->force if $self->force;
+    for my $attr ( qw/ force debug / ) {
+      $record->{$attr} = $self->$attr if $self->$attr;
+    }
 
     # add additional keys to the hashref for Seq::Build::TxTrack
     $record->{genome_track_str} = $self->genome_str_track;
@@ -139,7 +141,9 @@ sub build_snp_sites {
 
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
     my $record = $snp_track->as_href;
-    $record->{force} = $self->force if $self->force;
+    for my $attr ( qw/ force debug / ) {
+      $record->{$attr} = $self->$attr if $self->$attr;
+    }
 
     for my $chr ( $self->all_genome_chrs ) {
 
@@ -177,7 +181,9 @@ sub build_gene_sites {
 
     # extract keys to the hashref for Seq::Build::GeneTrack
     my $record = $gene_track->as_href;
-    $record->{force} = $self->force if $self->force;
+    for my $attr ( qw/ force debug / ) {
+      $record->{$attr} = $self->$attr if $self->$attr;
+    }
 
     for my $chr ( $self->all_genome_chrs ) {
 
@@ -214,7 +220,7 @@ sub build_conserv_scores_index {
 
   # prepare index dir
   my $index_dir = $self->genome_index_dir->absolute->stringify;
-  $self->genome_index->mk_path unless -f $index_dir;
+  $self->genome_index_dir->mkpath unless -f $index_dir;
 
   # write conservation scores
   if ( $self->genome_sized_tracks ) {
@@ -260,7 +266,7 @@ sub build_conserv_scores_index {
           croak $msg;
         }
       }
-      elsif ( $gst->track eq 'cadd' ) {
+      elsif ( $gst->name eq 'cadd' ) {
 
         # write chromosome offsets
         my $chr_offset_file = $gst->genome_offset_file;
@@ -320,7 +326,7 @@ sub build_genome_index {
 
   # prepare index dir
   my $index_dir = $self->genome_index_dir->absolute->stringify;
-  $self->genome_index->mk_path unless -f $index_dir;
+  $self->genome_index_dir->mkpath unless -f $index_dir;
 
   # get genome configuration object
   #   NOTE: needed for genome_offset_file(), genome_bin_file(), and
