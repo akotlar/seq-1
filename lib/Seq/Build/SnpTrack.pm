@@ -126,7 +126,7 @@ sub build_snp_db {
       # Warn if we are we entering a very large range of sites
       my $sites = $data{chromEnd} - $data{chromStart};
       if ( $sites > 100 ) {
-        my msg = sprintf("WARNING: Asked to enter %d sites into %s, because of line\n%s\n",
+        my $msg = sprintf("WARNING: Asked to enter %d sites into %s, because of line\n%s\n",
           $sites, $dbm_file, $line);
         say $msg if $self->debug;
         $self->_logger->info($msg);
