@@ -259,7 +259,7 @@ sub build_conserv_scores_index {
           $self->_logger->error($msg);
           croak $msg;
         }
-        elsif ( !-f $self->genome_bin_file ) {
+        elsif ( !-f $gst->genome_bin_file ) {
           my $msg =
             sprintf( "ERROR: did not find expected output '%s'", $gst->genome_bin_file );
           $self->_logger->error($msg);
