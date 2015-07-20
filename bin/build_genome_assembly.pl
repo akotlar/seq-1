@@ -32,9 +32,9 @@ my %cmd_2_method = (
 );
 
 my %bin_2_default = (
-  genome_hasher_bin => "./bin/genome_hasher",
-  genome_scorer_bin => "./bin/genome_scorer",
-  genome_cadd_bin   => "./bin/genome_cadd",
+  genome_hasher => "./bin/genome_hasher",
+  genome_scorer => "./bin/genome_scorer",
+  genome_cadd   => "./bin/genome_cadd",
 );
 my %bin_2_path = map { $_ => undef } ( keys %bin_2_default );
 
@@ -95,9 +95,9 @@ $yaml_config = path($yaml_config)->absolute->stringify;
 
 my $builder_options_href = {
   configfile      => $yaml_config,
-  genome_scorer   => $bin_2_path{genome_scorer_bin},
-  genome_hasher   => $bin_2_path{genome_hasher_bin},
-  genome_cadd_bin => $bin_2_path{genome_cadd_bin},
+  genome_scorer   => $bin_2_path{genome_scorer},
+  genome_hasher   => $bin_2_path{genome_hasher},
+  genome_cadd     => $bin_2_path{genome_cadd},
   wanted_chr      => $wanted_chr,
   force           => $force,
   debug           => $debug,
