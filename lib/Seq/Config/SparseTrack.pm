@@ -198,7 +198,7 @@ sub _get_file {
     }
   }
   elsif ( grep { /\A$chr\z/ } ( $self->all_genome_chrs ) ) {
-    if ( $self->type eq 'gene' ) {
+    if ( $self->type eq 'gene' and $ext ne 'kch' ) {
       $file_name = join ".", $self->name, $self->type, $chr, $var, $ext;
     }
     else {
