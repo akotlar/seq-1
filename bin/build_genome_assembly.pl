@@ -31,6 +31,13 @@ my %cmd_2_method = (
   gene_db       => 'build_gene_sites',
 );
 
+my %bin_2_default = (
+  genome_hasher_bin => "./bin/genome_hasher",
+  genome_scorer_bin => "./bin/genome_scorer",
+  genome_cadd_bin   => "./bin/genome_cadd",
+);
+my %bin_2_path = map { $_ => undef } ( keys %bin_2_default );
+
 # usage
 GetOptions(
   'c|config=s'   => \$yaml_config,
@@ -39,8 +46,9 @@ GetOptions(
   'h|help'       => \$help,
   'f|force'      => \$force,
   'd|debug'      => \$debug,
-  'hasher=s'     => \$genome_hasher_bin,
-  'scorer=s'     => \$genome_scorer_bin,
+  'hasher=s'     => \$bin_2_path{genome_hasher_bin},
+  'scorer=s'     => \$bin_2_path{genome_scorer_bin},
+  'cadd=s'       => \$bin_2_path{genome_cadd_bin},
   'wanted_chr=s' => \$wanted_chr,
 );
 
@@ -60,43 +68,42 @@ my $config_href = LoadFile($yaml_config);
 
 # location of the binaries
 #   NOTE: precidence is cmd line > config file > default
-if (exists $config_href->{genome_hasher_bin}) {
-  $genome_hasher_bin = $config_href->{genome_hasher_bin} unless $genome_hasher_bin;
-}
-else {
-    $genome_hasher_bin = "./bin/genome_hasher" unless $genome_hasher_bin;
-}
-if (exists $config_href->{genome_scorer_bin}) {
-  $genome_scorer_bin = $config_href->{genome_scorer_bin} unless $genome_scorer_bin;
-}
-else {
-  $genome_scorer_bin = "./bin/genome_scorer" unless $genome_scorer_bin;
-}
-if (exists $config_href->{genome_cadd_bin}) {
-  $genome_cadd_bin = $config_href->{genome_cadd_bin} unless $genome_cadd_bin;
-}
-else {
-  $genome_cadd_bin = "./bin/genome_cadd" unless $genome_cadd_bin;
+for my $binary ( keys %bin_2_path ) {
+  if ( exists $config_href->{$binary} ) {
+    $bin_2_path{$binary} = $config_href->{$binary} unless $bin_2_path{$binary};
+  }
+  else {
+    $bin_2_path{$binary} = $bin_2_default{$binary} unless $bin_2_path{$binary};
+  }
+
+  # get absolute path
+  $bin_2_path{$binary} = path($bin_2_path{$binary})->absolute->stringify;
+
+  # check the file exists
+  unless ( -f $bin_2_path{$binary} ) {
+    my $msg = sprintf( "ERROR: cannot file, '%s'", $bin_2_path{$binary} );
+    say $msg;
+    exit(1);
+  }
 }
 
 # get absolute path for YAML file and db_location
-$yaml_config       = path($yaml_config)->absolute->stringify;
-$genome_hasher_bin = path($genome_hasher_bin)->absolute->stringify;
-$genome_scorer_bin = path($genome_scorer_bin)->absolute->stringify;
-$genome_cadd_bin   = path($genome_cadd_bin)->absolute->stringify;
+$yaml_config = path($yaml_config)->absolute->stringify;
+# $genome_hasher_bin = path($genome_hasher_bin)->absolute->stringify;
+# $genome_scorer_bin = path($genome_scorer_bin)->absolute->stringify;
+# $genome_cadd_bin   = path($genome_cadd_bin)->absolute->stringify;
 
 my $builder_options_href = {
-  configfile    => $yaml_config,
-  genome_scorer => $genome_scorer_bin,
-  genome_hasher => $genome_hasher_bin,
-  genome_cadd_bin => $genome_cadd_bin,
-  wanted_chr    => $wanted_chr,
-  force         => $force,
-  debug         => $debug
+  configfile      => $yaml_config,
+  genome_scorer   => $bin_2_path{genome_scorer_bin},
+  genome_hasher   => $bin_2_path{genome_hasher_bin},
+  genome_cadd_bin => $bin_2_path{genome_cadd_bin},
+  wanted_chr      => $wanted_chr,
+  force           => $force,
+  debug           => $debug,
 };
 
 if ( $method and $config_href ) {
-
   $wanted_chr = ($wanted_chr) ? $wanted_chr : 'all';
   # set log file
   my $log_name = join '.', 'build', $config_href->{genome_name}, $build_type,
@@ -124,7 +131,7 @@ build_genome_assembly
   --config <file>
   --type <'genome', 'conserv', 'transcript_db', 'snp_db', 'gene_db'>
   [ --wanted_chr ]
-  
+
 =head1 DESCRIPTION
 
 C<build_genome_assembly.pl> takes a yaml configuration file and reads raw genomic
