@@ -123,6 +123,15 @@ sub build_snp_db {
         $min_allele_freq = sprintf( "%0.6f", 1 - $s_allele_freqs[0] );
       }
 
+      # Warn if we are we entering a very large range of sites
+      my $sites = $data{chromEnd} - $data{chromStart};
+      if ( $sites > 100 ) {
+        my msg = sprintf("WARNING: Asked to enter %d sites into %s, because of line\n%s\n",
+          $sites, $dbm_file, $line);
+        say $msg if $self->debug;
+        $self->_logger->info($msg);
+      }
+
       foreach my $pos ( ( $data{chromStart} + 1 ) .. $data{chromEnd} ) {
         my $chr      = $data{chrom};
         my $snp_id   = $data{name};
