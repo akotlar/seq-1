@@ -88,9 +88,9 @@ has wanted_chr => (
 sub BUILD {
   my $self = shift;
   $self->_logger->info( "loading genome of size " . $self->genome_length );
-  $self->_logger->info( "genome_hasher: " . $self->genome_hasher );
-  $self->_logger->info( "genome_scorer: " . $self->genome_scorer );
-  $self->_logger->info( "genome_cadd: " . $self->genome_cadd );
+  $self->_logger->info( "genome_hasher: " . ($self->genome_hasher || 'NA'));
+  $self->_logger->info( "genome_scorer: " . ($self->genome_scorer || 'NA'));
+  $self->_logger->info( "genome_cadd: " . ($self->genome_cadd || 'NA'));
   $self->_logger->info( "wanted_chr: " . ($self->wanted_chr || 'all') );
 }
 
