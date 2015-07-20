@@ -32,9 +32,9 @@ my %cmd_2_method = (
 );
 
 my %bin_2_default = (
+  genome_cadd   => "./bin/genome_cadd",
   genome_hasher => "./bin/genome_hasher",
   genome_scorer => "./bin/genome_scorer",
-  genome_cadd   => "./bin/genome_cadd",
 );
 my %bin_2_path = map { $_ => undef } ( keys %bin_2_default );
 
@@ -75,6 +75,9 @@ for my $binary ( keys %bin_2_path ) {
   else {
     $bin_2_path{$binary} = $bin_2_default{$binary} unless $bin_2_path{$binary};
   }
+
+  p $binary;
+  p $bin_2_path{$binary};
 
   # get absolute path
   $bin_2_path{$binary} = path($bin_2_path{$binary})->absolute->stringify;
