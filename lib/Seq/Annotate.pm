@@ -132,7 +132,6 @@ sub _load_genome_sized_track {
 
   # index dir
   my $index_dir = $self->genome_index_dir;
-  p $index_dir;
 
   # check files exist and are not empty
   my $msg_aref = $self->_check_genome_sized_files(
@@ -194,7 +193,6 @@ sub _load_cadd {
   for my $gst ( $self->all_genome_sized_tracks ) {
     if ( $gst->type eq 'cadd' ) {
       $self->set_cadd;
-      say "got here...";
       return $self->_load_cadd_score($gst);
     }
     else {
@@ -211,12 +209,14 @@ sub _load_cadd_score {
 
   # index dir
   my $index_dir = $self->genome_index_dir;
+  p $index_dir;
 
   for my $i ( 0 .. 2 ) {
 
     # idx file
     my $idx_file = $gst->cadd_idx_file($i);
     p $idx_file;
+
     exit;
 
     # check files exist and are not empty
@@ -526,14 +526,20 @@ sub BUILD {
   say $msg if $self->debug;
   $self->_logger->info($msg);
 
-  for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene, $self->_all_dbm_tx ) {
+  for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
     my @chrs = $self->all_genome_chrs;
     for (my $i = 0; $i < @chrs; $i++) {
-      my $dbm = ( $dbm_aref->[$i] ) ? $dbm_aref->[$i] : 'NA';
+      my $dbm = ( $dbm_aref->[$i] ) ? $dbm_aref->[$i]->filename : 'NA';
       my $msg = sprintf( "Loaded dbm: %s for chr: %s", $dbm, $chrs[$i] );
       say $msg if $self->debug;
       $self->_logger->info($msg);
     }
+  }
+  for my $dbm_aref ( $self->_all_dbm_tx ) {
+    my $dbm = ( $dbm_aref ) ? $dbm_aref->filename : 'NA';
+    my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
+    say $msg if $self->debug;
+    $self->_logger->info($msg);
   }
 }
 

@@ -151,16 +151,15 @@ sub BUILDARGS {
     }
 
     if ( $href->{debug} ) {
-      my $msg =
-        sprintf( "genome_index_dir: %s", $href->{genome_index_dir}->absolute->stringify );
+      my $msg = sprintf( "genome_index_dir: %s",
+        $href->{genome_index_dir}->absolute->stringify );
       say $msg;
-      $msg =
-        sprintf( "genome_raw_dir: %s", $href->{genome_raw_dir}->absolute->stringify );
+      $msg = sprintf( "genome_raw_dir: %s",
+        $href->{genome_raw_dir}->absolute->stringify );
       say $msg;
     }
 
     for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
-
       # give all sparse tracks some needed information
       for my $attr (qw/ genome_raw_dir genome_index_dir genome_chrs /) {
         $sparse_track->{$attr} = $href->{$attr};
@@ -178,7 +177,6 @@ sub BUILDARGS {
     }
 
     for my $gst ( @{ $href->{genome_sized_tracks} } ) {
-
       # give all genome size tracks some needed information
       for my $attr (qw/ genome_raw_dir genome_index_dir genome_chrs /) {
         $gst->{$attr} = $href->{$attr};
@@ -188,13 +186,8 @@ sub BUILDARGS {
         or $gst->{type} eq 'score'
         or $gst->{type} eq 'cadd' )
       {
-        if ( $href->{debug} ) {
-          p $gst;
-        }
         my $obj = Seq::Config::GenomeSizedTrack->new($gst);
         push @{ $hash{genome_sized_tracks} }, $obj;
-
-        p $obj if $href->{debug};
       }
       else {
         croak sprintf( "unrecognized genome track type %s\n", $gst->{type} );

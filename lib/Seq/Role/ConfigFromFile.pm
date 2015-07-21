@@ -7,8 +7,8 @@ package Seq::Role::ConfigFromFile;
 # VERSION
 
 =head1 DESCRIPTION
-  
-  @role Seq::Role::ConfigFromFile 
+
+  @role Seq::Role::ConfigFromFile
   #TODO: Check description
 
   @example with 'Seq::Role::ConfigFromFile'
@@ -63,8 +63,7 @@ sub new_with_config {
   }
 
   if ( $opts->{debug} ) {
-    say
-      "Here are the built args from config that we have in new_with_config in ConfigFromFile.pm";
+    say "Data for Role::ConfigFromFile::new_with_config()";
     p %opts;
   }
 

@@ -171,14 +171,6 @@ B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
 sub annotate_snpfile {
   my $self = shift;
 
-  if ( $self->debug ) {
-    say "The self meta is (checking to see how has_method works:";
-    p $self->meta;
-
-    say "Does this object have method no_del_sites: "
-      . !!$self->meta->has_method('no_del_sites');
-  }
-
   $self->_logger->info("about to load annotation data");
 
   if ( $self->wants_to_publish_messages ) {
@@ -203,10 +195,10 @@ sub annotate_snpfile {
 
   my $summary_href;
 
-  $self->_logger->info( "finished loading assembly " . $annotator->genome_name );
+  $self->_logger->info( "Loaded assembly " . $annotator->genome_name );
 
   if ( $self->wants_to_publish_messages ) {
-    $self->_publish_message( "finished loading assembly " . $annotator->genome_name );
+    $self->_publish_message( "Loaded assembly " . $annotator->genome_name );
   }
 
   # attributes / header
@@ -321,11 +313,8 @@ sub annotate_snpfile {
 
       for my $allele ( split( /,/, $all_alleles ) ) {
         next if $allele eq $ref_allele;
-        p $allele if $self->debug;
         my $record_href =
           $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
-
-        p $record_href if $self->debug;
 
         $record_href->{chr}               = $chr;
         $record_href->{pos}               = $pos;
