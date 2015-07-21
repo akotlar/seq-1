@@ -287,6 +287,7 @@ sub _build_raw_genome_files {
   it will check for the existance of the file.
 
 =cut
+
 sub cadd_idx_file {
   my ($self, $num ) = @_;
   my $file = $self->genome_bin_file->absolute->stringify . "." . $num;
