@@ -400,7 +400,7 @@ sub build_genome_index {
     $self->_logger->error($msg);
     croak $msg;
   }
-  elsif ( !-f $self->genome_bin_file ) {
+  elsif ( !-f $genome_build_obj->genome_bin_file ) {
     my $msg =
       sprintf( "ERROR: did not find expected output '%s'", $self->genome_bin_file );
     $self->_logger->error($msg);
