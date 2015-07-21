@@ -145,8 +145,9 @@ sub BUILDARGS {
       }
       else {
         $href->{$req_dir} = path(".");
-        my $msg = sprintf( "missing %s; defaulted to: %s",
+        my $msg = sprintf( "WARNING: missing %s; defaulted to: %s",
           $req_dir, $href->{$req_dir}->absolute->stringify );
+        say $msg;
       }
     }
 
