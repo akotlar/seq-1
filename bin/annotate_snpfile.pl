@@ -19,7 +19,7 @@ use Data::Dump qw/ pp /;
 
 use Seq;
 
-my ( $snpfile, $db_dir, $yaml_config, $verbose, $help, $out_file, $force, $debug );
+my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force, $debug );
 
 # TODO: read directly from argument_format.json
 
@@ -28,7 +28,6 @@ GetOptions(
   'c|config=s'   => \$yaml_config,
   's|snpfile=s'  => \$snpfile,
   'v|verbose'    => \$verbose,
-  'l|location=s' => \$db_dir,
   'h|help'       => \$help,
   'o|out=s'      => \$out_file,
   'f|force'      => \$force,
@@ -71,8 +70,6 @@ try {
   my $log_file = File::Spec->rel2abs( ".", $log_name );
   say "writing log file here: $log_file" if $verbose;
   Log::Any::Adapter->set( 'File', $log_file );
-
-  chdir $db_dir || die "cannot change to $db_dir";
 
   # create the annotator
   my $annotate_instance = Seq->new(

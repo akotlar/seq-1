@@ -60,6 +60,6 @@ sub Write_script {
   my ( $type, $chr, $cmd ) = @_;
   my $file_name = "$type.$chr.sh";
   my $out_fh = IO::File->new( $file_name, 'w' );
-  say {$out_fh} join "\n", '#!bin/sh', qq{cd $cwd}, $cmd;
+  say {$out_fh} join "\n", '#!/usr/bin/sh', qq{cd $cwd}, $cmd;
   return $file_name;
 }

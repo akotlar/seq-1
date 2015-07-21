@@ -211,8 +211,6 @@ sub build_gene_sites {
 sub build_conserv_scores_index {
   my $self = shift;
 
-  # TODO: update to use Config::GenomeSizedTrack
-
   $self->_logger->info('build conservation scores: start');
 
   # make chr_len hash for binary genome

@@ -649,6 +649,9 @@ sub get_ref_annotation {
   if ($snp) {
     for my $snp_dbs ( $self->_all_dbm_snp ) {
       my $kch = $snp_dbs->[$chr_index];
+      
+      # if there's no file for the track then it will be undef
+      next unless defined $kch;
       my $rec = $kch->db_get($abs_pos);
       if ( $self->debug ) {
         p $kch;
