@@ -7,10 +7,10 @@ package Seq::Gene;
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @class B<Seq::Gene>
   #TODO: Check description
-  
+
   @example
 
 Used in:
@@ -308,9 +308,9 @@ sub _build_transcript_annotation {
         $seq .= '0';
       }
       else {
-        if ( $abs_pos < $coding_end ) {
-          if ( $abs_pos >= $coding_start ) {
-            $seq .= $self->get_base( $abs_pos, 1 );
+        if ( $abs_pos < $self->coding_end ) {
+          if ( $abs_pos >= $self->coding_start ) {
+            $seq .= $self->get_base( $abs_pos );
           }
           else {
             $seq .= '5';
@@ -332,11 +332,11 @@ sub _build_transcript_annotation {
 
 =method @constructor _build_transcript_sites
 
-  Fetches an annotation using Seq::Site::Gene. 
+  Fetches an annotation using Seq::Site::Gene.
   Populates the @property {Str} peptide.
   Populates the @property {ArrayRef<Seq::Site::Gene>} transcript_sites
 
-@requires  
+@requires
 =for :list
 * @method {ArrayRef<Str>} $self->all_exon_starts
 * @method {ArrayRef<Str>} $self->all_exon_ends
@@ -435,15 +435,15 @@ sub _build_transcript_sites {
 }
 
 =method @constructor _build_flanking_sites
-  
+
   Annotate splice donor/acceptor bp
    - i.e., bp within 6 bp of exon start / stop
    - what we want to capture is the bp that are within 6 bp of the start or end of
      an exon start/stop; whether this is only within the bounds of coding exons does
      not particularly matter to me
-  
+
   From the gDNA:
-  
+
          EStart    CStart          EEnd       EStart    EEnd      EStart   CEnd      EEnd
          +-----------+---------------+-----------+--------+---------+--------+---------+
    Exons  111111111111111111111111111             22222222           333333333333333333
