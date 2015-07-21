@@ -370,7 +370,7 @@ has dbm_snp => (
 
 has dbm_tx => (
   is      => 'ro',
-  isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
+  isa     => 'ArrayRef[Seq::KCManager]',
   builder => '_build_dbm_tx',
   traits  => ['Array'],
   handles => { _all_dbm_tx => 'elements', },
