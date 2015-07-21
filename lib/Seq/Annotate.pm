@@ -372,7 +372,7 @@ has dbm_tx => (
   isa     => 'ArrayRef[ArrayRef[Seq::KCManager]]',
   builder => '_build_dbm_tx',
   traits  => ['Array'],
-  handles => { _all_dbm_seq => 'elements', },
+  handles => { _all_dbm_tx => 'elements', },
   lazy    => 1,
 );
 
@@ -525,7 +525,7 @@ sub BUILD {
   say $msg if $self->debug;
   $self->_logger->info($msg);
 
-  for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
+  for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene, $self->_all_dbm_tx ) {
     for my $dbm (@$dbm_aref) {
       my $msg = sprintf( "finished loading %s", ( $dbm ) ? $dbm->filename : 'NA' );
       say $msg if $self->debug;
