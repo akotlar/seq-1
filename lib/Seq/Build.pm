@@ -113,8 +113,10 @@ sub build_transcript_db {
     my $msg = sprintf( "start gene tx db, '%s'", $gene_track->name );
     $self->_logger->info($msg) if $self->debug;
 
+    # extract keys from snp_track for creation of Seq::Build::GeneTrack
+    my $record = $gene_track->as_href;
+
     # add required fields for the build track
-    # $record->{genome_track_str} = $self->genome_str_track;
     for my $attr ( qw/ force debug genome_track_str / ) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
@@ -141,7 +143,6 @@ sub build_snp_sites {
     my $record = $snp_track->as_href;
 
     # add required fields for the build track
-    # $record->{genome_track_str} = $self->genome_str_track;
     for my $attr ( qw/ force debug genome_track_str / ) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
@@ -179,8 +180,10 @@ sub build_gene_sites {
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
+    # extract keys from snp_track for creation of Seq::Build::GeneTrack
+    my $record = $gene_track->as_href;
+
     # add required fields for the build track
-    # $record->{genome_track_str} = $self->genome_str_track;
     for my $attr ( qw/ force debug genome_track_str / ) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
