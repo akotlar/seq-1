@@ -19,7 +19,7 @@ my $package = "Seq::Build::SparseTrack";
 say $package;
 
 # set test genome
-my $ga_config   = path('./config/hg38.yml')->absolute->stringify;
+my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 # load package

@@ -12,7 +12,7 @@ use YAML qw/ LoadFile /;
 plan tests => 32;
 
 # set test genome
-my $ga_config   = path('./config/hg38.yml')->absolute->stringify;
+my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 my $package = "Seq::Config::SparseTrack";
@@ -70,10 +70,10 @@ for my $attr_name (qw/ type /) {
 
   # local index files
   $exp_path =
-    path( $config_href->{genome_index_dir} )->child('snp141.chr1.snp.kch')->absolute;
+    path( $config_href->{genome_index_dir} )->child('snp141.snp.chr1.kch')->absolute;
   is( $obj->get_kch_file('chr1'), $exp_path, 'method: get_kch_file (index file)' );
   $exp_path =
-    path( $config_href->{genome_index_dir} )->child('snp141.chr1.snp.dat')->absolute;
+    path( $config_href->{genome_index_dir} )->child('snp141.snp.chr1.dat')->absolute;
   is( $obj->get_dat_file( 'chr1', $obj->type ),
     $exp_path, 'method: get_dat_file (index file)' );
 
