@@ -96,8 +96,6 @@ has _genome => (
 sub _load_genome {
   my $self = shift;
 
-  say 'got here';
-
   for my $gst ( $self->all_genome_sized_tracks ) {
     if ( $gst->type eq 'genome' ) {
       return $self->_load_genome_sized_track($gst);
@@ -196,6 +194,7 @@ sub _load_cadd {
   for my $gst ( $self->all_genome_sized_tracks ) {
     if ( $gst->type eq 'cadd' ) {
       $self->set_cadd;
+      say "got here...";
       return $self->_load_cadd_score($gst);
     }
     else {
@@ -217,6 +216,8 @@ sub _load_cadd_score {
 
     # idx file
     my $idx_file = $gst->cadd_idx_file($i);
+    p $idx_file;
+    exit;
 
     # check files exist and are not empty
     my $msg_aref = $self->_check_genome_sized_files( [$idx_file] );
@@ -512,22 +513,24 @@ sub BUILD {
   my $self = shift;
   p $self if $self->debug;
 
-  my $msg = sprintf( "finished loading genome of size: %d", $self->genome_length );
+  my $msg = sprintf( "Loaded genome of size: %d", $self->genome_length );
   say $msg if $self->debug;
   $self->_logger->info($msg);
 
   $msg =
-    sprintf( "finished loading %d genome score track(s)", $self->count_genome_scores );
+    sprintf( "Loaded %d genome score track(s)", $self->count_genome_scores );
   say $msg if $self->debug;
   $self->_logger->info($msg);
 
-  $msg = sprintf( "finished loading %d cadd scores", $self->count_cadd_scores );
+  $msg = sprintf( "Loaded %d cadd scores", $self->count_cadd_scores );
   say $msg if $self->debug;
   $self->_logger->info($msg);
 
   for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene, $self->_all_dbm_tx ) {
-    for my $dbm (@$dbm_aref) {
-      my $msg = sprintf( "finished loading %s", ( $dbm ) ? $dbm->filename : 'NA' );
+    my @chrs = $self->all_genome_chrs;
+    for (my $i = 0; $i < @chrs; $i++) {
+      my $dbm = ( $dbm_aref->[$i] ) ? $dbm_aref->[$i] : 'NA';
+      my $msg = sprintf( "Loaded dbm: %s for chr: %s", $dbm, $chrs[$i] );
       say $msg if $self->debug;
       $self->_logger->info($msg);
     }
