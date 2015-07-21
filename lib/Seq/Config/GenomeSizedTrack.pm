@@ -282,11 +282,11 @@ sub _build_raw_genome_files {
 }
 
 sub cadd_idx_file {
-  state $check = (Object, Num);
-  my ($self, $num) = $check->(@_);
-  my $base_dir = $self->genome_index_dir;
-  my $file = join ".", $self->type, $num;
-  return $base_dir->child($file)->absolute->stringify;
+  #state $check = (Object, Num);
+  #my ($self, $num) = $check->(@_);
+  my ($self, $num ) = @_;
+  my $file = $self->genome_bin_file->absolute->stringify . "." . $num;
+  return $file;
 }
 
 # for conservation scores
