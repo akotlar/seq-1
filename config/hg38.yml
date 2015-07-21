@@ -21,7 +21,7 @@ genome_chrs:
   - chr7
   - chr8
   - chr9
-  - chr10
+  - chr12
   - chr11
   - chr12
   - chr13
@@ -31,7 +31,7 @@ genome_chrs:
   - chr17
   - chr18
   - chr19
-  - chr20
+  - chr22
   - chr21
   - chr22
   - chrM
@@ -140,3 +140,11 @@ genome_sized_tracks:
     remote_dir: hgdownload.soe.ucsc.edu/goldenPath/hg38/phyloP7way/
     remote_files:
       - hg38.phyloP7way.wigFix.gz
+  - name: cadd
+    type: cadd
+    local_dir: /ssd/twingo/sandbox/hg38/raw/cadd
+    local_files:
+     - hg38.cadd.gz
+    remote_dir: NA
+    remote_files:
+     - NA
