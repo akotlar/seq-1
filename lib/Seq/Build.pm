@@ -162,7 +162,7 @@ sub build_snp_sites {
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db($chr);
 
-      $msg = sprintf( "snp db, '%s', for chrom '%s':done ",
+      $msg = sprintf( "snp db, '%s', for chrom '%s': done ",
         $snp_track->name, $chr );
       $self->_logger->info($msg) if $self->debug;
     }
@@ -360,19 +360,19 @@ sub build_genome_index {
 
     # snp sites
     for my $snp_track ( $self->all_snp_tracks ) {
-      push @region_files, $self->get_dat_file( $chr, $snp_track->type );
+      push @region_files, $snp_track->get_dat_file( $chr, $snp_track->type );
     }
 
     # gene annotation and exon positions
     for my $gene_track ( $self->all_gene_tracks ) {
-      push @region_files, $self->get_dat_file( $chr, 'gan' );
-      push @region_files, $self->get_dat_file( $chr, 'exon' );
+      push @region_files, $gene_track->get_dat_file( $chr, 'gan' );
+      push @region_files, $gene_track->get_dat_file( $chr, 'exon' );
     }
   }
 
   # gather gene region site files
   for my $gene_track ( $self->all_gene_tracks ) {
-    push @region_files, $self->get_dat_file( 'genome', 'tx' );
+    push @region_files, $gene_track->get_dat_file( 'genome', 'tx' );
   }
 
   # check files in region file exist for genome_hasher
