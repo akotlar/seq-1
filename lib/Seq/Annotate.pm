@@ -195,11 +195,9 @@ sub _load_cadd {
       $self->set_cadd;
       return $self->_load_cadd_score($gst);
     }
-    else {
-      # return arrayref to satisfy the type constraint
-      return [];
-    }
   }
+  # return an empty arrayref to satisfy the type if we don't have a cadd track
+  return [];
 }
 
 sub _load_cadd_score {
@@ -209,15 +207,11 @@ sub _load_cadd_score {
 
   # index dir
   my $index_dir = $self->genome_index_dir;
-  p $index_dir;
 
   for my $i ( 0 .. 2 ) {
 
     # idx file
     my $idx_file = $gst->cadd_idx_file($i);
-    p $idx_file;
-
-    exit;
 
     # check files exist and are not empty
     my $msg_aref = $self->_check_genome_sized_files( [$idx_file] );
@@ -236,13 +230,18 @@ sub _load_cadd_score {
     my $seq           = '';
     my $genome_length = -s $idx_file;
     read $idx_fh, $seq, $genome_length;
+    
+    # read yml chr offsets
+    my $yml_file     = $gst->genome_offset_file;
+    my $chr_len_href = LoadFile($yml_file);
 
     my $obj = Seq::GenomeSizedTrackChar->new(
       {
         name          => $gst->name,
         type          => $gst->type,
-        genome_chrs   => $self->genome_chrs,
+        genome_chrs   => $gst->genome_chrs,
         genome_length => $genome_length,
+        chr_len       => $chr_len_href,
         char_seq      => \$seq,
       }
     );
@@ -252,12 +251,8 @@ sub _load_cadd_score {
     $self->_logger->info($msg);
     say $msg if $self->debug;
   }
+  # tell the package we loaded some cadd scores
   $self->set_cadd;
-
-  if ( $self->debug ) {
-    say "Got to the end of _load_cadd_score. Here is our cadd_scores array";
-    p @cadd_scores;
-  }
   return \@cadd_scores;
 }
 
