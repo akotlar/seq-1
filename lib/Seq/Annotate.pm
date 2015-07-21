@@ -423,17 +423,15 @@ has has_cadd_track => (
 );
 
 sub _build_dbm_array {
-  my ( $self, $tracks_aref ) = shift;
+  my ( $self, $track ) = @_;
   my @array;
-  for my $track (@$tracks_aref) {
-    for my $chr ( $self->all_genome_chrs ) {
-      my $dbm = $track->get_kch_file($chr);
-      if ( -f $dbm ) {
-        push @array, Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
-      }
-      else {
-        push @array, undef;
-      }
+  for my $chr ( $track->all_genome_chrs ) {
+    my $dbm = $track->get_kch_file($chr);
+    if ( -f $dbm ) {
+      push @array, Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
+    }
+    else {
+      push @array, undef;
     }
   }
   return \@array;
@@ -441,94 +439,36 @@ sub _build_dbm_array {
 
 sub _build_dbm_snp {
   my $self = shift;
-  my $aref = $self->_build_dbm_array( [ $self->all_snp_tracks ] );
-  return $aref;
+  my @array;
+  for my $snp_track ( $self->all_snp_tracks ) {
+    push @array, $self->_build_dbm_array( $snp_track );
+  }
+  return \@array;
 }
 
 sub _build_dbm_gene {
   my $self = shift;
-  my $aref = $self->_build_dbm_array( [ $self->all_gene_tracks ] );
-  return $aref;
+  my @array;
+  for my $gene_track ( $self->all_gene_tracks ) {
+    push @array, $self->_build_dbm_array( $gene_track );
+  }
+  return \@array;
 }
 
 sub _build_dbm_tx {
   my $self = shift;
-  my $aref = $self->_build_dbm_array( [ $self->all_gene_tracks ] );
-  return $aref;
+  my @array;
+  for my $gene_track ( $self->all_gene_tracks ) {
+    my $dbm = $gene_track->get_kch_file( 'genome', 'tx' );
+    if ( -f $dbm ) {
+      push @array, Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
+    }
+    else {
+      push @array, undef;
+    }
+  }
+  return \@array;
 }
-
-# sub _get_dbm_file {
-#
-#   my ( $self, $name ) = @_;
-#   my $file = path( $self->genome_index_dir, $name )->stringify;
-#
-#   warn "WARNING: expected file: '$file' does not exist." unless -f $file;
-#   warn "WARNING: expected file: '$file' is empty." unless $file;
-#
-#   if ( !$file or !-f $file ) {
-#     $self->_logger->warn( "dbm file is either zero-sized or missing: " . $file );
-#   }
-#   else {
-#     $self->_logger->info( "found dbm file: " . $file );
-#   }
-#
-#   return $file;
-# }
-#
-# sub _build_dbm_gene {
-#   my $self        = shift;
-#   my @gene_tracks = ();
-#   for my $gene_track ( $self->all_gene_tracks ) {
-#     my @array;
-#     for my $chr ( $self->all_genome_chrs ) {
-#       my $db_name = join ".", $gene_track->name, $chr, $gene_track->type, 'kch';
-#         push @array,Seq::KCManager->new(
-#         {
-#           filename => $self->_get_dbm_file($db_name),
-#           mode     => 'read',
-#         }
-#         );
-#     }
-#     push @gene_tracks, \@array;
-#   }
-#   return \@gene_tracks;
-# }
-#
-# sub _build_dbm_snp {
-#   my $self = shift;
-#   my @snp_tracks;
-#   for my $snp_track ( $self->all_snp_tracks ) {
-#     my @array = ();
-#     for my $chr ( $self->all_genome_chrs ) {
-#       my $db_name = join ".", $snp_track->name, $chr, $snp_track->type, 'kch';
-#         push @array, Seq::KCManager->new(
-#         {
-#           filename => $self->_get_dbm_file($db_name),
-#           mode     => 'read',
-#         }
-#         );
-#     }
-#     push @snp_tracks, \@array;
-#   }
-#   p @snp_tracks if $self->debug;
-#   return \@snp_tracks;
-# }
-#
-# sub _build_dbm_tx {
-#   my $self  = shift;
-#   my @array = ();
-#   for my $gene_track ( $self->all_snp_tracks ) {
-#     my $db_name = join ".", $gene_track->name, $gene_track->type, 'seq', 'kch';
-#     push @array,
-#       Seq::KCManager->new(
-#       {
-#         filename => $self->_get_dbm_file($db_name),
-#         mode     => 'read',
-#       }
-#       );
-#   }
-#   return \@array;
-# }
 
 sub _build_header {
   my $self = shift;
@@ -587,7 +527,7 @@ sub BUILD {
 
   for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
     for my $dbm (@$dbm_aref) {
-      my $msg = sprintf( "finished loading %s", $dbm->filename );
+      my $msg = sprintf( "finished loading %s", ( $dbm ) ? $dbm->filename : 'NA' );
       say $msg if $self->debug;
       $self->_logger->info($msg);
     }
