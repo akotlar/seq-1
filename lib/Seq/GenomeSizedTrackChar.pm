@@ -88,10 +88,12 @@ has char_seq => (
   builder  => '_build_char_seq',
 );
 
-sub _build_char_seq {
-  # TODO: Move build functionality here for all char string genomes instead of
-  #       loading them in the build package
-}
+has genome_length => (
+  is => 'ro',
+  isa => 'Num',
+  builder => '_get_genome_length',
+  lazy => 1,
+);
 
 sub _get_genome_length {
   my $self = shift;
