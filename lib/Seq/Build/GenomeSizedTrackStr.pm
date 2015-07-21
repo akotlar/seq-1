@@ -128,7 +128,7 @@ sub _build_str_genome {
             $wanted_chr = 0;
           }
         }
-        elsif ( $wanted_chr && $line =~ m/(\A[ATCGNatcgn]+)\z/xmi ) {
+        elsif ( $wanted_chr && $line =~ m/(\A[ATCGNatcgn]+)\z/xms ) {
           $seq_of_chr{$chr} .= uc $1;
         }
 
