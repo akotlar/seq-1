@@ -113,14 +113,13 @@ sub build_transcript_db {
     my $msg = sprintf( "start gene tx db, '%s'", $gene_track->name );
     $self->_logger->info($msg) if $self->debug;
 
-    # extract keys from snp_track for creation of Seq::Build::TxTrack
-    my $record = $gene_track->as_href;
-    for my $attr ( qw/ force debug / ) {
+    # add required fields for the build track
+    # $record->{genome_track_str} = $self->genome_str_track;
+    for my $attr ( qw/ force debug genome_track_str / ) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
     # add additional keys to the hashref for Seq::Build::TxTrack
-    $record->{genome_track_str} = $self->genome_str_track;
     my $gene_db = Seq::Build::GeneTrack->new($record);
     $gene_db->build_tx_db_for_genome;
 
@@ -140,7 +139,10 @@ sub build_snp_sites {
 
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
     my $record = $snp_track->as_href;
-    for my $attr ( qw/ force debug / ) {
+
+    # add required fields for the build track
+    # $record->{genome_track_str} = $self->genome_str_track;
+    for my $attr ( qw/ force debug genome_track_str / ) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
@@ -157,7 +159,6 @@ sub build_snp_sites {
       $self->_logger->info($msg) if $self->debug;
 
       # Seq::Build::SnpTrack needs the string genome
-      $record->{genome_track_str} = $self->genome_str_track;
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db($chr);
 
@@ -178,9 +179,9 @@ sub build_gene_sites {
 
   for my $gene_track ( $self->all_gene_tracks ) {
 
-    # extract keys to the hashref for Seq::Build::GeneTrack
-    my $record = $gene_track->as_href;
-    for my $attr ( qw/ force debug / ) {
+    # add required fields for the build track
+    # $record->{genome_track_str} = $self->genome_str_track;
+    for my $attr ( qw/ force debug genome_track_str / ) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
@@ -196,7 +197,6 @@ sub build_gene_sites {
       $self->_logger->info($msg) if $self->debug;
 
       # Seq::Build::GeneTrack needs the string genome
-      $record->{genome_track_str} = $self->genome_str_track;
       my $gene_db = Seq::Build::GeneTrack->new($record);
       $gene_db->build_gene_db_for_chr($chr);
 
