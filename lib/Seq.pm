@@ -8,11 +8,11 @@ package Seq;
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @class B<Seq>
   #TODO: Check description
   From where all annotation originates
-  
+
   @example
 
 Used in: None
@@ -29,7 +29,7 @@ use Carp qw/ croak /;
 use Cpanel::JSON::XS;
 use DDP;
 use namespace::autoclean;
-use Redis;
+# use Redis;
 
 use Seq::Annotate;
 
@@ -159,8 +159,8 @@ has genes_annotated => (
   },
 );
 
-my $redisHost = 'localhost';
-my $redisPort = '6379';
+# my $redisHost = 'localhost';
+# my $redisPort = '6379';
 
 =head2 annotation_snpfile
 
@@ -179,16 +179,11 @@ sub annotate_snpfile {
       . !!$self->meta->has_method('no_del_sites');
   }
 
-  croak "specify a snpfile to annotate\n" unless $self->snpfile_path;
-
   $self->_logger->info("about to load annotation data");
-  say "about to load annotation data" if $self->debug;
 
   if ( $self->wants_to_publish_messages ) {
     $self->_publish_message("about to load annotation data");
   }
-  # $self->_logger->info("about to load annotation data");
-  my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
 
   my $annotator = Seq::Annotate->new_with_config(
     {
@@ -229,6 +224,7 @@ sub annotate_snpfile {
   my $interval = 200;
 
   # let the annotation begin
+  my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
   while ( my $line = $snpfile_fh->getline ) {
     chomp $line;
 
