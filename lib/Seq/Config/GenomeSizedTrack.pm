@@ -281,11 +281,21 @@ sub _build_raw_genome_files {
   return \@array;
 }
 
+= property @public cadd_idx_file
+
+  This function is intented to be called from an annotate context; therefore,
+  it will check for the existance of the file.
+
+=cut
 sub cadd_idx_file {
-  #state $check = (Object, Num);
-  #my ($self, $num) = $check->(@_);
   my ($self, $num ) = @_;
   my $file = $self->genome_bin_file->absolute->stringify . "." . $num;
+  if (!-f $file ) {
+    my $msg = sprintf("ERROR: cannot find expected cadd-type file '%s'", $file);
+    $self->_logger->error($msg)
+    say $msg;
+    exit(1);
+  }
   return $file;
 }
 
