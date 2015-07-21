@@ -96,6 +96,8 @@ has _genome => (
 sub _load_genome {
   my $self = shift;
 
+  say 'got here';
+
   for my $gst ( $self->all_genome_sized_tracks ) {
     if ( $gst->type eq 'genome' ) {
       return $self->_load_genome_sized_track($gst);
@@ -132,15 +134,16 @@ sub _load_genome_sized_track {
 
   # index dir
   my $index_dir = $self->genome_index_dir;
+  p $index_dir;
 
   # check files exist and are not empty
-  my @msg = $self->_check_genome_sized_files(
+  my $msg_aref = $self->_check_genome_sized_files(
     [ $gst->genome_bin_file, $gst->genome_offset_file ] );
 
-  # if @msg has data then we had some errors; print and halt
-  if (@msg) {
-    $self->_logger->error( join( "\n", @msg ) );
-    croak join( "\n", @msg );
+  # if $msg_aref has data then we had some errors; print and halt
+  if (scalar @$msg_aref > 0) {
+    $self->_logger->error( join( "\n", @$msg_aref ) );
+    croak join( "\n", @$msg_aref );
   }
 
   my $idx_file = $gst->genome_bin_file;
@@ -216,12 +219,12 @@ sub _load_cadd_score {
     my $idx_file = $gst->cadd_idx_file($i);
 
     # check files exist and are not empty
-    my @msg = $self->_check_genome_sized_files( [$idx_file] );
+    my $msg_aref = $self->_check_genome_sized_files( [$idx_file] );
 
-    # if @msg has data then we had some errors; print and halt
-    if (@msg) {
-      $self->_logger->error( join( "\n", @msg ) );
-      croak join( "\n", @msg );
+    # if $msg_aref has data then we had some errors; print and halt
+    if (scalar @$msg_aref > 0) {
+      $self->_logger->error( join( "\n", @$msg_aref ) );
+      croak join( "\n", @$msg_aref );
     }
 
     # read the file
