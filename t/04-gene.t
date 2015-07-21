@@ -2,27 +2,21 @@
 use 5.10.0;
 use strict;
 use warnings;
-use Test::More;
-use File::Copy;
-use Scalar::Util qw( blessed );
-use Lingua::EN::Inflect qw( A PL_N );
-use IO::Uncompress::Gunzip qw( $GunzipError );
-use DDP;
-use YAML qw( LoadFile );
 
-plan tests => 20;
+use Lingua::EN::Inflect qw( A PL_N );
+use Path::Tiny;
+use Scalar::Util qw( blessed );
+use Test::More;
+use YAML qw/ LoadFile /;
+
+use Data::Dump qw/ dump /;
+plan tests => 42;
 
 # set test genome
-my $hg38_config_file = "hg38_gene_test.yml";
+my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
+my $config_href = LoadFile($ga_config);
 
-# setup testing enviroment
-{
-  copy( "./t/$hg38_config_file", "./sandbox/$hg38_config_file" )
-    or die "cannot copy ./t/$hg38_config_file to ./sandbox/$hg38_config_file $!";
-  chdir("./sandbox");
-}
-
-# test the package's attributes and type constraints
+# set package name
 my $package = "Seq::Gene";
 
 # load package
@@ -31,54 +25,31 @@ use_ok($package) || die "$package cannot be loaded";
 # check package extends Seq::Gene which is a Moose::Object
 check_isa( $package, ['Moose::Object'] );
 
-# check package uses Moose
-ok( $package->can('meta'), "$package has a meta() method" )
-  or BAIL_OUT("$package does not have a meta() method.");
-
-# check type constraints for attributes that should have Str values
-for my $attr_name (qw( chr strand transcript_id )) {
-  my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
-  is( $attr->type_constraint->name, 'Str', "$attr_name type is Str" );
-}
-
-# check type constraints for attributes that should have Int values
-for my $attr_name (qw( transcript_start transcript_end coding_start coding_end )) {
-  my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
-  is( $attr->type_constraint->name, 'Int', "$attr_name type is Int" );
-}
-
-# create genome track
-my $hg38_dat = LoadFile($hg38_config_file);
-my %hg38_genome_config;
-
-for my $attr_href ( @{ $hg38_dat->{genome_sized_tracks} } ) {
-  if ( $attr_href->{type} eq "genome" ) {
-    for my $attr ( keys %{$attr_href} ) {
-      $hg38_genome_config{$attr} = $attr_href->{$attr};
-    }
-  }
-}
-$hg38_genome_config{genome_chrs} = $hg38_dat->{genome_chrs};
-
-use_ok('Seq::Build::GenomeSizedTrackStr');
-my $hg38_gst = Seq::Build::GenomeSizedTrackStr->new( \%hg38_genome_config );
-ok(
-  (
-         $hg38_gst
-      && ( blessed $hg38_gst || !ref $hg38_gst )
-      && $hg38_gst->isa('Seq::Build::GenomeSizedTrackStr')
-  ),
-  "Seq::Build::GenomeSizedTrackStr obj created"
+my %attr_2_type = (
+  chr => 'Str',
+  strand => 'Str',
+  transcript_id => 'Str',
+  transcript_start => 'Int',
+  transcript_end => 'Int',
+  coding_start => 'Int',
+  coding_end => 'Int',
+  exon_starts => 'ArrayRef[Int]',
+  exon_ends => 'ArrayRef[Int]',
+  alt_names => 'HashRef',
+  transcript_seq => 'Str',
+  transcript_annotation => 'Str',
+  transcript_abs_position => 'ArrayRef',
+  transcript_error => 'ArrayRef',
+  peptide => 'Str',
+  transcript_sites => 'ArrayRef[Seq::Site::Gene]',
+  flanking_sites => 'ArrayRef[Seq::Site::Gene]',
 );
 
-# build the genome
-{
-  my %chr_lens = ();
-  $hg38_gst->clear_genome_seq;
-  $hg38_gst->build_genome;
-
+for my $attr_name ( sort keys %attr_2_type ) {
+  my $exp_type = $attr_2_type{$attr_name};
+  my $attr = $package->meta->get_attribute($attr_name);
+  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
+  is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
 }
 
 sub does_role {
@@ -142,8 +113,3 @@ sub has_rw_attr {
   is( $attr->get_write_method, $name,
     "$name attribute has a writer accessor - $name()" );
 }
-__END__
-
-mysql --user=genome --host=genome-mysql.cse.ucsc.edu -A -D hg38 \
-  -e "select * FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = 'chr22';" \ 
-  &> knownGene.txt
