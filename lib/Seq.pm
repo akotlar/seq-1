@@ -375,11 +375,11 @@ sub annotate_snpfile {
   return $summary_href;
 }
 
-sub _build_message_publisher {
-  my $self = shift;
-
-  return Redis->new( host => $redisHost, port => $redisPort );
-}
+# sub _build_message_publisher {
+#   my $self = shift;
+#
+#   return Redis->new( host => $redisHost, port => $redisPort );
+# }
 
 =head2
 
