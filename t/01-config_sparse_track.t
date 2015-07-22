@@ -9,7 +9,7 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 41;
+plan tests => 42;
 
 my %attr_2_type = (
   type          => 'SparseTrackType',
@@ -31,6 +31,9 @@ use_ok($package) || die "$package cannot be loaded";
 
 # check is moose object
 check_isa( $package, [ 'Seq::Config::Track', 'Moose::Object' ] );
+
+# check roles
+does_role( $package, 'MooX::Role::Logger' );
 
 # check attributes, their type constraint, and 'ro'/'rw' status
 for my $attr_name ( sort keys %attr_2_type ) {
