@@ -3,14 +3,23 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use Lingua::EN::Inflect qw( A PL_N );
+use Data::Dump qw/ dump /;
+use Lingua::EN::Inflect qw/ A PL_N /;
 use Path::Tiny;
-use Scalar::Util qw( blessed );
 use Test::More;
 use YAML qw/ LoadFile /;
 
-use Data::Dump qw/ dump /;
-plan tests => 8;
+plan tests => 18;
+
+my %attr_2_type = (
+  genome_seq => 'Str',
+  chr_len => 'HashRef[Str]',
+);
+
+my %attr_to_is = (
+  genome_seq => 'ro',
+  chr_len => 'rw',
+);
 
 # set test genome
 my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
@@ -23,14 +32,31 @@ my $package = "Seq::Build::GenomeSizedTrackStr";
 use_ok($package) || die "$package cannot be loaded";
 
 # check package extends Seq::Config::GenomeSizedTrack which is a Moose::Object
-check_isa( $package,
-  [ 'Seq::Config::GenomeSizedTrack', 'Seq::Config::Track', 'Moose::Object' ] );
+check_isa( $package, [ 'Seq::Config::GenomeSizedTrack', 'Seq::Config::Track', 'Moose::Object' ] );
 
-# check type constraints for attributes that should have Str values
-for my $attr_name (qw( genome_seq )) {
+# check roles
+for my $role (qw/ MooX::Role::Logger Seq::Role::IO Seq::Role::Genome /) {
+  does_role( $package, $role );
+}
+
+# check attributes, their type constraint, and 'ro'/'rw' status
+for my $attr_name ( sort keys %attr_2_type ) {
+  my $exp_type = $attr_2_type{$attr_name};
   my $attr = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
-  is( $attr->type_constraint->name, 'Str', "$attr_name type is Str" );
+  is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
+
+  # check 'ro' / 'rw' status
+  if ( $attr_to_is{$attr_name} eq 'ro' ) {
+    has_ro_attr( $package, $attr_name );
+  }
+  elsif ( $attr_to_is{$attr_name} eq 'rw' ) {
+    has_rw_attr( $package, $attr_name );
+  }
+  else {
+    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    exit(1);
+  }
 }
 
 # TODO: obj creation and beyond fails b/c it expects to build the string genome
@@ -51,6 +77,10 @@ TODO: {
   my $obj = $package->new($href);
   ok( $obj, 'object creation' );
 }
+
+###############################################################################
+# sub routines
+###############################################################################
 
 sub build_obj_data {
   my ( $track_type, $type, $href ) = @_;
