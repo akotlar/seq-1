@@ -3,13 +3,22 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use Lingua::EN::Inflect qw( A PL_N );
+use Data::Dump qw/ dump /;
+use Lingua::EN::Inflect qw/ A PL_N /;
 use Path::Tiny;
-use Scalar::Util qw( blessed );
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 32;
+plan tests => 41;
+
+my %attr_2_type = (
+  type          => 'SparseTrackType',
+  sql_statement => 'Str',
+  _local_files  => 'MooseX::Types::Path::Tiny::AbsPaths',
+  features      => 'ArrayRef[Str]',
+);
+
+my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
 # set test genome
 my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
@@ -23,17 +32,24 @@ use_ok($package) || die "$package cannot be loaded";
 # check is moose object
 check_isa( $package, [ 'Seq::Config::Track', 'Moose::Object' ] );
 
-# Attribute tests
-my @ro_attrs = qw/ type sql_statement features /;
-for my $attr (@ro_attrs) {
-  has_ro_attr( $package, $attr );
-}
-# check type constraints - SparseTrackType
-for my $attr_name (qw/ type /) {
+# check attributes, their type constraint, and 'ro'/'rw' status
+for my $attr_name ( sort keys %attr_2_type ) {
+  my $exp_type = $attr_2_type{$attr_name};
   my $attr = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
-  is( $attr->type_constraint->name,
-    'SparseTrackType', "$attr_name type is SparseTrackType" );
+  is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
+
+  # check 'ro' / 'rw' status
+  if ( $attr_to_is{$attr_name} eq 'ro' ) {
+    has_ro_attr( $package, $attr_name );
+  }
+  elsif ( $attr_to_is{$attr_name} eq 'rw' ) {
+    has_rw_attr( $package, $attr_name );
+  }
+  else {
+    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    exit(1);
+  }
 }
 
 {
@@ -152,6 +168,10 @@ for my $attr_name (qw/ type /) {
   is_deeply( \@features, \@got_features, '(gene_track) method: features' );
 }
 
+###############################################################################
+# sub routines
+###############################################################################
+
 sub build_obj_data {
   my ( $track_type, $type, $href ) = @_;
 
@@ -173,6 +193,15 @@ sub build_obj_data {
     $hash{genome_chrs}      = $config_href->{genome_chrs};
   }
   return \%hash;
+}
+
+sub does_role {
+  my $package = shift;
+  my $role    = shift;
+
+  local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+  ok( $package->meta->does_role($role), "$package does the $role role" );
 }
 
 sub check_isa {
@@ -208,4 +237,22 @@ sub has_ro_attr {
   is( $attr->get_read_method, $name,
     "$name attribute has a reader accessor - $name()" );
   is( $attr->get_write_method, undef, "$name attribute does not have a writer" );
+}
+
+sub has_rw_attr {
+  my $class      = shift;
+  my $name       = shift;
+  my $overridden = shift;
+
+  local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+  my $articled = $overridden ? "an overridden $name" : A($name);
+  ok( $class->meta->has_attribute($name), "$class has $articled attribute" );
+
+  my $attr = $class->meta->get_attribute($name);
+
+  is( $attr->get_read_method, $name,
+    "$name attribute has a reader accessor - $name()" );
+  is( $attr->get_write_method, $name,
+    "$name attribute has a writer accessor - $name()" );
 }
