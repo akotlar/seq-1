@@ -9,7 +9,7 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 63;
+plan tests => 64;
 
 my %attr_2_type = (
   type               => 'GenomeSizedTrackType',
@@ -38,6 +38,9 @@ use_ok($package) || die "$package cannot be loaded";
 
 # check extension of Seq::Config::Track
 check_isa( $package, [ 'Seq::Config::Track', 'Moose::Object' ] );
+
+# check roles
+does_role( $package, 'MooX::Role::Logger' );
 
 # check attributes, their type constraint, and 'ro'/'rw' status
 for my $attr_name ( sort keys %attr_2_type ) {
