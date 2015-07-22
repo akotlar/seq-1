@@ -50,7 +50,7 @@ use Seq::KCManager;
 use DDP;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::IO', 'MooX::Role::Logger';
+with 'Seq::Role::IO';
 
 has genome_str_track => (
   is      => 'ro',
