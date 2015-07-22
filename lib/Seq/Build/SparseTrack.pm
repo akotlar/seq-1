@@ -34,8 +34,6 @@ use Seq::Build::GenomeSizedTrackStr;
 
 extends 'Seq::Config::SparseTrack';
 
-with 'MooX::Role::Logger';
-
 has genome_track_str => (
   is       => 'ro',
   isa      => 'Seq::Build::GenomeSizedTrackStr',
