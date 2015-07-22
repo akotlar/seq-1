@@ -7,8 +7,8 @@ package Seq::Fetch;
 # VERSION
 
 =head1 DESCRIPTION
-  
-  @class B<Seq::Fetch> 
+
+  @class B<Seq::Fetch>
   #TODO: Check description
 
   @example
@@ -16,7 +16,7 @@ package Seq::Fetch;
 Used in:
 =for :list
 * bin/fetch_files.pl
-* 
+*
 
 Extended by: None
 =cut
@@ -31,81 +31,51 @@ use Seq::Fetch::Sql;
 
 use DDP;
 
-with 'Seq::Role::ConfigFromFile', 'MooX::Role::Logger';
-
-# TODO: add --force option to overwrite existing data
-
-has act                => ( is => 'ro', isa => 'Bool', );
-has verbose            => ( is => 'ro', isa => 'Bool', );
-has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
-has genome_chrs => (
-  is       => 'ro',
-  isa      => 'ArrayRef[Str]',
-  traits   => ['Array'],
-  required => 1,
-);
-
-# for now, `genome_raw_dir` is really not needed since the other tracks
-#   specify a directory and file to use for each feature
-has genome_raw_dir => ( is => 'ro', isa => 'Str', required => 1 );
-has genome_sized_tracks => (
-  is       => 'ro',
-  isa      => 'ArrayRef[Seq::Fetch::Files]',
-  required => 1,
-);
-has sparse_tracks => (
-  is  => 'ro',
-  isa => 'ArrayRef[Seq::Fetch::Sql]',
-);
+extends 'Seq::Assembly';
 
 sub fetch_sparse_tracks {
-  my $self               = shift;
-  my $sparse_tracks_aref = $self->sparse_tracks;
-  for my $track (@$sparse_tracks_aref) {
-    $self->_logger->info( "about to fetch sql data for: " . $track->name )
-      if $self->verbose;
-    $track->write_sql_data;
+  my $self = shift;
+
+  for my $snp_track ( $self->all_snp_tracks ) {
+    # extract keys from snp_track for creation of Seq::Build::SnpTrack
+    my $record = $snp_track->as_href;
+
+    # add required fields for the build track
+    for my $attr ( qw/ force debug / ) {
+      $record->{$attr} = $self->$attr if $self->$attr;
+    }
+
+    if ($self->verbose ) {
+      my $msg = sprintf("about to fetch sql data for: %s", $snp_track->name);
+      $self->_logger->info( $msg );
+      say $msg;
+    }
+
+    my $obj = Seq::Fetch::Sql->new( $record );
+    $obj->write_sql_data;
   }
 }
 
 sub fetch_genome_size_tracks {
-  my $self                     = shift;
-  my $genome_sized_tracks_aref = $self->genome_sized_tracks;
-  for my $track (@$genome_sized_tracks_aref) {
-    $self->_logger->info( "about to fetch data for: " . $track->name ) if $self->verbose;
-    $track->fetch_files;
-  }
-}
+  my $self = shift;
 
-sub BUILDARGS {
-  my $class = shift;
-  my $href  = $_[0];
-  if ( scalar @_ > 1 || reftype($href) ne "HASH" ) {
-    confess "Error: Seq::Fetch Expected hash reference";
-  }
-  else {
-    my %new_hash;
-    for my $sparse_track ( @{ $href->{sparse_tracks} } ) {
-      for my $attr (qw/ genome_name genome_index_dir act verbose /) {
-        $sparse_track->{$attr} = $href->{$attr};
-      }
-      push @{ $new_hash{sparse_tracks} }, Seq::Fetch::Sql->new($sparse_track);
+  for my $gene_track ( $self->all_gene_tracks ) {
+    # extract keys from snp_track for creation of Seq::Build::SnpTrack
+    my $record = $gene_track->as_href;
+
+    # add required fields for the build track
+    for my $attr ( qw/ force debug / ) {
+      $record->{$attr} = $self->$attr if $self->$attr;
     }
-    for my $genome_track ( @{ $href->{genome_sized_tracks} } ) {
-      for my $attr (qw/ genome_name genome_chrs genome_index_dir act verbose /) {
-        $genome_track->{$attr} = $href->{$attr};
-      }
-      push @{ $new_hash{genome_sized_tracks} }, Seq::Fetch::Files->new($genome_track);
+
+    if ($self->verbose ) {
+      my $msg = sprintf("about to fetch sql data for: %s", $gene_track->name);
+      $self->_logger->info( $msg );
+      say $msg;
     }
-    for my $attrib (
-      qw/ genome_name genome_description genome_chrs genome_raw_dir
-      verbose act /
-      )
-    {
-      $new_hash{$attrib} = $href->{$attrib} || "";
-    }
-    return $class->SUPER::BUILDARGS( \%new_hash );
+
+    my $obj = Seq::Fetch::Files->new( $record );
+    $obj->fetch_files;
   }
 }
 
