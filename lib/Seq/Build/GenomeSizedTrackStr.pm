@@ -34,7 +34,7 @@ use YAML::XS qw/ Dump LoadFile /;
 use DDP;
 
 extends 'Seq::Config::GenomeSizedTrack';
-with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
+with 'Seq::Role::IO', 'Seq::Role::Genome';
 
 # str_seq stores a string in a single scalar
 has genome_seq => (
