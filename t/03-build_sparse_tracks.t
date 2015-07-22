@@ -3,24 +3,29 @@ use 5.10.0;
 use strict;
 use warnings;
 
+use Data::Dump qw/ dump /;
 use Lingua::EN::Inflect qw/ A PL_N /;
-use IO::Uncompress::Gunzip qw( $GunzipError );
 use Path::Tiny;
 use Test::More;
-use Scalar::Util qw/ blessed /;
 use YAML qw/ LoadFile /;
 
-use DDP;
-use Data::Dump qw/ dump /;
+plan tests => 26;
 
-plan tests => 13;
-
-my $package = "Seq::Build::SparseTrack";
-say $package;
+# check attributes and type constraints
+my %attr_2_type = (
+  genome_track_str      => 'Seq::Build::GenomeSizedTrackStr',
+  counter               => 'Num',
+  bulk_insert_threshold => 'Num',
+  force                 => 'Bool',
+);
+my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
 # set test genome
 my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
+
+# set package name
+my $package = "Seq::Build::SparseTrack";
 
 # load package
 use_ok($package) || die "$package cannot be loaded";
@@ -29,20 +34,29 @@ use_ok($package) || die "$package cannot be loaded";
 check_isa( $package,
   [ 'Seq::Config::SparseTrack', 'Seq::Config::Track', 'Moose::Object' ] );
 
-# check attributes and type constraints
-my %attr_types = (
-  genome_track_str      => 'Seq::Build::GenomeSizedTrackStr',
-  counter               => 'Num',
-  bulk_insert_threshold => 'Num',
-  force                 => 'Bool',
-);
-for my $attr_name ( sort keys %attr_types ) {
+# check roles
+for my $role ( qw/ MooX::Role::Logger / ) {
+  does_role( $package, $role );
+}
+
+# check attributes, their type constraint, and 'ro'/'rw' status
+for my $attr_name ( sort keys %attr_2_type ) {
+  my $exp_type = $attr_2_type{$attr_name};
   my $attr = $package->meta->get_attribute($attr_name);
-  ok( $attr->has_type_constraint,
-    "$package has attribute '$attr_name' with a type constraint" );
-  is( $attr->type_constraint->name,
-    $attr_types{$attr_name},
-    "attribute '$attr_name' has type '$attr_types{$attr_name}'" );
+  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
+  is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
+
+  # check 'ro' / 'rw' status
+  if ( $attr_to_is{$attr_name} eq 'ro' ) {
+    has_ro_attr( $package, $attr_name );
+  }
+  elsif ( $attr_to_is{$attr_name} eq 'rw' ) {
+    has_rw_attr( $package, $attr_name );
+  }
+  else {
+    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    exit(1);
+  }
 }
 
 exit;
@@ -96,6 +110,42 @@ exit;
   }
 }
 
+###############################################################################
+# sub routines
+###############################################################################
+
+sub build_obj_data {
+  my ( $track_type, $type, $href ) = @_;
+
+  my %hash;
+
+  # get essential stuff
+  for my $track ( @{ $config_href->{$track_type} } ) {
+    if ( $track->{type} eq $type ) {
+      for my $attr (qw/ name type local_files remote_dir remote_files /) {
+        $hash{$attr} = $track->{$attr} if exists $track->{$attr};
+      }
+    }
+  }
+
+  # add additional stuff
+  if (%hash) {
+    $hash{genome_raw_dir}   = $config_href->{genome_raw_dir}   || 'sandbox';
+    $hash{genome_index_dir} = $config_href->{genome_index_dir} || 'sandbox';
+    $hash{genome_chrs}      = $config_href->{genome_chrs};
+  }
+  return \%hash;
+}
+
+sub does_role {
+  my $package = shift;
+  my $role    = shift;
+
+  local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+  ok( $package->meta->does_role($role), "$package does the $role role" );
+}
+
 sub check_isa {
   my $class   = shift;
   my $parents = shift;
@@ -131,4 +181,20 @@ sub has_ro_attr {
   is( $attr->get_write_method, undef, "$name attribute does not have a writer" );
 }
 
-__END__
+sub has_rw_attr {
+  my $class      = shift;
+  my $name       = shift;
+  my $overridden = shift;
+
+  local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+  my $articled = $overridden ? "an overridden $name" : A($name);
+  ok( $class->meta->has_attribute($name), "$class has $articled attribute" );
+
+  my $attr = $class->meta->get_attribute($name);
+
+  is( $attr->get_read_method, $name,
+    "$name attribute has a reader accessor - $name()" );
+  is( $attr->get_write_method, $name,
+    "$name attribute has a writer accessor - $name()" );
+}
