@@ -36,10 +36,10 @@ for my $attr_name ( sort keys %attr_2_type ) {
 
   # check 'ro' / 'rw' status
   if ( $attr_to_is{$attr_name} eq 'ro' ) {
-    has_ro_attr( $package, $attr );
+    has_ro_attr( $package, $attr_name );
   }
   elsif ( $attr_to_is{$attr_name} eq 'rw' ) {
-    has_rw_attr( $package, $attr );
+    has_rw_attr( $package, $attr_name );
   }
   else {
     printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
