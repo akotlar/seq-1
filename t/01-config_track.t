@@ -9,7 +9,7 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 44;
+plan tests => 47;
 
 my %attr_2_type = (
   name => 'Str',
@@ -34,8 +34,11 @@ my $package = "Seq::Config::Track";
 # load package
 use_ok($package) || die "$package cannot be loaded";
 
-my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
-my $obj = $package->new($href);
+# check extension of Seq::Config::Track
+check_isa( $package, [ 'Moose::Object' ] );
+
+# check roles
+does_role( $package, 'MooX::Role::Logger' );
 
 # check attributes, their type constraint, and 'ro'/'rw' status
 for my $attr_name ( sort keys %attr_2_type ) {
@@ -56,6 +59,9 @@ for my $attr_name ( sort keys %attr_2_type ) {
     exit(1);
   }
 }
+
+my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
+my $obj = $package->new($href);
 
 my @paths = qw/ genome_index_dir genome_raw_dir /;
 for my $attr (@paths) {
