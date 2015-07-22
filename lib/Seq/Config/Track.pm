@@ -14,7 +14,7 @@ use namespace::autoclean;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ Str Object /;
 
-with 'MooX::Role::Logger'; #TODO: test whether all child classes will inherit
+with 'MooX::Role::Logger';
 
 =property @public @required {Str} name
 
