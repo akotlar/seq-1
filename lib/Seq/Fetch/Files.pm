@@ -5,7 +5,7 @@ package Seq::Fetch::Files;
   @class Seq::Fetch::Files
   This class fetches raw files from remote locations (e.g., UCSC genome browser
   rsync server) that are required to build the genome assembly sepcified in the
-  configuration file. 
+  configuration file.
 
   @example
 
@@ -27,7 +27,6 @@ use Moose;
 use namespace::autoclean;
 
 extends 'Seq::Config::GenomeSizedTrack';
-with 'MooX::Role::Logger';
 
 has act     => ( is => 'ro', isa => 'Bool', );
 has verbose => ( is => 'ro', isa => 'Bool', );

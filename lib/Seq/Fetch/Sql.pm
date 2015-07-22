@@ -27,7 +27,7 @@ use namespace::autoclean;
 use Time::localtime;
 
 extends 'Seq::Config::SparseTrack';
-with 'Seq::Role::IO', 'MooX::Role::Logger';
+with 'Seq::Role::IO';
 
 # time stamp
 my $year          = localtime->year() + 1900;
