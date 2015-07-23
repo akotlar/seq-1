@@ -13,12 +13,12 @@ plan tests => 18;
 
 my %attr_2_type = (
   genome_seq => 'Str',
-  chr_len => 'HashRef[Str]',
+  chr_len    => 'HashRef[Str]',
 );
 
 my %attr_to_is = (
   genome_seq => 'ro',
-  chr_len => 'rw',
+  chr_len    => 'rw',
 );
 
 # set test genome
@@ -32,7 +32,8 @@ my $package = "Seq::Build::GenomeSizedTrackStr";
 use_ok($package) || die "$package cannot be loaded";
 
 # check package extends Seq::Config::GenomeSizedTrack which is a Moose::Object
-check_isa( $package, [ 'Seq::Config::GenomeSizedTrack', 'Seq::Config::Track', 'Moose::Object' ] );
+check_isa( $package,
+  [ 'Seq::Config::GenomeSizedTrack', 'Seq::Config::Track', 'Moose::Object' ] );
 
 # check roles
 for my $role (qw/ MooX::Role::Logger Seq::Role::IO Seq::Role::Genome /) {
@@ -42,7 +43,7 @@ for my $role (qw/ MooX::Role::Logger Seq::Role::IO Seq::Role::Genome /) {
 # check attributes, their type constraint, and 'ro'/'rw' status
 for my $attr_name ( sort keys %attr_2_type ) {
   my $exp_type = $attr_2_type{$attr_name};
-  my $attr = $package->meta->get_attribute($attr_name);
+  my $attr     = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
 
@@ -54,7 +55,7 @@ for my $attr_name ( sort keys %attr_2_type ) {
     has_rw_attr( $package, $attr_name );
   }
   else {
-    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    printf( "ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name} );
     exit(1);
   }
 }

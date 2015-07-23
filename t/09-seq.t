@@ -12,20 +12,20 @@ use YAML qw/ LoadFile /;
 plan tests => 55;
 
 my %attr_2_type_ro = (
-snpfile => 'MooseX::Types::Path::Tiny::AbsFile',
-configfile => 'MooseX::Types::Path::Tiny::AbsFile',
-out_file => 'MooseX::Types::Path::Tiny::AbsPath',
-debug =>'Bool',
-messageChannelHref => 'HashRef',
-_message_publisher => undef,
-_out_fh => undef,
-_count_key => 'Str',
+  snpfile            => 'MooseX::Types::Path::Tiny::AbsFile',
+  configfile         => 'MooseX::Types::Path::Tiny::AbsFile',
+  out_file           => 'MooseX::Types::Path::Tiny::AbsPath',
+  debug              => 'Bool',
+  messageChannelHref => 'HashRef',
+  _message_publisher => undef,
+  _out_fh            => undef,
+  _count_key         => 'Str',
 );
 my %attr_2_type_rw = (
-del_sites =>  'HashRef',
-ins_sites => 'HashRef',
-snp_sites => 'HashRef',
-genes_annotated => 'HashRef',
+  del_sites       => 'HashRef',
+  ins_sites       => 'HashRef',
+  snp_sites       => 'HashRef',
+  genes_annotated => 'HashRef',
 );
 my %attr_to_is_ro = map { $_ => 'ro' } ( keys %attr_2_type_ro );
 my %attr_to_is_rw = map { $_ => 'rw' } ( keys %attr_2_type_rw );
@@ -42,7 +42,7 @@ my $package = "Seq";
 use_ok($package) || die "$package cannot be loaded";
 
 # check extension of
-check_isa( $package, [ 'Moose::Object' ] );
+check_isa( $package, ['Moose::Object'] );
 
 # check roles
 does_role( $package, 'MooX::Role::Logger' );
@@ -63,7 +63,7 @@ for my $attr_name ( sort ( keys %attr_2_type_ro, keys %attr_2_type_rw ) ) {
     has_rw_attr( $package, $attr_name );
   }
   else {
-    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    printf( "ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name} );
     exit(1);
   }
 }

@@ -12,14 +12,14 @@ use YAML qw/ LoadFile /;
 plan tests => 47;
 
 my %attr_2_type = (
-  name => 'Str',
-  genome_chrs => 'ArrayRef[Str]',
-  next_chr => 'HashRef',
+  name             => 'Str',
+  genome_chrs      => 'ArrayRef[Str]',
+  next_chr         => 'HashRef',
   genome_index_dir => 'MooseX::Types::Path::Tiny::Path',
   genome_raw_dir   => 'MooseX::Types::Path::Tiny::Path',
-  local_files => 'ArrayRef',
-  remote_dir => 'Str',
-  remote_files => 'ArrayRef',
+  local_files      => 'ArrayRef',
+  remote_dir       => 'Str',
+  remote_files     => 'ArrayRef',
 );
 
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
@@ -35,7 +35,7 @@ my $package = "Seq::Config::Track";
 use_ok($package) || die "$package cannot be loaded";
 
 # check extension of Seq::Config::Track
-check_isa( $package, [ 'Moose::Object' ] );
+check_isa( $package, ['Moose::Object'] );
 
 # check roles
 does_role( $package, 'MooX::Role::Logger' );
@@ -43,7 +43,7 @@ does_role( $package, 'MooX::Role::Logger' );
 # check attributes, their type constraint, and 'ro'/'rw' status
 for my $attr_name ( sort keys %attr_2_type ) {
   my $exp_type = $attr_2_type{$attr_name};
-  my $attr = $package->meta->get_attribute($attr_name);
+  my $attr     = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
 
@@ -55,7 +55,7 @@ for my $attr_name ( sort keys %attr_2_type ) {
     has_rw_attr( $package, $attr_name );
   }
   else {
-    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    printf( "ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name} );
     exit(1);
   }
 }
@@ -103,7 +103,6 @@ for my $attr (@paths) {
   }
   is_deeply( $exp_next_chrs_href, \%obs_result, 'method: get_next_chr' );
 }
-
 
 ###############################################################################
 # sub routines

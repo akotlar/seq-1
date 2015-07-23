@@ -13,27 +13,27 @@ plan tests => 88;
 
 # check attributes and their type constraints
 my %attr_2_type = (
-  chr => 'Str',
-  strand => 'Str',
-  transcript_id => 'Str',
-  transcript_start => 'Int',
-  transcript_end => 'Int',
-  coding_start => 'Int',
-  coding_end => 'Int',
-  exon_starts => 'ArrayRef[Int]',
-  exon_ends => 'ArrayRef[Int]',
-  alt_names => 'HashRef',
-  transcript_seq => 'Str',
-  transcript_annotation => 'Str',
+  chr                     => 'Str',
+  strand                  => 'Str',
+  transcript_id           => 'Str',
+  transcript_start        => 'Int',
+  transcript_end          => 'Int',
+  coding_start            => 'Int',
+  coding_end              => 'Int',
+  exon_starts             => 'ArrayRef[Int]',
+  exon_ends               => 'ArrayRef[Int]',
+  alt_names               => 'HashRef',
+  transcript_seq          => 'Str',
+  transcript_annotation   => 'Str',
   transcript_abs_position => 'ArrayRef',
-  transcript_error => 'ArrayRef',
-  peptide => 'Str',
-  transcript_sites => 'ArrayRef[Seq::Site::Gene]',
-  flanking_sites => 'ArrayRef[Seq::Site::Gene]',
+  transcript_error        => 'ArrayRef',
+  peptide                 => 'Str',
+  transcript_sites        => 'ArrayRef[Seq::Site::Gene]',
+  flanking_sites          => 'ArrayRef[Seq::Site::Gene]',
 );
 
 my %attr_to_is = map { $_ => 'rw' } ( keys %attr_2_type );
-for my $ro_attr ( qw/ peptide transcript_sites flanking_sites / ) {
+for my $ro_attr (qw/ peptide transcript_sites flanking_sites /) {
   $attr_to_is{$ro_attr} = 'ro';
 }
 
@@ -53,7 +53,7 @@ check_isa( $package, ['Moose::Object'] );
 # check attributes, their type constraint, and 'ro'/'rw' status
 for my $attr_name ( sort keys %attr_2_type ) {
   my $exp_type = $attr_2_type{$attr_name};
-  my $attr = $package->meta->get_attribute($attr_name);
+  my $attr     = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
 
@@ -65,7 +65,7 @@ for my $attr_name ( sort keys %attr_2_type ) {
     has_rw_attr( $package, $attr_name );
   }
   else {
-    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    printf( "ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name} );
     exit(1);
   }
 }

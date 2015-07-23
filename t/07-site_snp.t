@@ -12,12 +12,12 @@ use YAML qw/ LoadFile /;
 plan tests => 16;
 
 my %attr_2_type = (
-snp_id  => 'Str',
-snp_feature  => 'HashRef',
+  snp_id      => 'Str',
+  snp_feature => 'HashRef',
 );
 my %attr_to_is = (
-snp_id  => 'ro',
-snp_feature  => 'rw',
+  snp_id      => 'ro',
+  snp_feature => 'rw',
 );
 # set test genome
 my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
@@ -38,7 +38,7 @@ does_role( $package, 'Seq::Role::Serialize' );
 # check attributes, their type constraint, and 'ro'/'rw' status
 for my $attr_name ( sort keys %attr_2_type ) {
   my $exp_type = $attr_2_type{$attr_name};
-  my $attr = $package->meta->get_attribute($attr_name);
+  my $attr     = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
 
@@ -50,13 +50,20 @@ for my $attr_name ( sort keys %attr_2_type ) {
     has_rw_attr( $package, $attr_name );
   }
   else {
-    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    printf( "ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name} );
     exit(1);
   }
 }
 
 # object creation
-my $obj = $package->new( { abs_pos => 1, ref_base => 'A', snp_id => 'rs123', snp_features => { attr => 'test' } } );
+my $obj = $package->new(
+  {
+    abs_pos      => 1,
+    ref_base     => 'A',
+    snp_id       => 'rs123',
+    snp_features => { attr => 'test' }
+  }
+);
 ok( $obj, 'object creation' );
 
 # Methods tests

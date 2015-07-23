@@ -35,14 +35,14 @@ check_isa( $package,
   [ 'Seq::Config::SparseTrack', 'Seq::Config::Track', 'Moose::Object' ] );
 
 # check roles
-for my $role ( qw/ MooX::Role::Logger / ) {
+for my $role (qw/ MooX::Role::Logger /) {
   does_role( $package, $role );
 }
 
 # check attributes, their type constraint, and 'ro'/'rw' status
 for my $attr_name ( sort keys %attr_2_type ) {
   my $exp_type = $attr_2_type{$attr_name};
-  my $attr = $package->meta->get_attribute($attr_name);
+  my $attr     = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
 
@@ -54,7 +54,7 @@ for my $attr_name ( sort keys %attr_2_type ) {
     has_rw_attr( $package, $attr_name );
   }
   else {
-    printf ("ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name});
+    printf( "ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name} );
     exit(1);
   }
 }
