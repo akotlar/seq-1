@@ -289,10 +289,10 @@ sub _build_raw_genome_files {
 =cut
 
 sub cadd_idx_file {
-  my ($self, $num ) = @_;
+  my ( $self, $num ) = @_;
   my $file = $self->genome_bin_file->absolute->stringify . "." . $num;
-  if (!-f $file ) {
-    my $msg = sprintf("ERROR: cannot find expected cadd-type file '%s'", $file);
+  if ( !-f $file ) {
+    my $msg = sprintf( "ERROR: cannot find expected cadd-type file '%s'", $file );
     $self->_logger->error($msg);
     say $msg;
     exit(1);
@@ -302,14 +302,14 @@ sub cadd_idx_file {
 
 # for conservation scores
 has score_min => (
-  is  => 'ro',
-  isa => 'Num',
+  is      => 'ro',
+  isa     => 'Num',
   default => 0,
 );
 
 has score_max => (
-  is  => 'ro',
-  isa => 'Num',
+  is      => 'ro',
+  isa     => 'Num',
   default => 255,
 );
 
@@ -504,8 +504,7 @@ sub _validate_feature_score_range {
 
   # TODO: set range for genome_scorer.c and Seq package from single config.
   unless ( $self->score_R < 256 and $self->score_R >= 5 ) {
-    my $err_msg =
-      "FATAL ERROR: score_R should be between 5 - 255";
+    my $err_msg = "FATAL ERROR: score_R should be between 5 - 255";
     $self->_logger->error($err_msg);
     croak $err_msg;
   }
@@ -579,7 +578,6 @@ sub as_href {
   }
   return \%hash;
 }
-
 
 __PACKAGE__->meta->make_immutable;
 

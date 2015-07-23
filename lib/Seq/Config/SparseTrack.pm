@@ -180,7 +180,7 @@ around 'sql_statement' => sub {
 };
 
 sub _get_file {
-  state $check = compile( Object, Str, Str, Maybe[Str] );
+  state $check = compile( Object, Str, Str, Maybe [Str] );
   my ( $self, $chr, $ext, $var ) = $check->(@_);
 
   my $base_dir = $self->genome_index_dir;
@@ -189,7 +189,7 @@ sub _get_file {
   # the chr may either be 'genome' (for the entire transcript db) or a chromosome
   # defined by the configuration file for the organism
 
-  if ($chr eq 'genome' ) {
+  if ( $chr eq 'genome' ) {
     if ( $var eq 'tx' ) {
       $file_name = join ".", $self->name, $var, $chr, $ext;
     }

@@ -61,21 +61,21 @@ has genome_str_track => (
 );
 
 has genome_hasher => (
-  is      => 'ro',
-  isa     => AbsFile,
-  coerce  => 1,
+  is     => 'ro',
+  isa    => AbsFile,
+  coerce => 1,
 );
 
 has genome_scorer => (
-  is      => 'ro',
-  isa     => AbsFile,
-  coerce  => 1,
+  is     => 'ro',
+  isa    => AbsFile,
+  coerce => 1,
 );
 
 has genome_cadd => (
-  is      => 'ro',
-  isa     => AbsFile,
-  coerce  => 1,
+  is     => 'ro',
+  isa    => AbsFile,
+  coerce => 1,
 );
 
 has wanted_chr => (
@@ -87,10 +87,10 @@ has wanted_chr => (
 sub BUILD {
   my $self = shift;
   $self->_logger->info( "loading genome of size " . $self->genome_length );
-  $self->_logger->info( "genome_hasher: " . ($self->genome_hasher || 'NA'));
-  $self->_logger->info( "genome_scorer: " . ($self->genome_scorer || 'NA'));
-  $self->_logger->info( "genome_cadd: " . ($self->genome_cadd || 'NA'));
-  $self->_logger->info( "wanted_chr: " . ($self->wanted_chr || 'all') );
+  $self->_logger->info( "genome_hasher: " . ( $self->genome_hasher || 'NA' ) );
+  $self->_logger->info( "genome_scorer: " . ( $self->genome_scorer || 'NA' ) );
+  $self->_logger->info( "genome_cadd: " .   ( $self->genome_cadd   || 'NA' ) );
+  $self->_logger->info( "wanted_chr: " .    ( $self->wanted_chr    || 'all' ) );
 }
 
 sub _build_genome_str_track {
@@ -98,7 +98,7 @@ sub _build_genome_str_track {
   for my $gst ( $self->all_genome_sized_tracks ) {
     if ( $gst->type eq 'genome' ) {
       my $href = $gst->as_href;
-      return Seq::Build::GenomeSizedTrackStr->new( $href );
+      return Seq::Build::GenomeSizedTrackStr->new($href);
     }
   }
 }
@@ -117,7 +117,7 @@ sub build_transcript_db {
     my $record = $gene_track->as_href;
 
     # add required fields for the build track
-    for my $attr ( qw/ force debug genome_track_str / ) {
+    for my $attr (qw/ force debug genome_track_str /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
@@ -143,7 +143,7 @@ sub build_snp_sites {
     my $record = $snp_track->as_href;
 
     # add required fields for the build track
-    for my $attr ( qw/ force debug genome_track_str / ) {
+    for my $attr (qw/ force debug genome_track_str /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
@@ -151,20 +151,18 @@ sub build_snp_sites {
 
       # skip to the next chr if we specified a chr to build
       # and this chr isn't the one we specified
-      if ( $wanted_chr ) {
+      if ($wanted_chr) {
         next unless $wanted_chr eq $chr;
       }
 
-      my $msg = sprintf( "snp db, '%s', for chrom '%s': start",
-        $snp_track->name, $chr );
+      my $msg = sprintf( "snp db, '%s', for chrom '%s': start", $snp_track->name, $chr );
       $self->_logger->info($msg) if $self->debug;
 
       # Seq::Build::SnpTrack needs the string genome
       my $snp_db = Seq::Build::SnpTrack->new($record);
       $snp_db->build_snp_db($chr);
 
-      $msg = sprintf( "snp db, '%s', for chrom '%s': done ",
-        $snp_track->name, $chr );
+      $msg = sprintf( "snp db, '%s', for chrom '%s': done ", $snp_track->name, $chr );
       $self->_logger->info($msg) if $self->debug;
     }
   }
@@ -184,7 +182,7 @@ sub build_gene_sites {
     my $record = $gene_track->as_href;
 
     # add required fields for the build track
-    for my $attr ( qw/ force debug genome_track_str / ) {
+    for my $attr (qw/ force debug genome_track_str /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
@@ -192,7 +190,7 @@ sub build_gene_sites {
 
       # skip to the next chr if we specified a chr to build and this chr isn't
       #   the one we specified
-      if ( $wanted_chr ) {
+      if ($wanted_chr) {
         next unless $wanted_chr eq $chr;
       }
 

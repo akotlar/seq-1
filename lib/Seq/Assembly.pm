@@ -152,11 +152,10 @@ sub BUILDARGS {
     }
 
     if ( $href->{debug} ) {
-      my $msg = sprintf( "genome_index_dir: %s",
-        $href->{genome_index_dir}->absolute->stringify );
+      my $msg =
+        sprintf( "genome_index_dir: %s", $href->{genome_index_dir}->absolute->stringify );
       say $msg;
-      $msg = sprintf( "genome_raw_dir: %s",
-        $href->{genome_raw_dir}->absolute->stringify );
+      $msg = sprintf( "genome_raw_dir: %s", $href->{genome_raw_dir}->absolute->stringify );
       say $msg;
     }
 

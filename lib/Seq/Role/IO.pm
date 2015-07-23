@@ -53,8 +53,8 @@ sub get_read_fh {
   # TODO: should explicitly check it's a Path::Tiny object
   if ( defined $reftype ) {
     $file = $file->absolute->stringify;
-    if ( ! -f $file ) {
-      my $msg = sprintf("ERROR: file does not exist for reading: %s", $file)
+    if ( !-f $file ) {
+      my $msg = sprintf( "ERROR: file does not exist for reading: %s", $file );
     }
   }
 

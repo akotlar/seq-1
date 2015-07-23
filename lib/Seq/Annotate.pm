@@ -138,7 +138,7 @@ sub _load_genome_sized_track {
     [ $gst->genome_bin_file, $gst->genome_offset_file ] );
 
   # if $msg_aref has data then we had some errors; print and halt
-  if (scalar @$msg_aref > 0) {
+  if ( scalar @$msg_aref > 0 ) {
     $self->_logger->error( join( "\n", @$msg_aref ) );
     croak join( "\n", @$msg_aref );
   }
@@ -217,7 +217,7 @@ sub _load_cadd_score {
     my $msg_aref = $self->_check_genome_sized_files( [$idx_file] );
 
     # if $msg_aref has data then we had some errors; print and halt
-    if (scalar @$msg_aref > 0) {
+    if ( scalar @$msg_aref > 0 ) {
       $self->_logger->error( join( "\n", @$msg_aref ) );
       croak join( "\n", @$msg_aref );
     }
@@ -230,7 +230,7 @@ sub _load_cadd_score {
     my $seq           = '';
     my $genome_length = -s $idx_file;
     read $idx_fh, $seq, $genome_length;
-    
+
     # read yml chr offsets
     my $yml_file     = $gst->genome_offset_file;
     my $chr_len_href = LoadFile($yml_file);
@@ -437,7 +437,7 @@ sub _build_dbm_snp {
   my $self = shift;
   my @array;
   for my $snp_track ( $self->all_snp_tracks ) {
-    push @array, $self->_build_dbm_array( $snp_track );
+    push @array, $self->_build_dbm_array($snp_track);
   }
   return \@array;
 }
@@ -446,7 +446,7 @@ sub _build_dbm_gene {
   my $self = shift;
   my @array;
   for my $gene_track ( $self->all_gene_tracks ) {
-    push @array, $self->_build_dbm_array( $gene_track );
+    push @array, $self->_build_dbm_array($gene_track);
   }
   return \@array;
 }
@@ -512,8 +512,7 @@ sub BUILD {
   say $msg if $self->debug;
   $self->_logger->info($msg);
 
-  $msg =
-    sprintf( "Loaded %d genome score track(s)", $self->count_genome_scores );
+  $msg = sprintf( "Loaded %d genome score track(s)", $self->count_genome_scores );
   say $msg if $self->debug;
   $self->_logger->info($msg);
 
@@ -523,7 +522,7 @@ sub BUILD {
 
   for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
     my @chrs = $self->all_genome_chrs;
-    for (my $i = 0; $i < @chrs; $i++) {
+    for ( my $i = 0; $i < @chrs; $i++ ) {
       my $dbm = ( $dbm_aref->[$i] ) ? $dbm_aref->[$i]->filename : 'NA';
       my $msg = sprintf( "Loaded dbm: %s for chr: %s", $dbm, $chrs[$i] );
       say $msg if $self->debug;
@@ -531,7 +530,7 @@ sub BUILD {
     }
   }
   for my $dbm_aref ( $self->_all_dbm_tx ) {
-    my $dbm = ( $dbm_aref ) ? $dbm_aref->filename : 'NA';
+    my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
     my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
     say $msg if $self->debug;
     $self->_logger->info($msg);

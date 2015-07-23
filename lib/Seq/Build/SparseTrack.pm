@@ -78,12 +78,12 @@ sub _has_site_range_file {
   my ( $self, $file ) = @_;
   if ( -f $file ) {
     if ( -s $file ) {
-      my $msg = sprintf("found non-zero file: %s", $file);
-      $self->_logger->info( $msg );
+      my $msg = sprintf( "found non-zero file: %s", $file );
+      $self->_logger->info($msg);
       return 1;
     }
   }
-  my $msg = sprintf("did not find old file or it was empty: %s", $file);
+  my $msg = sprintf( "did not find old file or it was empty: %s", $file );
   $self->_logger->info($msg);
   return;
 }

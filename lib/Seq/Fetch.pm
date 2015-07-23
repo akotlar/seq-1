@@ -41,17 +41,17 @@ sub fetch_sparse_tracks {
     my $record = $snp_track->as_href;
 
     # add required fields for the build track
-    for my $attr ( qw/ force debug / ) {
+    for my $attr (qw/ force debug /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
-    if ($self->verbose ) {
-      my $msg = sprintf("about to fetch sql data for: %s", $snp_track->name);
-      $self->_logger->info( $msg );
+    if ( $self->verbose ) {
+      my $msg = sprintf( "about to fetch sql data for: %s", $snp_track->name );
+      $self->_logger->info($msg);
       say $msg;
     }
 
-    my $obj = Seq::Fetch::Sql->new( $record );
+    my $obj = Seq::Fetch::Sql->new($record);
     $obj->write_sql_data;
   }
 }
@@ -64,17 +64,17 @@ sub fetch_genome_size_tracks {
     my $record = $gene_track->as_href;
 
     # add required fields for the build track
-    for my $attr ( qw/ force debug / ) {
+    for my $attr (qw/ force debug /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
-    if ($self->verbose ) {
-      my $msg = sprintf("about to fetch sql data for: %s", $gene_track->name);
-      $self->_logger->info( $msg );
+    if ( $self->verbose ) {
+      my $msg = sprintf( "about to fetch sql data for: %s", $gene_track->name );
+      $self->_logger->info($msg);
       say $msg;
     }
 
-    my $obj = Seq::Fetch::Files->new( $record );
+    my $obj = Seq::Fetch::Files->new($record);
     $obj->fetch_files;
   }
 }

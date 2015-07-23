@@ -70,7 +70,7 @@ sub build_snp_db {
 
     # check file
     if ( !-s $input_file ) {
-      my $msg = sprintf("ERROR: expected file is empty or missing, %s", $input_file);
+      my $msg = sprintf( "ERROR: expected file is empty or missing, %s", $input_file );
       $self->_logger->error($msg);
       say $msg;
       exit(1);
@@ -126,8 +126,8 @@ sub build_snp_db {
       # Warn if we are we entering a very large range of sites
       my $sites = $data{chromEnd} - $data{chromStart};
       if ( $sites > 100 ) {
-        my $msg = sprintf("WARNING: Asked to enter %d sites into %s, because of line\n%s\n",
-          $sites, $dbm_file, $line);
+        my $msg = sprintf( "WARNING: Asked to enter %d sites into %s, because of line\n%s\n",
+          $sites, $dbm_file, $line );
         say $msg if $self->debug;
         $self->_logger->info($msg);
       }

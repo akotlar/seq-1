@@ -67,7 +67,7 @@ sub _get_gene_data {
   for my $input_file (@input_files) {
     # check file
     if ( !-s $input_file ) {
-      my $msg = sprintf("ERROR: expected file is empty or missing, %s", $input_file);
+      my $msg = sprintf( "ERROR: expected file is empty or missing, %s", $input_file );
       $self->_logger->error($msg);
       say $msg;
       exit(1);
@@ -90,7 +90,7 @@ sub _get_gene_data {
       my %data = map { $_ => $fields[ $header{$_} ] }
         ( @{ $self->gene_fields_aref }, $self->all_features );
 
-      if ( $wanted_chr ) {
+      if ($wanted_chr) {
         next unless $data{chrom} eq $wanted_chr;
       }
       else {
@@ -136,12 +136,12 @@ sub build_tx_db_for_genome {
 
   # $gene region site range file
   my $gene_region_file = $self->get_dat_file( 'genome', 'tx' );
-  my $msg = sprintf("writing to: '%s'", $gene_region_file);
+  my $msg = sprintf( "writing to: '%s'", $gene_region_file );
   $self->_logger->info($msg);
 
   # dbm file
   my $dbm_file = $self->get_kch_file( 'genome', 'tx' );
-  $msg = sprintf("writing to: '%s'", $dbm_file);
+  $msg = sprintf( "writing to: '%s'", $dbm_file );
   $self->_logger->info($msg);
 
   # check if we've already build site range files unless forced to overwrite
@@ -203,17 +203,17 @@ sub build_gene_db_for_chr {
 
   # flanking site range file
   my $gan_file = $self->get_dat_file( $wanted_chr, 'gan' );
-  my $msg = sprintf("writing to: '%s'", $gan_file);
+  my $msg = sprintf( "writing to: '%s'", $gan_file );
   $self->_logger->info($msg);
 
   # exon site range file
   my $ex_file = $self->get_dat_file( $wanted_chr, 'exon' );
-  $msg = sprintf("writing to: '%s'", $ex_file);
+  $msg = sprintf( "writing to: '%s'", $ex_file );
   $self->_logger->info($msg);
 
   # dbm file
   my $dbm_file = $self->get_kch_file($wanted_chr);
-  $msg = sprintf("writing to: '%s'", $dbm_file);
+  $msg = sprintf( "writing to: '%s'", $dbm_file );
   $self->_logger->info($msg);
 
   # check if we've already build site range files unless forced to overwrite

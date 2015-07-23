@@ -89,10 +89,10 @@ has char_seq => (
 );
 
 has genome_length => (
-  is => 'ro',
-  isa => 'Num',
+  is      => 'ro',
+  isa     => 'Num',
   builder => '_get_genome_length',
-  lazy => 1,
+  lazy    => 1,
 );
 
 sub _get_genome_length {

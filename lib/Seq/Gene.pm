@@ -310,7 +310,7 @@ sub _build_transcript_annotation {
       else {
         if ( $abs_pos < $self->coding_end ) {
           if ( $abs_pos >= $self->coding_start ) {
-            $seq .= $self->get_base( $abs_pos );
+            $seq .= $self->get_base($abs_pos);
           }
           else {
             $seq .= '5';
