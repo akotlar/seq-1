@@ -59,7 +59,6 @@ for my $attr_name ( sort keys %attr_2_type ) {
 my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
 my $obj = $package->new($href);
 ok( $obj, 'object creation' );
-say dump($obj);
 
 # Methods tests
 
