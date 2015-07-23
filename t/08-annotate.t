@@ -11,8 +11,20 @@ use YAML qw/ LoadFile /;
 
 plan tests => 63;
 
-my %attr_2_type = ( );
-my %attr_to_is = ( );
+my %attr_2_type = (
+_genome => 'Seq::GenomeSizedTrackChar',
+_genome_scores => 'ArrayRef[Maybe[Seq::GenomeSizedTrackChar]]',
+_genome_cadd => 'ArrayRef[Maybe[Seq::GenomeSizedTrackChar]]',
+_cadd_lookup => 'HashRef',
+dbm_gene => 'ArrayRef[ArrayRef[Maybe[Seq::KCManager]]]',
+dbm_snp => 'ArrayRef[ArrayRef[Maybe[Seq::KCManager]]]',
+dbm_tx => 'ArrayRef[Seq::KCManager]',
+_header => 'ArrayRef',
+has_cadd_track => 'Bool',
+
+ );
+my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
+$attr_to_is{has_cadd_track} = 'rw';
 
 # set test genome
 my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
@@ -25,7 +37,7 @@ my $package = "Seq::Annotate";
 use_ok($package) || die "$package cannot be loaded";
 
 # check extension of
-check_isa( $package, [ '', 'Moose::Object' ] );
+check_isa( $package, [ 'Seq::Assembly', 'Moose::Object' ] );
 
 # check roles
 does_role( $package, 'MooX::Role::Logger' );
@@ -51,9 +63,11 @@ for my $attr_name ( sort keys %attr_2_type ) {
 }
 
 # object creation
-my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
-my $obj = $package->new($href);
-ok( $obj, 'object creation' );
+TODO: {
+  local $TODO = 'object creation';
+  my $obj = $package->new_with_config( { configfile =>  $ga_config } );
+  ok( $obj, 'object creation' );
+}
 
 # Methods tests
 
@@ -145,4 +159,3 @@ sub has_rw_attr {
   is( $attr->get_write_method, $name,
     "$name attribute has a writer accessor - $name()" );
 }
-
