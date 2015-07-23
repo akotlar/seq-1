@@ -25,13 +25,13 @@ my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force, $debug );
 
 # usage
 GetOptions(
-  'c|config=s'   => \$yaml_config,
-  's|snpfile=s'  => \$snpfile,
-  'v|verbose'    => \$verbose,
-  'h|help'       => \$help,
-  'o|out=s'      => \$out_file,
-  'f|force'      => \$force,
-  'd|debug'      => \$debug,
+  'c|config=s'  => \$yaml_config,
+  's|snpfile=s' => \$snpfile,
+  'v|verbose'   => \$verbose,
+  'h|help'      => \$help,
+  'o|out=s'     => \$out_file,
+  'f|force'     => \$force,
+  'd|debug'     => \$debug,
 );
 
 if ($help) {

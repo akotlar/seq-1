@@ -16,9 +16,9 @@ use DDP;
 use Seq::Build;
 
 my (
-  $yaml_config, $build_type, $db_location, $verbose, $no_bdb,
-  $help,        $wanted_chr, $force,       $debug,
-  $genome_hasher_bin, $genome_scorer_bin, $genome_cadd_bin,
+  $yaml_config, $build_type,        $db_location,       $verbose,
+  $no_bdb,      $help,              $wanted_chr,        $force,
+  $debug,       $genome_hasher_bin, $genome_scorer_bin, $genome_cadd_bin,
 );
 $wanted_chr = 0;
 
@@ -82,7 +82,7 @@ for my $binary ( keys %bin_2_path ) {
   p $bin_2_path{$binary};
 
   # get absolute path
-  $bin_2_path{$binary} = path($bin_2_path{$binary})->absolute->stringify;
+  $bin_2_path{$binary} = path( $bin_2_path{$binary} )->absolute->stringify;
 
   # check the file exists
   unless ( -f $bin_2_path{$binary} ) {
@@ -99,13 +99,13 @@ $yaml_config = path($yaml_config)->absolute->stringify;
 # $genome_cadd_bin   = path($genome_cadd_bin)->absolute->stringify;
 
 my $builder_options_href = {
-  configfile      => $yaml_config,
-  genome_scorer   => $bin_2_path{genome_scorer_bin},
-  genome_hasher   => $bin_2_path{genome_hasher_bin},
-  genome_cadd     => $bin_2_path{genome_cadd_bin},
-  wanted_chr      => $wanted_chr,
-  force           => $force,
-  debug           => $debug,
+  configfile    => $yaml_config,
+  genome_scorer => $bin_2_path{genome_scorer_bin},
+  genome_hasher => $bin_2_path{genome_hasher_bin},
+  genome_cadd   => $bin_2_path{genome_cadd_bin},
+  wanted_chr    => $wanted_chr,
+  force         => $force,
+  debug         => $debug,
 };
 
 if ( $method and $config_href ) {

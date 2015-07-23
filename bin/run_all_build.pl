@@ -29,10 +29,10 @@ my @type = qw/ genome conserv transcript_db snp_db gene_db /;
 die
   "Usage: $0 [-v] [-a] -b <build_assembly script> -c <assembly config> -l location\n"
   unless GetOptions(
-  'v|verbose'    => \$verbose,
-  'a|act'        => \$act,
-  'b|build=s'    => \$build_scr,
-  'c|config=s'   => \$config_file,
+  'v|verbose'  => \$verbose,
+  'a|act'      => \$act,
+  'b|build=s'  => \$build_scr,
+  'c|config=s' => \$config_file,
   ) and $config_file;
 $verbose++ unless $act;
 
