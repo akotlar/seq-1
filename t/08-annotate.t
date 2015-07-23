@@ -9,7 +9,7 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 63;
+plan tests => 50;
 
 my %attr_2_type = (
   _genome        => 'Seq::GenomeSizedTrackChar',
