@@ -33,6 +33,7 @@ my $mos           = localtime->mon() + 1;
 my $day           = localtime->mday;
 my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, $day );
 
+has db    => ( is => 'ro', isa => 'Str', required => 1 );
 has act   => ( is => 'ro', isa => 'Bool', default => 0 );
 has debug => ( is => 'ro', isa => 'Bool', default => 0 );
 has dsn   => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
@@ -132,7 +133,7 @@ Called in: none
 sub dbh {
   my $self = shift;
   my $dsn  = $self->dsn;
-  $dsn .= ":" . $self->name;
+  $dsn .= ":" . $self->db;
   $dsn .= ";host=" . $self->host if $self->host;
   $dsn .= ";port=" . $self->port if $self->port;
   $dsn .= ";mysql_socket=" . $self->port_num if $self->socket;
@@ -197,19 +198,13 @@ sub _clean_row {
 sub write_remote_data {
   my $self = shift;
 
-  say $self->type;
-  say $self->sql_statement;
-  say $self->features;
-
   # statement
   my $msg = "sql cmd: " . $self->sql_statement;
   $self->_logger->info( $msg );
-  say $msg if $self->debug;
-
-  exit;
 
   # set directories
-  $self->genome_raw_dir->mk_path unless -d $self->genome_raw_dir;
+  my $local_dir = $self->genome_raw_dir->child($self->type);
+  $local_dir->mkpath unless $local_dir->is_dir;
 
   # set file names
   my @local_files = $self->all_local_files;
@@ -217,7 +212,7 @@ sub write_remote_data {
   # just use the 1st one if we're asked to download data - the rationale for
   # having a list of files is that sometimes the data is alreadya list of files
   my $timestamp_name = sprintf( "%s.%s", $now_timestamp, $local_files[0]->basename);
-  my $target_file = $self->genome_raw_dir->child->($self->type)->child($timestamp_name);
+  my $target_file = $local_dir->child($timestamp_name);
   my $master_file = $local_files[0];
 
   # fetch data

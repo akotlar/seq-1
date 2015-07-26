@@ -33,43 +33,65 @@ use DDP;
 
 extends 'Seq::Assembly';
 
-sub fetch_sparse_tracks {
-  my $self = shift;
+has act => (
+  is => 'ro',
+  isa => 'Bool',
+  default => 0,
+);
 
-  for my $snp_track ( $self->all_snp_tracks ) {
+sub fetch_snp_data {
+  my $self = shift;
+  my $tracks_aref = [ $self->all_snp_tracks ];
+  $self->_fetch_sparse_data( $tracks_aref);
+}
+
+sub fetch_gene_data {
+  my $self = shift;
+  my $tracks_aref = [ $self->all_gene_tracks ];
+  $self->_fetch_sparse_data( $tracks_aref);
+}
+
+sub _fetch_sparse_data {
+  my ($self, $tracks_aref ) = @_;
+  for my $track ( @$tracks_aref ) {
+
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
-    my $record = $snp_track->as_href;
+    my $record = $track->as_href;
 
     # add required fields for the build track
-    for my $attr (qw/ force debug /) {
+    for my $attr (qw/ act debug /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
-    if ( $self->verbose ) {
-      my $msg = sprintf( "about to fetch sql data for: %s", $snp_track->name );
+    # add genome as db name
+    $record->{db} = $self->genome_name;
+
+    if ( $self->debug ) {
+      my $msg = sprintf( "about to fetch sql data for: %s", $track->name );
       $self->_logger->info($msg);
       say $msg;
     }
 
     my $obj = Seq::Fetch::Sql->new($record);
-    $obj->write_sql_data;
+    $obj->write_remote_data;
   }
+  return 1;
 }
 
-sub fetch_genome_size_tracks {
+sub fetch_genome_size_data {
   my $self = shift;
 
-  for my $gene_track ( $self->all_gene_tracks ) {
+  for my $track ( $self->all_genome_sized_tracks ) {
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
-    my $record = $gene_track->as_href;
+    my $record = $track->as_href;
 
     # add required fields for the build track
-    for my $attr (qw/ force debug /) {
+    for my $attr (qw/ act debug /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
-    if ( $self->verbose ) {
-      my $msg = sprintf( "about to fetch sql data for: %s", $gene_track->name );
+    if ( $self->debug ) {
+      my $msg = sprintf( "about to fetch files: %s", $track->name );
       $self->_logger->info($msg);
       say $msg;
     }
@@ -77,6 +99,7 @@ sub fetch_genome_size_tracks {
     my $obj = Seq::Fetch::Files->new($record);
     $obj->fetch_files;
   }
+  return 1;
 }
 
 __PACKAGE__->meta->make_immutable;
