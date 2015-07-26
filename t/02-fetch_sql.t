@@ -65,25 +65,27 @@ for my $attr_name ( sort keys %attr_2_type ) {
 # snp - object creation
 {
   my $href = build_obj_data( 'sparse_tracks', 'snp', $config_href );
-my $obj = $package->new($href);
-ok( $obj, 'snp track object creation' );
-(my $snp_sql_stmt = q{SELECT chrom, chromStart, chromEnd, name, alleleFreqs,
-alleleFreqCount, func, refUCSC, strand FROM hg38.snp141 where
-hg38.snp141.chrom = 'chr22'}) =~ s/\n/ /xmgs;
-is ($obj->sql_statement, $snp_sql_stmt, 'sql statement for snp');
+  $href->{db} = $config_href->{genome_name};
+  my $obj = $package->new($href);
+  ok( $obj, 'snp track object creation' );
+  (my $snp_sql_stmt = q{SELECT chrom, chromStart, chromEnd, name, alleleFreqs,
+  alleleFreqCount, func, refUCSC, strand FROM hg38.snp141 where
+  hg38.snp141.chrom = 'chr22'}) =~ s/[\n\s]+/ /xmgs;
+  is ($obj->sql_statement, $snp_sql_stmt, 'sql statement for snp');
 }
 
 # gene - object creation
 {
-my $href = build_obj_data( 'sparse_tracks', 'gene', $config_href );
-my $obj = $package->new($href);
-ok( $obj, 'gene track object creation' );
-(my $gene_sql_stmt = q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd,
-exonCount, exonStarts, exonEnds, name, mRNA, spID, spDisplayID, geneSymbol,
-refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref
-ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = 'chr22'}
-) =~ s/\n/ /xmgs;
-is ($obj->sql_statement, $gene_sql_stmt, 'sql statement for gene');
+  my $href = build_obj_data( 'sparse_tracks', 'gene', $config_href );
+  $href->{db} = $config_href->{genome_name};
+  my $obj = $package->new($href);
+  ok( $obj, 'gene track object creation' );
+  (my $gene_sql_stmt = q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd,
+  exonCount, exonStarts, exonEnds, name, mRNA, spID, spDisplayID, geneSymbol,
+  refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref
+  ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = 'chr22'}
+  ) =~ s/[\n\s]+/ /xmgs;
+  is ($obj->sql_statement, $gene_sql_stmt, 'sql statement for gene');
 }
 
 ###############################################################################
