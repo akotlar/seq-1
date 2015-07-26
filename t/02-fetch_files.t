@@ -13,7 +13,7 @@ plan tests => 22;
 
 my %attr_2_type = (
   act       => 'Bool',
-  verbose   => 'Bool',
+  debug     => 'Bool',
   rsync_bin => 'Str',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
@@ -59,10 +59,6 @@ for my $attr_name ( sort keys %attr_2_type ) {
 my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
 my $obj = $package->new($href);
 ok( $obj, 'object creation' );
-
-# Methods tests
-
-# TODO: add tests for fetching files
 
 ###############################################################################
 # sub routines

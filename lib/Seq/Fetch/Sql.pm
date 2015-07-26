@@ -18,13 +18,11 @@ Extended by: None
 
 use 5.10.0;
 use Carp;
-use Cwd;
 use DBI;
-use File::Path qw/ make_path /;
-use File::Spec;
 use Moose;
 use namespace::autoclean;
 use Time::localtime;
+use Data::Dump qw/ dump /;
 
 extends 'Seq::Config::SparseTrack';
 with 'Seq::Role::IO';
@@ -35,19 +33,87 @@ my $mos           = localtime->mon() + 1;
 my $day           = localtime->mday;
 my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, $day );
 
-has act     => ( is => 'ro', isa => 'Bool', );
-has verbose => ( is => 'ro', isa => 'Bool', );
-has dsn     => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
+has act   => ( is => 'ro', isa => 'Bool', default => 0 );
+has debug => ( is => 'ro', isa => 'Bool', default => 0 );
+has dsn   => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
 has host => (
   is       => 'ro',
   isa      => 'Str',
   required => 1,
   default  => "genome-mysql.cse.ucsc.edu"
 );
-has user => ( is => 'ro', isa => 'Str', required => 1, default => "genome" );
+has user     => ( is => 'ro', isa => 'Str', required => 1, default => "genome" );
 has password => ( is => 'ro', isa => 'Str', );
 has port     => ( is => 'ro', isa => 'Int', );
 has socket   => ( is => 'ro', isa => 'Str', );
+
+
+=function sql_statement (private,)
+
+Construction-time @property sql_statement modifier
+
+@requires:
+
+=begin :list
+* @property {Str} $self->type
+
+    @values:
+
+    =begin :list
+    1. 'snp'
+    2. 'gene'
+    =end :list
+
+* @property {ArrarRef<Str>} $self->features
+* @property {Str} $self->sql_statement (returned by $self->$orig(@_) )
+* @param {Str} @snp_track_fields (global)
+=end :list
+
+@return {Str}
+
+=cut
+
+around 'sql_statement' => sub {
+  my $orig     = shift;
+  my $self     = shift;
+  my $new_stmt = "";
+
+  # handle blank sql statements
+  return unless $self->$orig(@_);
+
+  # make substitutions into the sql statements
+  if ( $self->type eq 'snp' ) {
+    my $snp_table_fields_str = join( ", ", @{ $self->snp_track_fields},
+      @{ $self->features } );
+
+    # \_ matches the character _ literally
+    # snp matches the characters snp literally (case sensitive)
+    # \_ matches the character _ literally
+
+    # NOTE: the following just defines the perl regex spec and could be removed.
+    # fields matches the characters fields literally (case sensitive)
+    # x modifier: extended. Spaces and text after a # in the pattern are ignored
+    # m modifier: multi-line. Causes ^ and $ to match the begin/end of each line
+    #             (not only begin/end of string)
+    if ( $self->$orig(@_) =~ m/\_snp\_fields/xm ) {
+      # substitute _snp_fields in statement for the comma separated string of
+      # snp_track_fields and SparseTrack features
+      ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/xms;
+    }
+    elsif ( $self->$orig(@_) =~ m/_asterisk/xm ) {
+      ( $new_stmt = $self->$orig(@_) ) =~ s/\_asterisk/\*/xm;
+    }
+  }
+  elsif ( $self->type eq 'gene' ) {
+    my $gene_table_fields_str = join( ", ", @{$self->gene_track_fields},
+      @{ $self->features } );
+
+    if ( $self->$orig(@_) =~ m/\_gene\_fields/xm ) {
+      ( $new_stmt = $self->$orig(@_) ) =~ s/\_gene\_fields/$gene_table_fields_str/xms;
+    }
+  }
+  return $new_stmt;
+};
 
 =method @public sub dbh
 
@@ -131,38 +197,49 @@ sub _clean_row {
 sub write_remote_data {
   my $self = shift;
 
+  say $self->type;
+  say $self->sql_statement;
+  say $self->features;
+
   # statement
-  $self->_logger->info( "sql cmd: " . $self->sql_statement ) if $self->verbose;
+  my $msg = "sql cmd: " . $self->sql_statement;
+  $self->_logger->info( $msg );
+  say $msg if $self->debug;
+
+  exit;
 
   # set directories
-  my $local_dir = File::Spec->canonpath( $self->local_dir );
-  my $cwd       = cwd();
+  $self->genome_raw_dir->mk_path unless -d $self->genome_raw_dir;
 
   # set file names
-  my $file_with_time   = $now_timestamp . "." . $self->local_file;
-  my $target_file      = File::Spec->catfile( $local_dir, $file_with_time );
-  my $symlink_original = File::Spec->catfile( ( $cwd, $local_dir ), $file_with_time );
-  my $symlink_target = File::Spec->catfile( ( $cwd, $local_dir ), $self->local_file );
+  my @local_files = $self->all_local_files;
 
-  # make target dir
-  make_path($local_dir) if $self->act;
+  # just use the 1st one if we're asked to download data - the rationale for
+  # having a list of files is that sometimes the data is alreadya list of files
+  my $timestamp_name = sprintf( "%s.%s", $now_timestamp, $local_files[0]->basename);
+  my $target_file = $self->genome_raw_dir->child->($self->type)->child($timestamp_name);
+  my $master_file = $local_files[0];
 
+  # fetch data
   my $sql_data = $self->_fetch_remote_data($target_file);
 
   # write data
-  $self->_logger->info( "sql wrote data to: " . $target_file ) if $self->verbose;
+  $msg = sprintf( "wrote remote data to: %s", $target_file );
+  $self->_logger->info($msg);
+  say $msg if $self->debug;
 
   # link files
   if ( $self->act ) {
-    chdir $local_dir || die "cannot change to $local_dir";
+    my $msg = sprintf( "symlink %s -> %s", $target_file->absolute->stringify,
+      $master_file->absolute->stringify );
+    if ( symlink $target_file->absolute->stringify, $master_file->absolute->stringify ) {
 
-    if ( symlink $file_with_time, $self->local_file ) {
-      $self->_logger->info("symlinked $symlink_original -> $symlink_target");
+      $self->_logger->info($msg);
     }
     else {
-      $self->_logger->error("could not symlink $symlink_original -> $symlink_target");
+      my $error_msg = "could not " . $msg;
+      $self->_logger->error($error_msg);
     }
-    chdir $cwd || die "cannot change to $cwd";
   }
 }
 
