@@ -29,7 +29,7 @@ use namespace::autoclean;
 extends 'Seq::Config::GenomeSizedTrack';
 
 has act     => ( is => 'ro', isa => 'Bool', );
-has verbose => ( is => 'ro', isa => 'Bool', );
+has debug => ( is => 'ro', isa => 'Bool', );
 has rsync_bin =>
   ( is => 'ro', isa => 'Str', required => 1, builder => '_build_rsync_bin', );
 
@@ -47,7 +47,6 @@ sub _build_rsync_bin {
 }
 
 sub fetch_files {
-
   my $self = shift;
 
   my $name              = $self->name;
@@ -55,14 +54,14 @@ sub fetch_files {
 
   # get rsync cmd and opts
   my %rsync_opt = ( compress => 1, 'rsync-path' => $self->rsync_bin );
-  $rsync_opt{verbose}++ if $self->verbose;
+  $rsync_opt{verbose}++ if $self->debug;
   $rsync_opt{'dry-run'}++ unless $self->act;
 
   my $rsync_obj = File::Rsync->new( \%rsync_opt );
 
   # prepare directories
-  my $local_dir = File::Spec->rel2abs( $self->local_dir );
-  # my $remote_dir = $self->remote_dir;
+  my $local_dir = $self->genome_raw_dir->child($self->type);
+  $local_dir->mk_path unless -d $local_dir->absolute;
 
   # File::Rsync expects host:dir format for remote files (if needed)
   # $remote_dir =~ s/\//::/xm unless ( $remote_dir =~ m/::/xm );
@@ -70,17 +69,17 @@ sub fetch_files {
   my $remote_host = $remote_src[0] . ":";
   my $remote_dir  = join "/", @remote_src[ 1 .. $#remote_src ];
 
-  # make local dir (if needed)
-  mkpath $local_dir unless -d $local_dir;
-
   # fetch files
   for my $file ( @{$remote_files_aref} ) {
-    my $this_remote_file = File::Spec->catfile( $remote_dir, $file );
-    my $cmd_href =
-      { srchost => $remote_host, source => $this_remote_file, dest => $local_dir };
+    my $this_remote_file = $local_dir->child( $file );
+    my $cmd_href = {
+      srchost => $remote_host,
+      source => $this_remote_file,
+      dest => $local_dir->absolute->stringify
+    };
     my $cmd = $rsync_obj->getcmd($cmd_href);
     my $cmd_txt = join " ", @$cmd;
-    $self->_logger->info( "rsync cmd: " . $cmd_txt ) if $self->verbose;
+    $self->_logger->info( "rsync cmd: " . $cmd_txt ) if $self->debug;
     system $cmd_txt if $self->act || $self->_logger->error( "failed: " . $cmd_txt );
   }
 }
