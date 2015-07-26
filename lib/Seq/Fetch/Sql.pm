@@ -75,7 +75,7 @@ sub dbh {
   return DBI->connect( $dsn, $self->user, $self->password, \%conn_attrs );
 }
 
-sub _write_sql_data {
+sub _fetch_remote_data {
 
   my ( $self, $file ) = @_;
 
@@ -128,7 +128,7 @@ sub _clean_row {
   return \@clean_array;
 }
 
-sub write_sql_data {
+sub write_remote_data {
   my $self = shift;
 
   # statement
@@ -147,7 +147,7 @@ sub write_sql_data {
   # make target dir
   make_path($local_dir) if $self->act;
 
-  my $sql_data = $self->_write_sql_data($target_file);
+  my $sql_data = $self->_fetch_remote_data($target_file);
 
   # write data
   $self->_logger->info( "sql wrote data to: " . $target_file ) if $self->verbose;
