@@ -9,19 +9,21 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 42;
+plan tests => 50;
 
 my %attr_2_type = (
   type          => 'SparseTrackType',
   sql_statement => 'Str',
   _local_files  => 'MooseX::Types::Path::Tiny::AbsPaths',
   features      => 'ArrayRef[Str]',
+  gene_track_fields => 'ArrayRef',
+  snp_track_fields => 'ArrayRef',
 );
 
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
 # set test genome
-my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
+my $ga_config   = path('./t/hg38_config.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 my $package = "Seq::Config::SparseTrack";
@@ -118,11 +120,6 @@ for my $attr_name ( sort keys %attr_2_type ) {
     is_deeply( $obj, $new_obj, 'new object == old obj' );
   }
 
-  # check snp track specific stuff
-  my $sql_stmt =
-    q{SELECT chrom, chromStart, chromEnd, name, alleleFreqCount, alleles, alleleFreqs FROM hg38.snp141};
-  is( $sql_stmt, $st->sql_statement, '(snp_track) method: Sql statement' );
-
   my @all_snp_fields = qw/ chrom chromStart chromEnd name /;
   push @all_snp_fields, @features;
 
@@ -150,11 +147,6 @@ for my $attr_name ( sort keys %attr_2_type ) {
       genome_chrs => $config_href->{genome_chrs},
     }
   );
-
-  my $sql_stmt =
-    q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd, exonCount, exonStarts, exonEnds, name, mRNA, spID, spDisplayID, geneSymbol, refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref ON hg38.kgXref.kgID = hg38.knownGene.name};
-
-  is( $sql_stmt, $st->sql_statement, '(gene_track) method: Sql statement' );
 
   my @all_gene_fields =
     qw/ chrom strand txStart txEnd cdsStart cdsEnd exonCount exonStarts exonEnds name /;
