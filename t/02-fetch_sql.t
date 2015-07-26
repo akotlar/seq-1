@@ -9,11 +9,11 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 48;
+plan tests => 51;
 
 my %attr_2_type = (
   act      => 'Bool',
-  verbose  => 'Bool',
+  debug    => 'Bool',
   dsn      => 'Str',
   host     => 'Str',
   user     => 'Str',
@@ -62,12 +62,29 @@ for my $attr_name ( sort keys %attr_2_type ) {
   }
 }
 
-# object creation
-my $href = build_obj_data( 'sparse_tracks', 'snp', $config_href );
+# snp - object creation
+{
+  my $href = build_obj_data( 'sparse_tracks', 'snp', $config_href );
 my $obj = $package->new($href);
-ok( $obj, 'object creation' );
+ok( $obj, 'snp track object creation' );
+(my $snp_sql_stmt = q{SELECT chrom, chromStart, chromEnd, name, alleleFreqs,
+alleleFreqCount, func, refUCSC, strand FROM hg38.snp141 where
+hg38.snp141.chrom = 'chr22'}) =~ s/\n/ /xmgs;
+is ($obj->sql_statement, $snp_sql_stmt, 'sql statement for snp');
+}
 
-# Methods tests
+# gene - object creation
+{
+my $href = build_obj_data( 'sparse_tracks', 'gene', $config_href );
+my $obj = $package->new($href);
+ok( $obj, 'gene track object creation' );
+(my $gene_sql_stmt = q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd,
+exonCount, exonStarts, exonEnds, name, mRNA, spID, spDisplayID, geneSymbol,
+refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref
+ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = 'chr22'}
+) =~ s/\n/ /xmgs;
+is ($obj->sql_statement, $gene_sql_stmt, 'sql statement for gene');
+}
 
 ###############################################################################
 # sub routines
@@ -81,7 +98,8 @@ sub build_obj_data {
   # get essential stuff
   for my $track ( @{ $config_href->{$track_type} } ) {
     if ( $track->{type} eq $type ) {
-      for my $attr (qw/ name type local_files remote_dir remote_files features /) {
+      for my $attr (qw/ name type local_files remote_dir remote_files features
+      sql_statement act verbose dsn host user password port sokcet /) {
         $hash{$attr} = $track->{$attr} if exists $track->{$attr};
       }
     }
