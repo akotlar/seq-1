@@ -74,3 +74,4 @@ Pileup.snp
 /stash
 /*.sh
 /*.snp
+/t/hg38*
