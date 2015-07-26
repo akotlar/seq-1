@@ -5,6 +5,7 @@ use warnings;
 
 use Data::Dump qw/ dump /;
 use Lingua::EN::Inflect qw/ A PL_N /;
+use Log::Any::Adapter;
 use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
@@ -57,6 +58,10 @@ for my $attr_name ( sort keys %attr_2_type ) {
     exit(1);
   }
 }
+
+my $log_name = join '.', 'build', $config_href->{genome_name}, 'log';
+my $log_file = path("./t")->child($log_name)->absolute->stringify;
+Log::Any::Adapter->set( 'File', $log_file );
 
 {
   my $obj = $package->new($config_href);

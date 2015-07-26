@@ -95,31 +95,29 @@ has alt_names => (
 );
 
 has transcript_seq => (
-  is      => 'rw',
+  is      => 'ro',
   isa     => 'Str',
   builder => '_build_transcript_db',
   lazy    => 1,
   traits  => ['String'],
   handles => {
-    add_transcript_seq      => 'append',
     get_base_transcript_seq => 'substr',
   },
 );
 
 has transcript_annotation => (
-  is      => 'rw',
+  is      => 'ro',
   isa     => 'Str',
   builder => '_build_transcript_annotation',
   lazy    => 1,
   traits  => ['String'],
   handles => {
-    add_transcript_annotation     => 'append',
     get_str_transcript_annotation => 'substr',
   },
 );
 
 has transcript_abs_position => (
-  is      => 'rw',
+  is      => 'ro',
   isa     => 'ArrayRef',
   builder => '_build_transcript_abs_position',
   lazy    => 1,
@@ -328,6 +326,7 @@ sub _build_transcript_annotation {
     $seq = reverse $seq;
     $seq =~ tr/ACGT53/TGCA35/;
   }
+  say $seq;
   return $seq;
 }
 
@@ -417,7 +416,11 @@ sub _build_transcript_sites {
       $gene_site{site_type} = 'non-coding RNA';
     }
     else {
-      say "object: " . dump( $self );
+      for my $attr ( qw/ transcript_id strand coding_start coding_end
+      all_exon_starts all_exon_ends transcript_seq / ) {
+        say "$attr: " . dump($self->$attr);
+      }
+      # say "data for site: " . dump(\%gene_site );
       confess "unknown site code $site_annotation";
     }
 
