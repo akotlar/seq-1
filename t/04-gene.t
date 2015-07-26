@@ -9,6 +9,9 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
+use Seq::KCManager;
+use Seq::Site::Annotation;
+
 plan tests => 88;
 
 # check attributes and their type constraints
@@ -70,7 +73,298 @@ for my $attr_name ( sort keys %attr_2_type ) {
   }
 }
 
-# TODO: test for obj creation
+# we need the gene and snp kch files and the dbsnp file to verify we make the sample
+# predictions that dbsnp makes on variants.
+my $chr22_offset = 2824183054; # for hg38
+my $snp_dbm      = path('./t/snp141.snp.chr22.kch');
+my $gene_dbm     = path('./t/knownGene.gene.chr22.kch');
+my $dbsnp_file   = path('./t/snp141.chr22.txt');
+
+# check files are available
+if ( !( $snp_dbm->is_file || $gene_dbm->is_file || $dbsnp_file->is_file ) ) {
+  say "cannot find one or more needed file:
+  ./t/snp141.snp.chr22.kch
+  ./t/knownGene.gene.chr22.kch
+  ./t/snp141.chr22.txt";
+  exit;
+}
+
+# create the database object
+my $obs_snp_obj  = Seq::KCManager->new({ filename => $snp_dbm->absolute->stringify, mode => 'read', });
+my $obs_gene_obj = Seq::KCManager->new({ filename => $gene_dbm->absolute->stringify, mode => 'read', });
+my %comp_base_lu = ('A' => 'T', 'C' => 'G', 'G' => 'C', 'T' => 'A');
+my @skip_rs = qw/ rs12160304 rs140281350 rs181540173 rs373886941 rs9605012 rs9605012
+  rs185428714 rs9605012 rs185428714 rs181293426 rs368854949 rs11912392 rs11912392
+  rs9605011 rs9605012 rs9605013 rs185428714 rs112982604 rs469343 rs3869856 rs542183
+  rs16987804 rs470210 rs189136810 rs377130945 rs34577248 rs35346050 rs3984025
+  rs3876091 /;
+my %skip_rs = map { $_ => 1 } @skip_rs;
+my @wanted_rs = qw/  /;
+my %wanted_rs = map{ $_ => 1 } @wanted_rs;
+my $snp_types_href = {
+  "untranslated-5"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Non-Coding', '5UTR',  ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "intron"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Intronic', 'NA',  ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "stop-loss"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $new_AA;
+    if ($ann->{new_aa_residue} ne '*' or $ann->{new_aa_residue} ne 'NA') {
+      $new_AA = "OK";
+    }
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, $ann->{ref_aa_residue},
+      $new_AA ];
+    my $exp_aref = [ 'Replacement', 'Coding', '*', 'OK' ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "frameshift"=> sub {
+    my ($ann, $exp_href) = @_;
+      my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+      my $exp_aref = [ 'Replacement', 'Coding', ];
+      my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+        $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+        $ann->{site_type}, $ann->{annotation_type}, );
+      is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "untranslated-3"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Non-Coding', '3UTR', ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "splice-3"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Non-Coding', 'Splice Acceptor', ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "near-gene-3"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Intronic', 'NA',  ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "near-gene-5"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Intronic', 'NA',  ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "nonsense"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, $ann->{new_aa_residue}, ];
+    my $exp_aref = [ 'Replacement', 'Coding', '*', ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "splice-5"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Non-Coding', 'Splice Donor', ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "missense"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $aa_change;
+    if ($ann->{ref_aa_residue} ne $ann->{new_aa_residue}) {
+      $aa_change = 'OK';
+    }
+    else {
+      $aa_change = sprintf("ref aa, '%s', should differ from obs aa, '%s'",
+        $ann->{new_aa_residue},
+        $ann->{new_aa_residue} );
+    }
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, $aa_change ];
+    my $exp_aref = [ 'Replacement', 'Coding', 'OK' ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "coding-synon"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $aa_change;
+    if ($ann->{ref_aa_residue} eq $ann->{new_aa_residue}) {
+      $aa_change = 'OK';
+    }
+    else {
+      $aa_change = sprintf("found aa: %s, expected: %s", $ann->{new_aa_residue},
+        $ann->{ref_aa_residue} );
+    }
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, $aa_change ];
+    my $exp_aref = [ 'Silent', 'Coding', 'OK' ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "unknown"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Intronic', 'NA',  ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+  "ncRNA"=> sub {
+    my ($ann, $exp_href) = @_;
+    my $obs_aref = [ $ann->{annotation_type}, $ann->{site_type}, ];
+    my $exp_aref = [ 'Non-Coding', 'non-coding RNA',  ];
+    my $msg = sprintf ("snp: %s, strand: %s, miso: %s, site_type: %s, annotation_type: %s",
+      $exp_href->{name},  $exp_href->{strand}, $exp_href->{func},
+      $ann->{site_type}, $ann->{annotation_type}, );
+    is_deeply( $obs_aref, $exp_aref , $msg);
+  },
+};
+my %snp_types = map { $_ => 1 } ( keys %$snp_types_href);
+
+my $out_test_fh = IO::File->new( 'snp141.test.txt', 'w' ) || die "$!\n";
+# read in data
+my %func = ();
+my $dbsnp_txt = $dbsnp_file->slurp;
+my @dbsnp_data = split /\n/, $dbsnp_txt;
+my %dbsnp_header;
+for my $line ( @dbsnp_data ) {
+  my @fields = split /\t/, $line;
+  if (!%dbsnp_header ) {
+    %dbsnp_header = map { $fields[$_] => $_ } ( 0 .. $#fields );
+  }
+  else {
+    my %data = map { $_ => $fields[$dbsnp_header{$_}] } ( keys %dbsnp_header );
+
+    # skip known problem sites
+    next if exists $skip_rs{ $data{name} };
+
+    # site must have a UCSC reference base: A, C, G, or T
+    next unless exists $comp_base_lu{$data{refUCSC}};
+
+    # site must have minor allele
+    next unless exists $data{observed};
+
+    # site must have only 1 predicted function
+    next unless exists $snp_types{ $data{func} };
+
+    # we are not interested in testing _all_ sites just some # of them
+    if ( exists $func{ $data{func} }{ $data{strand} } ) {
+      next if $func{ $data{func} }{ $data{strand} } > 100;
+    }
+
+    # get expected snp functions
+    my %exp_func = map { $_ => 1 } ( split /\,/, $data{func} );
+
+    my @alleles = split /\//, $data{observed};
+    my @non_ref_alleles;
+
+    if ( $data{strand} eq '+' ) {
+      for my $allele ( @alleles ) {
+        next unless exists $comp_base_lu{$allele};
+        next if $data{refUCSC} eq $allele;
+        # save the + allele
+        push @non_ref_alleles, $allele;
+      }
+    }
+    else {
+      for my $allele ( @alleles ) {
+        next unless exists $comp_base_lu{$allele};
+        next if $comp_base_lu{$data{refUCSC}} eq $allele;
+        # rev_comp the - allele to +
+        push @non_ref_alleles, $comp_base_lu{$allele};
+      }
+    }
+
+    # get rid of multi-alleleic sites
+    next unless scalar @non_ref_alleles == 1;
+
+    # skip indel sites
+    next unless exists $comp_base_lu{$non_ref_alleles[0]};
+
+    # get snp data
+    my $abs_pos = $data{chromStart} + $chr22_offset;
+    my $obs_snp_aref  = $obs_snp_obj->db_get( $abs_pos );
+
+    # test snp name
+    # if ( $obs_snp_aref ) {
+    #   is ( $obs_snp_aref->[0]->{snp_id}, $data{name}, sprintf("snp name is ok: %s", $data{name}) );
+    # }
+
+    # get gene data
+    my $obs_gene_aref = $obs_gene_obj->db_get( $abs_pos );
+
+    if ( defined $obs_gene_aref ) {
+
+      # let's just look at places where there's only 1 gene
+      next if scalar @$obs_gene_aref != 1;
+      # say "data: " . dump( \%data);
+      # say "non-ref allele: " . dump( \@non_ref_alleles );
+
+      # cycle through all of the entries for the gene
+      for my $entry ( @$obs_gene_aref ) {
+        for my $minor_allele ( @non_ref_alleles ) {
+          $entry->{minor_allele} = $minor_allele;
+          my $ann = Seq::Site::Annotation->new( $entry )->as_href_with_NAs;
+
+          if ( exists $wanted_rs{$data{name}} ) {
+            say "data: " . dump( \%data);
+            say "ann: " . dump( $ann );
+          }
+          # say "ann: " . dump( $ann );
+          $snp_types_href->{$data{func}}->($ann, \%data);
+        }
+      }
+    }
+
+
+    say {$out_test_fh} $line;
+
+    # say dump( $obs_snp_aref );
+    # say dump( $obs_gene_aref );
+
+    $func{ $data{func} }{ $data{strand} }++;
+  }
+}
+my @f;
+for my $key ( keys %func ) {
+  if ( $key !~ m/\,/ ) {
+    push @f, $key;
+  }
+}
+say dump( \@f );
+say dump( \%func );
 
 ###############################################################################
 # sub routines
