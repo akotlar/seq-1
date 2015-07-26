@@ -27,7 +27,7 @@ my %attr_2_type = (
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
 # set test genome
-my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
+my $ga_config   = path('./t/hg38_config.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 # set package name
