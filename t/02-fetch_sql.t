@@ -68,8 +68,8 @@ for my $attr_name ( sort keys %attr_2_type ) {
   $href->{db} = $config_href->{genome_name};
   my $obj = $package->new($href);
   ok( $obj, 'snp track object creation' );
-  (my $snp_sql_stmt = q{SELECT chrom, chromStart, chromEnd, name, alleleFreqs,
-  alleleFreqCount, func, refUCSC, strand FROM hg38.snp141 where
+  (my $snp_sql_stmt = q{SELECT chrom, chromStart, chromEnd, name, alleles,
+  alleleFreqs, alleleFreqCount, func, refUCSC, strand FROM hg38.snp141 where
   hg38.snp141.chrom = 'chr22'}) =~ s/[\n\s]+/ /xmgs;
   is ($obj->sql_statement, $snp_sql_stmt, 'sql statement for snp');
 }
