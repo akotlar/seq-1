@@ -58,14 +58,20 @@ for my $attr_name ( sort keys %attr_2_type ) {
   }
 }
 
-# object creation
-TODO: {
-  local $TODO = 'obj creation';
+{
   my $obj = $package->new($config_href);
   ok( $obj, 'object creation' );
-}
 
-# Methods tests
+  TODO: {
+    local $TODO = 'build snp db';
+    ok($obj->build_snp_sites);
+    ok($obj->build_gene_sites);
+  }
+  TODO: {
+    local $TODO = 'build gene db';
+    ok($obj->build_gene_sites);
+  }
+}
 
 ###############################################################################
 # sub routines
