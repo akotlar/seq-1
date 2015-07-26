@@ -43,7 +43,7 @@ use DDP; # for debugging
 with 'Seq::Role::ConfigFromFile', 'MooX::Role::Logger';
 
 my @_attributes = qw/ genome_name genome_description genome_chrs genome_index_dir
-  genome_cadd genome_hasher genome_scorer debug wanted_chr debug force/;
+  genome_cadd genome_hasher genome_scorer debug wanted_chr debug force act/;
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
