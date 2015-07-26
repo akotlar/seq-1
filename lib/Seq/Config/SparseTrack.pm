@@ -316,7 +316,7 @@ sub as_href {
   my $self = shift;
   my %hash;
   my @attrs = qw/ name features genome_chrs genome_index_dir genome_raw_dir
-    local_files remote_dir remote_files type/;
+    local_files remote_dir remote_files type sql_statement/;
   for my $attr (@attrs) {
     if ( defined $self->$attr ) {
       if ( $self->$attr eq 'genome_index_dir' or $self->$attr eq 'genome_raw_dir' ) {
