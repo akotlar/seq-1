@@ -38,6 +38,7 @@ sparse_tracks:
     name: snp141
     sql_statement: SELECT _snp_fields FROM hg38.snp141 where hg38.snp141.chrom = 'chr22'
     features:
+      - alleles
       - alleleFreqs
       - alleleFreqCount
       - func
