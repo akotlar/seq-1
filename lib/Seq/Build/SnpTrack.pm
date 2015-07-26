@@ -116,8 +116,7 @@ sub build_snp_db {
       my %data = map { $_ => $fields[ $header{$_} ] } @{ $self->snp_fields_aref };
       my ( $allele_freq_count, @alleles, @allele_freqs, $min_allele_freq );
 
-      if ( $data{alleleFreqCount} ) {
-        @alleles      = split( /,/, $data{alleles} );
+      if ( $data{alleleFreqCount} == 2 ) {
         @allele_freqs = split( /,/, $data{alleleFreqs} );
         my @s_allele_freqs = sort { $b <=> $a } @allele_freqs;
         $min_allele_freq = sprintf( "%0.6f", 1 - $s_allele_freqs[0] );
@@ -151,7 +150,7 @@ sub build_snp_db {
         # present framework well since it's not a 'feature' we retrieve but rather
         # it's calculated... since you get about the same info with alleleFreqs
         # I'm not really sure it's even needed.
-        $feature_hash{maf} = $min_allele_freq if ($min_allele_freq);
+        $feature_hash{maf} = $min_allele_freq if defined $min_allele_freq;
 
         $snp_site->set_snp_feature(%feature_hash);
 

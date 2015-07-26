@@ -102,7 +102,7 @@ sub _get_gene_data {
       my %gene_data = map { $ucsc_table_lu{$_} => $data{$_} } keys %ucsc_table_lu;
       $gene_data{exon_ends}   = [ split( /\,/, $gene_data{exon_ends} ) ];
       $gene_data{exon_starts} = [ split( /\,/, $gene_data{exon_starts} ) ];
-      $gene_data{genome_track} = $self->genome_track_str;
+      $gene_data{genome_track} = $self->genome_str_track;
 
       # prepare alternative names for gene
       #   - the basic problem is that the type constraint on alt_names wants

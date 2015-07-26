@@ -117,7 +117,7 @@ sub build_transcript_db {
     my $record = $gene_track->as_href;
 
     # add required fields for the build track
-    for my $attr (qw/ force debug genome_track_str /) {
+    for my $attr (qw/ force debug genome_str_track /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
@@ -143,7 +143,7 @@ sub build_snp_sites {
     my $record = $snp_track->as_href;
 
     # add required fields for the build track
-    for my $attr (qw/ force debug genome_track_str /) {
+    for my $attr (qw/ force debug genome_str_track /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
@@ -182,7 +182,7 @@ sub build_gene_sites {
     my $record = $gene_track->as_href;
 
     # add required fields for the build track
-    for my $attr (qw/ force debug genome_track_str /) {
+    for my $attr (qw/ force debug genome_str_track /) {
       $record->{$attr} = $self->$attr if $self->$attr;
     }
 
