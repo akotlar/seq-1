@@ -28,7 +28,7 @@ use namespace::autoclean;
 
 extends 'Seq::Config::GenomeSizedTrack';
 
-has act     => ( is => 'ro', isa => 'Bool', );
+has act   => ( is => 'ro', isa => 'Bool', );
 has debug => ( is => 'ro', isa => 'Bool', );
 has rsync_bin =>
   ( is => 'ro', isa => 'Str', required => 1, builder => '_build_rsync_bin', );
