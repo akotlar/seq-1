@@ -95,7 +95,7 @@ has alt_names => (
 );
 
 has transcript_seq => (
-  is      => 'ro',
+  is      => 'rw',
   isa     => 'Str',
   builder => '_build_transcript_db',
   lazy    => 1,
@@ -106,7 +106,7 @@ has transcript_seq => (
 );
 
 has transcript_annotation => (
-  is      => 'ro',
+  is      => 'rw',
   isa     => 'Str',
   builder => '_build_transcript_annotation',
   lazy    => 1,
@@ -141,7 +141,7 @@ has transcript_error => (
 );
 
 has peptide => (
-  is      => 'ro',
+  is      => 'rw',
   isa     => 'Str',
   default => q{},
   traits  => ['String'],
@@ -152,7 +152,7 @@ has peptide => (
 );
 
 has transcript_sites => (
-  is      => 'ro',
+  is      => 'rw',
   isa     => 'ArrayRef[Seq::Site::Gene]',
   default => sub { [] },
   traits  => ['Array'],
@@ -163,7 +163,7 @@ has transcript_sites => (
 );
 
 has flanking_sites => (
-  is      => 'ro',
+  is      => 'rw',
   isa     => 'ArrayRef[Seq::Site::Gene]',
   default => sub { [] },
   traits  => ['Array'],
@@ -326,7 +326,6 @@ sub _build_transcript_annotation {
     $seq = reverse $seq;
     $seq =~ tr/ACGT53/TGCA35/;
   }
-  say $seq;
   return $seq;
 }
 
@@ -392,6 +391,8 @@ sub _build_transcript_sites {
     $gene_site{transcript_id} = $self->transcript_id;
     $gene_site{strand}        = $self->strand;
 
+    say join "\t", $i, $gene_site{abs_pos}, $gene_site{ref_base}, $site_annotation;
+
     # is site coding
     if ( $site_annotation =~ m/[ACGT]/ ) {
       $gene_site{site_type}      = 'Coding';
@@ -418,9 +419,9 @@ sub _build_transcript_sites {
     else {
       for my $attr ( qw/ transcript_id strand coding_start coding_end
       all_exon_starts all_exon_ends transcript_seq / ) {
-        say "$attr: " . dump($self->$attr);
+        say "$attr: " . $self->$attr;
       }
-      # say "data for site: " . dump(\%gene_site );
+      say "data for site: " . dump(\%gene_site );
       confess "unknown site code $site_annotation";
     }
 
