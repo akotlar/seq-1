@@ -69,6 +69,24 @@ my @gene_track_fields = qw( chrom     strand    txStart   txEnd
 # use: $self->get_dat_file( $chr );
 
 # track information
+has snp_track_fields => (
+  is => 'ro',
+  isa => 'ArrayRef',
+  builder => '_build_snp_track_fields',
+);
+sub _build_snp_track_fields {
+  return \@snp_track_fields;
+}
+
+has gene_track_fields => (
+  is => 'ro',
+  isa => 'ArrayRef',
+  builder => '_build_gene_track_fields',
+);
+sub _build_gene_track_fields {
+  return \@gene_track_fields;
+}
+
 has type => ( is => 'ro', isa => 'SparseTrackType', required => 1, );
 has sql_statement => ( is => 'ro', isa => 'Str', );
 
@@ -114,70 +132,6 @@ has features => (
   handles  => { all_features => 'elements', },
 );
 
-=function sql_statement (private,)
-
-Construction-time @property sql_statement modifier
-
-@requires:
-
-=begin :list
-* @property {Str} $self->type
-
-    @values:
-
-    =begin :list
-    1. 'snp'
-    2. 'gene'
-    =end :list
-
-* @property {ArrarRef<Str>} $self->features
-* @property {Str} $self->sql_statement (returned by $self->$orig(@_) )
-* @param {Str} @snp_track_fields (global)
-=end :list
-
-@return {Str}
-
-=cut
-
-around 'sql_statement' => sub {
-  my $orig     = shift;
-  my $self     = shift;
-  my $new_stmt = "";
-
-  # handle blank sql statements
-  return unless $self->$orig(@_);
-
-  # make substitutions into the sql statements
-  if ( $self->type eq 'snp' ) {
-    my $snp_table_fields_str = join( ", ", @snp_track_fields, @{ $self->features } );
-
-    # \_ matches the character _ literally
-    # snp matches the characters snp literally (case sensitive)
-    # \_ matches the character _ literally
-
-    # NOTE: the following just defines the perl regex spec and could be removed.
-    # fields matches the characters fields literally (case sensitive)
-    # x modifier: extended. Spaces and text after a # in the pattern are ignored
-    # m modifier: multi-line. Causes ^ and $ to match the begin/end of each line
-    #             (not only begin/end of string)
-    if ( $self->$orig(@_) =~ m/\_snp\_fields/xm ) {
-      # substitute _snp_fields in statement for the comma separated string of
-      # snp_track_fields and SparseTrack features
-      ( $new_stmt = $self->$orig(@_) ) =~ s/\_snp\_fields/$snp_table_fields_str/xm;
-    }
-    elsif ( $self->$orig(@_) =~ m/_asterisk/xm ) {
-      ( $new_stmt = $self->$orig(@_) ) =~ s/\_asterisk/\*/xm;
-    }
-  }
-  elsif ( $self->type eq 'gene' ) {
-    my $gene_table_fields_str = join( ", ", @gene_track_fields, @{ $self->features } );
-
-    if ( $self->$orig(@_) =~ m/\_gene\_fields/xm ) {
-      ( $new_stmt = $self->$orig(@_) ) =~ s/\_gene\_fields/$gene_table_fields_str/xm;
-    }
-  }
-  return $new_stmt;
-};
 
 sub _get_file {
   state $check = compile( Object, Str, Str, Maybe [Str] );
