@@ -1,206 +1,4 @@
 bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType	class	valid	avHet	avHetSE	func	locType	weight	exceptions	submitterCount	submitters	alleleFreqCount	alleles	alleleNs	alleleFreqs	bitfields
-665	chr22	10510769	10510770	rs71207739	0	+	C	C	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10510927	10510928	rs71207740	0	+	A	A	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10511115	10511116	rs4022986	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-665	chr22	10511640	10511641	rs71207745	0	+	A	A	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10516681	10516682	rs4022528	0	+	C	C	C/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-665	chr22	10516696	10516697	rs4022529	0	+	A	A	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-665	chr22	10516936	10516937	rs1829029	0	+	T	T	G/T	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-665	chr22	10519494	10519495	rs3850103	0	+	G	G	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	HUMANGENOME_JCVI,TSC-CSHL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10519783	10519784	rs71267036	0	+	A	A	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10527070	10527071	rs71197671	0	-	C	C	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10527174	10527175	rs71207513	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10527256	10527257	rs34750229	0	+	G	G	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10535288	10535289	rs4022955	0	+	T	T	C/T	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-665	chr22	10554765	10554766	rs71248303	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10560668	10560669	rs71254425	0	+	A	A	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10560849	10560850	rs71273773	0	+	G	G	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10570702	10570703	rs3861242	0	+	C	C	A/C	genomic	single	unknown	0	0	unknown	exact	1	MixedObserved	1	TSC-CSHL,	0				
-665	chr22	10572118	10572119	rs79926337	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1	SingleAlleleFreq	1	ENSEMBL,	1	G,	2.000000,	1.000000,	
-665	chr22	10577829	10577830	rs111130241	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1	SingleAlleleFreq	1	ENSEMBL,	1	A,	2.000000,	1.000000,	
-665	chr22	10577839	10577840	rs75677332	0	+	A	A	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10577846	10577847	rs76225893	0	+	T	T	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10581204	10581205	rs71243726	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10581288	10581289	rs71243725	0	-	A	A	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10581445	10581446	rs71243724	0	-	T	T	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10591326	10591327	rs71242751	0	+	T	T	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10595193	10595194	rs71249844	0	-	A	A	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10595714	10595715	rs78979454	0	+	T	T	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10595763	10595764	rs74605640	0	+	C	C	C/T	genomic	single	unknown	0	0	unknown	exact	1	SingleAlleleFreq	1	ENSEMBL,	1	C,	2.000000,	1.000000,	
-665	chr22	10595766	10595767	rs79484514	0	+	C	C	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10595776	10595777	rs75789231	0	+	T	T	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10595814	10595815	rs80269175	0	-	C	C	A/G	genomic	single	by-frequency	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,G,	2.000000,2.000000,	0.500000,0.500000,	
-665	chr22	10595823	10595824	rs78261640	0	+	A	A	A/T	genomic	single	by-cluster	0.5	0	unknown	exact	1		3	BGI,ENSEMBL,GMI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10596408	10596409	rs3898664	0	+	A	A	A/C	genomic	single	by-2hit-2allele	0	0	unknown	exact	1		2	SC_SNP,TSC-CSHL,	0				
-665	chr22	10598608	10598609	rs71242847	0	+	A	A	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10599929	10599930	rs66974205	0	+	T	T	G/T	genomic	single	by-cluster,by-frequency	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	2.000000,2.000000,	0.500000,0.500000,	
-665	chr22	10606651	10606652	rs71236251	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10608273	10608274	rs71221300	0	-	G	G	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10611190	10611191	rs2944152	0	+	A	A	A/T	genomic	single	unknown	0	0	unknown	exact	1		2	SC_JCM,TSC-CSHL,	0				
-665	chr22	10611276	10611277	rs2729202	0	-	G	G	C/G	genomic	single	by-2hit-2allele	0	0	unknown	exact	1		2	SC_JCM,TSC-CSHL,	0				
-665	chr22	10611436	10611437	rs2362076	0	-	T	T	A/G	genomic	single	by-2hit-2allele	0	0	unknown	exact	1		3	SC_JCM,SC_SNP,TSC-CSHL,	0				
-665	chr22	10611491	10611492	rs2362075	0	-	C	C	A/G	genomic	single	by-2hit-2allele,by-hapmap	0	0	unknown	exact	1	SingleAlleleFreq	1	TSC-CSHL,	1	G,	398.000000,	1.000000,	
-665	chr22	10611552	10611553	rs3878282	0	+	G	G	A/G	genomic	single	by-cluster,by-2hit-2allele	0.5	0	unknown	exact	1		2	HUMANGENOME_JCVI,TSC-CSHL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-665	chr22	10611603	10611604	rs71242844	0	+	G	G	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10620009	10620010	rs1963660	0	+	G	G	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		3	HUMANGENOME_JCVI,SC_JCM,TSC-CSHL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10620022	10620023	rs1963661	0	+	G	G	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		3	HUMANGENOME_JCVI,SC_JCM,TSC-CSHL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10620253	10620254	rs1319010	0	+	A	A	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10622855	10622856	rs68073872	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	2.000000,2.000000,	0.500000,0.500000,	
-666	chr22	10626538	10626539	rs71259452	0	+	C	C	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10628937	10628938	rs74716646	0	-	C	C	C/G	genomic	single	unknown	0	0	unknown	exact	1	SingleAlleleFreq	1	ENSEMBL,	1	C,	2.000000,	1.000000,	
-666	chr22	10632978	10632979	rs4117108	0	+	G	G	G/T	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10633071	10633072	rs1850079	0	+	A	A	A/C	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10633082	10633083	rs1850080	0	+	C	C	C/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10633175	10633176	rs71268123	0	+	C	C	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10633261	10633262	rs71268124	0	+	T	T	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10633352	10633353	rs71268125	0	+	T	T	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10633417	10633418	rs71268126	0	+	T	T	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10633665	10633666	rs71268127	0	+	C	C	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10633728	10633729	rs71268128	0	+	C	C	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10634613	10634614	rs71241310	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10651364	10651365	rs71251078	0	-	G	G	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10651589	10651590	rs3952102	0	-	C	C	G/T	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	HUMANGENOME_JCVI,TSC-CSHL,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10658506	10658507	rs71237005	0	+	G	G	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10660779	10660780	rs71275371	0	-	A	A	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10660852	10660853	rs71275370	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10661189	10661190	rs71275369	0	-	C	C	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10661235	10661236	rs71275368	0	-	G	G	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10661415	10661416	rs71275367	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10661987	10661988	rs71275366	0	-	A	A	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10666204	10666205	rs35290851	0	+	A	A	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10666304	10666305	rs36113479	0	+	A	A	A/C	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10666439	10666440	rs34620406	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-666	chr22	10666464	10666465	rs36075713	0	+	T	T	G/T	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10666483	10666484	rs34254120	0	+	T	T	G/T	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10666666	10666667	rs35855075	0	+	C	C	C/T	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-666	chr22	10667156	10667157	rs71275363	0	-	G	G	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10667422	10667423	rs71275362	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10667843	10667844	rs35443125	0	+	G	G	G/T	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-666	chr22	10668120	10668121	rs34722223	0	+	G	G	C/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10668522	10668523	rs35576121	0	+	C	C	A/C	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10669451	10669452	rs71275360	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10669536	10669537	rs71275359	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10670253	10670254	rs4122816	0	+	T	T	G/T	genomic	single	by-2hit-2allele	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10670351	10670352	rs4122819	0	+	T	T	A/T	genomic	single	by-2hit-2allele	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10671023	10671024	rs71275358	0	-	T	T	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10671379	10671380	rs71275357	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10672701	10672702	rs71275356	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10673713	10673714	rs74195698	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10673730	10673731	rs74195695	0	-	G	G	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10674278	10674279	rs4108524	0	+	A	A	A/C	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10674300	10674301	rs4108525	0	+	T	T	A/T	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10674441	10674442	rs4108526	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10674569	10674570	rs4108527	0	+	G	G	A/G	genomic	single	by-2hit-2allele	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10676229	10676230	rs71199407	0	+	T	T	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10676276	10676277	rs71199408	0	+	A	A	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10678157	10678158	rs3905575	0	+	A	A	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10678662	10678663	rs71275351	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-666	chr22	10679359	10679360	rs4112811	0	-	C	C	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10679400	10679401	rs3865712	0	-	C	C	G/T	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10680595	10680596	rs4095842	0	-	A	A	C/T	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-666	chr22	10681526	10681527	rs71275350	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-667	chr22	10842660	10842661	rs2465321	0	-	T	T	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	SC_JCM,	0				
-667	chr22	10874443	10874444	rs9617549	0	-	C	C	A/G	genomic	single	by-2hit-2allele	0	0	unknown	exact	1	DuplicateObserved	4	BCMHGSC_JDW,HGSV,SC_SNP,SSAHASNP,	0				
-667	chr22	10874443	10874444	rs199758506	0	-	C	C	A/G	genomic	single	unknown	0	0	unknown	exact	1	DuplicateObserved	1	GMI,	0				
-667	chr22	10874459	10874460	rs201933133	0	-	C	C	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	GMI,	0				
-667	chr22	10874502	10874503	rs201352866	0	-	C	C	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	GMI,	0				
-667	chr22	10874514	10874515	rs186563718	0	-	C	C	C/G	genomic	single	by-cluster	0	0	unknown	exact	1		2	GMI,MPI_MOLGEN,	0				
-667	chr22	10874549	10874550	rs200226498	0	-	C	C	C/G	genomic	single	unknown	0	0	unknown	exact	1		1	GMI,	0				
-668	chr22	10924929	10924930	rs71234391	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10925880	10925881	rs71234390	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10926096	10926097	rs71234389	0	-	C	C	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10926130	10926131	rs71261580	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10926133	10926134	rs71234388	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10926142	10926143	rs71261579	0	-	G	G	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10926361	10926362	rs78656237	0	-	T	T	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ENSEMBL,GMI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10926378	10926379	rs77730702	0	-	T	T	A/T	genomic	single	by-cluster,by-frequency	0.5	0	unknown	exact	1		3	BGI,ENSEMBL,GMI,	2	A,T,	2.000000,2.000000,	0.500000,0.500000,	
-668	chr22	10926385	10926386	rs398088186	0	-	C	C	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	IGMI-SNU,	0				
-668	chr22	10926913	10926914	rs71231991	0	+	G	G	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10928631	10928632	rs71246877	0	-	C	C	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10928720	10928721	rs71246876	0	-	G	G	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10928874	10928875	rs71246875	0	-	C	C	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10928951	10928952	rs71246874	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10929224	10929225	rs71246873	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10930572	10930573	rs36192468	0	-	G	G	C/T	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-668	chr22	10931179	10931180	rs71246870	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10934014	10934015	rs71222454	0	+	G	G	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10934548	10934549	rs67841516	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	2.000000,2.000000,	0.500000,0.500000,	
-668	chr22	10935916	10935917	rs71222455	0	+	G	G	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10936542	10936543	rs71222456	0	+	G	G	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10936815	10936816	rs71222457	0	+	C	C	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10937199	10937200	rs71222458	0	+	G	G	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10937317	10937318	rs67730672	0	+	T	T	C/T	genomic	single	by-cluster,by-frequency	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	3.000000,3.000000,	0.500000,0.500000,	
-668	chr22	10938311	10938312	rs71253327	0	+	G	G	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10939062	10939063	rs71253636	0	+	C	C	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10939646	10939647	rs71263532	0	+	A	A	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10939649	10939650	rs71253637	0	+	G	G	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10939788	10939789	rs34426518	0	+	A	A	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10940415	10940416	rs34777424	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-668	chr22	10940783	10940784	rs35616875	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1	MixedObserved	1	ABI,	0				
-668	chr22	10940950	10940951	rs35526162	0	+	A	A	A/T	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-668	chr22	10940970	10940971	rs34168859	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-668	chr22	10941479	10941480	rs34418720	0	+	T	T	C/T	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ABI,HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10941713	10941714	rs76300523	0	-	T	T	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	SEATTLESEQ,	0				
-668	chr22	10942274	10942275	rs71263930	0	+	T	T	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10942985	10942986	rs71263931	0	+	A	A	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10943162	10943163	rs71267685	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10944030	10944031	rs71267684	0	-	G	G	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10944420	10944421	rs71267683	0	-	T	T	A/T	genomic	single	unknown	0.5	0	unknown	exact	1	MixedObserved	1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10944824	10944825	rs71267682	0	-	G	G	C/T	genomic	single	unknown	0.5	0	unknown	exact	1	MixedObserved	1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10945466	10945467	rs71267178	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10945497	10945498	rs66897626	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	2.000000,2.000000,	0.500000,0.500000,	
-668	chr22	10946503	10946504	rs71267177	0	-	A	A	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10946563	10946564	rs71267176	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10946920	10946921	rs71267175	0	-	C	C	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10947041	10947042	rs35591818	0	-	T	T	A/C	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-668	chr22	10951809	10951810	rs77469189	0	+	A	A	A/C	genomic	single	by-cluster,by-frequency	0.444444	0.157135	unknown	exact	1		2	ENSEMBL,GMI,	2	A,C,	4.000000,2.000000,	0.666667,0.333333,	
-668	chr22	10951814	10951815	rs79819561	0	+	A	A	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10951842	10951843	rs76004829	0	+	G	G	C/G	genomic	single	by-cluster,by-frequency	0.48	0.09798	unknown	exact	1		2	ENSEMBL,GMI,	2	C,G,	4.000000,6.000000,	0.400000,0.600000,	
-668	chr22	10951851	10951852	rs75253791	0	+	T	T	C/T	genomic	single	by-frequency	0.375	0.216506	unknown	exact	1		1	ENSEMBL,	2	C,T,	2.000000,6.000000,	0.250000,0.750000,	
-668	chr22	10951860	10951861	rs80197387	0	+	A	A	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10951875	10951876	rs79585505	0	+	C	C	C/T	genomic	single	by-frequency	0.46875	0.121031	unknown	exact	1		1	ENSEMBL,	2	C,T,	5.000000,3.000000,	0.625000,0.375000,	
-668	chr22	10951917	10951918	rs80198734	0	-	G	G	A/C	genomic	single	unknown	0	0	unknown	exact	1		1	ILLUMINA,	0				
-668	chr22	10951982	10951983	rs78888526	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10952028	10952029	rs80260563	0	-	C	C	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10952046	10952047	rs79548574	0	-	T	T	A/T	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	ENSEMBL,GMI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10952130	10952131	rs78814755	0	-	C	C	A/G	genomic	single	by-frequency	0.486111	0.082168	unknown	exact	1		1	ENSEMBL,	2	A,G,	7.000000,5.000000,	0.583333,0.416667,	
-668	chr22	10952289	10952290	rs73619727	0	-	C	C	G/T	genomic	single	unknown	0	0	unknown	exact	1		1	IGMI-SNU,	0				
-668	chr22	10952532	10952533	rs71223519	0	-	G	G	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10953185	10953186	rs3887457	0	-	G	G	A/C	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-668	chr22	10955401	10955402	rs78995133	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10955408	10955409	rs78091624	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	ENSEMBL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10955445	10955446	rs73618242	0	-	A	A	G/T	genomic	single	unknown	0	0	unknown	exact	1		1	IGMI-SNU,	0				
-668	chr22	10956634	10956635	rs35176170	0	-	T	T	A/T	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-668	chr22	10957317	10957318	rs71189669	0	-	A	A	A/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10958407	10958408	rs71189668	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10959120	10959121	rs71189667	0	-	T	T	A/C	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10959559	10959560	rs71189666	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10960097	10960098	rs35838668	0	-	T	T	A/C	genomic	single	unknown	0	0	unknown	exact	1		1	ABI,	0				
-668	chr22	10960102	10960103	rs71189665	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10960337	10960338	rs17409336	0	-	C	C	A/G	cDNA	single	unknown	0	0	unknown	exact	1		1	SEQUENOM,	0				
-668	chr22	10962395	10962396	rs71272055	0	-	G	G	C/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10963530	10963531	rs71283509	0	+	A	A	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10963580	10963581	rs71283510	0	+	G	G	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10963968	10963969	rs71283511	0	+	G	G	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10964068	10964069	rs71283512	0	+	A	A	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10964111	10964112	rs71283513	0	+	T	T	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10964728	10964729	rs3885363	0	+	A	A	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	HUMANGENOME_JCVI,TSC-CSHL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10964777	10964778	rs3885359	0	+	A	A	A/G	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-668	chr22	10964789	10964790	rs3885358	0	+	A	A	A/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	HUMANGENOME_JCVI,TSC-CSHL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10964930	10964931	rs3885362	0	+	C	C	C/T	genomic	single	unknown	0	0	unknown	exact	1		1	TSC-CSHL,	0				
-668	chr22	10965070	10965071	rs3885361	0	+	C	C	C/G	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	HUMANGENOME_JCVI,TSC-CSHL,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10965171	10965172	rs3885360	0	+	C	C	A/C	genomic	single	by-cluster	0.5	0	unknown	exact	1		2	HUMANGENOME_JCVI,TSC-CSHL,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10965585	10965586	rs71243370	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10965690	10965691	rs71243369	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10965859	10965860	rs4097715	0	+	G	G	G/T	genomic	single	unknown	0	0	unknown	exact	1		2	SC_JCM,TSC-CSHL,	0				
-668	chr22	10965913	10965914	rs71243368	0	-	G	G	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10965971	10965972	rs71243367	0	-	G	G	C/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-668	chr22	10966256	10966257	rs71243366	0	-	C	C	G/T	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	1.000000,1.000000,	0.500000,0.500000,	
-669	chr22	11017342	11017343	rs71259188	0	-	C	C	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-669	chr22	11040836	11040837	rs79288088	0	-	G	G	C/T	genomic	single	by-frequency	0.5	0	unknown	exact	1		1	ENSEMBL,	2	C,T,	3.000000,3.000000,	0.500000,0.500000,	
-669	chr22	11053703	11053704	rs2986800	0	+	G	G	A/G	genomic	single	unknown	0	0	unknown	exact	1	SingleAlleleFreq	2	SC_JCM,TSC-CSHL,	1	G,	2.000000,	1.000000,	
-669	chr22	11054966	11054967	rs7284008	0	-	A	A	G/T	genomic	single	by-2hit-2allele	0.375	0.216506	unknown	exact	1		1	HUMANGENOME_JCVI,	2	G,T,	3.000000,1.000000,	0.750000,0.250000,	
-669	chr22	11055343	11055344	rs71267109	0	-	T	T	A/G	genomic	single	unknown	0.5	0	unknown	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
 703	chr22	15526208	15526209	rs9653882	0	-	G	G	C/T	genomic	single	by-cluster,by-frequency	0.5	0	near-gene-5	exact	1		3	BCM-HGSC-SUB,HUMANGENOME_JCVI,SC_SNP,	2	C,T,	2.000000,2.000000,	0.500000,0.500000,	
 703	chr22	15526717	15526718	rs201369337	0	-	C	C	G/T	genomic	single	unknown	0	0	near-gene-5	exact	1		1	GMI,	0				
 703	chr22	15527100	15527101	rs9617250	0	-	G	G	C/T	genomic	single	unknown	0	0	near-gene-5	exact	1		1	SC_SNP,	0				
@@ -561,9 +359,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 711	chr22	16560898	16560899	rs117669652	0	+	A	A	A/C	genomic	single	unknown	0	0	intron	exact	1		2	BL,GMI,	0				
 711	chr22	16560919	16560920	rs75226765	0	+	C	C	C/T	genomic	single	unknown	0	0	intron	exact	1	SingleAlleleFreq	1	ENSEMBL,	1	T,	2.000000,	1.000000,	
 711	chr22	16560922	16560923	rs79103252	0	+	C	C	C/G	genomic	single	unknown	0	0	intron	exact	1	SingleAlleleFreq	1	ENSEMBL,	1	G,	2.000000,	1.000000,	
-711	chr22	16560957	16560958	rs144086516	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		2	BL,GMI,	0				
-711	chr22	16561040	16561041	rs201269742	0	+	C	C	A/C	genomic	single	unknown	0	0	missense	exact	1		1	GMI,	0				
-711	chr22	16561075	16561076	rs202001917	0	+	C	C	A/C	genomic	single	unknown	0	0	coding-synon	exact	1		1	GMI,	0				
 711	chr22	16561139	16561140	rs111220669	0	+	C	C	C/G	genomic	single	unknown	0	0	intron	exact	1	DuplicateObserved	1	BCM-HGSC-SUB,	0				
 711	chr22	16561139	16561140	rs139066447	0	+	C	C	C/G	genomic	single	by-cluster	0	0	intron	exact	1	DuplicateObserved	3	BL,GMI,SSMP,	0				
 711	chr22	16561165	16561166	rs111213191	0	+	C	C	A/C	genomic	single	unknown	0	0	intron	exact	1	DuplicateObserved,SingleAlleleFreq	1	BUSHMAN,	1	A,	1.000000,	1.000000,	
@@ -628,42 +423,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 711	chr22	16562984	16562985	rs201865224	0	+	A	A	A/G	genomic	single	unknown	0	0	intron	exact	1		1	GMI,	0				
 711	chr22	16562994	16562995	rs62654664	0	+	G	G	A/G	genomic	single	unknown	0	0	intron	exact	1		1	BCMHGSC_JDW,	0				
 711	chr22	16563071	16563072	rs199863031	0	+	A	A	A/G	genomic	single	unknown	0	0	intron	exact	1		1	GMI,	0				
-711	chr22	16564997	16564998	rs111220658	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	BCM-HGSC-SUB,	0				
-711	chr22	16565037	16565038	rs199718912	0	+	G	G	G/T	genomic	single	unknown	0	0	missense	exact	1		1	GMI,	0				
-711	chr22	16565091	16565092	rs200814941	0	+	C	C	C/T	genomic	single	unknown	0	0	coding-synon	exact	1		1	GMI,	0				
-711	chr22	16565135	16565136	rs193005338	0	+	G	G	C/G	genomic	single	unknown	0	0	missense	exact	1		1	MPI_MOLGEN,	0				
-711	chr22	16565192	16565193	rs117363253	0	+	G	G	G/T	genomic	single	by-frequency,by-1000genomes	0.217888	0.247929	missense	exact	1		1	1000GENOMES,	2	G,T,	2018.000000,280.000000,	0.878155,0.121845,	maf-5-some-pop,maf-5-all-pops
-711	chr22	16565214	16565215	rs372297538	0	+	G	G	G/T	genomic	single	unknown	0	0	missense	exact	1		1	SSMP,	0				
-711	chr22	16565220	16565221	rs145713882	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.163032	0.234386	coding-synon	exact	1		2	1000GENOMES,SSMP,	2	C,T,	1983.000000,195.000000,	0.910468,0.089532,	
-711	chr22	16565287	16565288	rs184949663	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	MPI_MOLGEN,	0				
-711	chr22	16565294	16565295	rs201909539	0	+	C	C	A/C	genomic	single	unknown	0	0	missense	exact	1		1	GMI,	0				
-711	chr22	16565381	16565382	rs62654675	0	+	C	C	C/T	genomic	single	unknown	0	0	missense	exact	1		1	BCMHGSC_JDW,	0				
-711	chr22	16565388	16565389	rs62654676	0	+	A	A	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	BCMHGSC_JDW,	0				
-711	chr22	16565394	16565395	rs199905636	0	+	C	C	C/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	GMI,	0				
-711	chr22	16565411	16565412	rs62654677	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	BCMHGSC_JDW,	0				
-711	chr22	16565411	16565412	rs369555002	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	SSMP,	0				
-711	chr22	16565450	16565451	rs188050788	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	MPI_MOLGEN,	0				
-711	chr22	16565458	16565459	rs191405395	0	+	C	C	C/T	genomic	single	by-cluster	0	0	nonsense	exact	1		2	MPI_MOLGEN,SSMP,	0				
-711	chr22	16565469	16565470	rs376108058	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	SSMP,	0				
-711	chr22	16565470	16565471	rs369364874	0	+	C	C	C/T	genomic	single	unknown	0	0	missense	exact	1		1	SSMP,	0				
-711	chr22	16565538	16565539	rs373026155	0	+	G	G	C/G	genomic	single	unknown	0	0	missense	exact	1		1	SSMP,	0				
-711	chr22	16565545	16565546	rs111213198	0	+	A	A	A/G	genomic	single	unknown	0.5	0	missense	exact	1	DuplicateObserved	1	BUSHMAN,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-711	chr22	16565545	16565546	rs146878455	0	+	A	A	A/G	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	2	BL,GMI,	0				
-711	chr22	16565548	16565549	rs377422348	0	+	C	C	C/G	genomic	single	unknown	0	0	missense	exact	1		1	SSMP,	0				
-711	chr22	16565576	16565577	rs62654678	0	+	T	T	A/T	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	BCMHGSC_JDW,	0				
-711	chr22	16565576	16565577	rs371169695	0	+	T	T	A/T	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	SSMP,	0				
-711	chr22	16565587	16565588	rs62654679	0	+	C	C	A/C	genomic	single	unknown	0	0	missense	exact	1		1	BCMHGSC_JDW,	0				
-711	chr22	16565598	16565599	rs62654680	0	+	T	T	G/T	genomic	single	unknown	0	0	missense	exact	1		1	BCMHGSC_JDW,	0				
-711	chr22	16565606	16565607	rs201867286	0	+	A	A	A/T	genomic	single	unknown	0	0	missense	exact	1		1	GMI,	0				
-711	chr22	16565608	16565609	rs199893164	0	+	C	C	A/C	genomic	single	unknown	0	0	missense	exact	1		1	GMI,	0				
-711	chr22	16565624	16565625	rs200772786	0	+	G	G	C/G	genomic	single	unknown	0	0	missense	exact	1		1	GMI,	0				
-711	chr22	16565639	16565640	rs62654681	0	+	A	A	A/C	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	BCMHGSC_JDW,	0				
-711	chr22	16565639	16565640	rs201789769	0	+	A	A	A/C	genomic	single	by-cluster	0	0	missense	exact	1	DuplicateObserved	2	GMI,SSMP,	0				
-711	chr22	16565655	16565656	rs62654682	0	+	G	G	G/T	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	BCMHGSC_JDW,	0				
-711	chr22	16565655	16565656	rs183884251	0	+	G	G	G/T	genomic	single	by-cluster	0	0	missense	exact	1	DuplicateObserved	2	GMI,MPI_MOLGEN,	0				
-711	chr22	16565670	16565671	rs377760516	0	+	C	C	C/T	genomic	single	unknown	0	0	coding-synon	exact	1		1	SSMP,	0				
-711	chr22	16565678	16565679	rs111103415	0	+	C	C	C/G	genomic	single	unknown	0.5	0	missense	exact	1	DuplicateObserved	1	ENSEMBL,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
-711	chr22	16565678	16565679	rs111220721	0	+	C	C	C/G	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	BCM-HGSC-SUB,	0				
 711	chr22	16565692	16565693	rs62654683	0	+	T	T	C/T	genomic	single	unknown	0	0	near-gene-3	exact	1		1	BCMHGSC_JDW,	0				
 711	chr22	16565696	16565697	rs111164636	0	+	C	C	C/T	genomic	single	unknown	0	0	near-gene-3	exact	1	DuplicateObserved,SingleAlleleFreq	1	COMPLETE_GENOMICS,	1	T,	2.000000,	1.000000,	
 711	chr22	16565696	16565697	rs117666990	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.475104	0.108757	near-gene-3	exact	1	DuplicateObserved	4	1000GENOMES,GMI,MPI_MOLGEN,SSMP,	2	C,T,	1431.000000,867.000000,	0.622715,0.377285,	maf-5-some-pop,maf-5-all-pops
@@ -824,7 +583,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 711	chr22	16592584	16592585	rs2070503	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.112251	0.208627	untranslated-5	exact	1		11	1000GENOMES,BGI,CGAP-GAI,GMI,HGBASE,HGSV,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,SSMP,YUSUKE,	2	C,T,	2199.000000,161.000000,	0.931780,0.068220,	maf-5-some-pop
 711	chr22	16592697	16592698	rs368665591	0	+	T	T	G/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	TISHKOFF,	0				
 711	chr22	16592784	16592785	rs371134928	0	+	G	G	A/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
-711	chr22	16611655	16611656	rs190150187	0	+	A	A	A/G	genomic	single	by-1000genomes	0.013679	0.081563	splice-3	exact	1		1	1000GENOMES,	2	A,G,	2163.000000,15.000000,	0.993113,0.006887,	
 712	chr22	16647198	16647199	rs3091370	0	+	G	G	A/G	genomic	single	by-cluster,by-2hit-2allele	0.375	0.216506	ncRNA	exact	1	DuplicateObserved	5	BCMHGSC_JDW,HUMANGENOME_JCVI,SC,SC_JCM,TSC-CSHL,	2	A,G,	1.000000,3.000000,	0.250000,0.750000,	
 712	chr22	16647198	16647199	rs76160126	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.309606	0.24279	ncRNA	exact	1	DuplicateObserved,NonIntegerChromCount	6	1000GENOMES,BL,CLINSEQ_SNP,ENSEMBL,GMI,SSMP,	2	A,G,	573.817993,2170.181885,	0.209117,0.790883,	maf-5-some-pop,maf-5-all-pops
 712	chr22	16647202	16647203	rs370564778	0	+	T	T	A/T	genomic	single	unknown	0	0	ncRNA	exact	1		1	SSMP,	0				
@@ -838,7 +596,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 712	chr22	16648727	16648728	rs371752575	0	+	G	G	A/G	genomic	single	unknown	0	0	ncRNA	exact	1		1	SSMP,	0				
 712	chr22	16648752	16648753	rs376683954	0	+	G	G	A/G	genomic	single	unknown	0	0	ncRNA	exact	1		1	SSMP,	0				
 712	chr22	16648754	16648755	rs9605003	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.088445	0.190788	ncRNA	exact	1		5	1000GENOMES,GMI,SC_SNP,SSMP,TISHKOFF,	2	C,T,	2077.000000,101.000000,	0.953627,0.046373,	
-712	chr22	16648831	16648832	rs10439901	0	+	A	A	A/T	genomic	single	by-hapmap	0	0	splice-5	exact	1	SingleAlleleFreq	1	SC_SNP,	1	A,	420.000000,	1.000000,	
 712	chr22	16648847	16648848	rs55664463	0	-	T	T	A/G	genomic	single	unknown	0	0	near-gene-3	exact	1	DuplicateObserved	1	AFFY,	0				observed-mismatch
 712	chr22	16649126	16649127	rs142655737	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.005495	0.052127	near-gene-3	exact	1		2	1000GENOMES,ILLUMINA,	2	C,T,	2172.000000,6.000000,	0.997245,0.002755,	observed-mismatch
 712	chr22	16653298	16653299	rs140878793	0	+	A	A	A/G	genomic	single	by-cluster,by-1000genomes	0.011867	0.076109	near-gene-3	exact	1		2	1000GENOMES,TISHKOFF,	2	A,G,	2165.000000,13.000000,	0.994031,0.005969,	
@@ -848,7 +605,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 712	chr22	16653893	16653894	rs186855440	0	+	G	G	C/G	genomic	single	by-1000genomes	0.001834	0.030229	ncRNA	exact	1		1	1000GENOMES,	2	C,G,	2.000000,2176.000000,	0.000918,0.999082,	
 712	chr22	16654033	16654034	rs143767586	0	+	A	A	A/G	genomic	single	by-cluster,by-1000genomes	0.011867	0.076109	ncRNA	exact	1		2	1000GENOMES,TISHKOFF,	2	A,G,	2165.000000,13.000000,	0.994031,0.005969,	
 712	chr22	16659577	16659578	rs113916634	0	+	A	A	A/G	genomic	single	unknown	0.5	0	ncRNA	exact	1		1	BUSHMAN,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-712	chr22	16659855	16659856	rs149647947	0	+	A	A	A/G	genomic	single	by-1000genomes	0.010959	0.073209	splice-5	exact	1		1	1000GENOMES,	2	A,G,	2166.000000,12.000000,	0.994490,0.005510,	
 712	chr22	16659886	16659887	rs61695216	0	+	C	C	C/T	genomic	single	unknown	0	0	ncRNA	exact	1		1	HGSV,	0				
 712	chr22	16671566	16671567	rs368477011	0	+	G	G	A/G	genomic	single	unknown	0	0	ncRNA	exact	1		1	SSMP,	0				
 712	chr22	16671571	16671572	rs117963034	0	+	T	T	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.003667	0.042664	ncRNA	exact	1		2	1000GENOMES,ILLUMINA,	2	C,T,	6.000000,2292.000000,	0.002611,0.997389,	
@@ -958,15 +714,46 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 714	chr22	16963728	16963729	rs9605183	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-hapmap	0.012096	0.076823	missense	exact	1		3	ILLUMINA,KRIBB_YJKIM,SC_SNP,	2	C,T,	980.000000,6.000000,	0.993915,0.006085,	
 714	chr22	16963731	16963732	rs368681956	0	+	G	G	A/G	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
 714	chr22	16963735	16963736	rs374519173	0	+	G	G	C/G	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16963749	16963750	rs61743993	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.000918	0.0214	missense	exact	1	NonIntegerChromCount	5	1000GENOMES,CLINSEQ_SNP,CORNELL,EXOME_CHIP,NHLBI-ESP,	2	A,G,	3.268000,3510.729980,	0.000930,0.999070,	
+714	chr22	16963776	16963777	rs199551459	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	missense	exact	1		5	1000GENOMES,EXOME_CHIP,NHLBI-ESP,SSMP,TISHKOFF,	2	A,G,	1.000000,2177.000000,	0.000459,0.999541,	
+714	chr22	16963785	16963786	rs201165731	0	+	G	G	A/G	genomic	single	unknown	0.001998	0.031544	missense	exact	1	NonIntegerChromCount	1	CLINSEQ_SNP,	2	A,G,	1.304000,1302.699951,	0.001000,0.999000,	
 714	chr22	16963823	16963824	rs142725655	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	coding-synon	exact	1		1	1000GENOMES,	2	C,T,	2177.000000,1.000000,	0.999541,0.000459,	
+714	chr22	16963824	16963825	rs200669352	0	+	G	G	A/G	genomic	single	by-cluster	0	0	missense	exact	1		2	EXOME_CHIP,NHLBI-ESP,	0				
+714	chr22	16964812	16964813	rs369275091	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
 714	chr22	16964819	16964820	rs5992599	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.056179	0.157903	coding-synon	exact	1		9	1000GENOMES,BCM_SSAHASNP,BUSHMAN,CORNELL,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,SC_SNP,TISHKOFF,	2	C,T,	3346.000000,160.000000,	0.954364,0.045636,	maf-5-some-pop,maf-5-all-pops
+714	chr22	16964820	16964821	rs141562718	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.005495	0.052127	missense	exact	1		6	1000GENOMES,EXOME_CHIP,ILLUMINA,NHLBI-ESP,SSMP,TISHKOFF,	2	A,G,	6.000000,2172.000000,	0.002755,0.997245,	
+714	chr22	16964835	16964836	rs11705099	0	+	T	T	G/T	genomic	single	by-hapmap	0	0	missense	exact	1	SingleAlleleFreq	1	CSHL-HAPMAP,	1	T,	404.000000,	1.000000,	
 714	chr22	16964843	16964844	rs150913589	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	coding-synon	exact	1		1	1000GENOMES,	2	A,G,	1.000000,2177.000000,	0.000459,0.999541,	
+714	chr22	16965255	16965256	rs202195757	0	+	G	G	A/G	genomic	single	by-cluster	0.001998	0.031544	missense	exact	1	NonIntegerChromCount	2	CLINSEQ_SNP,NHLBI-ESP,	2	A,G,	1.306000,1304.689941,	0.001000,0.999000,	
+714	chr22	16965262	16965263	rs184119846	0	+	G	G	C/G	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	missense	exact	1		3	1000GENOMES,EXOME_CHIP,NHLBI-ESP,	2	C,G,	1.000000,2177.000000,	0.000459,0.999541,	
 714	chr22	16965266	16965267	rs1541529	0	+	G	G	G/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.064787	0.167917	coding-synon	exact	1	NonIntegerChromCount	13	1000GENOMES,ABI,CLINSEQ_SNP,COMPLETE_GENOMICS,EXOME_CHIP,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,PERLEGEN,SC_JCM,SSMP,TISHKOFF,TSC-CSHL,	2	G,T,	3726.409912,153.587006,	0.960416,0.039584,	maf-5-some-pop,maf-5-all-pops,genotype-conflict
 714	chr22	16966100	16966101	rs4819925	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.305046	0.243865	coding-synon	exact	1	NonIntegerChromCount	29	1000GENOMES,ABI,BCM-HGSC-SUB,BCMHGSC_JDW,BCM_SSAHASNP,BGI,BL,BUSHMAN,CLINSEQ_SNP,COMPLETE_GENOMICS,CORNELL,CSHL-HAPMAP,ENSEMBL,EXOME_CHIP,GMI,HGSV,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,NHLBI-ESP,PERLEGEN,PJP,SC_SNP,SEATTLESEQ,SI_EXO,SSAHASNP,SSMP,TISHKOFF,WI_SSAHASNP,	2	C,T,	1116.661987,4767.660156,	0.189769,0.810231,	maf-5-some-pop
+714	chr22	16969950	16969951	rs201405868	0	+	T	T	A/T	genomic	single	by-cluster	0.001998	0.031544	missense	exact	1	NonIntegerChromCount	3	CLINSEQ_SNP,EXOME_CHIP,NHLBI-ESP,	2	A,T,	1.244000,1242.760010,	0.001000,0.999000,	
+714	chr22	16969953	16969954	rs370292871	0	+	G	G	A/G	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16969969	16969970	rs373491367	0	+	G	G	A/G	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16969972	16969973	rs377466804	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16970007	16970008	rs202215160	0	+	G	G	A/G	genomic	single	by-cluster	0	0	missense	exact	1		2	EXOME_CHIP,NHLBI-ESP,	0				
+714	chr22	16970008	16970009	rs200505777	0	+	G	G	A/G	genomic	single	by-cluster	0	0	missense	exact	1		2	EXOME_CHIP,NHLBI-ESP,	0				
+714	chr22	16970013	16970014	rs368140874	0	+	C	C	A/C	genomic	single	unknown	0	0	missense	exact	1	MixedObserved	1	NHLBI-ESP,	0				
+714	chr22	16970029	16970030	rs190990651	0	+	T	T	C/T	genomic	single	by-cluster,by-1000genomes	0.001834	0.030229	missense	exact	1		1	1000GENOMES,	2	C,T,	2.000000,2176.000000,	0.000918,0.999082,	
 714	chr22	16970036	16970037	rs370660026	0	+	T	T	C/T	genomic	single	unknown	0	0	coding-synon	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16970038	16970039	rs61741409	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.062214	0.165035	missense	exact	1	NonIntegerChromCount	10	1000GENOMES,APPLERA_GI,CLINSEQ_SNP,CORNELL,EXOME_CHIP,ILLUMINA,NHLBI-ESP,SEATTLESEQ,SSMP,TISHKOFF,	2	C,T,	3471.520020,99.804001,	0.972054,0.027946,	maf-5-some-pop
+714	chr22	16970055	16970056	rs367789494	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16970061	16970062	rs11703655	0	+	A	A	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.026275	0.111568	missense	exact	1	NonIntegerChromCount	10	1000GENOMES,CLINSEQ_SNP,CORNELL,CSHL-HAPMAP,EXOME_CHIP,ILLUMINA,NHLBI-ESP,PERLEGEN,SSMP,TISHKOFF,	2	A,G,	3515.520020,56.480000,	0.984188,0.015812,	
+714	chr22	16970064	16970065	rs375952297	0	+	C	C	C/G	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16970065	16970066	rs62237422	0	+	T	T	C/T	genomic	single	unknown	0.5	0	missense	exact	1		2	BCMHGSC_JDW,ENSEMBL,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
+714	chr22	16970067	16970068	rs368805924	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
 714	chr22	16970078	16970079	rs139424257	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	coding-synon	exact	1		1	1000GENOMES,	2	A,G,	1.000000,2177.000000,	0.000459,0.999541,	
+714	chr22	16970080	16970081	rs372130793	0	+	T	T	G/T	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
 714	chr22	16970087	16970088	rs144083851	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.00275	0.03698	coding-synon	exact	1		2	1000GENOMES,NHLBI-ESP,	2	A,G,	3.000000,2175.000000,	0.001377,0.998623,	
+714	chr22	16970139	16970140	rs200009773	0	+	G	G	A/G	genomic	single	by-1000genomes	0.000918	0.0214	missense	exact	1		1	1000GENOMES,	2	A,G,	1.000000,2177.000000,	0.000459,0.999541,	
 714	chr22	16970141	16970142	rs373151563	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	SSMP,	0				
+714	chr22	16970143	16970144	rs182474478	0	+	T	T	C/T	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	missense	exact	1		1	1000GENOMES,	2	C,T,	1.000000,2177.000000,	0.000459,0.999541,	
+714	chr22	16970155	16970156	rs369396073	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16970157	16970158	rs371684322	0	+	A	A	A/G	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16970173	16970174	rs374896102	0	+	C	C	C/G	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16970175	16970176	rs369079535	0	+	T	T	C/T	genomic	single	unknown	0	0	missense	exact	1		1	NHLBI-ESP,	0				
+714	chr22	16970190	16970191	rs187875313	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	missense	exact	1		2	1000GENOMES,NHLBI-ESP,	2	C,T,	2177.000000,1.000000,	0.999541,0.000459,	
 714	chr22	16988135	16988136	rs5992604	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.47386	0.111296	coding-synon	exact	1	NonIntegerChromCount	20	1000GENOMES,BCM-HGSC-SUB,BCMHGSC_JDW,BL,BUSHMAN,CLINSEQ_SNP,COMPLETE_GENOMICS,CORNELL,ENSEMBL,GMI,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,NHLBI-ESP,PERLEGEN,PJP,SC_SNP,SEATTLESEQ,SSMP,TISHKOFF,	2	A,G,	2328.229980,3755.770020,	0.382681,0.617319,	maf-5-some-pop,maf-5-all-pops,genotype-conflict
 714	chr22	16988158	16988159	rs28502153	0	+	C	C	A/C	genomic	single	by-cluster,by-frequency,by-1000genomes	0.445662	0.155616	nonsense	exact	1	NonIntegerChromCount	19	1000GENOMES,BCM-HGSC-SUB,BCMHGSC_JDW,BL,BUSHMAN,CLINSEQ_SNP,COMPLETE_GENOMICS,CORNELL,ENSEMBL,EXOME_CHIP,GMI,ILLUMINA,ILLUMINA-UK,NHLBI-ESP,SEATTLESEQ,SI_EXO,SSAHASNP,SSMP,TISHKOFF,	2	A,C,	1140.264038,2254.736084,	0.335866,0.664134,	maf-5-some-pop,maf-5-all-pops
 714	chr22	16988165	16988166	rs200944025	0	+	G	G	A/G	genomic	single	by-1000genomes	0.000918	0.0214	coding-synon	exact	1		1	1000GENOMES,	2	A,G,	1.000000,2177.000000,	0.000459,0.999541,	
@@ -1216,17 +1003,22 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 723	chr22	18173187	18173188	rs368667421	0	+	C	C	C/T	genomic	single	unknown	0	0	coding-synon	exact	1		1	NHLBI-ESP,	0				
 723	chr22	18173821	18173822	rs151225926	0	+	C	C	C/T	genomic	single	unknown	0.000445	0.014912	coding-synon	exact	1		1	NHLBI-ESP,	2	C,T,	4491.000000,1.000000,	0.999777,0.000223,	
 723	chr22	18177075	18177076	rs486572	0	-	A	A	C/T	genomic	single	unknown	0	0	untranslated-3	exact	1		4	CGAP-GAI,LEE,SC_JCM,SC_SNP,	0				
-723	chr22	18184665	18184666	rs200686438	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	GMI,	0				
-723	chr22	18184784	18184785	rs5747719	0	-	C	C	A/G	genomic	single	unknown	0.5	0	missense	exact	1		3	BCMHGSC_JDW,ENSEMBL,SC_SNP,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-723	chr22	18184899	18184900	rs201498341	0	+	G	G	A/G	genomic	single	by-cluster	0	0	coding-synon	exact	1		2	BILGI_BIOE,GMI,	0				
-723	chr22	18184919	18184920	rs10854537	0	-	T	T	A/G	genomic	single	by-2hit-2allele	0	0	missense	exact	1		2	BCMHGSC_JDW,SC_SNP,	0				observed-mismatch
-723	chr22	18184962	18184963	rs113750532	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1	DuplicateObserved	1	BCM-HGSC-SUB,	0				
 723	chr22	18207529	18207530	rs500417	0	-	C	C	A/G	genomic	single	unknown	0	0	near-gene-5	exact	1		3	SC_JCM,SC_SNP,SSAHASNP,	0				
 723	chr22	18207631	18207632	rs478113	0	-	A	A	C/T	genomic	single	unknown	0	0	near-gene-5	exact	1		3	SC_JCM,SC_SNP,SSAHASNP,	0				
 726	chr22	18528268	18528269	rs112949193	0	+	G	G	G/T	genomic	single	unknown	0	0	nonsense	exact	1		1	BCM-HGSC-SUB,	0				
+726	chr22	18528636	18528637	rs373649676	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	SSMP,	0				
+726	chr22	18606577	18606578	rs112777751	0	+	C	C	C/T	genomic	single	unknown	0	0	coding-synon	exact	1		1	BCM-HGSC-SUB,	0				
 726	chr22	18606630	18606631	rs5997742	0	-	C	C	A/G	genomic	single	unknown	0	0	missense	exact	1		1	SC_SNP,	0				
+726	chr22	18606838	18606839	rs370193134	0	+	C	C	C/T	genomic	single	unknown	0	0	coding-synon	exact	1		1	NHLBI-ESP,	0				
+726	chr22	18607192	18607193	rs200551182	0	+	C	C	C/G	genomic	single	by-cluster	0	0	coding-synon	exact	1		2	BILGI_BIOE,GMI,	0				
+726	chr22	18607282	18607283	rs374875339	0	+	C	C	C/T	genomic	single	unknown	0	0	coding-synon	exact	1		1	NHLBI-ESP,	0				
+726	chr22	18607303	18607304	rs374985615	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	NHLBI-ESP,	0				
+726	chr22	18607336	18607337	rs141165655	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		2	BL,GMI,	0				
+726	chr22	18607480	18607481	rs9617898	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	SC_SNP,	0				
 726	chr22	18607493	18607494	rs468996	0	-	G	G	A/C	genomic	single	by-cluster	0.5	0	missense	exact	1	DuplicateObserved	7	HUMANGENOME_JCVI,KWOK,MGC_GENOME_DIFF,SC_JCM,SC_SNP,SEQUENOM,YUSUKE,	2	A,C,	1.000000,1.000000,	0.500000,0.500000,	maf-5-some-pop,maf-5-all-pops,observed-mismatch
 726	chr22	18607958	18607959	rs372487519	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
+726	chr22	18607960	18607961	rs374471115	0	+	C	C	C/T	genomic	single	unknown	0	0	coding-synon	exact	1		1	NHLBI-ESP,	0				
+726	chr22	18608020	18608021	rs369298619	0	+	G	G	A/G	genomic	single	unknown	0	0	coding-synon	exact	1		1	NHLBI-ESP,	0				
 726	chr22	18608599	18608600	rs371014568	0	+	G	G	G/T	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 726	chr22	18608674	18608675	rs861801	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency	0.5	0	coding-synon	exact	1	DuplicateObserved	7	BCMHGSC_JDW,ENSEMBL,HUMANGENOME_JCVI,KWOK,SC_JCM,SC_SNP,SEQUENOM,	2	A,G,	2.000000,2.000000,	0.500000,0.500000,	maf-5-some-pop,maf-5-all-pops,observed-mismatch
 726	chr22	18608788	18608789	rs468289	0	-	C	C	C/G	genomic	single	by-cluster	0.5	0	missense	exact	1		5	HUMANGENOME_JCVI,KWOK,SC_JCM,SC_SNP,WI_SSAHASNP,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
@@ -1241,14 +1033,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 727	chr22	18727815	18727816	rs2911633	0	-	T	T	A/G	genomic	single	unknown	0	0	near-gene-5	exact	1		1	SC_JCM,	0				
 727	chr22	18727865	18727866	rs2911631	0	-	T	T	A/T	genomic	single	by-cluster,by-2hit-2allele,by-hapmap	0	0	near-gene-5	exact	1		3	CSHL-HAPMAP,HGSV,SC_JCM,	0				
 727	chr22	18727873	18727874	rs2911630	0	-	A	A	C/T	genomic	single	unknown	0	0	near-gene-5	exact	1		1	SC_JCM,	0				
-727	chr22	18736037	18736038	rs685313	0	-	C	C	A/G	genomic	single	unknown	0	0	missense	exact	1		3	SC_JCM,SC_SNP,TSC-CSHL,	0				observed-mismatch
-728	chr22	18749977	18749978	rs2439058	0	-	A	A	C/T	genomic	single	unknown	0	0	missense	exact	1		1	SC_JCM,	0				
-728	chr22	18750012	18750013	rs529776	0	-	C	C	A/G	genomic	single	by-cluster	0	0	coding-synon	exact	1	DuplicateObserved	3	BCM-HGSC-SUB,SC_JCM,SSAHASNP,	0				observed-mismatch
-728	chr22	18781747	18781748	rs2080690	0	+	T	T	C/T	genomic	single	by-cluster,by-frequency	0.127615	0.217996	splice-3	exact	1	NonIntegerChromCount	4	BCMHGSC_JDW,CLINSEQ_SNP,SC_SNP,TSC-CSHL,	2	C,T,	16.028999,217.970993,	0.068500,0.931500,	maf-5-some-pop,maf-5-all-pops
-728	chr22	18782136	18782137	rs62229901	0	+	A	A	A/G	genomic	single	unknown	0	0	splice-5	exact	1	DuplicateObserved	1	BCMHGSC_JDW,	0				
-728	chr22	18782136	18782137	rs151316359	0	+	A	A	A/G	genomic	single	by-cluster	0	0	splice-5	exact	1	DuplicateObserved	3	BL,GMI,SSMP,	0				
-728	chr22	18787743	18787744	rs189453055	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-5	exact	1	DuplicateObserved	1	MPI_MOLGEN,	0				
-728	chr22	18787743	18787744	rs377300628	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-5	exact	1	DuplicateObserved	1	SSMP,	0				
 728	chr22	18792995	18792996	rs3896748	0	-	A	A	A/T	genomic	single	by-cluster	0	0	near-gene-5	exact	1		3	BCM_SSAHASNP,SSMP,TSC-CSHL,	0				
 728	chr22	18792998	18792999	rs3896747	0	-	C	C	A/G	genomic	single	by-cluster	0	0	near-gene-5	exact	1		3	BCM_SSAHASNP,SSMP,TSC-CSHL,	0				observed-mismatch
 728	chr22	18793083	18793084	rs3893047	0	-	A	A	G/T	genomic	single	by-cluster	0	0	near-gene-5	exact	1		7	GMI,HGSV,SC_JCM,SSAHASNP,SSMP,TSC-CSHL,WI_SSAHASNP,	0				
@@ -1262,7 +1046,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 728	chr22	18848993	18848994	rs362020	0	-	T	T	A/G	genomic	single	unknown	0	0	near-gene-3	exact	1	DuplicateObserved	4	SC,SC_JCM,SC_SNP,SSAHASNP,	0				
 729	chr22	18911028	18911029	rs376636119	0	+	G	G	A/G	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
 729	chr22	18911029	18911030	rs145678607	0	+	T	T	C/T	genomic	single	unknown	0	0	splice-5	exact	1		1	EXOME_CHIP,	0				
-730	chr22	19030780	19030781	rs1051961	0	-	G	G	C/G	cDNA	single	by-frequency,by-1000genomes	0.025381	0.109757	splice-3	exact	1	NonIntegerChromCount	2	1000GENOMES,LEE,	2	C,G,	2280.639893,81.360001,	0.965555,0.034445,	maf-5-some-pop,maf-5-all-pops
 730	chr22	19030789	19030790	rs1051962	0	-	C	C	A/G	cDNA	single	by-frequency	0.3078	0.243227	ncRNA	exact	1	NonIntegerChromCount	2	LEE,SEQUENOM,	2	A,G,	34.959999,149.039993,	0.190000,0.810000,	maf-5-some-pop,maf-5-all-pops
 730	chr22	19030797	19030798	rs1051963	0	-	A	A	G/T	cDNA	single	by-frequency	0.2408	0.249831	ncRNA	exact	1	NonIntegerChromCount	2	LEE,SEQUENOM,	2	G,T,	25.760000,158.240005,	0.140000,0.860000,	maf-5-some-pop,maf-5-all-pops
 730	chr22	19030825	19030826	rs1051959	0	-	C	C	C/G	cDNA	single	unknown	0	0	ncRNA	exact	1	SingleAlleleFreq	1	LEE,	1	G,	2.000000,	1.000000,	
@@ -1282,9 +1065,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 733	chr22	19434876	19434877	rs11557715	0	-	G	G	A/C	cDNA	single	by-cluster	0	0	missense	exact	1	SingleAlleleFreq	3	CGAP-GAI,ILLUMINA,KRIBB_YJKIM,	1	C,	2.000000,	1.000000,	
 733	chr22	19435736	19435737	rs11557716	0	-	G	G	C/T	cDNA	single	unknown	0	0	coding-synon	exact	1		1	CGAP-GAI,	0				
 733	chr22	19440987	19440988	rs11744	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.418005	0.185134	untranslated-3	exact	1		11	1000GENOMES,BGI,BUSHMAN,CGAP-GAI,GMI,ILLUMINA,KRIBB_YJKIM,LEE,PERLEGEN,SI_EXO,SSMP,	2	C,T,	1330.000000,3121.000000,	0.298809,0.701191,	maf-5-some-pop,maf-5-all-pops
-733	chr22	19527342	19527343	rs149400818	0	+	A	A	A/T	genomic	single	by-1000genomes	0.000918	0.0214	untranslated-5	exact	1		1	1000GENOMES,	2	A,T,	2177.000000,1.000000,	0.999541,0.000459,	
-733	chr22	19527375	19527376	rs143980049	0	+	G	G	A/G	genomic	single	by-1000genomes	0.013679	0.081563	untranslated-5	exact	1		2	1000GENOMES,GMI,	2	A,G,	15.000000,2163.000000,	0.006887,0.993113,	
-733	chr22	19527433	19527434	rs377424616	0	+	T	T	C/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
 734	chr22	19565984	19565985	rs386466718	0	-	T	T	A/C	genomic	single	unknown	0	0	near-gene-3	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
 735	chr22	19714536	19714537	rs2518845	0	+	C	C	C/T	genomic	single	by-cluster	0	0	untranslated-5	exact	1	SingleAlleleFreq	3	ILLUMINA,KRIBB_YJKIM,SC_JCM,	1	C,	2.000000,	1.000000,	
 735	chr22	19714562	19714563	rs113768085	0	+	C	C	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	BCM-HGSC-SUB,	0				
@@ -1304,14 +1084,8 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 737	chr22	19990811	19990812	rs116816134	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.023591	0.106014	untranslated-5	exact	1		3	1000GENOMES,NHLBI-ESP,TISHKOFF,	2	A,G,	32.000000,2264.000000,	0.013937,0.986063,	maf-5-some-pop,maf-5-all-pops
 739	chr22	20198578	20198579	rs681112	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.422406	0.181042	near-gene-3	exact	1		17	1000GENOMES,ABI,BGI,BUSHMAN,COMPLETE_GENOMICS,GMI,HGSV,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,KWOK,PJP,SC_JCM,SC_SNP,SSMP,TISHKOFF,TSC-CSHL,	2	A,G,	3035.000000,1403.000000,	0.683867,0.316133,	maf-5-some-pop,maf-5-all-pops
 739	chr22	20268257	20268258	rs12330011	0	+	C	C	C/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SC_SNP,	0				
-740	chr22	20354729	20354730	rs12172270	0	+	T	T	A/T	genomic	single	unknown	0	0	splice-5	exact	1		1	SC_SNP,	0				
-740	chr22	20357077	20357078	rs371321403	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	SSMP,	0				
-740	chr22	20359577	20359578	rs71317854	0	+	T	T	G/T	genomic	single	by-cluster	0	0	splice-5	exact	1	SingleAlleleFreq	4	BL,ENSEMBL,HUMANGENOME_JCVI,SSMP,	1	G,	4.000000,	1.000000,	
-740	chr22	20360698	20360699	rs200423445	0	+	G	G	A/G	genomic	single	unknown	0.032455	0.123184	splice-3	exact	1	NonIntegerChromCount	1	CLINSEQ_SNP,	2	A,G,	1.980000,118.019997,	0.016500,0.983500,	
-740	chr22	20361355	20361356	rs35448936	0	-	A	A	C/T	genomic	single	unknown	0	0	missense	exact	1		1	ABI,	0				
 740	chr22	20363512	20363513	rs2543700	0	-	A	A	C/T	genomic	single	by-cluster,by-submitter	0.5	0	near-gene-3	exact	1	DuplicateObserved	3	COMPLETE_GENOMICS,HGSV,SC_JCM,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	observed-mismatch
 740	chr22	20375488	20375489	rs140879384	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.010051	0.070175	splice-5	exact	1	NonIntegerChromCount	2	1000GENOMES,CLINSEQ_SNP,	2	C,T,	2760.108887,11.891000,	0.995710,0.004290,	
-740	chr22	20377275	20377276	rs61752242	0	+	C	C	C/G	genomic	single	by-cluster,by-1000genomes	0.05271	0.153547	splice-3	exact	1		3	1000GENOMES,CANCER-GENOME,TISHKOFF,	2	C,G,	2119.000000,59.000000,	0.972911,0.027089,	
 740	chr22	20424479	20424480	rs1076486	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.313552	0.241787	near-gene-3	exact	1		11	1000GENOMES,ABI,BUSHMAN,GMI,ILLUMINA,KRIBB_YJKIM,SC_JCM,SSMP,TISHKOFF,TSC-CSHL,YUSUKE,	2	A,G,	822.000000,3453.000000,	0.192281,0.807719,	maf-5-some-pop
 742	chr22	20707378	20707379	rs76269769	0	-	C	C	C/G	genomic	single	by-cluster	0	0	near-gene-3	exact	1		1	ILLUMINA,	0				
 743	chr22	20742606	20742607	rs376411596	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
@@ -1323,10 +1097,8 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 744	chr22	20949974	20949975	rs202127561	0	-	T	T	A/C	genomic	single	by-cluster	0	0	untranslated-3	exact	1		1	ILLUMINA,	0				observed-mismatch
 744	chr22	20950338	20950339	rs200621487	0	-	C	C	A/G	genomic	single	by-cluster	0	0	untranslated-3	exact	1	MixedObserved	2	GMI,ILLUMINA,	0				
 744	chr22	20950338	20950339	rs386490463	0	-	C	C	A/G	genomic	single	unknown	0	0	untranslated-3	exact	1	MixedObserved	1	ILLUMINA,	0				observed-mismatch
-745	chr22	21060577	21060578	rs4051935	0	+	G	G	G/T	genomic	single	unknown	0	0	splice-5	exact	1		1	TSC-CSHL,	0				
 746	chr22	21167053	21167054	rs74201834	0	-	G	G	C/G	genomic	single	unknown	0.5	0	ncRNA	exact	1		1	HUMANGENOME_JCVI,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	
 746	chr22	21167065	21167066	rs71210075	0	-	T	T	A/G	genomic	single	unknown	0.5	0	ncRNA	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-746	chr22	21183416	21183417	rs9754324	0	-	T	T	A/C	genomic	single	by-cluster	0	0	splice-5	exact	1		3	BCMHGSC_JDW,BCM_SSAHASNP,SSMP,	0				
 746	chr22	21192466	21192467	rs649563	0	-	C	C	A/G	genomic	single	unknown	0	0	near-gene-3	exact	1		3	SC_JCM,SC_SNP,TSC-CSHL,	0				observed-mismatch
 747	chr22	21283597	21283598	rs71244660	0	-	C	C	A/G	genomic	single	by-cluster	0.5	0	ncRNA	exact	1	DuplicateObserved	2	HUMANGENOME_JCVI,SSMP,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
 747	chr22	21283708	21283709	rs71258800	0	-	G	G	C/T	genomic	single	unknown	0.5	0	ncRNA	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
@@ -1335,35 +1107,10 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 747	chr22	21294664	21294665	rs5762441	0	-	G	G	C/T	genomic	single	unknown	0	0	ncRNA	exact	1		1	SC_SNP,	0				
 747	chr22	21295566	21295567	rs78539429	0	-	A	A	C/T	genomic	single	by-cluster	0	0	ncRNA	exact	1	MixedObserved	2	GMI,ILLUMINA,	0				
 747	chr22	21296108	21296109	rs477217	0	-	G	G	C/G	genomic	single	unknown	0	0	ncRNA	exact	1	SingleAlleleFreq	4	ENSEMBL,SC_JCM,SC_SNP,TSC-CSHL,	1	G,	2.000000,	1.000000,	
-747	chr22	21326560	21326561	rs199803940	0	+	A	A	A/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	GMI,	0				
-747	chr22	21326568	21326569	rs372277290	0	+	T	T	G/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	GMI,	0				
-747	chr22	21326569	21326570	rs371590256	0	+	C	C	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
-747	chr22	21326571	21326572	rs112100397	0	+	A	A	A/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	BCM-HGSC-SUB,	0				
-747	chr22	21326573	21326574	rs200459455	0	+	A	A	A/C	genomic	single	by-cluster	0	0	untranslated-5	exact	1		2	GMI,SSMP,	0				
-747	chr22	21326580	21326581	rs71216092	0	+	A	A	A/G	genomic	single	unknown	0.5	0	untranslated-5	exact	1		1	HUMANGENOME_JCVI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
-747	chr22	21326585	21326586	rs201516864	0	+	G	G	A/G	genomic	single	by-cluster	0	0	untranslated-5	exact	1		2	GMI,SSMP,	0				
-747	chr22	21326595	21326596	rs201753947	0	+	A	A	A/T	genomic	single	by-cluster	0	0	untranslated-5	exact	1		2	GMI,SSMP,	0				
-747	chr22	21326602	21326603	rs200978368	0	+	A	A	A/C	genomic	single	unknown	0	0	untranslated-5	exact	1		1	GMI,	0				
-747	chr22	21326606	21326607	rs201462767	0	+	G	G	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	GMI,	0				
-747	chr22	21326607	21326608	rs199658487	0	+	C	C	C/T	genomic	single	by-cluster	0	0	untranslated-5	exact	1		2	GMI,SSMP,	0				
-747	chr22	21326622	21326623	rs200587522	0	+	A	A	A/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	GMI,	0				
-747	chr22	21326624	21326625	rs201572037	0	+	C	C	C/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	GMI,	0				
-747	chr22	21326625	21326626	rs200175869	0	+	T	T	A/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	GMI,	0				
-747	chr22	21326635	21326636	rs200755365	0	+	T	T	C/T	genomic	single	by-cluster	0	0	untranslated-5	exact	1		2	GMI,SSMP,	0				
 749	chr22	21545902	21545903	rs7926	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency	0.46875	0.121031	untranslated-3	exact	1		10	CGAP-GAI,COMPLETE_GENOMICS,ENSEMBL,HUMANGENOME_JCVI,KWOK,LEE,SC_JCM,SC_SNP,SEQUENOM,YUSUKE,	2	C,T,	5.000000,3.000000,	0.625000,0.375000,	maf-5-some-pop,maf-5-all-pops
 749	chr22	21546327	21546328	rs484252	0	-	A	A	C/T	genomic	single	by-cluster	0	0	missense	exact	1	SingleAlleleFreq	5	COMPLETE_GENOMICS,ENSEMBL,KWOK,SC_JCM,TSC-CSHL,	1	C,	6.000000,	1.000000,	observed-mismatch
 749	chr22	21546734	21546735	rs1610467	0	-	C	C	C/G	genomic	single	by-cluster	0.5	0	coding-synon	exact	1		5	GMI,HUMANGENOME_JCVI,SC_JCM,SC_SNP,SEQUENOM,	2	C,G,	1.000000,1.000000,	0.500000,0.500000,	maf-5-some-pop,maf-5-all-pops
 750	chr22	21627959	21627960	rs878825	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.469718	0.119265	near-gene-3	exact	1		18	1000GENOMES,ABI,AFFY,BCM_SSAHASNP,BUSHMAN,COMPLETE_GENOMICS,CSHL-HAPMAP,GMI,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,PERLEGEN,PJP,SC_SNP,SSMP,TISHKOFF,TSC-CSHL,WUGSC_SSAHASNP,	2	A,G,	4462.000000,3702.000000,	0.546546,0.453454,	maf-5-some-pop
-750	chr22	21657719	21657720	rs138259296	0	+	A	A	A/T	genomic	single	by-cluster,by-1000genomes	0.080913	0.184146	splice-3	exact	1		2	1000GENOMES,TISHKOFF,	2	A,T,	2086.000000,92.000000,	0.957759,0.042241,	
-750	chr22	21757438	21757439	rs148476999	0	+	G	G	G/T	genomic	single	by-1000genomes	0.006407	0.056237	nonsense	exact	1		1	1000GENOMES,	2	G,T,	2171.000000,7.000000,	0.996786,0.003214,	
-750	chr22	21757610	21757611	rs5755040	0	+	T	T	A/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.179413	0.239828	untranslated-5	exact	1		12	1000GENOMES,ABI,BGI,CSHL-HAPMAP,GMI,HGSV,HUMANGENOME_JCVI,KRIBB_YJKIM,PJP,SC_SNP,SSAHASNP,SSMP,	2	A,T,	309.000000,2611.000000,	0.105822,0.894178,	maf-5-some-pop
-750	chr22	21757636	21757637	rs373140038	0	+	C	C	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	TISHKOFF,	0				
-750	chr22	21757662	21757663	rs192384344	0	+	C	C	A/C	genomic	single	by-1000genomes	0.005495	0.052127	untranslated-5	exact	1		1	1000GENOMES,	2	A,C,	6.000000,2172.000000,	0.002755,0.997245,	
-750	chr22	21757691	21757692	rs375848998	0	+	G	G	A/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	TISHKOFF,	0				
-750	chr22	21757695	21757696	rs61387590	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.097557	0.198144	untranslated-5	exact	1		5	1000GENOMES,COMPLETE_GENOMICS,HGSV,RSG_UW,SSMP,	2	C,T,	2067.000000,113.000000,	0.948165,0.051835,	maf-5-some-pop
-750	chr22	21757757	21757758	rs184621152	0	+	A	A	A/G	genomic	single	by-1000genomes	0.004581	0.047642	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	2173.000000,5.000000,	0.997704,0.002296,	
-750	chr22	21757799	21757800	rs76356652	0	+	A	A	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.076699	0.180185	untranslated-5	exact	1		4	1000GENOMES,GMI,SSMP,TISHKOFF,	2	A,G,	2437.000000,99.000000,	0.960962,0.039038,	maf-5-some-pop
-750	chr22	21757844	21757845	rs189066753	0	+	G	G	A/G	genomic	single	by-1000genomes	0.000918	0.0214	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	1.000000,2177.000000,	0.000459,0.999541,	
 751	chr22	21760109	21760110	rs61757981	0	-	C	C	C/G	genomic	single	by-cluster	0.021503	0.101435	untranslated-3	exact	1		2	PGA-UW-FHCRC,RSG_UW,	2	C,G,	1.000000,91.000000,	0.010870,0.989130,	
 751	chr22	21760113	21760114	rs61757980	0	-	C	C	C/G	genomic	single	by-cluster,by-frequency	0.102788	0.202061	untranslated-3	exact	1		3	BL,PGA-UW-FHCRC,RSG_UW,	2	C,G,	5.000000,87.000000,	0.054348,0.945652,	maf-5-some-pop
 751	chr22	21760308	21760309	rs370201883	0	-	C	C	A/G	genomic	single	unknown	0	0	untranslated-3	exact	1		1	ILLUMINA,	0				observed-mismatch
@@ -1384,13 +1131,9 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 751	chr22	21764143	21764144	rs1048752	0	-	T	T	A/G	cDNA	single	unknown	0	0	untranslated-3	exact	1	SingleAlleleFreq	1	LEE,	1	A,	2.000000,	1.000000,	
 752	chr22	21955046	21955047	rs377417950	0	-	A	A	G/T	genomic	single	unknown	0	0	near-gene-3	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
 752	chr22	21955447	21955448	rs239922	0	-	T	T	A/G	genomic	single	by-submitter	0.5	0	near-gene-3	exact	1	DuplicateObserved	6	BCMHGSC_JDW,ENSEMBL,KWOK,SC_JCM,SEQUENOM,TSC-CSHL,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	maf-5-some-pop,maf-5-all-pops,observed-mismatch
-752	chr22	21955591	21955592	rs62234968	0	+	C	C	C/T	genomic	single	by-cluster	0.5	0	splice-3	exact	1	DuplicateObserved	2	BCMHGSC_JDW,HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
-752	chr22	21955591	21955592	rs149079428	0	+	C	C	C/T	genomic	single	by-cluster	0	0	splice-3	exact	1	DuplicateObserved	3	GMI,PJP,SSMP,	0				
 754	chr22	22244802	22244803	rs11089977	0	+	A	A	A/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.163032	0.234386	untranslated-5	exact	1	MixedObserved,NonIntegerChromCount	8	1000GENOMES,CLINSEQ_SNP,CSHL-HAPMAP,FHCRC,GMI,ILLUMINA,NHLBI-ESP,SSMP,	2	A,G,	3268.070068,225.925995,	0.935339,0.064661,	maf-5-some-pop
 754	chr22	22244803	22244804	rs11089978	0	+	T	T	C/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.185268	0.241474	untranslated-5	exact	1	NonIntegerChromCount	10	1000GENOMES,BUSHMAN,CLINSEQ_SNP,CSHL-HAPMAP,FHCRC,GMI,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,SSMP,	2	C,T,	603.973022,4866.029785,	0.110415,0.889585,	maf-5-some-pop
 754	chr22	22245214	22245215	rs17851581	0	+	C	C	C/T	cDNA	single	unknown	0	0	nonsense	exact	1		1	MGC_GENOME_DIFF,	0				
-755	chr22	22319252	22319253	rs375254911	0	+	T	T	G/T	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
-755	chr22	22322660	22322661	rs369999241	0	+	A	A	A/T	genomic	single	unknown	0	0	splice-3	exact	1		1	NHLBI-ESP,	0				
 756	chr22	22489432	22489433	rs185161853	0	+	C	C	C/G	genomic	single	by-1000genomes	0.000918	0.0214	untranslated-5	exact	1		1	1000GENOMES,	2	C,G,	2177.000000,1.000000,	0.999541,0.000459,	
 756	chr22	22508663	22508664	rs78369680	0	+	C	C	C/G	genomic	single	by-cluster	0	0	untranslated-5	exact	1		1	GMI,	0				
 756	chr22	22508664	22508665	rs76522518	0	+	G	G	C/G	genomic	single	by-cluster	0	0	untranslated-5	exact	1		1	GMI,	0				
@@ -1403,19 +1146,11 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 757	chr22	22567048	22567049	rs386508412	0	-	G	G	C/T	genomic	single	unknown	0	0	near-gene-3	exact	1		1	ILLUMINA,	0				observed-mismatch
 757	chr22	22632242	22632243	rs397832566	0	-	T	T	A/G	cDNA	single	unknown	0	0	ncRNA	exact	1		1	LEE,	0				
 757	chr22	22634369	22634370	rs4049977	0	-	G	G	C/T	genomic	single	unknown	0	0	ncRNA	exact	1		1	TSC-CSHL,	0				
-757	chr22	22635175	22635176	rs200120701	0	+	T	T	G/T	genomic	single	by-frequency	0.025662	0.110329	splice-3	exact	1	NonIntegerChromCount	1	CLINSEQ_SNP,	2	G,T,	5.044000,382.955994,	0.013000,0.987000,	
-759	chr22	22880027	22880028	rs383391	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-submitter,by-hapmap,by-1000genomes	0.24349	0.249915	splice-5	exact	1		15	1000GENOMES,ABI,AFFY,BGI,COMPLETE_GENOMICS,CSHL-HAPMAP,HGSV,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,PERLEGEN,PJP,SC_JCM,SSMP,TISHKOFF,	2	C,T,	2340.000000,396.000000,	0.855263,0.144737,	maf-5-some-pop,genotype-conflict
 760	chr22	23064087	23064088	rs267606185	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	YSAMUELS,	0				clinically-assoc,submitted-by-lsdb
-762	chr22	23326711	23326712	rs5763374	0	-	C	C	A/G	genomic	single	unknown	0	0	ncRNA	exact	1	DuplicateObserved	2	SC_SNP,SSAHASNP,	0				
-763	chr22	23377015	23377016	rs13053718	0	+	T	T	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.003667	0.042664	splice-3	exact	1	NonIntegerChromCount	7	1000GENOMES,ABI,CLINSEQ_SNP,HUMANGENOME_JCVI,ILLUMINA,PJP,SSAHASNP,	2	C,T,	8.024000,2675.976074,	0.002990,0.997010,	
-763	chr22	23434731	23434732	rs377195070	0	+	T	T	C/T	genomic	single	unknown	0	0	splice-5	exact	1		1	SSMP,	0				
-764	chr22	23544307	23544308	rs142028220	0	+	T	T	G/T	genomic	single	by-cluster,by-1000genomes	0.010959	0.073209	splice-5	exact	1		2	1000GENOMES,SSMP,	2	G,T,	12.000000,2166.000000,	0.005510,0.994490,	
 764	chr22	23547642	23547643	rs74487157	0	-	C	C	A/G	genomic	single	by-cluster	0.5	0	near-gene-3	exact	1		2	ENSEMBL,GMI,	2	A,G,	1.000000,1.000000,	0.500000,0.500000,	
 765	chr22	23614133	23614134	rs370596219	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
 765	chr22	23624880	23624881	rs150288995	0	+	A	A	A/G	genomic	single	by-cluster,by-1000genomes	0.001834	0.030229	splice-5	exact	1		1	1000GENOMES,	2	A,G,	2176.000000,2.000000,	0.999082,0.000918,	
 765	chr22	23625979	23625980	rs202107018	0	+	C	C	C/T	genomic	single	by-cluster	0	0	splice-5	exact	1		2	EXOME_CHIP,NHLBI-ESP,	0				
-765	chr22	23709784	23709785	rs933132	0	+	C	C	C/T	genomic	single	by-cluster,by-hapmap,by-1000genomes	0	0	splice-5	exact	1		21	1000GENOMES,BCM-HGSC-SUB,BCMHGSC_JDW,BCM_SSAHASNP,BGI,BL,BUSHMAN,COMPLETE_GENOMICS,CSHL-HAPMAP,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA-UK,PJP,SC_SNP,SSAHASNP,SSMP,TISHKOFF,TSC-CSHL,WUGSC_SSAHASNP,	2	C,T,	2614.000000,0.000000,	1.000000,0.000000,	
-765	chr22	23714343	23714344	rs189103844	0	+	T	T	C/T	genomic	single	by-1000genomes	0.000918	0.0214	splice-3	exact	1		1	1000GENOMES,	2	C,T,	1.000000,2177.000000,	0.000459,0.999541,	
 766	chr22	23745153	23745154	rs139792700	0	+	T	T	C/T	genomic	single	by-cluster,by-1000genomes	0.010959	0.073209	untranslated-5	exact	1		3	1000GENOMES,GMI,ILLUMINA,	2	C,T,	12.000000,2166.000000,	0.005510,0.994490,	
 766	chr22	23745162	23745163	rs202179692	0	+	A	A	A/G	genomic	single	by-1000genomes	0	0	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	2178.000000,0.000000,	1.000000,0.000000,	
 766	chr22	23745175	23745176	rs191480142	0	+	T	T	C/T	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	untranslated-5	exact	1		1	1000GENOMES,	2	C,T,	1.000000,2177.000000,	0.000459,0.999541,	
@@ -1438,20 +1173,14 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 769	chr22	24185822	24185823	rs370923101	0	+	C	C	C/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 769	chr22	24188058	24188059	rs200827889	0	+	C	C	A/C	genomic	single	unknown	0	0	nonsense	exact	1		1	EXOME_CHIP,	0				
 769	chr22	24188135	24188136	rs368299113	0	+	G	G	C/G	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
-770	chr22	24253398	24253399	rs180951153	0	+	G	G	C/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.031624	0.121703	splice-5	exact	1	NonIntegerChromCount	2	1000GENOMES,CLINSEQ_SNP,	2	C,G,	37.860001,2712.139893,	0.013767,0.986233,	
 770	chr22	24256797	24256798	rs3891013	0	-	A	A	C/T	genomic	single	unknown	0	0	ncRNA	exact	1	SingleAlleleFreq	2	SC_SNP,TSC-CSHL,	1	T,	2.000000,	1.000000,	
-770	chr22	24260906	24260907	rs16999793	0	+	G	G	C/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.063073	0.166007	splice-3	exact	1		4	1000GENOMES,GMI,PERLEGEN,SSMP,	2	C,G,	98.000000,2634.000000,	0.035871,0.964129,	maf-5-some-pop
 770	chr22	24261890	24261891	rs3852982	0	-	G	G	C/T	genomic	single	unknown	0	0	ncRNA	exact	1		3	BCMHGSC_JDW,SC_JCM,TSC-CSHL,	0				
 772	chr22	24583786	24583787	rs189476939	0	+	C	C	C/T	genomic	single	by-1000genomes	0.006407	0.056237	untranslated-5	exact	1		1	1000GENOMES,	2	C,T,	2171.000000,7.000000,	0.996786,0.003214,	
 773	chr22	24654025	24654026	rs3885525	0	-	C	C	A/G	genomic	single	unknown	0	0	ncRNA	exact	1	SingleAlleleFreq	3	SC_JCM,SC_SNP,TSC-CSHL,	1	G,	2.000000,	1.000000,	
 773	chr22	24654146	24654147	rs3984050	0	-	G	G	C/T	genomic	single	unknown	0	0	ncRNA	exact	1		3	SC_JCM,SC_SNP,TSC-CSHL,	0				
 773	chr22	24654418	24654419	rs3984069	0	-	G	G	C/T	genomic	single	unknown	0	0	ncRNA	exact	1		2	SC_JCM,TSC-CSHL,	0				
 773	chr22	24658812	24658813	rs16990342	0	-	A	A	C/T	genomic	single	by-frequency	0.5	0	ncRNA	exact	1		2	BCMHGSC_JDW,SEQUENOM,	2	C,T,	92.000000,92.000000,	0.500000,0.500000,	observed-mismatch
-774	chr22	24774319	24774320	rs116726573	0	+	A	A	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.021795	0.102091	splice-5	exact	1		2	1000GENOMES,TISHKOFF,	2	A,G,	2271.000000,25.000000,	0.989111,0.010889,	
 775	chr22	24935595	24935596	rs373205572	0	+	C	C	C/G	genomic	single	unknown	0	0	splice-3	exact	1		1	NHLBI-ESP,	0				
-775	chr22	24952740	24952741	rs13056739	0	+	G	G	G/T	genomic	single	by-hapmap	0	0	untranslated-5	exact	1	SingleAlleleFreq	1	SSAHASNP,	1	G,	418.000000,	1.000000,	
-775	chr22	24952763	24952764	rs371792628	0	+	G	G	G/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	TISHKOFF,	0				
-775	chr22	25025766	25025767	rs199728793	0	+	C	C	C/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	GMI,	0				
 775	chr22	25028580	25028581	rs201788906	0	-	C	C	A/G	genomic	single	by-cluster	0	0	coding-synon	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
 775	chr22	25028580	25028581	rs375370946	0	-	C	C	A/G	genomic	single	by-cluster	0	0	coding-synon	exact	1	DuplicateObserved	2	ILLUMINA,SSMP,	0				observed-mismatch
 776	chr22	25039172	25039173	rs386455841	0	-	G	G	C/T	genomic	single	unknown	0	0	coding-synon	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
@@ -1465,15 +1194,9 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 777	chr22	25203895	25203896	rs143187630	0	+	G	G	G/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.000918	0.0214	splice-5	exact	1		3	1000GENOMES,EXOME_CHIP,NHLBI-ESP,	2	G,T,	6726.000000,4.000000,	0.999406,0.000594,	
 777	chr22	25207122	25207123	rs147328317	0	+	G	G	G/T	genomic	single	by-cluster,by-frequency	0.003931	0.04416	nonsense	exact	1	NonIntegerChromCount	3	CLINSEQ_SNP,EXOME_CHIP,NHLBI-ESP,	2	G,T,	5457.229980,10.769000,	0.998031,0.001969,	
 777	chr22	25207126	25207127	rs371820471	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
-777	chr22	25212829	25212830	rs5752081	0	+	C	C	A/C	genomic	single	by-frequency,by-hapmap,by-1000genomes	0.00914	0.06698	untranslated-5	exact	1		2	1000GENOMES,SC_SNP,	2	A,C,	10.000000,2586.000000,	0.003852,0.996148,	
 777	chr22	25227871	25227872	rs386466751	0	-	G	G	A/C	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
 777	chr22	25231616	25231617	rs74315489	0	+	C	C	C/T	genomic	single	by-cluster	0	0	nonsense	exact	1		2	OMICIA,OMIM-CURATED-RECORDS,	0				clinically-assoc,has-omim-omia,submitted-by-lsdb
 778	chr22	25319963	25319964	rs1064420	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency,by-submitter	0.223133	0.248552	ncRNA	exact	1		9	BUSHMAN,CLINSEQ_SNP,GMI,HGBASE,NHLBI-ESP,SC_SNP,SI_EXO,SSMP,YUSUKE,	2	C,T,	724.000000,4947.000000,	0.127667,0.872333,	maf-5-some-pop
-778	chr22	25326286	25326287	rs201886886	0	+	G	G	G/T	genomic	single	unknown	0	0	nonsense	exact	1		1	GMI,	0				
-778	chr22	25344800	25344801	rs12159323	0	+	C	C	A/C	genomic	single	by-1000genomes	0.022693	0.104073	nonsense	exact	1		2	1000GENOMES,SC_SNP,	2	A,C,	25.000000,2153.000000,	0.011478,0.988522,	
-778	chr22	25344925	25344926	rs142746041	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.00275	0.03698	untranslated-5	exact	1		2	1000GENOMES,TISHKOFF,	2	C,T,	2175.000000,3.000000,	0.998623,0.001377,	
-778	chr22	25344926	25344927	rs117125914	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.00914	0.06698	untranslated-5	exact	1		2	1000GENOMES,SSMP,	2	A,G,	14.000000,2284.000000,	0.006092,0.993908,	
-779	chr22	25457402	25457403	rs189798648	0	+	T	T	A/T	genomic	single	by-1000genomes	0.000918	0.0214	splice-5	exact	1		1	1000GENOMES,	2	A,T,	1.000000,2177.000000,	0.000459,0.999541,	
 781	chr22	25742218	25742219	rs146359236	0	+	G	G	A/G	genomic	single	by-1000genomes	0.006407	0.056237	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	7.000000,2171.000000,	0.003214,0.996786,	
 781	chr22	25761029	25761030	rs370434998	0	+	C	C	C/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	NHLBI-ESP,	0				
 781	chr22	25761054	25761055	rs373627926	0	+	C	C	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	NHLBI-ESP,	0				
@@ -1514,10 +1237,24 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 797	chr22	27800549	27800550	rs373829038	0	+	C	C	C/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	NHLBI-ESP,	0				
 797	chr22	27800554	27800555	rs45525936	0	-	G	G	C/T	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	untranslated-5	exact	1		2	1000GENOMES,EGP_SNPS,	2	C,T,	2358.000000,2.000000,	0.999153,0.000847,	
 797	chr22	27800561	27800562	rs200843085	0	+	G	G	A/G	genomic	single	by-1000genomes	0.000918	0.0214	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	1.000000,2177.000000,	0.000459,0.999541,	
+797	chr22	27800669	27800670	rs9613529	0	+	G	G	G/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SC_SNP,	0				
+797	chr22	27800712	27800713	rs191377624	0	+	G	G	A/G	genomic	single	by-1000genomes	0.010051	0.070175	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	11.000000,2167.000000,	0.005051,0.994949,	
+797	chr22	27800735	27800736	rs368438276	0	+	C	C	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
+797	chr22	27800921	27800922	rs34343183	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.336885	0.234416	untranslated-5	exact	1		11	1000GENOMES,ABI,BCM-HGSC-SUB,BGI,COMPLETE_GENOMICS,EGP_SNPS,ENSEMBL,GMI,HUMANGENOME_JCVI,SSMP,TISHKOFF,	2	A,G,	503.000000,1869.000000,	0.212057,0.787943,	maf-5-some-pop,maf-5-all-pops
 797	chr22	27801014	27801015	rs45609036	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.013679	0.081563	untranslated-5	exact	1		2	1000GENOMES,EGP_SNPS,	2	A,G,	2352.000000,16.000000,	0.993243,0.006757,	
+797	chr22	27801137	27801138	rs9613530	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.053578	0.154656	untranslated-5	exact	1		3	1000GENOMES,EGP_SNPS,SC_SNP,	2	A,G,	62.000000,2306.000000,	0.026182,0.973818,	
 797	chr22	27801245	27801246	rs45523635	0	-	C	C	C/G	genomic	single	by-frequency	0.032424	0.123128	untranslated-5	exact	1		1	EGP_SNPS,	2	C,G,	3.000000,179.000000,	0.016484,0.983516,	maf-5-some-pop
+797	chr22	27801421	27801422	rs113666023	0	+	C	C	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	BCM-HGSC-SUB,	0				
 799	chr22	28107272	28107273	rs77828581	0	+	C	C	A/C	genomic	single	by-cluster	0	0	nonsense	exact	1		1	ILLUMINA,	0				observed-mismatch
 803	chr22	28679662	28679663	rs180764192	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.150861	0.229502	nonsense	exact	1		3	1000GENOMES,EXOME_CHIP,MPI_MOLGEN,	2	A,G,	179.000000,1999.000000,	0.082185,0.917815,	
+803	chr22	28679746	28679747	rs192133798	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.162278	0.234105	untranslated-5	exact	1		2	1000GENOMES,SSMP,	2	C,T,	1984.000000,194.000000,	0.910927,0.089073,	
+803	chr22	28679752	28679753	rs373678743	0	+	G	G	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
+803	chr22	28679754	28679755	rs376161403	0	+	G	G	G/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
+803	chr22	28679766	28679767	rs183908395	0	+	G	G	A/G	genomic	single	by-1000genomes	0.15316	0.230482	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	182.000000,1996.000000,	0.083563,0.916437,	
+803	chr22	28679780	28679781	rs187672402	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.16679	0.235745	untranslated-5	exact	1		2	1000GENOMES,SSMP,	2	C,T,	1978.000000,200.000000,	0.908173,0.091827,	
+803	chr22	28679786	28679787	rs190468488	0	+	G	G	A/G	genomic	single	by-1000genomes	0.22814	0.249042	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	286.000000,1892.000000,	0.131313,0.868687,	
+803	chr22	28679810	28679811	rs112952702	0	+	G	G	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	BCM-HGSC-SUB,	0				
+803	chr22	28679831	28679832	rs373965329	0	+	C	C	A/C	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
 803	chr22	28687337	28687338	rs17883954	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.029845	0.118456	near-gene-3	exact	1		4	1000GENOMES,BUSHMAN,EGP_SNPS,ILLUMINA,	2	A,G,	2321.000000,37.000000,	0.984309,0.015691,	observed-mismatch
 803	chr22	28687508	28687509	rs17884211	0	-	T	T	A/G	genomic	single	unknown	0.011173	0.073903	near-gene-3	exact	1		1	EGP_SNPS,	2	A,G,	177.000000,1.000000,	0.994382,0.005618,	
 804	chr22	28751238	28751239	rs199629634	0	+	A	A	A/G	genomic	single	unknown	0.001998	0.031543	splice-3	exact	1	NonIntegerChromCount	1	CLINSEQ_SNP,	2	A,G,	1246.750000,1.248000,	0.999000,0.001000,	
@@ -1527,6 +1264,9 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 804	chr22	28797205	28797206	rs139447098	0	+	C	C	C/T	genomic	single	unknown	0.00045	0.014989	splice-3	exact	1		1	NHLBI-ESP,	2	C,T,	4445.000000,1.000000,	0.999775,0.000225,	
 804	chr22	28799054	28799055	rs113042915	0	+	A	A	A/T	genomic	single	by-cluster	0	0	splice-5	exact	1	SingleAlleleFreq	2	BUSHMAN,ILLUMINA,	1	T,	1.000000,	1.000000,	
 804	chr22	28800317	28800318	rs2228260	0	-	G	G	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.085941	0.188639	coding-synon	exact	1		4	1000GENOMES,NHLBI-ESP,SSMP,WIAF-CSNP,	2	C,T,	2187.000000,111.000000,	0.951697,0.048303,	maf-5-some-pop,maf-5-all-pops
+804	chr22	28800526	28800527	rs370683137	0	+	C	C	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
+804	chr22	28800537	28800538	rs2269575	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.288063	0.247085	untranslated-5	exact	1		9	1000GENOMES,BGI,BUSHMAN,COMPLETE_GENOMICS,GMI,ILLUMINA,NHLBI-ESP,SSMP,YUSUKE,	2	A,G,	382.000000,1799.000000,	0.175149,0.824851,	maf-5-some-pop,maf-5-all-pops
+804	chr22	28800545	28800546	rs138290856	0	+	C	C	A/C	genomic	single	by-cluster,by-1000genomes	0.04486	0.14289	untranslated-5	exact	1		4	1000GENOMES,NHLBI-ESP,SSMP,WARNICH_LAB,	2	A,C,	50.000000,2128.000000,	0.022957,0.977043,	
 805	chr22	28884002	28884003	rs1065497	0	-	C	C	A/G	genomic	single	by-cluster,by-1000genomes	0.494617	0.051602	coding-synon	exact	1		7	1000GENOMES,BCM-HGSC-SUB,COMPLETE_GENOMICS,GMI,HGSV,ILLUMINA,LEE,	2	A,G,	977.000000,1203.000000,	0.448165,0.551835,	maf-5-some-pop,maf-5-all-pops
 806	chr22	29058830	29058831	rs146500316	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency	0.000791	0.019867	nonsense	exact	1	NonIntegerChromCount	4	CLINSEQ_SNP,EXOME_CHIP,GOLDSTEINLAB,NHLBI-ESP,	2	A,G,	2.324000,5873.680176,	0.000396,0.999605,	
 806	chr22	29058985	29058986	rs714136	0	-	G	G	C/G	genomic	single	by-frequency,by-hapmap	0.132653	0.220748	missense	exact	1		2	ABI,TSC-CSHL,	2	C,G,	416.000000,32.000000,	0.928571,0.071429,	genotype-conflict
@@ -1536,6 +1276,7 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 808	chr22	29260399	29260400	rs2231398	0	-	G	G	A/C	genomic	single	by-cluster,by-frequency,by-submitter,by-hapmap,by-1000genomes	0.333193	0.235752	coding-synon	exact	1	NonIntegerChromCount,InconsistentAlleles	15	1000GENOMES,APPLERA_GI,BCM-HGSC-SUB,BCMHGSC_JDW,CGAP-GAI,CLINSEQ_SNP,COMPLETE_GENOMICS,ENSEMBL,GENAISSANCE,GMI,NHLBI-ESP,PERLEGEN,SC_JCM,SEATTLESEQ,SSMP,	3	A,C,N,	1888.680054,5639.490234,1.000000,	0.250848,0.749019,0.000133,	maf-5-some-pop,genotype-conflict
 808	chr22	29260441	29260442	rs138870856	0	+	C	C	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.010959	0.073209	nonsense	exact	1	NonIntegerChromCount	5	1000GENOMES,CLINSEQ_SNP,EXOME_CHIP,ILLUMINA,NHLBI-ESP,	2	C,T,	6683.029785,44.972000,	0.993316,0.006684,	
 808	chr22	29260716	29260717	rs2231397	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.00914	0.06698	missense	exact	1		6	1000GENOMES,COMPLETE_GENOMICS,EXOME_CHIP,GENAISSANCE,ILLUMINA,NHLBI-ESP,	2	A,G,	5658.000000,38.000000,	0.993329,0.006671,	
+811	chr22	29720415	29720416	rs375700349	0	+	G	G	A/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	NHLBI-ESP,	0				
 812	chr22	29769675	29769676	rs112717334	0	+	A	A	A/G	genomic	single	by-cluster	0	0	splice-3	exact	1		1	ILLUMINA,	0				
 815	chr22	30263546	30263547	rs2070890	0	-	G	G	C/T	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.042227	0.139033	untranslated-3	exact	1		8	1000GENOMES,BGI,GSK-GENETICS,HGBASE,ILLUMINA,SC_SNP,SSMP,YUSUKE,	2	C,T,	2533.000000,63.000000,	0.975732,0.024268,	maf-5-some-pop,maf-5-all-pops
 815	chr22	30263576	30263577	rs2070889	0	-	G	G	C/T	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.310172	0.242651	untranslated-3	exact	1		12	1000GENOMES,BGI,COMPLETE_GENOMICS,GMI,GSK-GENETICS,HGBASE,ILLUMINA,KRIBB_YJKIM,SC_SNP,SSMP,TISHKOFF,YUSUKE,	2	C,T,	3350.000000,806.000000,	0.806064,0.193936,	maf-5-some-pop,maf-5-all-pops
@@ -1546,13 +1287,19 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 816	chr22	30335686	30335687	rs11550685	0	-	G	G	C/T	cDNA	single	unknown	0	0	nonsense	exact	1		1	CGAP-GAI,	0				
 816	chr22	30337121	30337122	rs2229807	0	-	C	C	G/T	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.289257	0.246899	coding-synon	exact	1	NonIntegerChromCount	18	1000GENOMES,ABI,CGAP-GAI,CLINSEQ_SNP,CSHL-HAPMAP,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA,NHLBI-ESP,PJP,SEATTLESEQ,SSAHASNP,SSMP,TISHKOFF,WICVAR,WI_SSAHASNP,	2	G,T,	6752.919922,1737.079956,	0.795397,0.204603,	maf-5-some-pop,maf-5-all-pops
 816	chr22	30342873	30342874	rs11550687	0	-	C	C	C/G	cDNA	single	unknown	0	0	missense	exact	1		1	CGAP-GAI,	0				
-817	chr22	30448131	30448132	rs2015166	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.375688	0.216108	untranslated-3	exact	1		20	1000GENOMES,ABI,BCM-HGSC-SUB,BCMHGSC_JDW,BCM_SSAHASNP,BGI,BL,BUSHMAN,COMPLETE_GENOMICS,CSHL-HAPMAP,GMI,HGSV,ILLUMINA-UK,PJP,SC_JCM,SC_SNP,SSMP,TISHKOFF,TSC-CSHL,WI_SSAHASNP,	2	A,G,	1908.000000,574.000000,	0.768735,0.231265,	maf-5-some-pop,observed-mismatch
-817	chr22	30449133	30449134	rs148884364	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.003667	0.042664	nonsense	exact	1		2	1000GENOMES,TISHKOFF,	2	A,G,	4.000000,2174.000000,	0.001837,0.998163,	
 821	chr22	30935049	30935050	rs373881103	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 821	chr22	30935161	30935162	rs9609162	0	+	C	C	C/G	genomic	single	by-hapmap	0	0	splice-3	exact	1	SingleAlleleFreq	1	SC_SNP,	1	C,	420.000000,	1.000000,	
 821	chr22	30949800	30949801	rs374633215	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	SSMP,	0				
 822	chr22	31105287	31105288	rs111892290	0	+	T	T	A/T	genomic	single	by-cluster	0	0	splice-3	exact	1		1	ILLUMINA,	0				
 822	chr22	31105928	31105929	rs372862700	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
+822	chr22	31111936	31111937	rs117474913	0	+	A	A	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.003667	0.042664	untranslated-5	exact	1		2	1000GENOMES,ILLUMINA,	2	A,G,	2293.000000,5.000000,	0.997824,0.002176,	
+822	chr22	31112071	31112072	rs141186130	0	+	G	G	A/G	genomic	single	by-1000genomes	0.014584	0.084139	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	16.000000,2162.000000,	0.007346,0.992654,	
+822	chr22	31112102	31112103	rs150751365	0	+	A	A	A/G	genomic	single	by-1000genomes	0.000918	0.0214	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	2177.000000,1.000000,	0.999541,0.000459,	
+822	chr22	31112138	31112139	rs377500231	0	+	G	G	A/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
+822	chr22	31112181	31112182	rs370113846	0	+	T	T	C/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
+822	chr22	31112191	31112192	rs190938554	0	+	A	A	A/G	genomic	single	by-1000genomes	0.010959	0.073209	untranslated-5	exact	1		1	1000GENOMES,	2	A,G,	2166.000000,12.000000,	0.994490,0.005510,	
+822	chr22	31112197	31112198	rs112045857	0	+	C	C	C/T	genomic	single	by-frequency,by-1000genomes	0.00823	0.063618	untranslated-5	exact	1		2	1000GENOMES,BUSHMAN,	2	C,T,	2170.000000,10.000000,	0.995413,0.004587,	
+822	chr22	31112208	31112209	rs2283877	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.337932	0.234026	untranslated-5	exact	1		9	1000GENOMES,BGI,GMI,ILLUMINA,KRIBB_YJKIM,SSMP,TISHKOFF,WI_SSAHASNP,YUSUKE,	2	A,G,	902.000000,3248.000000,	0.217349,0.782651,	maf-5-some-pop,maf-5-all-pops
 822	chr22	31135660	31135661	rs2232185	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.045735	0.144139	untranslated-3	exact	1		3	1000GENOMES,GENAISSANCE,ILLUMINA,	2	A,G,	53.000000,2527.000000,	0.020543,0.979457,	maf-5-some-pop
 822	chr22	31136973	31136974	rs2232183	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.249376	0.249999	missense	exact	1		16	1000GENOMES,AFFY,APPLERA_GI,BCMHGSC_JDW,BUSHMAN,ENSEMBL,EXOME_CHIP,GENAISSANCE,GMI,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,PERLEGEN,SI_EXO,SSMP,TISHKOFF,	2	A,G,	1184.000000,6468.000000,	0.154731,0.845269,	maf-5-some-pop,genotype-conflict
 822	chr22	31137809	31137810	rs2072193	0	-	G	G	C/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.248725	0.249997	missense	exact	1	NonIntegerChromCount	19	1000GENOMES,AFFY,APPLERA_GI,BGI,CLINSEQ_SNP,CSHL-HAPMAP,EXOME_CHIP,GENAISSANCE,GMI,HGBASE,HGSV,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,PERLEGEN,SC_SNP,SEATTLESEQ,SSMP,YUSUKE,	2	C,G,	9722.339844,1121.663940,	0.896564,0.103436,	maf-5-some-pop,genotype-conflict
@@ -1567,8 +1314,14 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 822	chr22	31140008	31140009	rs2074734	0	-	C	C	C/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.29927	0.245097	missense	exact	1	NonIntegerChromCount	21	1000GENOMES,APPLERA_GI,BUSHMAN,CLINSEQ_SNP,COMPLETE_GENOMICS,EXOME_CHIP,GENAISSANCE,GMI,HGBASE,HGSV,ILLUMINA,ILLUMINA-UK,NHLBI-ESP,PERLEGEN,PJP,SC_SNP,SEATTLESEQ,SI_EXO,SSMP,TISHKOFF,YUSUKE,	2	C,G,	964.695007,7749.310059,	0.110706,0.889294,	maf-5-some-pop
 822	chr22	31140146	31140147	rs2232176	0	-	A	A	G/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.298687	0.245213	missense	exact	1	NonIntegerChromCount	28	1000GENOMES,ABI,APPLERA_GI,BCMHGSC_JDW,BGI,BL,BUSHMAN,CLINSEQ_SNP,COMPLETE_GENOMICS,CSHL-HAPMAP,ENSEMBL,EXOME_CHIP,GENAISSANCE,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,MGC_GENOME_DIFF,NHLBI-ESP,PERLEGEN,PJP,SC_SNP,SEATTLESEQ,SSAHASNP,SSMP,TISHKOFF,	2	G,T,	7739.109863,2074.889893,	0.788579,0.211421,	maf-5-some-pop
 822	chr22	31140246	31140247	rs2232175	0	-	G	G	C/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.00275	0.03698	coding-synon	exact	1	NonIntegerChromCount	4	1000GENOMES,CLINSEQ_SNP,GENAISSANCE,NHLBI-ESP,	2	C,G,	7940.939941,15.059000,	0.998107,0.001893,	
+822	chr22	31140365	31140366	rs200842920	0	+	C	C	C/T	genomic	single	unknown	0.001998	0.031543	untranslated-5	exact	1	NonIntegerChromCount	1	CLINSEQ_SNP,	2	C,T,	1124.869995,1.126000,	0.999000,0.001000,	
+822	chr22	31140368	31140369	rs371211554	0	+	G	G	G/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	NHLBI-ESP,	0				
+822	chr22	31140424	31140425	rs372411159	0	+	G	G	A/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
 823	chr22	31207478	31207479	rs35108022	0	-	T	T	A/C	genomic	single	by-cluster,by-frequency,by-1000genomes	0.026275	0.111568	near-gene-3	exact	1		3	1000GENOMES,CARDIFF-PROMOTER,ILLUMINA,	2	A,C,	2266.000000,32.000000,	0.986075,0.013925,	observed-mismatch
 823	chr22	31280467	31280468	rs1858821	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.290448	0.246706	near-gene-3	exact	1		26	1000GENOMES,ABI,AFFY,BCM-HGSC-SUB,BCMHGSC_JDW,BCM_SSAHASNP,BGI,BL,BUSHMAN,COMPLETE_GENOMICS,CSHL-HAPMAP,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,PJP,SC_SNP,SI_EXO,SSAHASNP,SSMP,TISHKOFF,TSC-CSHL,WI_SSAHASNP,	2	A,G,	1102.000000,7072.000000,	0.134818,0.865182,	maf-5-some-pop
+824	chr22	31399617	31399618	rs368688522	0	+	G	G	G/T	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
+824	chr22	31399623	31399624	rs372320146	0	+	G	G	C/G	genomic	single	unknown	0	0	untranslated-5	exact	1		1	SSMP,	0				
+824	chr22	31399633	31399634	rs199760860	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	untranslated-5	exact	1		2	1000GENOMES,NHLBI-ESP,	2	C,T,	2177.000000,1.000000,	0.999541,0.000459,	
 826	chr22	31681424	31681425	rs1055394	0	-	A	A	C/T	cDNA	single	unknown	0	0	untranslated-3	exact	1	SingleAlleleFreq	1	LEE,	1	T,	2.000000,	1.000000,	
 826	chr22	31682718	31682719	rs11556783	0	-	T	T	A/T	cDNA	single	unknown	0	0	untranslated-3	exact	1		1	CGAP-GAI,	0				
 829	chr22	32043298	32043299	rs33994397	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency	0.003617	0.04237	nonsense	exact	1		1	PHARMGKB_PMT,	2	A,G,	2.000000,1102.000000,	0.001812,0.998188,	
@@ -1587,10 +1340,8 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 831	chr22	32254194	32254195	rs180913180	0	+	G	G	A/G	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	nonsense	exact	1		1	1000GENOMES,	2	A,G,	1.000000,2177.000000,	0.000459,0.999541,	
 831	chr22	32254213	32254214	rs367820700	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-3	exact	1		1	NHLBI-ESP,	0				
 832	chr22	32383529	32383530	rs386466755	0	-	T	T	A/G	genomic	single	unknown	0	0	ncRNA	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
-832	chr22	32387573	32387574	rs150973336	0	+	C	C	C/T	genomic	single	by-1000genomes	0.000918	0.0214	splice-5	exact	1		1	1000GENOMES,	2	C,T,	2177.000000,1.000000,	0.999541,0.000459,	
 832	chr22	32392343	32392344	rs370830559	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 832	chr22	32401785	32401786	rs11545747	0	-	A	A	C/T	cDNA	single	by-hapmap	0.004938	0.049444	missense	exact	1		1	CGAP-GAI,	2	C,T,	1.000000,403.000000,	0.002475,0.997525,	
-852	chr22	35022984	35022985	rs114782290	0	+	C	C	C/T	genomic	single	by-frequency,by-1000genomes	0.005495	0.052127	splice-5	exact	1		1	1000GENOMES,	2	C,T,	2285.000000,11.000000,	0.995209,0.004791,	
 854	chr22	35386826	35386827	rs137932222	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency	0.000883	0.020993	nonsense	exact	1		2	EXOME_CHIP,NHLBI-ESP,	2	A,G,	2.000000,4526.000000,	0.000442,0.999558,	
 854	chr22	35387176	35387177	rs111362393	0	+	G	G	C/G	genomic	single	by-cluster	0	0	splice-5	exact	1		1	ILLUMINA,	0				
 855	chr22	35393875	35393876	rs11555832	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.157734	0.232351	untranslated-3	exact	1		10	1000GENOMES,CGAP-GAI,COMPLETE_GENOMICS,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,PERLEGEN,PGA-UW-FHCRC,PHARMGKB_PARC,TISHKOFF,	2	C,T,	542.000000,3416.000000,	0.136938,0.863062,	maf-5-some-pop,observed-mismatch
@@ -1660,13 +1411,11 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 872	chr22	37677065	37677066	rs111298573	0	+	G	G	C/G	genomic	single	by-cluster	0	0	splice-5	exact	1		1	ILLUMINA,	0				
 872	chr22	37678599	37678600	rs4887	0	+	G	G	A/G	cDNA	single	unknown	0	0	nonsense	exact	1		1	DEBNICK,	0				
 872	chr22	37679741	37679742	rs11539846	0	-	T	T	A/G	cDNA	single	by-hapmap	0	0	missense	exact	1	SingleAlleleFreq	1	CGAP-GAI,	1	A,	406.000000,	1.000000,	
-872	chr22	37701303	37701304	rs367660058	0	+	A	A	A/C	genomic	single	unknown	0	0	splice-3	exact	1		1	SSMP,	0				
 873	chr22	37805652	37805653	rs375796831	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 873	chr22	37825453	37825454	rs75281706	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.088445	0.190788	missense	exact	1		6	1000GENOMES,EXOME_CHIP,ILLUMINA,NHLBI-ESP,SEATTLESEQ,TISHKOFF,	2	A,G,	116.000000,2180.000000,	0.050523,0.949477,	maf-5-some-pop,maf-5-all-pops
 874	chr22	37925966	37925967	rs374077907	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 874	chr22	37941059	37941060	rs386438511	0	-	A	A	C/T	genomic	single	unknown	0	0	untranslated-3	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
 877	chr22	38402181	38402182	rs138382	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.424917	0.178617	near-gene-3	exact	1		26	1000GENOMES,ABI,BCM-HGSC-SUB,BCMHGSC_JDW,BCM_SSAHASNP,BGI,BL,BUSHMAN,COMPLETE_GENOMICS,CSHL-HAPMAP,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,KWOK,PJP,SC,SC_SNP,SSAHASNP,SSMP,TISHKOFF,TSC-CSHL,WI_SSAHASNP,	2	A,G,	2897.000000,1271.000000,	0.695058,0.304942,	maf-5-some-pop,maf-5-all-pops
-878	chr22	38424810	38424811	rs371957309	0	+	A	A	A/T	genomic	single	unknown	0	0	splice-3	exact	1		1	SSMP,	0				
 878	chr22	38482509	38482510	rs201527173	0	+	A	A	A/T	genomic	single	unknown	0.001998	0.031543	nonsense	exact	1	NonIntegerChromCount	1	CLINSEQ_SNP,	2	A,T,	1322.680054,1.324000,	0.999000,0.001000,	
 880	chr22	38682997	38682998	rs78184920	0	+	T	T	G/T	genomic	single	by-cluster	0	0	splice-5	exact	1		1	ILLUMINA,	0				observed-mismatch
 880	chr22	38684133	38684134	rs11544412	0	-	C	C	G/T	cDNA	single	by-cluster	0	0	untranslated-3	exact	1	DuplicateObserved,SingleAlleleFreq	3	CGAP-GAI,ILLUMINA,KRIBB_YJKIM,	1	G,	2.000000,	1.000000,	
@@ -1686,24 +1435,22 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 881	chr22	38819995	38819996	rs1801535	0	-	A	A	C/T	cDNA	single	unknown	0	0	untranslated-3	exact	1		1	HGBASE,	0				
 881	chr22	38820295	38820296	rs741977	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency,by-submitter,by-2hit-2allele,by-hapmap,by-1000genomes	0.479033	0.100218	untranslated-3	exact	1	DuplicateObserved	20	1000GENOMES,AFFY,BGI,CGAP-GAI,COMPLETE_GENOMICS,CSHL-HAPMAP,GMI,HGSV,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,PERLEGEN,PJP,SC_JCM,SC_SNP,SI_EXO,SSMP,TISHKOFF,TSC-CSHL,YUSUKE,	2	A,G,	2872.000000,2216.000000,	0.564465,0.435535,	maf-5-some-pop,maf-5-all-pops
 881	chr22	38820295	38820296	rs386610004	0	-	T	T	A/G	genomic	single	unknown	0	0	untranslated-3	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
-881	chr22	38861640	38861641	rs1053200	0	-	A	A	A/T	cDNA	single	unknown	0	0	untranslated-3	exact	1		1	LEE,	2	A,T,	0.000000,184.000000,	0.000000,1.000000,	
-881	chr22	38861641	38861642	rs1053199	0	-	A	A	A/T	cDNA	single	unknown	0	0	untranslated-3	exact	1		1	LEE,	2	A,T,	0.000000,184.000000,	0.000000,1.000000,	
-881	chr22	38861667	38861668	rs1053197	0	-	G	G	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.068208	0.171615	untranslated-3	exact	1		7	1000GENOMES,CGAP-GAI,HGBASE,ILLUMINA,LEE,SI_EXO,SSMP,	2	C,T,	2324.000000,92.000000,	0.961921,0.038079,	maf-5-some-pop,maf-5-all-pops
-881	chr22	38862545	38862546	rs1076613	0	-	G	G	C/T	genomic	single	unknown	0	0	untranslated-3	exact	1	MixedObserved,SingleAlleleFreq	8	BL,BUSHMAN,GMI,HGSV,SC_JCM,SSMP,TSC-CSHL,WI_SSAHASNP,	1	T,	1.000000,	1.000000,	
+881	chr22	38864245	38864246	rs1132719	0	-	T	T	A/C	cDNA	single	unknown	0	0	untranslated-3	exact	1		1	LEE,	0				
+881	chr22	38864251	38864252	rs1132718	0	-	T	T	A/C	cDNA	single	unknown	0	0	untranslated-3	exact	1		1	LEE,	0				
+881	chr22	38864453	38864454	rs1053222	0	-	G	G	C/T	cDNA	single	by-cluster,by-hapmap	0.007017	0.058817	untranslated-3	exact	1	DuplicateObserved	3	ILLUMINA,KRIBB_YJKIM,LEE,	2	C,T,	283.000000,1.000000,	0.996479,0.003521,	
+881	chr22	38864453	38864454	rs386514324	0	-	G	G	C/T	genomic	single	unknown	0	0	untranslated-3	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
 881	chr22	38867017	38867018	rs11552926	0	-	G	G	C/G	cDNA	single	unknown	0	0	missense	exact	1		1	CGAP-GAI,	0				
 881	chr22	38867079	38867080	rs200396156	0	-	A	A	C/T	genomic	single	by-cluster	0	0	missense	exact	1		1	ILLUMINA,	0				observed-mismatch
-882	chr22	38997479	38997480	rs186308284	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.00275	0.03698	splice-5	exact	1		2	1000GENOMES,SSMP,	2	C,T,	2175.000000,3.000000,	0.998623,0.001377,	
 882	chr22	39015752	39015753	rs369034007	0	+	T	T	G/T	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
 882	chr22	39044938	39044939	rs111761624	0	+	A	A	A/T	genomic	single	unknown	0	0	splice-3	exact	1		1	BCM-HGSC-SUB,	0				
 882	chr22	39052575	39052576	rs368674483	0	+	G	G	A/G	genomic	single	unknown	0	0	splice-3	exact	1		1	NHLBI-ESP,	0				
-883	chr22	39091716	39091717	rs386429072	0	-	C	C	A/G	genomic	single	unknown	0	0	ncRNA	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
 884	chr22	39243960	39243961	rs398122399	0	-	C	C	A/G	genomic	single	unknown	0	0	missense	exact	1		1	OMIM-CURATED-RECORDS,	0				clinically-assoc,submitted-by-lsdb
 884	chr22	39244064	39244065	rs1042564	0	-	G	G	C/T	cDNA	single	unknown	0	0	untranslated-5	exact	1		2	LEE,SEQUENOM,	0				
 884	chr22	39244697	39244698	rs1800818	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-1000genomes	0.46503	0.127523	untranslated-5	exact	1		16	1000GENOMES,BCM-HGSC-SUB,BCMHGSC_JDW,BCM_SSAHASNP,BGI,BL,COMPLETE_GENOMICS,GMI,HGBASE,HGSV,HUMANGENOME_JCVI,IMCJ-GDT,LEE,PJP,SC_SNP,SSMP,	2	A,G,	1379.000000,803.000000,	0.631989,0.368011,	maf-5-some-pop,maf-5-all-pops
+885	chr22	39385331	39385332	rs200272557	0	-	T	T	A/G	genomic	single	by-cluster	0	0	untranslated-3	exact	1		1	ILLUMINA,	0				observed-mismatch
 888	chr22	39765315	39765316	rs370825021	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 890	chr22	40021770	40021771	rs374870818	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 890	chr22	40044938	40044939	rs1061344	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.063073	0.166007	untranslated-5	exact	1		6	1000GENOMES,ILLUMINA,KRIBB_YJKIM,LEE,SEQUENOM,SSMP,	2	C,T,	88.000000,2208.000000,	0.038328,0.961672,	maf-5-some-pop,maf-5-all-pops
-891	chr22	40125770	40125771	rs5757856	0	+	G	G	A/G	genomic	single	by-cluster	0	0	splice-3	exact	1		2	ILLUMINA,SC_SNP,	0				
 892	chr22	40366996	40366997	rs199743946	0	-	G	G	C/T	genomic	single	by-cluster	0	0	near-gene-3	exact	1		1	ILLUMINA,	0				observed-mismatch
 897	chr22	40951476	40951477	rs112941053	0	+	G	G	G/T	genomic	single	by-cluster	0	0	splice-5	exact	1		1	ILLUMINA,	0				
 897	chr22	40951477	40951478	rs112841738	0	+	T	T	G/T	genomic	single	by-cluster	0	0	splice-5	exact	1		1	ILLUMINA,	0				
@@ -1711,7 +1458,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 898	chr22	41141110	41141111	rs137853039	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	OMIM-CURATED-RECORDS,	0				clinically-assoc,has-omim-omia,submitted-by-lsdb
 899	chr22	41178248	41178249	rs201097711	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	EXOME_CHIP,	0				
 899	chr22	41178378	41178379	rs386442305	0	-	A	A	G/T	genomic	single	unknown	0	0	missense	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
-899	chr22	41186323	41186324	rs6002276	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-3	exact	1	SingleAlleleFreq	1	SC_SNP,	1	C,	2.000000,	1.000000,	
 901	chr22	41507866	41507867	rs387907389	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	POLLAK_LABORATORY,	0				clinically-assoc,submitted-by-lsdb
 901	chr22	41525190	41525191	rs111382022	0	+	A	A	A/G	genomic	single	unknown	0	0	splice-3	exact	1		1	ILLUMINA,	0				
 902	chr22	41572141	41572142	rs373565731	0	+	G	G	C/G	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
@@ -1729,7 +1475,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 909	chr22	42518100	42518101	rs11553438	0	-	G	G	C/T	cDNA	single	unknown	0	0	coding-synon	exact	1		1	CGAP-GAI,	0				
 909	chr22	42519724	42519725	rs3207602	0	-	A	A	C/T	cDNA	single	unknown	0	0	missense	exact	1		1	LEE,	0				
 909	chr22	42519732	42519733	rs3207601	0	-	G	G	C/G	cDNA	single	unknown	0	0	coding-synon	exact	1		1	LEE,	0				
-909	chr22	42581927	42581928	rs7288227	0	+	C	C	C/G	genomic	single	by-hapmap	0	0	splice-5	exact	1	SingleAlleleFreq	1	BCM_SSAHASNP,	1	C,	416.000000,	1.000000,	
 910	chr22	42649380	42649381	rs8190369	0	-	C	C	A/G	genomic	single	unknown	0.011173	0.073903	untranslated-5	exact	1		1	EGP_SNPS,	2	A,G,	1.000000,177.000000,	0.005618,0.994382,	
 910	chr22	42691706	42691707	rs28915393	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.005495	0.052127	near-gene-3	exact	1	DuplicateObserved	5	1000GENOMES,ILLUMINA,PGA-UW-FHCRC,SSMP,TISHKOFF,	2	A,G,	8.000000,2264.000000,	0.003521,0.996479,	
 910	chr22	42691706	42691707	rs386576495	0	-	C	C	A/G	genomic	single	unknown	0	0	near-gene-3	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
@@ -1752,9 +1497,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 920	chr22	43999571	43999572	rs201332415	0	+	G	G	A/G	genomic	single	by-cluster	0	0	nonsense	exact	1		2	EXOME_CHIP,NHLBI-ESP,	0				
 920	chr22	43999673	43999674	rs372659249	0	+	G	G	G/T	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
 922	chr22	44285731	44285732	rs135388	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.494229	0.053408	coding-synon	exact	1	NonIntegerChromCount	26	1000GENOMES,ABI,BCMHGSC_JDW,BGI,BL,BUSHMAN,CLINSEQ_SNP,COMPLETE_GENOMICS,CORNELL,ENSEMBL,GMI,HGBASE,HUMANGENOME_JCVI,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,PJP,SC,SC_JCM,SC_SNP,SEATTLESEQ,SI_EXO,SSMP,TISHKOFF,WI_SSAHASNP,YUSUKE,	2	C,T,	2709.139893,2810.860107,	0.490786,0.509214,	maf-5-some-pop,maf-5-all-pops
-924	chr22	44443640	44443641	rs148237439	0	+	G	G	A/G	genomic	single	by-1000genomes	0.003667	0.042664	splice-3	exact	1		1	1000GENOMES,	2	A,G,	4.000000,2174.000000,	0.001837,0.998163,	
-925	chr22	44572037	44572038	rs376475040	0	+	G	G	G/T	genomic	single	unknown	0	0	splice-3	exact	1		1	NHLBI-ESP,	0				
-925	chr22	44606928	44606929	rs12152184	0	+	A	A	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.307903	0.243202	splice-5	exact	1		8	1000GENOMES,BGI,BUSHMAN,COMPLETE_GENOMICS,GMI,ILLUMINA-UK,SC_SNP,SSMP,	2	A,G,	1767.000000,417.000000,	0.809066,0.190934,	maf-5-some-pop,maf-5-all-pops
 930	chr22	45343736	45343737	rs76608319	0	-	C	C	A/G	genomic	single	by-frequency,by-1000genomes	0.00823	0.063618	near-gene-3	exact	1		2	1000GENOMES,ENSEMBL,	2	A,G,	12.000000,2172.000000,	0.005495,0.994505,	
 931	chr22	45430989	45430990	rs369022776	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 932	chr22	45574509	45574510	rs113737572	0	+	G	G	C/G	genomic	single	by-cluster	0	0	splice-3	exact	1	SingleAlleleFreq	2	BUSHMAN,ILLUMINA,	1	C,	1.000000,	1.000000,	
@@ -1762,7 +1504,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 932	chr22	45574654	45574655	rs113434277	0	+	T	T	G/T	genomic	single	by-cluster	0	0	splice-5	exact	1		1	ILLUMINA,	0				
 936	chr22	46040451	46040452	rs1129657	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.201801	0.24531	ncRNA	exact	1		11	1000GENOMES,BCM-HGSC-SUB,BCMHGSC_JDW,BL,CSHL-HAPMAP,ENSEMBL,GMI,ILLUMINA,KRIBB_YJKIM,LEE,SSMP,	2	A,G,	3654.000000,394.000000,	0.902668,0.097332,	maf-5-some-pop
 936	chr22	46044724	46044725	rs386481012	0	-	T	T	A/G	genomic	single	unknown	0	0	ncRNA	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
-936	chr22	46057060	46057061	rs12163517	0	+	G	G	A/G	genomic	single	unknown	0	0	splice-3	exact	1		1	SC_SNP,	0				
 936	chr22	46058327	46058328	rs3744749	0	-	G	G	C/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.322416	0.239282	ncRNA	exact	1	InconsistentAlleles	15	1000GENOMES,AFFY,BCM-HGSC-SUB,BCM_SSAHASNP,BGI,BUSHMAN,COMPLETE_GENOMICS,GMI,HGSV,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,SSMP,TISHKOFF,YUSUKE,	4	A,C,G,T,	48.000000,3493.000000,16.000000,1099.000000,	0.010309,0.750215,0.003436,0.236040,	maf-5-some-pop,maf-5-all-pops
 937	chr22	46256757	46256758	rs372202120	0	+	C	C	A/C	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 937	chr22	46257328	46257329	rs372683028	0	+	A	A	A/C	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
@@ -1779,10 +1520,7 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 941	chr22	46720125	46720126	rs386438538	0	-	G	G	C/T	genomic	single	unknown	0	0	coding-synon	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
 941	chr22	46721015	46721016	rs139838967	0	+	C	C	C/T	genomic	single	by-cluster	0.000439	0.014814	splice-3	exact	1		2	EXOME_CHIP,NHLBI-ESP,	2	C,T,	4551.000000,1.000000,	0.999780,0.000220,	
 947	chr22	47460831	47460832	rs386615604	0	-	G	G	C/T	genomic	single	unknown	0	0	near-gene-3	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
-948	chr22	47622454	47622455	rs375307170	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-5	exact	1		1	SSMP,	0				
 948	chr22	47622671	47622672	rs386466753	0	-	C	C	A/G	genomic	single	unknown	0	0	ncRNA	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
-958	chr22	48892664	48892665	rs28688450	0	+	G	G	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.131415	0.220085	splice-3	exact	1		18	1000GENOMES,BCM-HGSC-SUB,BCMHGSC_JDW,BGI,BL,BUSHMAN,COMPLETE_GENOMICS,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA,ILLUMINA-UK,KRIBB_YJKIM,PJP,SSAHASNP,SSMP,TISHKOFF,	2	A,G,	292.000000,2785.000000,	0.094898,0.905102,	maf-5-some-pop
-963	chr22	49614511	49614512	rs1131794	0	-	T	T	A/T	cDNA	single	unknown	0	0	ncRNA	exact	1	SingleAlleleFreq	1	LEE,	1	A,	2.000000,	1.000000,	
 965	chr22	49904062	49904063	rs121907935	0	-	G	G	C/G	genomic	single	unknown	0	0	nonsense	exact	1		1	OMIM-CURATED-RECORDS,	0				clinically-assoc,has-omim-omia,submitted-by-lsdb
 965	chr22	49909242	49909243	rs188399257	0	+	C	C	C/T	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	splice-5	exact	1		1	1000GENOMES,	2	C,T,	2177.000000,1.000000,	0.999541,0.000459,	
 965	chr22	49910084	49910085	rs121907934	0	-	A	A	C/T	genomic	single	unknown	0	0	missense	exact	1		1	OMIM-CURATED-RECORDS,	0				clinically-assoc,has-omim-omia,submitted-by-lsdb
@@ -1790,13 +1528,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 965	chr22	49910601	49910602	rs121907933	0	-	C	C	A/G	genomic	single	unknown	0	0	missense	exact	1		1	OMIM-CURATED-RECORDS,	0				clinically-assoc,has-omim-omia,submitted-by-lsdb
 965	chr22	49913383	49913384	rs376314741	0	+	C	C	C/T	genomic	single	unknown	0	0	splice-5	exact	1		1	NHLBI-ESP,	0				
 965	chr22	49913479	49913480	rs121907931	0	-	G	G	C/T	genomic	single	unknown	0	0	missense	exact	1		1	OMIM-CURATED-RECORDS,	0				clinically-assoc,has-omim-omia,submitted-by-lsdb
-966	chr22	50031762	50031763	rs372825858	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
-966	chr22	50031967	50031968	rs375768003	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
-966	chr22	50031993	50031994	rs372215363	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
-966	chr22	50034435	50034436	rs386466734	0	-	C	C	A/G	genomic	single	unknown	0	0	coding-synon	exact	1	DuplicateObserved	1	ILLUMINA,	0				observed-mismatch
-966	chr22	50041807	50041808	rs201710741	0	+	C	C	C/G	genomic	single	by-cluster	0.003992	0.044498	splice-3	exact	1	NonIntegerChromCount	2	CLINSEQ_SNP,SSMP,	2	C,G,	562.872009,1.128000,	0.998000,0.002000,	
-966	chr22	50045958	50045959	rs200692754	0	+	G	G	G/T	genomic	single	by-cluster,by-1000genomes	0.000918	0.0214	nonsense	exact	1		2	1000GENOMES,NHLBI-ESP,	2	G,T,	2177.000000,1.000000,	0.999541,0.000459,	
-966	chr22	50050192	50050193	rs368034791	0	+	G	G	A/G	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 967	chr22	50162058	50162059	rs3818122	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.006407	0.056237	near-gene-3	exact	1		3	1000GENOMES,KRIBB_YJKIM,YUSUKE,	2	A,G,	12.000000,2760.000000,	0.004329,0.995671,	
 967	chr22	50180308	50180309	rs2295226	0	-	G	G	C/T	genomic	single	by-cluster,by-frequency,by-hapmap,by-1000genomes	0.325684	0.238268	near-gene-3	exact	1		14	1000GENOMES,ABI,BGI,GMI,HUMANGENOME_JCVI,ILLUMINA,KRIBB_YJKIM,PERLEGEN,PJP,SI_EXO,SSAHASNP,SSMP,TISHKOFF,YUSUKE,	2	C,T,	3256.000000,794.000000,	0.803951,0.196049,	maf-5-some-pop
 967	chr22	50180367	50180368	rs2295225	0	-	C	C	C/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.311302	0.242368	near-gene-3	exact	1		17	1000GENOMES,ABI,BCM-HGSC-SUB,BCMHGSC_JDW,BGI,BUSHMAN,COMPLETE_GENOMICS,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA-UK,PJP,SC_SNP,SSMP,TISHKOFF,YUSUKE,	2	C,G,	2112.000000,494.000000,	0.810437,0.189563,	maf-5-some-pop
@@ -1806,16 +1537,10 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 968	chr22	50286267	50286268	rs11547733	0	-	G	G	C/G	cDNA	single	unknown	0	0	missense	exact	1		1	CGAP-GAI,	0				
 968	chr22	50288037	50288038	rs66665785	0	+	C	C	C/T	genomic	single	unknown	0.5	0	splice-3	exact	1	MixedObserved	1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
 968	chr22	50314273	50314274	rs370591445	0	+	T	T	G/T	genomic	single	unknown	0	0	splice-3	exact	1		1	NHLBI-ESP,	0				
-969	chr22	50393891	50393892	rs61754860	0	+	G	G	A/G	genomic	single	unknown	0.028163	0.115276	splice-3	exact	1		1	CORNELL,	2	A,G,	1.000000,69.000000,	0.014286,0.985714,	
-970	chr22	50543006	50543007	rs131784	0	-	G	G	C/T	genomic	single	by-cluster,by-frequency,by-submitter,by-2hit-2allele,by-hapmap,by-1000genomes	0.294588	0.245992	ncRNA	exact	1		18	1000GENOMES,BCM-HGSC-SUB,BCMHGSC_JDW,BGI,BUSHMAN,COMPLETE_GENOMICS,CSHL-HAPMAP,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA,ILLUMINA-UK,PJP,SC,SC_SNP,SSMP,TISHKOFF,	2	C,T,	428.000000,2063.000000,	0.171819,0.828181,	maf-5-some-pop
 970	chr22	50543512	50543513	rs131783	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-1000genomes	0.498051	0.03116	near-gene-3	exact	1		11	1000GENOMES,ABI,BCMHGSC_JDW,ENSEMBL,GMI,PJP,SC,SC_SNP,SSAHASNP,SSMP,TISHKOFF,	2	A,G,	1159.000000,1023.000000,	0.531164,0.468836,	
 970	chr22	50549632	50549633	rs140519	0	-	G	G	A/C	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.492316	0.061505	coding-synon	exact	1	NonIntegerChromCount	22	1000GENOMES,ABI,APPLERA_GI,BCMHGSC_JDW,BUSHMAN,CLINSEQ_SNP,COMPLETE_GENOMICS,CSHL-HAPMAP,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,PJP,SC,SC_SNP,SEATTLESEQ,SSAHASNP,SSMP,TISHKOFF,	2	A,C,	3904.370117,5701.629883,	0.406451,0.593549,	maf-5-some-pop,maf-5-all-pops
 970	chr22	50549763	50549764	rs131779	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-hapmap,by-1000genomes	0.483304	0.08983	missense	exact	1		24	1000GENOMES,ABI,APPLERA_GI,BCM-HGSC-SUB,BCMHGSC_JDW,BUSHMAN,COMPLETE_GENOMICS,CSHL-HAPMAP,ENSEMBL,EXOME_CHIP,GMI,HUMANGENOME_JCVI,ILLUMINA,KRIBB_YJKIM,NHLBI-ESP,PJP,SC,SC_SNP,SEATTLESEQ,SI_EXO,SSAHASNP,SSMP,TISHKOFF,YUSUKE,	2	C,T,	2435.000000,1715.000000,	0.586747,0.413253,	maf-5-some-pop,maf-5-all-pops
 970	chr22	50549948	50549949	rs367568712	0	+	T	T	C/T	genomic	single	unknown	0	0	stop-loss	exact	1		1	NHLBI-ESP,	0				
-971	chr22	50597399	50597400	rs3213444	0	-	G	G	C/T	genomic	single	by-cluster,by-1000genomes	0.147015	0.227803	ncRNA	exact	1		7	1000GENOMES,COMPLETE_GENOMICS,GMI,ILLUMINA,SC_SNP,SSMP,YUSUKE,	2	C,T,	2007.000000,175.000000,	0.919798,0.080202,	maf-5-some-pop
-971	chr22	50597455	50597456	rs3213443	0	-	C	C	A/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.219266	0.248104	ncRNA	exact	1		8	1000GENOMES,COMPLETE_GENOMICS,GMI,ILLUMINA,ILLUMINA-UK,SSMP,TISHKOFF,YUSUKE,	2	A,G,	275.000000,1907.000000,	0.126031,0.873969,	maf-5-some-pop,maf-5-all-pops
-971	chr22	50597508	50597509	rs3213442	0	-	G	G	C/G	genomic	single	by-cluster,by-frequency,by-1000genomes	0.266622	0.249447	ncRNA	exact	1		8	1000GENOMES,BUSHMAN,COMPLETE_GENOMICS,GMI,SC_SNP,SSMP,TISHKOFF,YUSUKE,	2	C,G,	1835.000000,347.000000,	0.840972,0.159028,	maf-5-some-pop,maf-5-all-pops
-971	chr22	50597591	50597592	rs966020	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency,by-2hit-2allele,by-1000genomes	0.432878	0.170457	ncRNA	exact	1		17	1000GENOMES,ABI,BCMHGSC_JDW,BGI,BUSHMAN,COMPLETE_GENOMICS,ENSEMBL,GMI,HGSV,HUMANGENOME_JCVI,ILLUMINA,PJP,SC_SNP,SSMP,TISHKOFF,TSC-CSHL,YUSUKE,	2	C,T,	696.000000,1491.000000,	0.318244,0.681756,	maf-5-some-pop,maf-5-all-pops
 971	chr22	50679412	50679413	rs202089750	0	-	T	T	A/G	genomic	single	by-cluster,by-frequency	0.074036	0.177585	coding-synon	exact	1		2	CLINSEQ_SNP,ILLUMINA,	2	A,G,	99.996002,4.004000,	0.961500,0.038500,	observed-mismatch
 971	chr22	50695048	50695049	rs112839493	0	+	G	G	C/G	genomic	single	by-cluster	0	0	splice-5	exact	1		1	ILLUMINA,	0				
 971	chr22	50698688	50698689	rs5027908	0	+	G	G	G/T	genomic	single	unknown	0	0	splice-3	exact	1		1	ILLUMINA,	0				observed-mismatch
@@ -1823,5 +1548,6 @@ bin	chrom	chromStart	chromEnd	name	score	strand	refNCBI	refUCSC	observed	molType
 972	chr22	50744058	50744059	rs199699640	0	+	A	A	A/G	genomic	single	unknown	0.001998	0.031543	splice-3	exact	1	NonIntegerChromCount	1	CLINSEQ_SNP,	2	A,G,	1322.680054,1.324000,	0.999000,0.001000,	
 972	chr22	50744152	50744153	rs139675699	0	+	C	C	C/T	genomic	single	unknown	0.000439	0.014814	nonsense	exact	1		1	NHLBI-ESP,	2	C,T,	4551.000000,1.000000,	0.999780,0.000220,	
 972	chr22	50744654	50744655	rs71232633	0	-	A	A	C/T	genomic	single	unknown	0.5	0	coding-synon	exact	1		1	HUMANGENOME_JCVI,	2	C,T,	1.000000,1.000000,	0.500000,0.500000,	
+972	chr22	50744701	50744702	rs71232632	0	-	A	A	C/T	genomic	single	by-cluster,by-frequency,by-1000genomes	0.007319	0.060049	missense	exact	1		2	1000GENOMES,HUMANGENOME_JCVI,	2	C,T,	9.000000,2171.000000,	0.004128,0.995872,	
 972	chr22	50744862	50744863	rs372608841	0	+	C	C	C/T	genomic	single	unknown	0	0	nonsense	exact	1		1	NHLBI-ESP,	0				
 972	chr22	50799762	50799763	rs76171190	0	-	T	T	A/C	genomic	single	unknown	0	0	near-gene-3	exact	1		1	GMI,	0				
