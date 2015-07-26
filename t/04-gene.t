@@ -12,7 +12,7 @@ use YAML qw/ LoadFile /;
 use Seq::KCManager;
 use Seq::Site::Annotation;
 
-plan tests => 88;
+plan tests => 988;
 
 # check attributes and their type constraints
 my %attr_2_type = (
@@ -78,7 +78,7 @@ for my $attr_name ( sort keys %attr_2_type ) {
 my $chr22_offset = 2824183054; # for hg38
 my $snp_dbm      = path('./t/snp141.snp.chr22.kch');
 my $gene_dbm     = path('./t/knownGene.gene.chr22.kch');
-my $dbsnp_file   = path('./t/snp141.chr22.txt');
+my $dbsnp_file   = path('./t/snp141.test.txt');
 
 # check files are available
 if ( !( $snp_dbm->is_file || $gene_dbm->is_file || $dbsnp_file->is_file ) ) {
@@ -89,18 +89,28 @@ if ( !( $snp_dbm->is_file || $gene_dbm->is_file || $dbsnp_file->is_file ) ) {
   exit;
 }
 
+# exp test types
+my $exp_site_tests = {
+  "coding-synon"   => { "+" => 101, "-" => 51 },
+  "intron"         => { "+" => 101, "-" => 101 },
+  "missense"       => { "+" => 101, "-" => 101 },
+  "ncRNA"          => { "+" => 101, "-" => 51 },
+  "near-gene-3"    => { "+" => 101, "-" => 69 },
+  "near-gene-5"    => { "+" => 101, "-" => 101 },
+  "nonsense"       => { "+" => 94, "-" => 7 },
+  "splice-3"       => { "+" => 56, "-" => 2 },
+  "splice-5"       => { "+" => 67, "-" => 4 },
+  "stop-loss"      => { "+" => 2 },
+  "unknown"        => { "+" => 101, "-" => 101 },
+  "untranslated-3" => { "+" => 101, "-" => 101 },
+  "untranslated-5" => { "+" => 101, "-" => 9 },
+};
+
 # create the database object
 my $obs_snp_obj  = Seq::KCManager->new({ filename => $snp_dbm->absolute->stringify, mode => 'read', });
 my $obs_gene_obj = Seq::KCManager->new({ filename => $gene_dbm->absolute->stringify, mode => 'read', });
 my %comp_base_lu = ('A' => 'T', 'C' => 'G', 'G' => 'C', 'T' => 'A');
-my @skip_rs = qw/ rs12160304 rs140281350 rs181540173 rs373886941 rs9605012 rs9605012
-  rs185428714 rs9605012 rs185428714 rs181293426 rs368854949 rs11912392 rs11912392
-  rs9605011 rs9605012 rs9605013 rs185428714 rs112982604 rs469343 rs3869856 rs542183
-  rs16987804 rs470210 rs189136810 rs377130945 rs34577248 rs35346050 rs3984025
-  rs3876091 /;
-my %skip_rs = map { $_ => 1 } @skip_rs;
-my @wanted_rs = qw/  /;
-my %wanted_rs = map{ $_ => 1 } @wanted_rs;
+
 my $snp_types_href = {
   "untranslated-5"=> sub {
     my ($ann, $exp_href) = @_;
@@ -253,7 +263,6 @@ my $snp_types_href = {
 };
 my %snp_types = map { $_ => 1 } ( keys %$snp_types_href);
 
-my $out_test_fh = IO::File->new( 'snp141.test.txt', 'w' ) || die "$!\n";
 # read in data
 my %func = ();
 my $dbsnp_txt = $dbsnp_file->slurp;
@@ -266,9 +275,6 @@ for my $line ( @dbsnp_data ) {
   }
   else {
     my %data = map { $_ => $fields[$dbsnp_header{$_}] } ( keys %dbsnp_header );
-
-    # skip known problem sites
-    next if exists $skip_rs{ $data{name} };
 
     # site must have a UCSC reference base: A, C, G, or T
     next unless exists $comp_base_lu{$data{refUCSC}};
@@ -337,33 +343,15 @@ for my $line ( @dbsnp_data ) {
         for my $minor_allele ( @non_ref_alleles ) {
           $entry->{minor_allele} = $minor_allele;
           my $ann = Seq::Site::Annotation->new( $entry )->as_href_with_NAs;
-
-          if ( exists $wanted_rs{$data{name}} ) {
-            say "data: " . dump( \%data);
-            say "ann: " . dump( $ann );
-          }
           # say "ann: " . dump( $ann );
           $snp_types_href->{$data{func}}->($ann, \%data);
         }
       }
     }
-
-
-    say {$out_test_fh} $line;
-
-    # say dump( $obs_snp_aref );
-    # say dump( $obs_gene_aref );
-
     $func{ $data{func} }{ $data{strand} }++;
   }
 }
-my @f;
-for my $key ( keys %func ) {
-  if ( $key !~ m/\,/ ) {
-    push @f, $key;
-  }
-}
-say dump( \@f );
+is_deeply( $exp_site_tests, \%func, 'Sites Tested' );
 say dump( \%func );
 
 ###############################################################################
