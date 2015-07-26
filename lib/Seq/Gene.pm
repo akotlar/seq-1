@@ -27,6 +27,7 @@ Extended by: None
 use Moose 2;
 
 use Carp qw/ confess /;
+use Data::Dump qw/ dump /;
 use namespace::autoclean;
 
 use Seq::Site::Gene;
@@ -416,6 +417,7 @@ sub _build_transcript_sites {
       $gene_site{site_type} = 'non-coding RNA';
     }
     else {
+      say "object: " . dump( $self );
       confess "unknown site code $site_annotation";
     }
 
