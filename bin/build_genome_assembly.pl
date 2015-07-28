@@ -78,9 +78,6 @@ for my $binary ( keys %bin_2_path ) {
     $bin_2_path{$binary} = $bin_2_default{$binary} unless $bin_2_path{$binary};
   }
 
-  p $binary;
-  p $bin_2_path{$binary};
-
   # get absolute path
   $bin_2_path{$binary} = path( $bin_2_path{$binary} )->absolute->stringify;
 
@@ -94,9 +91,6 @@ for my $binary ( keys %bin_2_path ) {
 
 # get absolute path for YAML file and db_location
 $yaml_config = path($yaml_config)->absolute->stringify;
-# $genome_hasher_bin = path($genome_hasher_bin)->absolute->stringify;
-# $genome_scorer_bin = path($genome_scorer_bin)->absolute->stringify;
-# $genome_cadd_bin   = path($genome_cadd_bin)->absolute->stringify;
 
 my $builder_options_href = {
   configfile    => $yaml_config,
@@ -117,7 +111,6 @@ if ( $method and $config_href ) {
   Log::Any::Adapter->set( 'File', $log_file );
 
   my $builder = Seq::Build->new_with_config($builder_options_href);
-  p $builder;
 
   # build encoded genome, gene and snp site databases
   $builder->$method;

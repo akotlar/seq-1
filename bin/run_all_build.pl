@@ -43,7 +43,12 @@ my $config_href = LoadFile($config_file);
 
 my $cmd_fh = IO::File->new( 'build.sh', 'w' ) or die "build.sh: $!\n";
 my $alt_cmd_fh = IO::File->new( 'build_alt.sh', 'w') or die "build_alt.sh: $!\n";
-my $i = 1;
+
+# For the parellel build on a single computer
+# counter needs to start with 0 to get the first genome string built and written
+# for subsequent builds (or we'll have some race problem with writing to the same
+# file...
+my $i = 0;
 
 for my $type (qw/ gene_db snp_db /) {
   for my $chr ( @{ $config_href->{genome_chrs} } ) {
