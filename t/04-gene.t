@@ -74,9 +74,9 @@ for my $attr_name ( sort keys %attr_2_type ) {
 # we need the gene and snp kch files and the dbsnp file to verify we make the sample
 # predictions that dbsnp makes on variants.
 my $chr22_offset = 2824183054;                          # for hg38
-my $snp_dbm      = path('./t/snp141.snp.chr22.kch');
-my $gene_dbm     = path('./t/knownGene.gene.chr22.kch');
-my $dbsnp_file   = path('./t/snp141.test.txt');
+my $snp_dbm      = path('./big_files/snp141.snp.chr22.kch');
+my $gene_dbm     = path('./big_files/knownGene.gene.chr22.kch');
+my $dbsnp_file   = path('./big_files/snp141.test.txt');
 
 # check files are available
 if ( !( $snp_dbm->is_file || $gene_dbm->is_file || $dbsnp_file->is_file ) ) {
