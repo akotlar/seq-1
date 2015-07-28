@@ -117,7 +117,7 @@ has transcript_annotation => (
 );
 
 has transcript_abs_position => (
-  is      => 'ro',
+  is      => 'rw',
   isa     => 'ArrayRef',
   builder => '_build_transcript_abs_position',
   lazy    => 1,
@@ -302,6 +302,15 @@ sub _build_transcript_annotation {
   my $seq;
 
   for ( my $i = 0; $i < @exon_starts; $i++ ) {
+    # say "$exon_starts[$i] -> $exon_ends[$i]";
+
+    if ( $exon_starts[$i] >= $exon_ends[$i] ) {
+      my $msg = sprintf("ERROR: exon start (%s) >= exon end (%s)", $self->transcript_id, 
+         $exon_starts[$i], $exon_ends[$i] );
+      $self->_logger->error($msg);
+      exit;
+    }
+
     for ( my $abs_pos = $exon_starts[$i]; $abs_pos < $exon_ends[$i]; $abs_pos++ ) {
       if ($non_coding) {
         $seq .= '0';
@@ -309,7 +318,7 @@ sub _build_transcript_annotation {
       else {
         if ( $abs_pos < $self->coding_end ) {
           if ( $abs_pos >= $self->coding_start ) {
-            $seq .= $self->get_base($abs_pos);
+            $seq .= $self->get_base( $abs_pos, 1 );
           }
           else {
             $seq .= '5';
@@ -391,8 +400,6 @@ sub _build_transcript_sites {
     $gene_site{transcript_id} = $self->transcript_id;
     $gene_site{strand}        = $self->strand;
 
-    say join "\t", $i, $gene_site{abs_pos}, $gene_site{ref_base}, $site_annotation;
-
     # is site coding
     if ( $site_annotation =~ m/[ACGT]/ ) {
       $gene_site{site_type}      = 'Coding';
@@ -403,6 +410,7 @@ sub _build_transcript_sites {
 
       #say "codon_start: $codon_start, codon_end: $codon_end, i = $i, coding_bp = $coding_base_count";
       for ( my $j = $codon_start; $j <= $codon_end; $j++ ) {
+        #TODO: account for messed up transcripts that are truncated
         $gene_site{ref_codon_seq} .= $self->get_base_transcript_seq( $j, 1 );
       }
       $coding_base_count++;
@@ -430,8 +438,15 @@ sub _build_transcript_sites {
 
     # build peptide
     if ( $site->codon_number ) {
-      $self->add_aa_residue( $site->ref_aa_residue )
-        if ( $last_codon_number != $site->codon_number );
+      if ( $site->ref_aa_residue ) {
+        if ( $last_codon_number != $site->codon_number ) {
+          $self->add_aa_residue( $site->ref_aa_residue );
+        }
+      }
+      else {
+        say "gene info: " . dump( \%gene_site );
+        say "site obj: " . dump( $site );
+      }
     }
 
     $last_codon_number = $site->codon_number if $site->codon_number;

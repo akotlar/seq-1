@@ -37,9 +37,6 @@ my %attr_2_type = (
 );
 
 my %attr_to_is = map { $_ => 'rw' } ( keys %attr_2_type );
-for my $ro_attr (qw/ peptide transcript_sites flanking_sites /) {
-  $attr_to_is{$ro_attr} = 'ro';
-}
 
 # set test genome
 my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
