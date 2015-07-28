@@ -12,12 +12,12 @@ use YAML qw/ LoadFile /;
 plan tests => 50;
 
 my %attr_2_type = (
-  type          => 'SparseTrackType',
-  sql_statement => 'Str',
-  _local_files  => 'MooseX::Types::Path::Tiny::AbsPaths',
-  features      => 'ArrayRef[Str]',
+  type              => 'SparseTrackType',
+  sql_statement     => 'Str',
+  _local_files      => 'MooseX::Types::Path::Tiny::AbsPaths',
+  features          => 'ArrayRef[Str]',
   gene_track_fields => 'ArrayRef',
-  snp_track_fields => 'ArrayRef',
+  snp_track_fields  => 'ArrayRef',
 );
 
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );

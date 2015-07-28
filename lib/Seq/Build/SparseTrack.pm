@@ -125,8 +125,9 @@ sub _check_header_keys {
   }
   if (%missing_attr) {
     my $err_msg =
-      sprintf( "ERROR: Missing expected header information for track_name: %s of type %s: '%s'",
-      $self->name, $self->type, join ", ", ( sort keys %missing_attr ));
+      sprintf(
+      "ERROR: Missing expected header information for track_name: %s of type %s: '%s'",
+      $self->name, $self->type, join ", ", ( sort keys %missing_attr ) );
     $self->_logger->error($err_msg);
     croak $err_msg;
   }

@@ -34,27 +34,27 @@ use DDP;
 extends 'Seq::Assembly';
 
 has act => (
-  is => 'ro',
-  isa => 'Bool',
+  is      => 'ro',
+  isa     => 'Bool',
   default => 0,
 );
 
 sub fetch_snp_data {
-  my $self = shift;
+  my $self        = shift;
   my $tracks_aref = [ $self->all_snp_tracks ];
-  return $self->_fetch_sparse_data( $tracks_aref);
+  return $self->_fetch_sparse_data($tracks_aref);
 }
 
 sub fetch_gene_data {
-  my $self = shift;
+  my $self        = shift;
   my $tracks_aref = [ $self->all_gene_tracks ];
-  return $self->_fetch_sparse_data( $tracks_aref);
+  return $self->_fetch_sparse_data($tracks_aref);
 }
 
 sub _fetch_sparse_data {
-  my ($self, $tracks_aref ) = @_;
+  my ( $self, $tracks_aref ) = @_;
   my %files;
-  for my $track ( @$tracks_aref ) {
+  for my $track (@$tracks_aref) {
 
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
     my $record = $track->as_href;
@@ -74,8 +74,8 @@ sub _fetch_sparse_data {
     }
 
     my $obj = Seq::Fetch::Sql->new($record);
-    $files{$track->name} = $obj->write_remote_data;
-    
+    $files{ $track->name } = $obj->write_remote_data;
+
   }
   return \%files;
 }

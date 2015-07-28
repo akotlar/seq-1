@@ -68,10 +68,13 @@ for my $attr_name ( sort keys %attr_2_type ) {
   $href->{db} = $config_href->{genome_name};
   my $obj = $package->new($href);
   ok( $obj, 'snp track object creation' );
-  (my $snp_sql_stmt = q{SELECT chrom, chromStart, chromEnd, name, alleles,
+  (
+    my $snp_sql_stmt =
+      q{SELECT chrom, chromStart, chromEnd, name, alleles,
   alleleFreqs, alleleFreqCount, func, refUCSC, strand FROM hg38.snp141 where
-  hg38.snp141.chrom = 'chr22'}) =~ s/[\n\s]+/ /xmgs;
-  is ($obj->sql_statement, $snp_sql_stmt, 'sql statement for snp');
+  hg38.snp141.chrom = 'chr22'}
+  ) =~ s/[\n\s]+/ /xmgs;
+  is( $obj->sql_statement, $snp_sql_stmt, 'sql statement for snp' );
 }
 
 # gene - object creation
@@ -80,12 +83,14 @@ for my $attr_name ( sort keys %attr_2_type ) {
   $href->{db} = $config_href->{genome_name};
   my $obj = $package->new($href);
   ok( $obj, 'gene track object creation' );
-  (my $gene_sql_stmt = q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd,
+  (
+    my $gene_sql_stmt =
+      q{SELECT chrom, strand, txStart, txEnd, cdsStart, cdsEnd,
   exonCount, exonStarts, exonEnds, name, mRNA, spID, spDisplayID, geneSymbol,
   refseq, protAcc, description, rfamAcc FROM hg38.knownGene LEFT JOIN hg38.kgXref
   ON hg38.kgXref.kgID = hg38.knownGene.name where hg38.knownGene.chrom = 'chr22'}
   ) =~ s/[\n\s]+/ /xmgs;
-  is ($obj->sql_statement, $gene_sql_stmt, 'sql statement for gene');
+  is( $obj->sql_statement, $gene_sql_stmt, 'sql statement for gene' );
 }
 
 ###############################################################################
@@ -100,8 +105,11 @@ sub build_obj_data {
   # get essential stuff
   for my $track ( @{ $config_href->{$track_type} } ) {
     if ( $track->{type} eq $type ) {
-      for my $attr (qw/ name type local_files remote_dir remote_files features
-      sql_statement act verbose dsn host user password port sokcet /) {
+      for my $attr (
+        qw/ name type local_files remote_dir remote_files features
+        sql_statement act verbose dsn host user password port sokcet /
+        )
+      {
         $hash{$attr} = $track->{$attr} if exists $track->{$attr};
       }
     }

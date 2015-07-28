@@ -70,19 +70,21 @@ my @gene_track_fields = qw( chrom     strand    txStart   txEnd
 
 # track information
 has snp_track_fields => (
-  is => 'ro',
-  isa => 'ArrayRef',
+  is      => 'ro',
+  isa     => 'ArrayRef',
   builder => '_build_snp_track_fields',
 );
+
 sub _build_snp_track_fields {
   return \@snp_track_fields;
 }
 
 has gene_track_fields => (
-  is => 'ro',
-  isa => 'ArrayRef',
+  is      => 'ro',
+  isa     => 'ArrayRef',
   builder => '_build_gene_track_fields',
 );
+
 sub _build_gene_track_fields {
   return \@gene_track_fields;
 }
@@ -131,7 +133,6 @@ has features => (
   traits   => ['Array'],
   handles  => { all_features => 'elements', },
 );
-
 
 sub _get_file {
   state $check = compile( Object, Str, Str, Maybe [Str] );

@@ -53,7 +53,7 @@ with 'Seq::Role::Serialize';
 
 enum non_missing_base_types => [qw( A C G T )];
 
-my %comp_base_lu = (A => 'T', C => 'G', G => 'C', T => 'A');
+my %comp_base_lu = ( A => 'T', C => 'G', G => 'C', T => 'A' );
 
 has minor_allele => (
   is       => 'ro',
@@ -124,8 +124,10 @@ sub _set_new_codon_seq {
   my $self      = shift;
   my $new_codon = $self->ref_codon_seq;
 
-  my $new_base = ($self->strand eq '-') ? $comp_base_lu{$self->minor_allele} :
-    $self->minor_allele;
+  my $new_base =
+    ( $self->strand eq '-' )
+    ? $comp_base_lu{ $self->minor_allele }
+    : $self->minor_allele;
 
   if ($new_codon) {
     substr( $new_codon, ( $self->codon_position ), 1, $new_base );

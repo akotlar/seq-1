@@ -60,7 +60,7 @@ sub fetch_files {
   my $rsync_obj = File::Rsync->new( \%rsync_opt );
 
   # prepare directories
-  my $local_dir = $self->genome_raw_dir->child($self->type);
+  my $local_dir = $self->genome_raw_dir->child( $self->type );
   $local_dir->mk_path unless -d $local_dir->absolute;
 
   # File::Rsync expects host:dir format for remote files (if needed)
@@ -71,11 +71,11 @@ sub fetch_files {
 
   # fetch files
   for my $file ( @{$remote_files_aref} ) {
-    my $this_remote_file = $local_dir->child( $file );
-    my $cmd_href = {
+    my $this_remote_file = $local_dir->child($file);
+    my $cmd_href         = {
       srchost => $remote_host,
-      source => $this_remote_file,
-      dest => $local_dir->absolute->stringify
+      source  => $this_remote_file,
+      dest    => $local_dir->absolute->stringify
     };
     my $cmd = $rsync_obj->getcmd($cmd_href);
     my $cmd_txt = join " ", @$cmd;

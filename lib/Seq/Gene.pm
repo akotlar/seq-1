@@ -100,9 +100,7 @@ has transcript_seq => (
   builder => '_build_transcript_db',
   lazy    => 1,
   traits  => ['String'],
-  handles => {
-    get_base_transcript_seq => 'substr',
-  },
+  handles => { get_base_transcript_seq => 'substr', },
 );
 
 has transcript_annotation => (
@@ -111,9 +109,7 @@ has transcript_annotation => (
   builder => '_build_transcript_annotation',
   lazy    => 1,
   traits  => ['String'],
-  handles => {
-    get_str_transcript_annotation => 'substr',
-  },
+  handles => { get_str_transcript_annotation => 'substr', },
 );
 
 has transcript_abs_position => (
@@ -305,8 +301,8 @@ sub _build_transcript_annotation {
     # say "$exon_starts[$i] -> $exon_ends[$i]";
 
     if ( $exon_starts[$i] >= $exon_ends[$i] ) {
-      my $msg = sprintf("ERROR: exon start (%s) >= exon end (%s)", $self->transcript_id, 
-         $exon_starts[$i], $exon_ends[$i] );
+      my $msg = sprintf( "ERROR: exon start (%s) >= exon end (%s)",
+        $self->transcript_id, $exon_starts[$i], $exon_ends[$i] );
       $self->_logger->error($msg);
       exit;
     }
@@ -425,11 +421,14 @@ sub _build_transcript_sites {
       $gene_site{site_type} = 'non-coding RNA';
     }
     else {
-      for my $attr ( qw/ transcript_id strand coding_start coding_end
-      all_exon_starts all_exon_ends transcript_seq / ) {
+      for my $attr (
+        qw/ transcript_id strand coding_start coding_end
+        all_exon_starts all_exon_ends transcript_seq /
+        )
+      {
         say "$attr: " . $self->$attr;
       }
-      say "data for site: " . dump(\%gene_site );
+      say "data for site: " . dump( \%gene_site );
       confess "unknown site code $site_annotation";
     }
 
@@ -445,7 +444,7 @@ sub _build_transcript_sites {
       }
       else {
         say "gene info: " . dump( \%gene_site );
-        say "site obj: " . dump( $site );
+        say "site obj: " . dump($site);
       }
     }
 

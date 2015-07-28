@@ -61,22 +61,21 @@ Log::Any::Adapter->set( 'File', $log_file );
 {
   # set verbose output but don't actually get data
   $config_href->{debug} = 1;
-  $config_href->{act} = 0;
+  $config_href->{act}   = 0;
   my $obj = $package->new($config_href);
-  ok( $obj, 'object creation' );
-  ok($obj->fetch_snp_data, 'fetch_snp_data()');
+  ok( $obj,                 'object creation' );
+  ok( $obj->fetch_snp_data, 'fetch_snp_data()' );
 }
 
 # fetch gene track data
 {
   # set verbose output but don't actually get data
   $config_href->{debug} = 1;
-  $config_href->{act} = 0;
+  $config_href->{act}   = 0;
   my $obj = $package->new($config_href);
-  ok( $obj, 'object creation' );
-  ok($obj->fetch_gene_data, 'fetch_gene_data()');
+  ok( $obj,                  'object creation' );
+  ok( $obj->fetch_gene_data, 'fetch_gene_data()' );
 }
-
 
 ###############################################################################
 # sub routines

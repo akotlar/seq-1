@@ -33,21 +33,20 @@ my $mos           = localtime->mon() + 1;
 my $day           = localtime->mday;
 my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, $day );
 
-has db    => ( is => 'ro', isa => 'Str', required => 1 );
-has act   => ( is => 'ro', isa => 'Bool', default => 0 );
-has debug => ( is => 'ro', isa => 'Bool', default => 0 );
-has dsn   => ( is => 'ro', isa => 'Str', required => 1, default => "DBI:mysql" );
+has db    => ( is => 'ro', isa => 'Str',  required => 1 );
+has act   => ( is => 'ro', isa => 'Bool', default  => 0 );
+has debug => ( is => 'ro', isa => 'Bool', default  => 0 );
+has dsn   => ( is => 'ro', isa => 'Str',  required => 1, default => "DBI:mysql" );
 has host => (
   is       => 'ro',
   isa      => 'Str',
   required => 1,
   default  => "genome-mysql.cse.ucsc.edu"
 );
-has user     => ( is => 'ro', isa => 'Str', required => 1, default => "genome" );
+has user => ( is => 'ro', isa => 'Str', required => 1, default => "genome" );
 has password => ( is => 'ro', isa => 'Str', );
 has port     => ( is => 'ro', isa => 'Int', );
 has socket   => ( is => 'ro', isa => 'Str', );
-
 
 =function sql_statement (private,)
 
@@ -84,8 +83,8 @@ around 'sql_statement' => sub {
 
   # make substitutions into the sql statements
   if ( $self->type eq 'snp' ) {
-    my $snp_table_fields_str = join( ", ", @{ $self->snp_track_fields},
-      @{ $self->features } );
+    my $snp_table_fields_str =
+      join( ", ", @{ $self->snp_track_fields }, @{ $self->features } );
 
     # \_ matches the character _ literally
     # snp matches the characters snp literally (case sensitive)
@@ -106,8 +105,8 @@ around 'sql_statement' => sub {
     }
   }
   elsif ( $self->type eq 'gene' ) {
-    my $gene_table_fields_str = join( ", ", @{$self->gene_track_fields},
-      @{ $self->features } );
+    my $gene_table_fields_str =
+      join( ", ", @{ $self->gene_track_fields }, @{ $self->features } );
 
     if ( $self->$orig(@_) =~ m/\_gene\_fields/xm ) {
       ( $new_stmt = $self->$orig(@_) ) =~ s/\_gene\_fields/$gene_table_fields_str/xms;
@@ -156,7 +155,7 @@ sub _fetch_remote_data {
 
     # prepare and execute mysql command
     my $dbh = $self->dbh;
-    my $sth = $dbh->prepare( $stmt ) or die $dbh->errstr;
+    my $sth = $dbh->prepare($stmt) or die $dbh->errstr;
     my $rc  = $sth->execute or die $dbh->errstr;
 
     # retrieve data
@@ -178,7 +177,7 @@ sub _fetch_remote_data {
     $dbh->disconnect;
 
     # write the last bit of data
-    if ( @sql_data ) {
+    if (@sql_data) {
       map { say {$out_fh} join( "\t", @$_ ); } @sql_data;
       @sql_data = ();
     }
@@ -206,60 +205,63 @@ sub write_remote_data {
 
   my @return_files;
 
-  for my $chr ($self->all_genome_chrs) {
+  for my $chr ( $self->all_genome_chrs ) {
 
-  # statement
-  my $stmt = $self->sql_statement;
+    # statement
+    my $stmt = $self->sql_statement;
 
-  # this is a hack, but I neet to get the table name for the where clause that
-  # will contrain the data to just a particular chr
-  $stmt .= sprintf(" WHERE %s.%s.chrom = '%s'", $self->db, $self->name, $chr);
-  $self->_logger->info( "updated sql cmd: $stmt" );
+    # this is a hack, but I neet to get the table name for the where clause that
+    # will contrain the data to just a particular chr
+    $stmt .= sprintf( " WHERE %s.%s.chrom = '%s'", $self->db, $self->name, $chr );
+    $self->_logger->info("updated sql cmd: $stmt");
 
-  # set directories
-  my $local_dir = $self->genome_raw_dir->child($self->type);
-  $local_dir->mkpath unless $local_dir->is_dir;
+    # set directories
+    my $local_dir = $self->genome_raw_dir->child( $self->type );
+    $local_dir->mkpath unless $local_dir->is_dir;
 
-  # set file names - in this situation it makes more sense to save the files
-  # per chrom and then tell the user the new file names to use rather than
-  # using the specified file
-  #my @local_files = $self->all_local_files;
+    # set file names - in this situation it makes more sense to save the files
+    # per chrom and then tell the user the new file names to use rather than
+    # using the specified file
+    #my @local_files = $self->all_local_files;
 
-  # just use the 1st one if we're asked to download data - the rationale for
-  # having a list of files is that sometimes the data is alreadya list of files
-  my $name = join '.', $self->db, $self->name, $chr, 'txt';
-  my $timestamp_name = join '.', $now_timestamp, $name;
+    # just use the 1st one if we're asked to download data - the rationale for
+    # having a list of files is that sometimes the data is alreadya list of files
+    my $name = join '.', $self->db, $self->name, $chr, 'txt';
+    my $timestamp_name = join '.', $now_timestamp, $name;
 
-  # the file without the timestamp will be symlinked to the one with the timestamp
-  my $master_file = $local_dir->child($name);
-  my $target_file = $local_dir->child($timestamp_name);
+    # the file without the timestamp will be symlinked to the one with the timestamp
+    my $master_file = $local_dir->child($name);
+    my $target_file = $local_dir->child($timestamp_name);
 
-  # fetch data
-  my $sql_data = $self->_fetch_remote_data($stmt, $target_file);
+    # fetch data
+    my $sql_data = $self->_fetch_remote_data( $stmt, $target_file );
 
-  # write data
-  my $msg = sprintf( "wrote remote data to: %s", $target_file->basename );
-  $self->_logger->info($msg);
-  say $msg if $self->debug;
+    # write data
+    my $msg = sprintf( "wrote remote data to: %s", $target_file->basename );
+    $self->_logger->info($msg);
+    say $msg if $self->debug;
 
-  push @return_files, $master_file->basename;
+    push @return_files, $master_file->basename;
 
-  # link files
-  if ( $self->act ) {
-    my $msg = sprintf( "symlink %s -> %s", $target_file->absolute->stringify,
-      $master_file->absolute->stringify );
-    if ( symlink $target_file->absolute->stringify, $master_file->absolute->stringify ) {
+    # link files
+    if ( $self->act ) {
+      my $msg = sprintf(
+        "symlink %s -> %s",
+        $target_file->absolute->stringify,
+        $master_file->absolute->stringify
+      );
+      if ( symlink $target_file->absolute->stringify, $master_file->absolute->stringify ) {
 
-      $self->_logger->info($msg);
+        $self->_logger->info($msg);
+      }
+      else {
+        my $error_msg = "could not " . $msg;
+        $self->_logger->error($error_msg);
+      }
     }
-    else {
-      my $error_msg = "could not " . $msg;
-      $self->_logger->error($error_msg);
-    }
+    sleep 5 if $self->act;
   }
-  sleep 5 if $self->act;
-}
-return \@return_files;
+  return \@return_files;
 }
 
 __PACKAGE__->meta->make_immutable;

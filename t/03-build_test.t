@@ -69,11 +69,11 @@ Log::Any::Adapter->set( 'File', $log_file );
 
   TODO: {
     local $TODO = 'build snp db';
-    ok($obj->build_snp_sites);
+    ok( $obj->build_snp_sites );
   }
   TODO: {
     local $TODO = 'build gene db';
-    ok($obj->build_gene_sites);
+    ok( $obj->build_gene_sites );
   }
 }
 
