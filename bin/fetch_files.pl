@@ -8,22 +8,32 @@ use Carp qw/ croak /;
 use Getopt::Long;
 use Path::Tiny;
 use Pod::Usage;
-use Type::Params qw/ compile /;
-use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
-use YAML::XS qw/ LoadFile /;
+use YAML::XS qw/ Dump LoadFile /;
 
 use Seq::Fetch;
 
-my ( $yaml_config, $db_location, $verbose, $help, $act );
+my ( $cmd, $yaml_config, $out_ext, $verbose, $help, $act );
+
+my %cmd_2_method = (
+  snp   => 'fetch_snp_data',
+  gene  => 'fetch_gene_data',
+  files => 'fetch_genome_size_data',
+);
+my %cmd_2_track_type = (
+  snp   => 'sparse_tracks',
+  gene  => 'sparse_tracks',
+  files => 'genome_sized_tracks',
+);
 
 # usage
 GetOptions(
-  'c|config=s'   => \$yaml_config,
-  'l|location=s' => \$db_location,
-  'v|verbose'    => \$verbose,
-  'h|help'       => \$help,
-  'a|act'        => \$act,
+  'a|act'     => \$act,
+  'cmd=s'     => \$cmd,
+  'config=s'  => \$yaml_config,
+  'o|out=s'   => \$out_ext,
+  'h|help'    => \$help,
+  'v|verbose' => \$verbose,
 );
 
 if ($help) {
@@ -31,42 +41,63 @@ if ($help) {
   exit;
 }
 
-unless ( defined $yaml_config and $db_location ) {
+unless ( defined $yaml_config and defined $out_ext and defined $cmd ) {
   Pod::Usage::pod2usage();
+}
+
+unless ( exists $cmd_2_method{$cmd} ) {
+  say "ERROR: expected to command should be either: snp, gene, files";
+  exit(1);
 }
 
 # get absolute path for YAML file and db_location
 $yaml_config = path($yaml_config)->absolute->stringify;
-$db_location = path($db_location)->absolute->stringify;
-
-if ( -d $db_location ) {
-  chdir($db_location) || croak "cannot change to dir: $db_location: $!\n";
-}
-else {
-  croak "expected location of db to be a directory instead got: $db_location\n";
-}
 
 # read config file to determine genome name for log and check validity
 my $config_href = LoadFile($yaml_config);
 
+# incorporate all options for object creation
 my $fetch_options_href = {
   configfile => $yaml_config,
   act        => $act,
-  verbose    => $verbose
+  debug      => $verbose
 };
-
-# set log file
-my $log_name = join '.', 'fetch', $config_href->{genome_name}, 'log';
-my $log_file = path($db_location)->child($log_name)->absolute->stringify;
-Log::Any::Adapter->set( 'File', $log_file );
 
 my $fetch_obj = Seq::Fetch->new_with_config($fetch_options_href);
 
-# fetch remote files
-$fetch_obj->fetch_genome_size_tracks;
+# set log file
+my $log_name = join '.', "fetch_$cmd", $config_href->{genome_name}, 'log';
+my $log_file = path(".")->child($log_name)->absolute->stringify;
+Log::Any::Adapter->set( 'File', $log_file );
 
-# fetch sql data
-$fetch_obj->fetch_sparse_tracks;
+# only need to update the file list if it's a sparse track (i.e., gene or snp)
+if ( $cmd eq 'gene' or 'snp' ) {
+  # set method
+  my $method     = $cmd_2_method{$cmd};
+  my $files_href = $fetch_obj->$method;
+
+  # set track type depending on the command
+  my $track_type = $cmd_2_track_type{$cmd};
+
+  for my $track_href ( @{ $config_href->{$track_type} } ) {
+    my $name = $track_href->{name};
+    if ( exists $files_href->{$name} ) {
+      $track_href->{local_files} = $files_href->{$name};
+      my $msg = "updating file list for '$name' with the following:";
+      say "=" x 80;
+      say $msg;
+      say Dump $track_href->{local_files};
+      say "=" x 80;
+    }
+  }
+}
+
+say "\n" . "=" x 80;
+say "Updated configuration file written: '$out_ext.yml'";
+say "=" x 80;
+
+my $out_fh = IO::File->new( "$out_ext.yml", 'w' );
+say {$out_fh} Dump($config_href);
 
 __END__
 
@@ -78,7 +109,7 @@ fetch_assembly_files - fetches files for assembly annotation
 
 fetch_assembly_files
   --config <file>
-  --locaiton <path>
+  --cmd <either: gene, snp, files>
   [ --act ]
   [ --verbose ]
 
@@ -95,16 +126,16 @@ specified raw genomic data.
 
 Act: Optionally fetches (or performs a dry-run).
 
-=item B<-c>, B<--config>
+=item B<--config>
 
 Config: A YAML genome assembly configuration file that specifies the various
 tracks and data associated with the assembly. This is the same file that is
 used by the Seq Package to annotate snpfiles.
 
-=item B<-l>, B<--location>
+=item B<--cmd>
 
-Location: Base location of the raw genomic information used to build the
-annotation index.
+Cmd: Either gene, snp, or files. These commands correspond to which data type
+or set you want to fetch.
 
 =item B<-v>, B<--verbose>
 
