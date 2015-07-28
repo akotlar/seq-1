@@ -42,17 +42,18 @@ has act => (
 sub fetch_snp_data {
   my $self = shift;
   my $tracks_aref = [ $self->all_snp_tracks ];
-  $self->_fetch_sparse_data( $tracks_aref);
+  return $self->_fetch_sparse_data( $tracks_aref);
 }
 
 sub fetch_gene_data {
   my $self = shift;
   my $tracks_aref = [ $self->all_gene_tracks ];
-  $self->_fetch_sparse_data( $tracks_aref);
+  return $self->_fetch_sparse_data( $tracks_aref);
 }
 
 sub _fetch_sparse_data {
   my ($self, $tracks_aref ) = @_;
+  my %files;
   for my $track ( @$tracks_aref ) {
 
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
@@ -73,9 +74,10 @@ sub _fetch_sparse_data {
     }
 
     my $obj = Seq::Fetch::Sql->new($record);
-    $obj->write_remote_data;
+    $files{$track->name} = $obj->write_remote_data;
+    
   }
-  return 1;
+  return \%files;
 }
 
 sub fetch_genome_size_data {

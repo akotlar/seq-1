@@ -144,7 +144,7 @@ sub dbh {
 
 sub _fetch_remote_data {
 
-  my ( $self, $file ) = @_;
+  my ( $self, $stmt, $file ) = @_;
 
   # for return data
   my @sql_data = ();
@@ -156,7 +156,7 @@ sub _fetch_remote_data {
 
     # prepare and execute mysql command
     my $dbh = $self->dbh;
-    my $sth = $dbh->prepare( $self->sql_statement ) or die $dbh->errstr;
+    my $sth = $dbh->prepare( $stmt ) or die $dbh->errstr;
     my $rc  = $sth->execute or die $dbh->errstr;
 
     # retrieve data
@@ -176,6 +176,12 @@ sub _fetch_remote_data {
       }
     }
     $dbh->disconnect;
+
+    # write the last bit of data
+    if ( @sql_data ) {
+      map { say {$out_fh} join( "\t", @$_ ); } @sql_data;
+      @sql_data = ();
+    }
   }
 }
 
@@ -198,30 +204,45 @@ sub _clean_row {
 sub write_remote_data {
   my $self = shift;
 
+  my @return_files;
+
+  for my $chr ($self->all_genome_chrs) {
+
   # statement
-  my $msg = "sql cmd: " . $self->sql_statement;
-  $self->_logger->info( $msg );
+  my $stmt = $self->sql_statement;
+
+  # this is a hack, but I neet to get the table name for the where clause that
+  # will contrain the data to just a particular chr
+  $stmt .= sprintf(" WHERE %s.%s.chrom = '%s'", $self->db, $self->name, $chr);
+  $self->_logger->info( "updated sql cmd: $stmt" );
 
   # set directories
   my $local_dir = $self->genome_raw_dir->child($self->type);
   $local_dir->mkpath unless $local_dir->is_dir;
 
-  # set file names
-  my @local_files = $self->all_local_files;
+  # set file names - in this situation it makes more sense to save the files
+  # per chrom and then tell the user the new file names to use rather than
+  # using the specified file
+  #my @local_files = $self->all_local_files;
 
   # just use the 1st one if we're asked to download data - the rationale for
   # having a list of files is that sometimes the data is alreadya list of files
-  my $timestamp_name = sprintf( "%s.%s", $now_timestamp, $local_files[0]->basename);
+  my $name = join '.', $self->db, $self->name, $chr, 'txt';
+  my $timestamp_name = join '.', $now_timestamp, $name;
+
+  # the file without the timestamp will be symlinked to the one with the timestamp
+  my $master_file = $local_dir->child($name);
   my $target_file = $local_dir->child($timestamp_name);
-  my $master_file = $local_files[0];
 
   # fetch data
-  my $sql_data = $self->_fetch_remote_data($target_file);
+  my $sql_data = $self->_fetch_remote_data($stmt, $target_file);
 
   # write data
-  $msg = sprintf( "wrote remote data to: %s", $target_file );
+  my $msg = sprintf( "wrote remote data to: %s", $target_file->basename );
   $self->_logger->info($msg);
   say $msg if $self->debug;
+
+  push @return_files, $master_file->basename;
 
   # link files
   if ( $self->act ) {
@@ -236,6 +257,9 @@ sub write_remote_data {
       $self->_logger->error($error_msg);
     }
   }
+  sleep 5 if $self->act;
+}
+return \@return_files;
 }
 
 __PACKAGE__->meta->make_immutable;
