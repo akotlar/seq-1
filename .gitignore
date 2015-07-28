@@ -54,24 +54,20 @@ Temporary Items
 .apdisk
 
 # seq package test files
-hg38.2bit
-twoBitToFa
+*.log
+*.sh
+*.snp
 nytprof
 tmp*
 test*
 sandbox
+big_files/
 /t/*.sh
-/t/archive
-*.db
 /bin/genome_hasher
 /bin/genome_scorer
 /bin/genome_cadd
-/real_hg38
-*.log
 Pileup.annotation.txt.gz
 Pileup.annotation.txt
 Pileup.snp
 /stash
-/*.sh
-/*.snp
 /t/hg38/
