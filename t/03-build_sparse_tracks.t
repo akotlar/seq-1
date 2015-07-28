@@ -13,7 +13,7 @@ plan tests => 26;
 
 # check attributes and type constraints
 my %attr_2_type = (
-  genome_track_str      => 'Seq::Build::GenomeSizedTrackStr',
+  genome_str_track      => 'Seq::Build::GenomeSizedTrackStr',
   counter               => 'Num',
   bulk_insert_threshold => 'Num',
   force                 => 'Bool',
