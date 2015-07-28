@@ -37,8 +37,6 @@ use Seq::KCManager;
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
-use DDP;
-
 sub _get_gene_data {
   my ( $self, $wanted_chr ) = @_;
 
