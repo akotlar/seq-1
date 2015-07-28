@@ -140,7 +140,6 @@ sparse_tracks:
   - hg38.refGene.chr20.txt
   - hg38.refGene.chr21.txt
   - hg38.refGene.chr22.txt
-  - hg38.refGene.chrM.txt
   - hg38.refGene.chrX.txt
   - hg38.refGene.chrY.txt
   name: refGene
