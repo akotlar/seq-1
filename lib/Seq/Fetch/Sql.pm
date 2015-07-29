@@ -242,10 +242,10 @@ sub write_remote_data {
     say $msg if $self->debug;
 
     # rarely, a track might not have any genes on a chr (e.g., refGene and chrM)
-    #   this will cause failure of the build since we expect to find all files 
-    #   in the list 
-    if (-s $master_file->absolute) {
-      push @return_files, $master_file->basename; 
+    #   this will cause failure of the build since we expect to find all files
+    #   in the list
+    if ( -s $master_file->absolute ) {
+      push @return_files, $master_file->basename;
     }
 
     # link files
