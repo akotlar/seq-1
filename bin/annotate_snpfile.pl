@@ -96,7 +96,7 @@ in a configuration file
 
 =head1 SYNOPSIS
 
-annotate_snpfile.pl --config <assembly config> --snp <snpfile> --locaiton <path> --out <file_ext>
+annotate_snpfile.pl --config <assembly config> --snp <snpfile> --out <file_ext>
 
 =head1 DESCRIPTION
 
@@ -117,13 +117,14 @@ Config: A YAML genome assembly configuration file that specifies the various
 tracks and data associated with the assembly. This is the same file that is also
 used by the Seq Package to build the binary genome without any alteration.
 
-=item B<-l>, B<--location>
-
-Location: This is the base directory for the location of the binary index.
-
 =item B<-o>, B<--out>
 
 Output directory: This is the output director.
+
+=item B<-f>, B<--force>
+
+Force: Overwrite the annotation file if it exists.
+
 
 =back
 
