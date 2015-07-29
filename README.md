@@ -122,10 +122,10 @@ configuration file):
 
 # setup
 
-1. SeqAnt requires the (Kyoto Cabinet)[http://fallabs.com/kyotocabinet/] DBM, and
+1. SeqAnt requires the [Kyoto Cabinet](http://fallabs.com/kyotocabinet/) DBM, and
 you will need to install the core library and the Perl package.
-  - Download the latest (core library)[http://fallabs.com/kyotocabinet/pkg/].
-  - Download the latest (Perl package)[http://fallabs.com/kyotocabinet/perlpkg/].
+  - Download the latest [C/C++ core library](http://fallabs.com/kyotocabinet/pkg/).
+  - Download the latest [Perl package](http://fallabs.com/kyotocabinet/perlpkg/).
   - Both of these will need to be installed for SeqAnt to work properly.
 
 2. Install the SeqAnt Perl package.
@@ -138,18 +138,65 @@ To install the dependencies:
 		'{ if ($_ =~ m/\:use ([\w\d.:]+)/) { $modules{$1}++; }}
 		END{ print join "\n", sort keys %modules; }' | grep -v Seq
 
+```
+TODO: Add to Makefile.PL
+5.10.0
+Carp
+Cpanel::JSON::XS
+Cwd
+DBI
+DDP
+Data::Dump
+Data::Dumper
+File::Basename
+File::Path
+File::Rsync
+File::Spec
+Getopt::Long
+IO::Compress::Gzip
+IO::File
+IO::Socket
+IO::Socket::INET
+IO::Uncompress::Gunzip
+KyotoCabinet
+Lingua::EN::Inflect
+List::Util
+Log::Any::Adapter
+Moose
+Moose::Role
+Moose::Util::TypeConstraints
+MooseX::Types::Path::Tiny
+Path::Tiny
+Pod::Usage
+Redis
+Scalar::Util
+Sys::Info
+Sys::Info::Constants
+Test::More
+Thread::Queue
+Time::localtime
+Try::Tiny
+Type::Params
+Types::Standard
+YAML
+YAML::XS
+namespace::autoclean
+threads
+threads::shared
+```
+
+The redis server requires a perl with p-threads built in.
+
 Install dependencies with `cpanm` like so:
 
-		cpanm Carp Cpanel::JSON::XS Cwd DBD::Mock DBI DDP Data::Dump Data::Dumper \
-		File::Copy File::Path File::Rsync File::Spec Getopt::Long \
-		IO::Compress::Gzip IO::File IO::Socket IO::Socket::INET \
-		IO::Uncompress::Gunzip KyotoCabinet Lingua::EN::Inflect List::Util \
-		Log::Any::Adapter Modern::Perl Moose Moose::Role
-		Moose::Util::TypeConstraints MooseX::Types::Path::Tiny Path::Tiny \
-		Pod::Usage Scalar::Util Test::Exception Test::More Time::localtime \
-		Try::Tiny Type::Params Types::Standard YAML YAML::XS autodie bigint \
-		namespace::autoclean
-
+		cpanm 5.10.0 Carp Cpanel::JSON::XS Cwd DBI DDP Data::Dump Data::Dumper \
+      File::Basename File::Path File::Rsync File::Spec Getopt::Long \
+      IO::Compress::Gzip IO::File IO::Socket IO::Socket::INET \
+      IO::Uncompress::Gunzip KyotoCabinet Lingua::EN::Inflect List::Util \
+      Log::Any::Adapter Moose Moose::Role Moose::Util::TypeConstraints \
+      MooseX::Types::Path::Tiny Path::Tiny Pod::Usage Redis Scalar::Util \
+      Sys::Info Sys::Info::Constants Test::More Thread::Queue Time::localtime \
+      Try::Tiny Type::Params Types::Standard YAML YAML::XS namespace::autoclean \
 
 3. SeqAnt comes with a number of pre-specified genome assemblies in the `./config` 
 directory.
