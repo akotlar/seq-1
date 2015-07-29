@@ -10,7 +10,7 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 31;
+plan tests => 34;
 
 my %attr_2_type = (
   genome_str_track => 'Seq::Build::GenomeSizedTrackStr',
@@ -63,23 +63,40 @@ my $log_name = join '.', 'build', $config_href->{genome_name}, 'log';
 my $log_file = path("./t")->child($log_name)->absolute->stringify;
 Log::Any::Adapter->set( 'File', $log_file );
 
-{
+SKIP: {
+  my $reason = 'did not have required data on disk to test build methods';
+  skip $reason, 3 unless Have_chr_files($config_href);
   my $obj = $package->new($config_href);
   ok( $obj, 'object creation' );
-
-  TODO: {
-    local $TODO = 'build snp db';
-    ok( $obj->build_snp_sites );
-  }
-  TODO: {
-    local $TODO = 'build gene db';
-    ok( $obj->build_gene_sites );
-  }
+  ok( $obj->build_snp_sites );
+  ok( $obj->build_gene_sites );
 }
 
 ###############################################################################
 # sub routines
 ###############################################################################
+
+sub Have_chr_files {
+  my $config_href   = shift;
+  my $missing_files = 0;
+
+  for my $track ( @{ $config_href->{genome_sized_tracks} } ) {
+
+    if ( $track->{type} eq "genome" ) {
+      for my $file ( keys $track->{local_files} ) {
+        my $pt = path( $config_href->{genome_raw_dir} )->child($file);
+        $missing_files++ unless $pt->is_file;
+      }
+    }
+  }
+
+  if ($missing_files) {
+    return;
+  }
+  else {
+    return 1;
+  }
+}
 
 sub build_obj_data {
   my ( $track_type, $type, $href ) = @_;

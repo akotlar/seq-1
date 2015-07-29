@@ -9,7 +9,7 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 18;
+plan tests => 19;
 
 my %attr_2_type = (
   genome_seq => 'Str',
@@ -22,7 +22,7 @@ my %attr_to_is = (
 );
 
 # set test genome
-my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
+my $ga_config   = path('./t/hg38_config.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 # test the package's attributes and type constraints
@@ -60,28 +60,55 @@ for my $attr_name ( sort keys %attr_2_type ) {
   }
 }
 
-# TODO: obj creation and beyond fails b/c it expects to build the string genome
+# SKIP: obj creation and beyond fails b/c it expects to build the string genome
 #       from the files supplied by local files
 # object creation
-TODO: {
-  local $TODO = 'build an object - must have seq data on disk to do this';
-  my $seq = '';
-  my %chr_len;
-  for my $chr ( @{ $config_href->{genome_chrs} } ) {
-    my $char_seq = "A" x int( rand(10) + 1 );
-    $seq .= $char_seq;
-    $chr_len{$chr} = length $char_seq;
+SKIP: {
+  my $reason = 'build an object - did not have fasta data on disk to do this';
+  if ( Have_chr_files($config_href) ) {
+    my $seq = '';
+    my %chr_len;
+    for my $chr ( @{ $config_href->{genome_chrs} } ) {
+      my $char_seq = "A" x int( rand(10) + 1 );
+      $seq .= $char_seq;
+      $chr_len{$chr} = length $char_seq;
+    }
+    my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
+    $href->{char_seq} = \$seq;
+    $href->{chr_len}  = \%chr_len;
+    my $obj = $package->new($href);
+    ok( $obj, 'object creation' );
   }
-  my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
-  $href->{char_seq} = \$seq;
-  $href->{chr_len}  = \%chr_len;
-  my $obj = $package->new($href);
-  ok( $obj, 'object creation' );
+  else {
+    skip $reason, 1;
+  }
 }
 
 ###############################################################################
 # sub routines
 ###############################################################################
+
+sub Have_chr_files {
+  my $config_href   = shift;
+  my $missing_files = 0;
+
+  for my $track ( @{ $config_href->{genome_sized_tracks} } ) {
+
+    if ( $track->{type} eq "genome" ) {
+      for my $file ( keys $track->{local_files} ) {
+        my $pt = path( $config_href->{genome_raw_dir} )->child($file);
+        $missing_files++ unless $pt->is_file;
+      }
+    }
+  }
+
+  if ($missing_files) {
+    return;
+  }
+  else {
+    return 1;
+  }
+}
 
 sub build_obj_data {
   my ( $track_type, $type, $href ) = @_;
