@@ -63,20 +63,26 @@ sub build_snp_db {
 
   $self->_logger->info("Building entries for $wanted_chr");
 
-  # variable to hold kch object and
+  # variables for the dbm object and site-range filehandle - only opened once for
+  #   the list of files
   my ( $db, $snp_dat_fh );
 
   for my $input_file (@input_files) {
+    my ( %header, @snp_sites );
 
-    # check file
+    # check file has data
     if ( !-s $input_file ) {
       my $msg = sprintf( "ERROR: expected file is empty or missing, %s", $input_file );
       $self->_logger->error($msg);
       say $msg;
       exit(1);
     }
+    else {
+      $self->_logger->info("checking $input_file for $wanted_chr");
+    }
+
+    # open file
     my $in_fh = $self->get_read_fh($input_file);
-    my ( %header, @snp_sites, @insert_data );
 
     while ( my $line = $in_fh->getline() ) {
       chomp $line;
@@ -93,6 +99,23 @@ sub build_snp_db {
         # do we have the optinally specified keys?
         $self->_check_header_keys( \%header, [ $self->all_features ] );
 
+        next;
+      }
+
+      my %data = map { $_ => $fields[ $header{$_} ] } @{ $self->snp_fields_aref };
+
+      # skip unwanted chr until we find the want_chr at which time create the
+      #   dbm and site-range files
+      if ( $data{chrom} ne $wanted_chr ) {
+        next;
+      }
+      elsif ( $data{chrom} eq $wanted_chr and !$snp_dat_fh and !$db ) {
+        # create site-range fh
+        $snp_dat_fh = $self->get_write_fh($snp_dat_file);
+
+        # write the site-range value for the genome encoder
+        say {$snp_dat_fh} $self->in_snp_val;
+
         # create dbm file
         $self->_logger->info("dbm_file: $dbm_file");
         $db = Seq::KCManager->new(
@@ -102,18 +125,8 @@ sub build_snp_db {
           bnum => 3_000_000,
           msiz => 512_000_000,
         );
-
-        # create site-range file
-        #   NOTE: 1st line needs to be value that should be added to encoded
-        #         genome for these sites
-        $snp_dat_fh = $self->get_write_fh($snp_dat_file);
-        say {$snp_dat_fh} $self->in_snp_val;
       }
 
-      # process wanted chr
-      next unless $fields[0] eq $wanted_chr;
-
-      my %data = map { $_ => $fields[ $header{$_} ] } @{ $self->snp_fields_aref };
       my ( $allele_freq_count, @alleles, @allele_freqs, $min_allele_freq );
 
       if ( $data{alleleFreqCount} == 2 ) {
@@ -159,19 +172,15 @@ sub build_snp_db {
         my $site_href = $snp_site->as_href;
 
         $db->db_put( $abs_pos, $site_href );
+        $self->inc_counter;
 
         if ( $self->counter > $self->bulk_insert_threshold ) {
-          say {$snp_dat_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
-          @snp_sites = ();
-          $self->reset_counter;
+          $self->_write_and_reset_range_list( $snp_dat_fh, \@snp_sites );
         }
       }
-      $self->inc_counter;
     }
     if ( $self->counter ) {
-      say {$snp_dat_fh} join "\n", @{ $self->_get_range_list( \@snp_sites ) };
-      @snp_sites = ();
-      $self->reset_counter;
+      $self->_write_and_reset_range_list( $snp_dat_fh, \@snp_sites );
     }
   }
 
@@ -179,6 +188,13 @@ sub build_snp_db {
   # hasher will not crash if there are no entries (after the initial idx mask)
   say {$snp_dat_fh} '';
   $self->_logger->info("finished building snp site db for chr: $wanted_chr");
+}
+
+sub _write_and_reset_range_list {
+  my ( $self, $fh, $snp_sites_aref ) = @_;
+  say {$fh} join "\n", @{ $self->_get_range_list($snp_sites_aref) };
+  $self->reset_counter;
+  @$snp_sites_aref = ();
 }
 
 __PACKAGE__->meta->make_immutable;
