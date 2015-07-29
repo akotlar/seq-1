@@ -41,8 +41,9 @@ $config_file = path($config_file)->absolute->stringify;
 
 my $config_href = LoadFile($config_file);
 
-my $cmd_fh = IO::File->new( 'build.sh', 'w' ) or die "build.sh: $!\n";
-my $alt_cmd_fh = IO::File->new( 'build_alt.sh', 'w') or die "build_alt.sh: $!\n";
+my @script_files = ( 'build.sh', 'build_alt.sh' );
+my $cmd_fh     = IO::File->new( 'build.sh',     'w' ) or die "build.sh: $!\n";
+my $alt_cmd_fh = IO::File->new( 'build_alt.sh', 'w' ) or die "build_alt.sh: $!\n";
 
 # For the parellel build on a single computer
 # counter needs to start with 0 to get the first genome string built and written
@@ -56,15 +57,37 @@ for my $type (qw/ gene_db snp_db /) {
     $cmd .= " --verbose" if $verbose;
     $cmd .= " --act"     if $act;
     my $file_name = Write_script( $type, $chr, $cmd );
-    my $alt_cmd = sprintf("%s %s", path('.')->child($file_name)->absolute->stringify, 
-      ( $i % 3 == 0 ) ? "" : " &");
-    say { $alt_cmd_fh } $alt_cmd;
+    my $alt_cmd = sprintf( "%s %s",
+      path('.')->child($file_name)->absolute->stringify,
+      ( $i % 3 == 0 ) ? "" : " &" );
+    say {$alt_cmd_fh} $alt_cmd;
     $i++;
-    my $log_file  = File::Spec->rel2abs("$type.$chr.log");
-    my $q_cmd     = qq{qsub -v USER -v PATH -cwd -q lh.q -o $log_file -j y $file_name};
+    my $log_file = File::Spec->rel2abs("$type.$chr.log");
+    my $q_cmd    = qq{qsub -v USER -v PATH -cwd -q lh.q -o $log_file -j y $file_name};
     say {$cmd_fh} $q_cmd;
+    push @script_files, $file_name;
   }
 }
+
+for my $type (qw/ transcript_db conserv genome/) {
+  my $cmd = qq{$build_src --config $config_file --type $type};
+  $cmd .= " --verbose" if $verbose;
+  $cmd .= " --act"     if $act;
+  my $file_name = Write_script( $type, 'genome', $cmd );
+  my $alt_cmd = path('.')->child($file_name)->absolute->stringify;
+  say {$alt_cmd_fh} $alt_cmd;
+  my $log_file = File::Spec->rel2abs("$type.genome.log");
+  my $q_cmd    = qq{qsub -v USER -v PATH -cwd -q lh.q -o $log_file -j y $file_name};
+  say {$cmd_fh} $q_cmd;
+  push @script_files, $file_name;
+}
+
+close $cmd_fh;
+close $alt_cmd_fh;
+
+# make all scripts executable
+my $mode = 0755;
+chmod $mode, @script_files;
 
 sub Write_script {
   my ( $type, $chr, $cmd ) = @_;
