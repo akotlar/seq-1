@@ -13,7 +13,7 @@ use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
 
-plan tests => 1740;
+#plan tests => 1740;
 
 # check attributes and their type constraints
 my %attr_2_type = (
@@ -71,21 +71,17 @@ for my $attr_name ( sort keys %attr_2_type ) {
   }
 }
 
+SKIP: {
+
 # we need the gene and snp kch files and the dbsnp file to verify we make the sample
 # predictions that dbsnp makes on variants.
-my $chr22_offset = 2824183054;                          # for hg38
+my $chr22_offset = 2824183054;                                  # for hg38
 my $snp_dbm      = path('./big_files/snp141.snp.chr22.kch');
 my $gene_dbm     = path('./big_files/knownGene.gene.chr22.kch');
 my $dbsnp_file   = path('./big_files/snp141.test.txt');
 
 # check files are available
-if ( !( $snp_dbm->is_file || $gene_dbm->is_file || $dbsnp_file->is_file ) ) {
-  say "cannot find one or more needed file:
-  ./t/snp141.snp.chr22.kch
-  ./t/knownGene.gene.chr22.kch
-  ./t/snp141.chr22.txt";
-  exit;
-}
+skip "need big_files but didn't find them", 1, unless ( $snp_dbm->is_file && $gene_dbm->is_file && $dbsnp_file->is_file ); 
 
 # exp test types
 my $exp_site_tests = {
@@ -377,6 +373,8 @@ for my $line (@dbsnp_data) {
 }
 is_deeply( $exp_site_tests, \%func, 'Sites Tested' );
 say dump( \%func );
+};
+done_testing();
 
 ###############################################################################
 # sub routines
