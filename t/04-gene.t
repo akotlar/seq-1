@@ -76,9 +76,9 @@ SKIP: {
   # we need the gene and snp kch files and the dbsnp file to verify we make the sample
   # predictions that dbsnp makes on variants.
   my $chr22_offset = 2824183054;                                  # for hg38
-  my $snp_dbm      = path('./big_files/snp141.snp.chr22.kch');
-  my $gene_dbm     = path('./big_files/knownGene.gene.chr22.kch');
-  my $dbsnp_file   = path('./big_files/snp141.test.txt');
+  my $snp_dbm      = path('big_files/snp141.snp.chr22.kch');
+  my $gene_dbm     = path('big_files/knownGene.gene.chr22.kch');
+  my $dbsnp_file   = path('big_files/snp141.chr22.txt');
 
   # check files are available
   skip "need big_files but didn't find them", 1,
