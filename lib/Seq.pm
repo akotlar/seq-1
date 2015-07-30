@@ -159,6 +159,14 @@ has genes_annotated => (
   },
 );
 
+
+my %site_2_set_method = (
+  DEL => 'set_del_site',
+  INS => 'set_ins_site',
+  MULTIALLELIC => 'set_snp_sites',
+  SNP => 'set_snp_site',
+);
+
 # my $redisHost = 'localhost';
 # my $redisPort = '6379';
 
@@ -303,13 +311,13 @@ sub annotate_snpfile {
     #   p $hom_ids;
     # }
 
-    if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
-      my $method = lc 'set_' . $type . '_site';
+    if ( exists $site_2_set_method{$type} ) {
+      my $method = $site_2_set_method{$type};
 
       $self->$method( $abs_pos => [ $chr, $pos ] );
 
       # get annotation for snp site
-      next unless $type eq 'SNP';
+      next unless $type eq 'SNP' or 'MULTIALLELIC';
 
       for my $allele ( split( /,/, $all_alleles ) ) {
         next if $allele eq $ref_allele;
