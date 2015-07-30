@@ -31,14 +31,11 @@ genome_chrs:
   - chrM
   - chrX
   - chrY
-genome_raw_dir: ./mm10/raw
-genome_index_dir: ./mm10/index
-genome_db_dir: /ssd/twingo/sandbox
+genome_raw_dir: /ssd/twingo/sandbox/mm10/raw
+genome_index_dir: /ssd/twingo/sandbox/mm10/index
 
 sparse_tracks:
   - type: gene
-    local_dir: /ssd/twingo/sandbox/mm10/raw/gene
-    local_file: mm10.knownGene.txt
     name: knownGene
     sql_statement: SELECT _gene_fields FROM mm10.knownGene LEFT JOIN mm10.kgXref ON mm10.kgXref.kgID = mm10.knownGene.name
     features:
@@ -51,8 +48,6 @@ sparse_tracks:
       - description
       - rfamAcc
   - type: snp
-    local_dir: /ssd/twingo/sandbox/mm10/raw/snp
-    local_file: mm10.snp138.txt
     name: snp138
     sql_statement: SELECT _snp_fields FROM mm10.snp138
     features:
