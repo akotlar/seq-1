@@ -110,6 +110,7 @@ fetch_assembly_files - fetches files for assembly annotation
 fetch_assembly_files
   --config <file>
   --cmd <either: gene, snp, files>
+  --out <output extension for new config file>
   [ --act ]
   [ --verbose ]
 
@@ -136,6 +137,11 @@ used by the Seq Package to annotate snpfiles.
 
 Cmd: Either gene, snp, or files. These commands correspond to which data type
 or set you want to fetch.
+
+=item B<--out>
+
+Out: output extension for the new configuration file automatically generated 
+after fetching sql data (updates the list of local files).
 
 =item B<-v>, B<--verbose>
 
