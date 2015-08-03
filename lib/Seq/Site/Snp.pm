@@ -6,6 +6,22 @@ package Seq::Site::Snp;
 # ABSTRACT: A class for seralizing Snp sites
 # VERSION
 
+=head1 DESCRIPTION
+  
+  @class Seq::Site::Snp
+  #TODO: Check description
+
+  @example
+
+Used in:
+=for :list
+* Seq::Annotate
+* Seq::Build::SnpTrack
+
+Extended by: None
+
+=cut
+
 use Moose 2;
 
 use namespace::autoclean;
@@ -37,6 +53,7 @@ has snp_feature => (
 );
 
 # this function is really for storing in mongo db collection
+#TODO: can we get rid of this, since defined in Seq/Build/GeneTrack.pm, and also Seq/Config/SparseTrack.pm
 sub as_href {
   my $self = shift;
   my %hash;

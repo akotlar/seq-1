@@ -1,18 +1,11 @@
 # Seq ToDo
 
-1. attribute `snp_id` to the appropriate db it came from - e.g., clinvar
-   versus snp141.
-2. ensure phastcons and phylop are created and read in the same way - round
-   trip integrity.
-3. more tests
-4. build non-human assemblies
-5. integrate statistics calculators
-6. integrate cadd scores for hg38 and hg19
+1. Ensure c programs are compiled when package is installed.
+2. include instructions about getting kch
+3. build additional genomes (finish mm10)
+4. add this to testing
+  - ideally build a mini genome as part of the build process
+  - select a small gene track like CCDS or refGene
+5. for conservation tracks - check the needed files are present before 
+  the build starts (i.e., command is submitted).
 
-# bugs
-
-1. add ucsc kgID to names, associate that transcript with the particular error
-    message that a transcript doesn't end with a stop codion, etc
-    e.g., uc021tyx.1 chr17 + transcript does not end with stop codon (this is
-      on of the several varieties of MAPT and the only one that doesn't end
-      with a stop)

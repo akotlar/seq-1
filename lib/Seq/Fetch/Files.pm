@@ -1,98 +1,87 @@
 package Seq::Fetch::Files;
 
+=head1 DESCRIPTION
+
+  @class Seq::Fetch::Files
+  This class fetches raw files from remote locations (e.g., UCSC genome browser
+  rsync server) that are required to build the genome assembly sepcified in the
+  configuration file.
+
+  @example
+
+Used in:
+=for :list
+* Seq::Fetch
+
+Extended by: None
+
+=cut
+
 use 5.10.0;
 use Carp;
 use File::Path;
 use File::Spec;
+use File::Rsync;
+
 use Moose;
 use namespace::autoclean;
+
 extends 'Seq::Config::GenomeSizedTrack';
 
-has act     => ( is => 'ro', isa => 'Bool', );
-has verbose => ( is => 'ro', isa => 'Bool', );
+has act   => ( is => 'ro', isa => 'Bool', );
+has debug => ( is => 'ro', isa => 'Bool', );
+has rsync_bin =>
+  ( is => 'ro', isa => 'Str', required => 1, builder => '_build_rsync_bin', );
 
-sub say_fetch_files_script {
+sub _build_rsync_bin {
+  my $self          = shift;
+  my %rsync_loc_for = (
+    loc_1 => '/opt/local/bin/rsync',
+    loc_2 => '/usr/local/bin/rsync',
+    loc_3 => '/usr/bin/rsync'
+  );
+  for my $sys ( sort keys %rsync_loc_for ) {
+    return $rsync_loc_for{$sys} if -f $rsync_loc_for{$sys};
+  }
+  return;
+}
 
+sub fetch_files {
   my $self = shift;
 
-  my $name = $self->name;
-  # get rsync cmd and opts
-  my $rsync_opts = $self->_get_rsync_opts;
-
-  # check required parameters are passed
-  croak "cannot determine rsync options " unless $rsync_opts;
-
-  # make directory
-  my $local_dir         = File::Spec->canonpath( $self->local_dir );
-  my $remote_dir        = $self->remote_dir;
+  my $name              = $self->name;
   my $remote_files_aref = $self->remote_files;
-  my $command           = "rsync $rsync_opts rsync://$remote_dir";
-  my @rsync_cmds        = map { "$command/$_ ."; } @$remote_files_aref;
 
-  my $script =
-    join( "\n", "mkdir -p $local_dir", "cd $local_dir", @rsync_cmds, "cd -", "" );
-  return $script;
-}
+  # get rsync cmd and opts
+  my %rsync_opt = ( compress => 1, 'rsync-path' => $self->rsync_bin );
+  $rsync_opt{verbose}++ if $self->debug;
+  $rsync_opt{'dry-run'}++ unless $self->act;
 
-sub say_process_files_script {
-  my $self = shift;
+  my $rsync_obj = File::Rsync->new( \%rsync_opt );
 
-  my $local_dir = File::Spec->canonpath( $self->local_dir );
-  my $name      = $self->name;
-  my @cmds;
-  foreach my $method (qw( proc_init_cmds proc_chrs_cmds proc_clean_cmds )) {
-    next unless $self->$method;
-    push @cmds, "cd $local_dir";
-    if ( $method eq "proc_chrs_cmds" ) # these cmds are looped over the files
-    {
-      my $chrs_aref = $self->genome_chrs;
-      foreach my $chr (@$chrs_aref) {
-        my %cmd_subs = (
-          _add_file => '>>',
-          _asterisk => '*',
-          _chr      => $chr,
-          _dir      => $name,
-        );
-        my $this_cmd = join( "\n", @{ $self->$method } );
-        for my $sub ( keys %cmd_subs ) {
-          $this_cmd =~ s/$sub/$cmd_subs{$sub}/g;
-        }
-        push @cmds, $this_cmd;
-      }
-      push @cmds, "cd -";
-    }
-    else {
-      my $this_cmd = join( "\n", @{ $self->$method } );
-      push @cmds, $this_cmd;
-      push @cmds, "cd - ";
-    }
+  # prepare directories
+  my $local_dir = $self->genome_raw_dir->child( $self->type );
+  $local_dir->mk_path unless -d $local_dir->absolute;
+
+  # File::Rsync expects host:dir format for remote files (if needed)
+  # $remote_dir =~ s/\//::/xm unless ( $remote_dir =~ m/::/xm );
+  my @remote_src  = split /\//, $self->remote_dir;
+  my $remote_host = $remote_src[0] . ":";
+  my $remote_dir  = join "/", @remote_src[ 1 .. $#remote_src ];
+
+  # fetch files
+  for my $file ( @{$remote_files_aref} ) {
+    my $this_remote_file = $local_dir->child($file);
+    my $cmd_href         = {
+      srchost => $remote_host,
+      source  => $this_remote_file,
+      dest    => $local_dir->absolute->stringify
+    };
+    my $cmd = $rsync_obj->getcmd($cmd_href);
+    my $cmd_txt = join " ", @$cmd;
+    $self->_logger->info( "rsync cmd: " . $cmd_txt ) if $self->debug;
+    system $cmd_txt if $self->act || $self->_logger->error( "failed: " . $cmd_txt );
   }
-  my $script = (@cmds) ? join( "\n", @cmds ) : undef;
-  return $script;
-}
-
-sub _get_rsync_opts {
-  my $self    = shift;
-  my $act     = $self->act;
-  my $verbose = $self->verbose;
-  my $opt     = "";
-  if ($act) {
-    if ($verbose) {
-      $opt = "-avzP";
-    }
-    else {
-      $opt = "-az";
-    }
-  }
-  else {
-    if ($verbose) {
-      $opt = "-navzP";
-    }
-    else {
-      $opt = "-naz";
-    }
-  }
-  return $opt;
 }
 
 __PACKAGE__->meta->make_immutable;

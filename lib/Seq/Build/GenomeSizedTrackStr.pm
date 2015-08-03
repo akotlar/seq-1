@@ -6,16 +6,35 @@ package Seq::Build::GenomeSizedTrackStr;
 # ABSTRACT: Builds a plain text genome used for binary genome creation
 # VERSION
 
+=head1 DESCRIPTION
+
+  @class B<Seq::Build::GenomeSizedTrackStr>
+
+  TODO: Add description
+  Stores a String representation of a genome, as well as the length of each chromosome in the genome.
+  Is a single responsibility class with no public functions.
+
+Used in:
+=for :list
+* Seq/Build/SparseTrack
+* Seq/Build
+
+Extended in: None
+
+=cut
+
 use Moose 2;
 
-use Carp qw/ confess /;
+use Carp qw/ confess croak /;
 use File::Path;
 use File::Spec;
 use namespace::autoclean;
 use YAML::XS qw/ Dump LoadFile /;
 
+use DDP;
+
 extends 'Seq::Config::GenomeSizedTrack';
-with 'Seq::Role::IO', 'Seq::Role::Genome', 'MooX::Role::Logger';
+with 'Seq::Role::IO', 'Seq::Role::Genome';
 
 # str_seq stores a string in a single scalar
 has genome_seq => (
@@ -34,6 +53,8 @@ has genome_seq => (
 );
 
 # stores the 1-indexed length of each chromosome
+# TODO: enumerate where this is used, and make sure we're consistent with 0 vs 1 index
+# NOTE: this is only used for building - e.g., Seq::Build, Seq::Build::* packages
 has chr_len => (
   is      => 'rw',
   isa     => 'HashRef[Str]',
@@ -47,7 +68,9 @@ has chr_len => (
 
 sub BUILD {
   my $self = shift;
-  $self->_logger->info( join "\t", 'genome length', $self->genome_length );
+  my $msg = sprintf( "genome length: %d", $self->genome_length );
+  $self->_logger->info($msg);
+  say $msg;
 }
 
 sub _build_str_genome {
@@ -55,15 +78,10 @@ sub _build_str_genome {
 
   $self->_logger->info('starting to build string genome');
 
-  my $local_dir   = File::Spec->canonpath( $self->local_dir );
-  my @local_files = $self->all_local_files;
-  my @genome_chrs = $self->all_genome_chrs;
-
-  my $dir              = File::Spec->canonpath( $self->genome_index_dir );
-  my $chr_len_name     = join ".", $self->name, $self->type, 'chr_len', 'dat';
-  my $genome_name      = join ".", $self->name, $self->type, 'str', 'dat';
-  my $chr_len_file     = File::Spec->catfile( $dir, $chr_len_name );
-  my $genome_file      = File::Spec->catfile( $dir, $genome_name );
+  # prepare output dir, as needed, and files
+  $self->genome_index_dir->mkpath unless ( -d $self->genome_index_dir );
+  my $chr_len_file     = $self->genome_offset_file;
+  my $genome_file      = $self->genome_str_file;
   my $genome_file_size = -s $genome_file;
   my $genome_str       = '';
 
@@ -79,35 +97,71 @@ sub _build_str_genome {
     $self->_logger->info('read chrome length offsets');
   }
   else {
+    $self->_logger->info("building genome string");
 
-    $self->_logger->info('no previous genome detected; building genome string');
+    # hash to hold temporary chromosome strings
+    my %seq_of_chr;
 
-    for ( my $i = 0; $i < @local_files; $i++ ) {
-      my $file        = $local_files[$i];
-      my $chr         = $genome_chrs[$i];
-      my $local_file  = File::Spec->catfile( $local_dir, $file );
-      my $in_fh       = $self->get_read_fh($local_file);
-      my @file_fields = split( /\./, $file );
-
-      confess "expected chromosomes and sequence files to be in the"
-        . " same order but found $file with $chr\n"
-        unless $chr eq $file_fields[0];
-
-      $self->set_chr_len( $chr => length $genome_str );
+    for my $file ( $self->all_local_files ) {
+      unless ( -f $file ) {
+        my $msg = "ERROR: cannot find $file";
+        $self->_logger->error($msg);
+        say $msg;
+        exit(1);
+      }
+      my $in_fh      = $self->get_read_fh($file);
+      my $wanted_chr = 0;
+      my $chr;
 
       while ( my $line = $in_fh->getline() ) {
         chomp $line;
         $line =~ s/\s+//g;
-        next if ( $line =~ m/\A>/ );
-        if ( $line =~ m/(\A[ATCGNatcgn]+)\Z/ ) {
-          $genome_str .= uc $1;
+        if ( $line =~ m/\A>([\w\d]+)/ ) {
+          $chr = $1;
+          if ( grep { /$chr/ } $self->all_genome_chrs ) {
+            $wanted_chr = 1;
+          }
+          else {
+            my $msg = "skipping unrecognized chromsome: $chr";
+            $self->_logger->warn($msg);
+            warn $msg . "\n";
+            $wanted_chr = 0;
+          }
         }
-        else {
-          confess join( "\n",
-            "ERROR: Unexpected Non-Base Character.",
-            "\tfile: $file ",
-            "\tline: $.", "\tsequence: $line" );
+        elsif ( $wanted_chr && $line =~ m/(\A[ATCGNatcgn]+)\z/xms ) {
+          $seq_of_chr{$chr} .= uc $1;
         }
+
+        # warn if a file does not appear to have a vaild chromosome - concern
+        #   that it's not in fasta format
+        if ( $. == 2 and !$wanted_chr ) {
+          my $err_msg = sprintf(
+            "WARNING: Found %s in %s but '%s' is not a valid chromsome for %s.
+            You might want to ensure %s is a valid fasta file.", $chr, $file, $self->name, $file
+          );
+          $err_msg =~ s/[\s\n]+/ /xms;
+          $self->_logger->info($err_msg);
+          warn $err_msg;
+        }
+      }
+    }
+
+    # build final genome string and chromosome off-set hash
+    for my $chr ( $self->all_genome_chrs ) {
+      if ( exists $seq_of_chr{$chr} && defined $seq_of_chr{$chr} ) {
+        $self->set_chr_len( $chr => length $genome_str );
+        $genome_str .= $seq_of_chr{$chr};
+        $seq_of_chr{$chr} = ();
+      }
+      else {
+        (
+          my $err_msg =
+            qq{did not find chromosome data for required chromosome
+          $chr while building genome for $self->name}
+        ) =~ s/\n/ /xmi;
+        $self->_logger->info($err_msg);
+        say $err_msg;
+        exit(1);
       }
     }
 

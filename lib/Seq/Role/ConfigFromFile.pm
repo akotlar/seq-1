@@ -6,6 +6,23 @@ package Seq::Role::ConfigFromFile;
 # ABSTRACT: A moose role for configuring a class from a YAML file
 # VERSION
 
+=head1 DESCRIPTION
+
+  @role Seq::Role::ConfigFromFile
+  #TODO: Check description
+
+  @example with 'Seq::Role::ConfigFromFile'
+
+Used in:
+=for :list
+* Seq::Annotate
+* Seq::Assembly
+* Seq::Fetch
+
+Extended by: None
+
+=cut
+
 use Moose::Role 2;
 use MooseX::Types::Path::Tiny qw/ Path /;
 
@@ -15,6 +32,7 @@ use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 use Scalar::Util qw/ reftype /;
 use YAML::XS qw/ Load /;
+use DDP;
 
 with 'Seq::Role::IO', 'MooseX::Getopt';
 
@@ -42,6 +60,11 @@ sub new_with_config {
   }
   else {
     croak "new_with_config() expects configfile";
+  }
+
+  if ( $opts->{debug} ) {
+    say "Data for Role::ConfigFromFile::new_with_config()";
+    p %opts;
   }
 
   $class->new( \%opts );

@@ -2,25 +2,28 @@
 use 5.10.0;
 use strict;
 use warnings;
-use Test::More;
-use File::Copy;
-use Scalar::Util qw( blessed );
-use Lingua::EN::Inflect qw( A PL_N );
-use IO::Uncompress::Gunzip qw( $GunzipError );
-use DDP;
-use YAML qw( LoadFile );
 
-plan tests => 15;
+use Data::Dump qw/ dump /;
+use Lingua::EN::Inflect qw/ A PL_N /;
+use Path::Tiny;
+use Test::More;
+use YAML qw/ LoadFile /;
+
+plan tests => 19;
+
+my %attr_2_type = (
+  genome_seq => 'Str',
+  chr_len    => 'HashRef[Str]',
+);
+
+my %attr_to_is = (
+  genome_seq => 'ro',
+  chr_len    => 'rw',
+);
 
 # set test genome
-my $hg38_config_file = "hg38_build_test.yml";
-
-# setup testing enviroment
-{
-  copy( "./t/$hg38_config_file", "./sandbox/$hg38_config_file" )
-    or die "cannot copy ./t/$hg38_config_file to ./sandbox/$hg38_config_file $!";
-  chdir("./sandbox");
-}
+my $ga_config   = path('./t/hg38_config.yml')->absolute->stringify;
+my $config_href = LoadFile($ga_config);
 
 # test the package's attributes and type constraints
 my $package = "Seq::Build::GenomeSizedTrackStr";
@@ -29,122 +32,105 @@ my $package = "Seq::Build::GenomeSizedTrackStr";
 use_ok($package) || die "$package cannot be loaded";
 
 # check package extends Seq::Config::GenomeSizedTrack which is a Moose::Object
-check_isa( $package, [ 'Seq::Config::GenomeSizedTrack', 'Moose::Object' ] );
+check_isa( $package,
+  [ 'Seq::Config::GenomeSizedTrack', 'Seq::Config::Track', 'Moose::Object' ] );
 
-# check package uses Moose
-ok( $package->can('meta'), "$package has a meta() method" )
-  or BAIL_OUT("$package does not have a meta() method.");
+# check roles
+for my $role (qw/ MooX::Role::Logger Seq::Role::IO Seq::Role::Genome /) {
+  does_role( $package, $role );
+}
 
-# check type constraints for attributes that should have Str values
-for my $attr_name (qw( genome_seq )) {
-  my $attr = $package->meta->get_attribute($attr_name);
+# check attributes, their type constraint, and 'ro'/'rw' status
+for my $attr_name ( sort keys %attr_2_type ) {
+  my $exp_type = $attr_2_type{$attr_name};
+  my $attr     = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
-  is( $attr->type_constraint->name, 'Str', "$attr_name type is Str" );
+  is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
+
+  # check 'ro' / 'rw' status
+  if ( $attr_to_is{$attr_name} eq 'ro' ) {
+    has_ro_attr( $package, $attr_name );
+  }
+  elsif ( $attr_to_is{$attr_name} eq 'rw' ) {
+    has_rw_attr( $package, $attr_name );
+  }
+  else {
+    printf( "ERROR - expect 'ro' or 'rw' but got '%s'", $attr_to_is{$attr_name} );
+    exit(1);
+  }
 }
 
-# check obj creation
-my $hg38_dat = LoadFile($hg38_config_file);
-my %hg38_genome_config;
+# SKIP: obj creation and beyond fails b/c it expects to build the string genome
+#       from the files supplied by local files
+# object creation
+SKIP: {
+  my $reason = 'build an object - did not have fasta data on disk to do this';
+  if ( Have_chr_files($config_href) ) {
+    my $seq = '';
+    my %chr_len;
+    for my $chr ( @{ $config_href->{genome_chrs} } ) {
+      my $char_seq = "A" x int( rand(10) + 1 );
+      $seq .= $char_seq;
+      $chr_len{$chr} = length $char_seq;
+    }
+    my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
+    $href->{char_seq} = \$seq;
+    $href->{chr_len}  = \%chr_len;
+    my $obj = $package->new($href);
+    ok( $obj, 'object creation' );
+  }
+  else {
+    skip $reason, 1;
+  }
+}
 
-for my $attr_href ( @{ $hg38_dat->{genome_sized_tracks} } ) {
-  if ( $attr_href->{type} eq "genome" ) {
-    for my $attr ( keys %{$attr_href} ) {
-      $hg38_genome_config{$attr} = $attr_href->{$attr};
+###############################################################################
+# sub routines
+###############################################################################
+
+sub Have_chr_files {
+  my $config_href   = shift;
+  my $missing_files = 0;
+
+  for my $track ( @{ $config_href->{genome_sized_tracks} } ) {
+
+    if ( $track->{type} eq "genome" ) {
+      for my $file ( keys $track->{local_files} ) {
+        my $pt = path( $config_href->{genome_raw_dir} )->child($file);
+        $missing_files++ unless $pt->is_file;
+      }
     }
   }
+
+  if ($missing_files) {
+    return;
+  }
+  else {
+    return 1;
+  }
 }
 
-$hg38_genome_config{genome_chrs} = $hg38_dat->{genome_chrs};
+sub build_obj_data {
+  my ( $track_type, $type, $href ) = @_;
 
-my $hg38_gst = Seq::Build::GenomeSizedTrackStr->new( \%hg38_genome_config );
-ok(
-  ( $hg38_gst && ( blessed $hg38_gst || !ref $hg38_gst ) && $hg38_gst->isa($package) ),
-  "$package obj created"
-);
+  my %hash;
 
-# make a genome string with single bases
-{
-  my @test_bases = qw( A C T G );
-  my $test_str = join( "", @test_bases );
-  for my $base (@test_bases) {
-    $hg38_gst->add_seq($base);
-  }
-  is( $hg38_gst->genome_seq, $test_str, 'build str seq from bases' );
-
-  # get genome length
-  is( $hg38_gst->genome_length, 4, 'got length of string genome' );
-
-  # clear genome
-  $hg38_gst->clear_genome;
-  is( $hg38_gst->genome_seq, '', 'cleared string genome' );
-}
-
-# make a genome string with large strings of bases
-{
-  my @test_base_rows = qw( AAAAAAA CCCCCC TTTTTT GGGGGGG );
-  my $test_str = join( "", @test_base_rows );
-  for my $base_row (@test_base_rows) {
-    $hg38_gst->add_seq($base_row);
-  }
-  is( $hg38_gst->genome_seq, $test_str, 'build str seq from rows of bases' );
-}
-
-# get a string of DNA bases from an arbitrary locaiton
-{
-  # clear genome sequence
-  $hg38_gst->clear_genome;
-
-  my @test_bases = qw( A C T G C A G T );
-  my ( @obs_bases, @exp_bases );
-  for my $base (@test_bases) {
-    $hg38_gst->add_seq($base);
-  }
-
-  for ( my $i = $#test_bases; $i >= 0; $i-- ) {
-    push @exp_bases, $test_bases[$i];
-    my $obs_base = $hg38_gst->get_base( $i, 1 );
-    push @obs_bases, $obs_base;
-
-    say "site: $i, base: $obs_base";
-  }
-  is_deeply( \@obs_bases, \@exp_bases, 'substring out correct base' );
-}
-
-# build the genome
-{
-  my %chr_lens = ();
-  $hg38_gst->clear_genome;
-  $hg38_gst->build_genome;
-
-  my $exp_genome_seq = '';
-  my $local_dir      = File::Spec->canonpath( $hg38_genome_config{local_dir} );
-  for my $chr_file ( @{ $hg38_genome_config{local_files} } ) {
-    my $local_file = File::Spec->catfile( $local_dir, $chr_file );
-    my $fh = new IO::Uncompress::Gunzip $local_file
-      || die "gzip failed: $GunzipError\n";
-
-    ( my $chr = $chr_file ) =~ s/\.fa\.gz//;
-    $chr_lens{$chr} = length $exp_genome_seq;
-
-    while (<$fh>) {
-      chomp $_;
-      next if $_ =~ m/\A>/;
-      $exp_genome_seq .= uc $1 if ( $_ =~ m/(\A[ATCGNatcgn]+)\Z/ );
+  # get essential stuff
+  for my $track ( @{ $config_href->{$track_type} } ) {
+    if ( $track->{type} eq $type ) {
+      for my $attr (qw/ name type local_files remote_dir remote_files /) {
+        $hash{$attr} = $track->{$attr} if exists $track->{$attr};
+      }
     }
-    $chr_lens{'genome'} = length $exp_genome_seq;
-  }
-  is( $hg38_gst->genome_seq, $exp_genome_seq, 'build_genome() ok' );
-
-  my ( @exp, @obs );
-  for my $chr ( @{ $hg38_genome_config{genome_chrs} } ) {
-    push @obs, $hg38_gst->get_abs_pos( $chr, 1 );
-    push @exp, $chr_lens{$chr};
   }
 
-  push @obs, $hg38_gst->genome_length;
-  push @exp, $chr_lens{genome};
-
-  is_deeply( \@obs, \@exp, 'get_abs_pos() index the genome' );
+  # add additional stuff
+  if (%hash) {
+    $hash{genome_raw_dir}   = $config_href->{genome_raw_dir}   || 'sandbox';
+    $hash{genome_index_dir} = $config_href->{genome_index_dir} || 'sandbox';
+    $hash{genome_chrs}      = $config_href->{genome_chrs};
+  }
+  return \%hash;
 }
 
 sub does_role {

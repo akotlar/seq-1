@@ -45,26 +45,23 @@ typedef struct chrom_node
   long offset;
 } CHROM_NODE;
 
+int compare_node(const void *a,const void *b)
+{
+  CHROM_NODE *aa,*bb;
+  aa = (CHROM_NODE*)(*(CHROM_NODE**)a);
+  bb = (CHROM_NODE*)(*(CHROM_NODE**)b);
+  return strcmp(aa->name,bb->name);
+}
 
-// Wrote our own search function since we had problems using bsearch.
-// int compare_node(const void *a,const void *b)
-// {
-//   CHROM_NODE *aa,*bb;
-//   aa = (CHROM_NODE*)(*(CHROM_NODE**)a);
-//   bb = (CHROM_NODE*)(*(CHROM_NODE**)b);
-//   return strcmp(aa->name,bb->name);
-// }
-//
-// int b_comp(const void *a,const void *b)
-// {
-//   CHROM_NODE *bb;
-//   char *aa;
-//   aa = (char *)(a);
-//   bb = (CHROM_NODE*)(*(CHROM_NODE**)b);
-//   printf("\n offset for this %s is %lu \n", bb->name, bb->offset);
-//   return strcmp(aa,bb->name);
-// }
-
+int b_comp(const void *a,const void *b)
+{
+  CHROM_NODE *bb;
+  char *aa;
+  aa = (char *)(a);
+  bb = (CHROM_NODE*)(*(CHROM_NODE**)b);
+  // printf("\n offset for this %s is %lu \n", bb->name, bb->offset);
+  return strcmp(aa,bb->name);
+}
 
 CHROM_NODE * my_node_search(char *ss,CHROM_NODE **list,int count)
 {
@@ -143,7 +140,7 @@ int main(int argc, char *argv[])
 
   if((wigfixfile=gzopen(argv[3],"r"))==(gzFile)NULL)
   {
-    printf("\n Can not open file %s which should be the wigfix file for reading\n",sss);
+    printf("\n Can not open file %s which should be the wigfix file for reading\n", argv[3]);
     exit(1);
   }
 
@@ -204,8 +201,8 @@ int main(int argc, char *argv[])
         last_cn = my_node_search(token,clist,no_chrom);
         if(last_cn)
         {
-          printf("\n Found %s which is at memory position %ld has name %s and offset %ld\n",
-            token, (long)last_cn, last_cn->name, last_cn->offset);
+          // printf("\n Found %s which is at memory position %ld has name %s and offset %ld\n",
+          //   token, (long)last_cn, last_cn->name, last_cn->offset);
           skip_it = 0;
         }
         else

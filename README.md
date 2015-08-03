@@ -1,34 +1,6 @@
 Seq
 ---
 ---
-
-# setup
-
-1. fetch the data
-2. build the database
-
-# some commands
-
-A few snippets to get started
-
-Make some fake test data:
-
-		./bin/make_fake_genome.pl --twoBit_genome ~/lib/hg38.2bit --out test
-
-Build the genome and any extras:
-
-		./bin/build_genome_assembly.pl --config ./config/hg38_local.yml --location sandbox
-		./bin/build_genome_assembly_extras.pl --config ./config/hg38_local.yml --location sandbox
-
-Test the build:
-
-		./bin/annotate_ref_site.pl -c ./config/hg38_local.yml --location ./sandbox --chr chr1 --from 200 --to 400
-
-Annotate reference sites or the fake snpfile:
-
-		./bin/read_genome_with_dbs.pl --chr chr1 --from 990 --to 998  --config ./t/hg38_build_test.yml --location ./sandbox/
-		./bin/annotate_snpfile.pl --config ./config/hg38_local.yml --snp ./sandbox/hg38/test_files/test.snp.gz --location ./sandbox/ --out test
-
 ## How genome assemblies work
 
 - These are specified in a YAML file.
@@ -43,10 +15,9 @@ sequence.
 	- *genome-sized tracks* hold the genomic sequence, various scores, or
 	annotations that cover a substantial portion of the genome.
 
-
 Each genome has features and steps enumerated for creating the needed data to
-index and annotate it.
-Follow the keys and conventions in the example for genome `hg38` to create a genome / annotation set yourself using the YAML format.
+index and annotate it. Follow the keys and conventions in the example for genome
+`hg38` to create a genome / annotation set yourself using the YAML format.
 
 ```
 ---
@@ -54,7 +25,6 @@ genome_name: hg38
 genome_description: human
 genome_chrs:
   - chr1
-genome_db_dir: sandbox
 genome_index_dir: ./hg38/index
 host: 127.0.0.1
 port: 27107
@@ -134,54 +104,179 @@ genome_sized_tracks:
       - gzip phyloP.txt
 ```
 
-Seq Dependencies:
+# directory structure
 
-		==> ack --perl "use " | perl -nlE \
+The main genome directories are organized like so (and specified in the
+configuration file):
+1. `genome_raw_dir` directory unsurprisingly holds all raw data (or will hold 
+    after it is fetched). It is organized as follows:
+    - `genome` directory holds the fasta files for the organism genome.
+    - `gene` directory holds coordinates for gene.
+    - `score` directory hold conservation scores (phyloP, cadd, etc).
+    - `snp` directory holds snp data.
+    - Each directory corresponds to a `type` of data specified in the 
+    configuration file for the genome assembly.
+
+2. `genome_index_dir` directory holds all of the files of the assembly after
+    they are written. There are no sub-directories.
+
+# setup
+
+1. SeqAnt requires the [Kyoto Cabinet](http://fallabs.com/kyotocabinet/) DBM, and
+you will need to install the core library and the Perl package.
+  - Download the latest [C/C++ core library](http://fallabs.com/kyotocabinet/pkg/).
+  - Download the latest [Perl package](http://fallabs.com/kyotocabinet/perlpkg/).
+  - Both of these will need to be installed for SeqAnt to work properly.
+
+2. Install the SeqAnt Perl package.
+  - Right now, you'll have to build the 3 c programs and run the scripts from 
+  within the package directory. This will change once we package into one tarball.
+
+To install the dependencies:
+
+    ack --perl "use " | perl -nlE \
 		'{ if ($_ =~ m/\:use ([\w\d.:]+)/) { $modules{$1}++; }}
 		END{ print join "\n", sort keys %modules; }' | grep -v Seq
 
-		5.10.0
-		Carp
-		Cpanel::JSON::XS
-		Cwd
-		DBD::Mock
-		DBI
-		DB_File
-		DDP
-		ExtUtils::MakeMaker
-		File::Copy
-		File::Path
-		File::Spec
-		Getopt::Long
-		Hash::Merge
-		IO::Compress::Gzip
-		IO::File
-		IO::Uncompress::Gunzip
-		Lingua::EN::Inflect
-		List::Util
-		Log::Any::Adapter
-		Modern::Perl
-		Moose
-		Moose::Role
-		Moose::Util::TypeConstraints
-		MooseX::Types::Path::Tiny
-		Path::Tiny
-		Pod::Usage
-		Scalar::Util
-		Storable
-		Test::Exception
-		Test::More
-		Text::CSV_XS
-		Time::localtime
-		Try::Tiny
-		Type::Params
-		Types::Standard
-		YAML
-		YAML::XS
-		autodie
-		bigint
-		constant
-		lib
-		namespace::autoclean
-		strict
-		warnings
+```
+TODO: Add to Makefile.PL
+5.10.0
+Carp
+Cpanel::JSON::XS
+Cwd
+DBI
+DDP
+Data::Dump
+Data::Dumper
+File::Basename
+File::Path
+File::Rsync
+File::Spec
+Getopt::Long
+IO::Compress::Gzip
+IO::File
+IO::Socket
+IO::Socket::INET
+IO::Uncompress::Gunzip
+KyotoCabinet
+Lingua::EN::Inflect
+List::Util
+Log::Any::Adapter
+Moose
+Moose::Role
+Moose::Util::TypeConstraints
+MooseX::Types::Path::Tiny
+Path::Tiny
+Pod::Usage
+Redis
+Scalar::Util
+Sys::Info
+Sys::Info::Constants
+Test::More
+Thread::Queue
+Time::localtime
+Try::Tiny
+Type::Params
+Types::Standard
+YAML
+YAML::XS
+namespace::autoclean
+threads
+threads::shared
+```
+
+The redis server requires a perl with p-threads built in.
+
+Install dependencies with `cpanm` like so:
+
+		cpanm 5.10.0 Carp Cpanel::JSON::XS Cwd DBI DDP Data::Dump Data::Dumper \
+      File::Basename File::Path File::Rsync File::Spec Getopt::Long \
+      IO::Compress::Gzip IO::File IO::Socket IO::Socket::INET \
+      IO::Uncompress::Gunzip KyotoCabinet Lingua::EN::Inflect List::Util \
+      Log::Any::Adapter Moose Moose::Role Moose::Util::TypeConstraints \
+      MooseX::Types::Path::Tiny Path::Tiny Pod::Usage Redis Scalar::Util \
+      Sys::Info Sys::Info::Constants Test::More Thread::Queue Time::localtime \
+      Try::Tiny Type::Params Types::Standard YAML YAML::XS namespace::autoclean \
+
+3. SeqAnt comes with a number of pre-specified genome assemblies in the `./config` 
+directory.
+
+# build a complete annotation assembly
+
+We are assuming the data is fetched and in the directories that are specified by
+the configuration file.
+
+The following will build all databases sequentially.
+
+		./bin/build_genome_assembly.pl --config hg38.yml --type transcript_db
+		./bin/build_genome_assembly.pl --config hg38.yml --type snp_db
+		./bin/build_genome_assembly.pl --config hg38.yml --type gene_db
+		./bin/build_genome_assembly.pl --config hg38.yml --type genome --hasher ./bin/genome_hasher
+
+The following approach will generate shell scripts to allow parallel building.
+
+		# write scripts to build the gene and snp dbs
+		./bin/run_all_build.pl -b ./bin/build_genome_assembly.pl -c ./ex/hg38_c_mdb.yml
+
+		# build the transcript db
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --type transcript_db
+
+		# build conserv score tracks
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --type conserv
+
+		# build genome index
+		./bin/build_genome_assembly.pl --config ./config/hg38_c_mdb.yml --type genome
+
+TODO: add information about how to build CADD scores.
+
+# adding customized Snp Tracks to an assembly
+
+While either the GeneTrack or SnpTrack could be used to add sparse genomic data
+to an assembly, it is most straightforward to add sparse data as a SnpTrack. The
+procedure is to prepare a tab-delimited file with the desired data that follows
+an extended bed file format (described below); define the features you wish
+to include as annotations in the configuration file; and, run the builder script
+twice - first to create the track data and second to build the binary genome
+that is aware of your custom track.
+
+1. prepare a tab-delimited file
+
+The essential columns are: `chrom chromStart chromEnd name`. These are the same
+columns as a 4-column bed file. There is no requirement that those columns be in
+any particular order or that they are the only columns in the file. The only
+essential thing is that they are present and named in the header _exactly_ as
+described above. Additional information to be included as part of the annotation
+should be in separate labeled columns. You must specify which columns to include
+in the genome assembly configuration file and columns that are not specified
+will be ignored.
+
+2. add the SnpTrack data to the configuration file. For example,
+
+		- type: snp
+			local_dir: /path/to/file
+			local_file: hg38.neuro_mutdb.txt
+			name: neurodb
+			features:
+				- name
+				- exon_name
+				- site
+				- ref
+
+The features are names of columns with data to be added to the annotation of the
+site. Only columns with this data will be saved, and an error will be generated
+if there is no column with a specified name.
+
+3. run the builder script to build the database
+
+You will need to, at least, make the annotation database, and to be safe, you
+should remake the encoded binary genome files to update the locations of known
+SNPs. The following example supposes that you only have data on chromosome 5 and
+that you are adding to an existing assembly.
+
+		# create new database
+		build_genome_assembly.pl --config hg38_c_mdb.yml --type snp_db --wanted_chr chr5
+
+		# create genome index
+		build_genome_assembly.pl --config hg38_c_mdb.yml --type genome --verbose --hasher ./bin/genome_hasher
+
+
