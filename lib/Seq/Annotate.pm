@@ -626,7 +626,7 @@ sub get_snp_annotation {
       $abs_pos, $ref_base, $ref_site_annotation->{ref_base} );
     say $err_msg;
     $self->_logger->error($err_msg);
-    exit(1);
+    exit(1) unless $self->force;
   }
 
   p $ref_site_annotation if $self->debug;

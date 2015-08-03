@@ -76,6 +76,7 @@ try {
     {
       configfile => $yaml_config,
       debug      => $debug,
+      force      => $force,
       out_file   => $out_file,
       snpfile    => $snpfile,
     }
