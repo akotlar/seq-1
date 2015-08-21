@@ -24,7 +24,6 @@ Extended by: None
 use Moose 2;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 use Path::Tiny;
-use Try::Tiny;
 
 use Carp qw/ croak /;
 use Cpanel::JSON::XS;
