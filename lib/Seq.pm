@@ -24,6 +24,7 @@ Extended by: None
 use Moose 2;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 use Path::Tiny;
+use Try::Tiny;
 
 use Carp qw/ croak /;
 use Cpanel::JSON::XS;
@@ -217,14 +218,14 @@ sub annotate_snpfile {
 
   # let the annotation begin
   my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
-  while ( my $line = $snpfile_fh->getline ) {
+  READ: while ( my $line = $snpfile_fh->getline ) {
     chomp $line;
 
     # taint check the snpfile's data
     my $clean_line = $self->clean_line($line);
 
     # skip lines that don't return any usable data
-    next unless $clean_line;
+    next READ unless $clean_line;
 
     my @fields = split( /\t/, $clean_line );
 
@@ -237,7 +238,7 @@ sub annotate_snpfile {
         }
         # save list of ids within the snpfile
         @sample_ids = sort( keys %ids );
-        next;
+        next READ;
       }
       else {
         # exit if we've read the first line and didn't find the header
@@ -275,11 +276,13 @@ sub annotate_snpfile {
       # say join " ", $chr, $pos, $chr_offset, $next_chr, $next_chr_offset;
 
       unless ( defined $chr_offset and defined $chr_index ) {
-        croak "unrecognized chromosome: $chr\n";
+        $self->_logger->error("unrecognized chromosome: $chr\n");
+        next READ;
       }
       $abs_pos = $chr_offset + $pos - 1;
     }
 
+    # TODO: should we next here too?
     if ( $abs_pos > $next_chr_offset ) {
       my $err_msg = qq{ERROR: $chr:$pos is beyond the end of $chr $next_chr_offset\n};
       $self->_logger->error($err_msg);
@@ -309,10 +312,11 @@ sub annotate_snpfile {
       $self->$method( $abs_pos => [ $chr, $pos ] );
 
       # get annotation for snp site
-      next unless $type eq 'SNP';
+      next READ unless $type eq 'SNP';
 
-      for my $allele ( split( /,/, $all_alleles ) ) {
-        next if $allele eq $ref_allele;
+      ALLELE: for my $allele ( split( /,/, $all_alleles ) ) {
+        next ALLELE if $allele eq $ref_allele;
+
         my $record_href =
           $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
 
