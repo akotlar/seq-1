@@ -39,12 +39,15 @@ my $DEV                = 1;
 my $redisHost : shared = 'localhost';
 my $redisPort : shared = '6379';
 
-my $jobQueueName : shared          = 'submittedJobsQueue';
-my $jobsProcessingQueue : shared   = 'processingJobsQueue';
-my $jobsFinishedQueueName : shared = 'finishedJobsQueue';
-my $jobsFailedQueueName : shared   = 'failedJobsQueue';
+my $jobQueueName : shared          = 'submittedJobQueue';
+# internal address
+my $jobsProcessingQueue : shared   = 'processingJobQueue';
+my $jobsFinishedQueueName : shared = 'finishedJobQueue';
+my $jobsFailedQueueName : shared   = 'failedJobQueue';
 my $jobsFinalFailedListName : shared = 'failedJobsList'; #those that won't be retried
-my $submittedJobsDocument : shared   = 'submittedJobs';
+my $submittedJobsDocument : shared   = 'submittedJob';
+
+# notify the client
 my $annotationMessageChannel : shared = 'annotationProgress';
 
 my $configPathBaseDir : shared = "../config/";
