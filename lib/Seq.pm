@@ -66,13 +66,13 @@ has debug => (
   default => 0,
 );
 
-has messageChannelHref => (
+has messangerHref => (
   is        => 'ro',
   isa       => 'HashRef',
   traits    => ['Hash'],
   required  => 0,
   predicate => 'wants_to_publish_messages',
-  handles   => { channelInfo => 'get' }
+  handles   => { messanger => 'get' }
 );
 
 # vars that are not initialized at construction
@@ -158,10 +158,8 @@ has genes_annotated => (
     has_no_gene_ann => 'is_empty',
   },
 );
-
-# my $redisHost = 'localhost';
-# my $redisPort = '6379';
-
+my $redisHost = 'localhost';
+my $redisPort = '6379';
 =head2 annotation_snpfile
 
 B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
@@ -193,7 +191,7 @@ sub annotate_snpfile {
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
 
-  my $summary_href;
+  my %summary;
 
   $self->_logger->info( "Loaded assembly " . $annotator->genome_name );
 
@@ -327,7 +325,7 @@ sub annotate_snpfile {
         $record_href->{heterozygotes_ids} = $het_ids || 'NA';
         $record_href->{homozygote_ids}    = $hom_ids || 'NA';
 
-        $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
+        $self->_summarize( $record_href, \%summary, \@sample_ids, $hom_ids_href );
 
         my @record;
         for my $attr (@header) {
@@ -360,18 +358,33 @@ sub annotate_snpfile {
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
   my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
 
-  p $summary_href if $self->debug;
-
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do interesting things.
-  return $summary_href;
+  return \%summary;
 }
 
-# sub _build_message_publisher {
-#   my $self = shift;
-#
-#   return Redis->new( host => $redisHost, port => $redisPort );
-# }
+sub _summarize {
+  my ( $self, $record_href, $summary_href, $sample_ids_aref, $hom_ids_href ) = @_;
+
+  my $count_key       = $self->_count_key;
+  my $site_type       = $record_href->{type};
+  my $annotation_code = $record_href->{genomic_annotation_code};
+
+  foreach my $id (@$sample_ids_aref) {
+    $summary_href->{$id}{$site_type}{$count_key} += 1;
+    $summary_href->{$id}{$site_type}{$annotation_code}{$count_key} += 1;
+  }
+  # run statistics code maybe, unless we wait for end to save function calls
+  # statistics code may include compound phylop/phastcons scores for the sample,
+  # or just tr:tv here we will use $hom_ids_href, and if needed we can add
+  # $het_ids_href
+}
+
+sub _build_message_publisher {
+  my $self = shift;
+
+  return Redis->new( host => $redisHost, port => $redisPort );
+}
 
 =head2
 
@@ -417,31 +430,15 @@ sub _print_annotations {
 
 sub _publish_message {
   my ( $self, $message ) = @_;
+  $self->messanger('message')->{data} = $message;
 
   # TODO: check performance of the array merge benefit is indirection, cost may be too high?
-  $self->publish( $self->channelInfo('messageChannel'),
-    encode_json( { %{ $self->channelInfo('recordLocator') }, message => $message } ) );
+  $self->_publishMessage($self->messanger('channel'),
+    encode_json($self->messangerHref) );
+  #encode_json({$self->messangerHref }) 
 }
 
-sub _summarize {
-  my ( $self, $record_href, $summary_href, $sample_ids_aref, $hom_ids_href ) = @_;
 
-  my $count_key       = $self->_count_key;
-  my $site_type       = $record_href->{type};
-  my $annotation_code = $record_href->{genomic_annotation_code};
-
-  foreach my $id (@$sample_ids_aref) {
-    $summary_href->{$id}{$site_type}{$count_key} += 1;
-    $summary_href->{$id}{$site_type}{$annotation_code}{$count_key} += 1;
-  }
-
-  # run statistics code maybe, unless we wait for end to save function calls
-  # statistics code may include compound phylop/phastcons scores for the sample,
-  # or just tr:tv here we will use $hom_ids_href, and if needed we can add
-  # $het_ids_href
-
-  return;
-}
 
 # the genotype codes below are based on the IUPAC ambiguity codes with the notable
 #   exception of the indel codes that are specified in the snpfile specifications
