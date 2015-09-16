@@ -165,6 +165,25 @@ has genes_annotated => (
   },
 );
 
+has counter => (
+  is => 'rw',
+  traits => ['Counter'],
+  isa => 'Num',
+  default => 0,
+  handles => {
+    inc_counter => 'inc',
+    dec_counter => 'dec',
+    reset_counter => 'reset',
+  },
+);
+
+has _printed_header => (
+  is => 'rw',
+  traits => ['Bool'],
+  isa => 'Bool',
+  default => 0,
+  handles => { set_printed_header => 'set', },
+);
 
 my %site_2_set_method = (
   DEL => 'set_del_site',
@@ -301,6 +320,19 @@ sub annotate_snpfile {
     my $allele_counts = $fields[ $header{Allele_Counts} ];
     my $abs_pos;
 
+    # check that $chr is an allowable chromosome
+    unless ( exists $chr_len_href->{$chr} ) {
+      my $err_msg = sprintf("ERROR: unrecognized chromosome in input: '%s', pos: %d", 
+        $chr, $pos);
+      $self->_logger->error( $err_msg );
+      if ( $self->force ) {
+        next;
+      }
+      else {
+        croak $err_msg . " " . $self->snpfile_path;
+      }
+    }
+
     # determine the absolute position of the base to annotate
     if ( $chr eq $last_chr ) {
       $abs_pos = $chr_offset + $pos - 1;
@@ -317,15 +349,10 @@ sub annotate_snpfile {
         $next_chr_offset = $genome_len;
       }
 
+      # check that we set the needed variables for determining position
       # say join " ", $chr, $pos, $chr_offset, $next_chr, $next_chr_offset;
-
       unless ( defined $chr_offset and defined $chr_index ) {
-        if ($self->force) {
-          next;
-        }
-        else {
-          croak "unrecognized chromosome: $chr\n";
-        }
+          croak "unable to set 'chr_offset' or 'chr_index' for: $chr\n";
       }
       $abs_pos = $chr_offset + $pos - 1;
     }
@@ -392,7 +419,14 @@ sub annotate_snpfile {
           p @record;
         }
         push @all_annotations, \@record;
+        $self->inc_counter;
       }
+    }
+    
+    if ($self->counter > 1000) {
+      $self->_print_annotations( \@all_annotations, \@header );
+      @all_annotations = ( );
+      $self->reset_counter;
     }
 
     if ( $i == $interval ) {
@@ -403,7 +437,12 @@ sub annotate_snpfile {
     }
     ++$i;
   }
-  $self->_print_annotations( \@all_annotations, \@header );
+
+  # finished printing the final annotations
+  if (@all_annotations) {
+    $self->_print_annotations( \@all_annotations, \@header );
+  }
+
 
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
@@ -456,7 +495,10 @@ sub _print_annotations {
   my ( $self, $annotations_aref, $header_aref ) = @_;
 
   # print header
-  say { $self->_out_fh } join "\t", @$header_aref;
+  if (!$self->_printed_header) {
+    say { $self->_out_fh } join "\t", @$header_aref;
+    $self->set_printed_header;
+  }
 
   # print entries
   for my $entry_aref (@$annotations_aref) {
