@@ -61,7 +61,7 @@ sub fetch_files {
 
   # prepare directories
   my $local_dir = $self->genome_raw_dir->child( $self->type );
-  $local_dir->mk_path unless -d $local_dir->absolute;
+  $local_dir->mkpath unless -d $local_dir->absolute;
 
   # File::Rsync expects host:dir format for remote files (if needed)
   # $remote_dir =~ s/\//::/xm unless ( $remote_dir =~ m/::/xm );
