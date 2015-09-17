@@ -15,7 +15,7 @@
  * Name: genome_scorer.c
  * Compile: gcc -Wall -Wextra -O3 -lm -lz genome_scorer.c -o ./bin/genome_scorer
  * Description: Encodes a genome using a user specified scheme
- *  Input:  genome_size offset_file (YAML) wigFix_file Max Min R outputfile
+ *  Input:  genomeSize offset_file (YAML) wigFix_file Max Min R outputfile
  *            Max and Min are the range of the scores
  *            R is the scaler
  *  Output: genome-sized string of encoded char's
@@ -35,9 +35,18 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
+#include "argtable3.h"
+#include "dbg.h"
 
 #define minim(a,b) ((a<b)?a:b)
 #define maxim(a,b) ((a>b)?a:b)
+
+struct arg_lit *help;
+struct arg_str *argGenomeSize;
+struct arg_int *argR;
+struct arg_dbl *argMax, *argMin;
+struct arg_file *argChrFile, *argOutFile, *argWigFixFile;
+struct arg_end *end;
 
 typedef struct chrom_node
 {
@@ -79,175 +88,198 @@ CHROM_NODE * my_node_search(char *ss,CHROM_NODE **list,int count)
   return my_node_search(ss,&(list[i+1]),count-(i+1));
 }
 
-int main(int argc, char *argv[])
+int genomeScorer( 
+    long genomeSize, int R, double min, double max, 
+    const char *outFile, 
+    const char *chrFile, 
+    const char **wigFixFile, int nWigFixFile )
 {
-  FILE *chrfile;
-  FILE *outfile;
-  gzFile wigfixfile;
-  char ss[4096],sss[4096];
-  int R;
-  double xmax,xmin;
+  FILE *chrFh, *outFh;
+  char sss[4096];
   long i;
   CHROM_NODE **clist;
 
-  if(argc != 8)
-  {
-    printf("\n Usage %s genome_size offset_file wigfix_file Max Min R outfile\n",argv[0]);
-    exit(1);
-  }
+  check( (min < max), "Impossible max = %g  min = %g.", max, min );
+  check( ((R > 5) && (R < 255)), "Impossible R [8..255] = %d.",R);
+  check( ((outFh=fopen(outFile, "w"))!=(FILE *)NULL), "Cannot write output to '%s'.", outFile );
 
-  sprintf(ss,"%s",argv[7]);
-  if((outfile=fopen(ss,"w"))==(FILE *)NULL)
-  {
-    printf("\n Can not open file %s\n",ss);
-    exit(1);
-  }
-
-  long genome_size = (long)atol(argv[1]);
-  char *genome_buffer;
-
-  genome_buffer = (char *)malloc(sizeof(char)*(genome_size+1));
+  char *genome_buffer = (char *)malloc(sizeof(char)*(genomeSize+1));
+  check_mem(genome_buffer);
+  
   clist = (CHROM_NODE**)malloc(sizeof(CHROM_NODE *)*1000);
-  if(!genome_buffer)
-  {
-    printf("\n Failed to allocate memory for the Genome Buffer \n");
-    exit(1);
-  }
-  clist = (CHROM_NODE**)malloc(sizeof(CHROM_NODE *)*1000);
-  if(!clist)
-  {
-    printf("\n Failed to allocate memory for the Chromosome list \n");
-    exit(1);
-  }
-  if((chrfile = fopen(argv[2],"r")) == (FILE *)NULL)
-  {
-    printf("\n Can't open %s which should be the chromsome offset file for reading \n",argv[2]);
-    exit(1);
-  }
-  xmax = (double)atof(argv[4]);
-  xmin = (double)atof(argv[5]);
-  if(xmin >= xmax)
-  {
-    printf("\n Impossible max = %g  min = %g \n",xmax,xmin);
-    exit(1);
-  }
-  R = atoi(argv[6]);
-  if( (R < 5) || (R > 255) )
-  {
-    printf("\n Impossible R [8..255] = %d \n",R);
-    exit(1);
-  }
+  check_mem(clist);
 
-  if((wigfixfile=gzopen(argv[3],"r"))==(gzFile)NULL)
-  {
-    printf("\n Can not open file %s which should be the wigfix file for reading\n", argv[3]);
-    exit(1);
-  }
+  log_info("Genome Size is %ld", genomeSize);
 
-  printf("\n Genome Size is %ld \n",genome_size);
-  for(i=0;i<genome_size;i++)
+  // zero out genome array
+  for(i=0;i<genomeSize;i++)
     genome_buffer[i] = (char)0;
 
-  fgets(sss,4095,chrfile);
-  fgets(sss,4095,chrfile);
+  // read chromosome offset file
+  check( ((chrFh=fopen(chrFile, "r"))!=(FILE *)NULL), "Cannot open chromosome offset file '%s' for reading.", chrFile );
+  fgets(sss,4095,chrFh);
+  fgets(sss,4095,chrFh);
   int len = strlen(sss);
-  int j = 0;
+  int nChrom = 0;
 
   while(len > 2)
   {
-    clist[j] = (CHROM_NODE *)malloc(sizeof(CHROM_NODE));
-    clist[j]->name[0] = '\0';
-    clist[j]->offset = (long)0;
+    clist[nChrom] = (CHROM_NODE *)malloc(sizeof(CHROM_NODE));
+    clist[nChrom]->name[0] = '\0';
+    clist[nChrom]->offset = (long)0;
     char *token;
     token = strtok(sss,": \n\t");
-    strcpy(clist[j]->name,token);
+    strcpy(clist[nChrom]->name,token);
     token = strtok(NULL,": \n\n");
-    clist[j]->offset = atol(token);
-    printf("\n Just stored %s with offset %ld \n",clist[j]->name,clist[j]->offset);
+    clist[nChrom]->offset = atol(token);
+    log_info("Just stored %s with offset %ld.",clist[nChrom]->name,clist[nChrom]->offset);
     sss[0] = '\0';
-    if(!feof(chrfile))
-    fgets(sss,4095,chrfile);
+    if(!feof(chrFh))
+    fgets(sss,4095,chrFh);
     len = strlen(sss);
-    j++;
+    nChrom++;
   }
-  fclose(chrfile);
+  fclose(chrFh);
 
-  int no_chrom = j;
-  printf("\n There are %d chromosomes in the genome \n\n",no_chrom);
-  qsort(clist,no_chrom,sizeof(CHROM_NODE *),compare_node);
-  printf("\n Finished sorting chromosome list \n\n");
-  int skip_it = 1;
-  gzgets(wigfixfile,sss,4095);
-  len = strlen(sss);
-  int step = 1;
-  char last_chrom[1024];
-  strcpy(last_chrom,"!!!!");
-  long current_pos = 0;
-  double this_x;
-  double this_y;
-  double beta = (double)(R-1) / (xmax - xmin);
-  CHROM_NODE *last_cn = NULL;
-  while(len > 2)
+  log_info("There are %d chromosomes in the genome.", nChrom);
+  qsort(clist,nChrom,sizeof(CHROM_NODE *),compare_node);
+  log_info("Finished sorting chromosome list.");
+
+  // read the wig fix files 
+  for (int i = 0; i < nWigFixFile; i++)
   {
-    if(sss[0] == 'f')
+    gzFile wigFixFh;
+    int skip_it = 1;
+    check( (wigFixFh = gzopen( wigFixFile[i], "r" ) )!=(gzFile)NULL, "Cannot open wigfix file '%s'.", wigFixFile[i] );
+    gzgets(wigFixFh,sss,4095);
+    len = strlen(sss);
+    int step = 1;
+    char last_chrom[1024];
+    strcpy(last_chrom,"!!!!");
+    long current_pos = 0;
+    double this_x;
+    double this_y;
+    double beta = (double)(R-1) / (max - min);
+    CHROM_NODE *last_cn = NULL;
+  
+    while(len > 2)
     {
-      char *token;
-      token = strtok(sss," \n\t=");
-      token = strtok(NULL," \n\t=");
-      token = strtok(NULL," \n\t=");
-      if(strcmp(token,last_chrom) != 0)
+      if(sss[0] == 'f')
       {
-        // last_cn = (CHROM_NODE *) bsearch(token,clist,no_chrom,sizeof(CHROM_NODE *),b_comp);
-        last_cn = my_node_search(token,clist,no_chrom);
-        if(last_cn)
+        char *token;
+        token = strtok(sss," \n\t=");
+        token = strtok(NULL," \n\t=");
+        token = strtok(NULL," \n\t=");
+        if(strcmp(token,last_chrom) != 0)
         {
-          // printf("\n Found %s which is at memory position %ld has name %s and offset %ld\n",
-          //   token, (long)last_cn, last_cn->name, last_cn->offset);
-          skip_it = 0;
+          // last_cn = (CHROM_NODE *) bsearch(token,clist,no_chrom,sizeof(CHROM_NODE *),b_comp);
+          last_cn = my_node_search(token,clist,nChrom);
+          if(last_cn)
+          {
+            // printf("\n Found %s which is at memory position %ld has name %s and offset %ld\n",
+            //   token, (long)last_cn, last_cn->name, last_cn->offset);
+            skip_it = 0;
+          }
+          else
+          {
+            printf("\n Skipping %s \n",token);
+            skip_it = 1;
+          } 
+          strcpy(last_chrom,token);
         }
-        else
+  
+        if(!skip_it)
         {
-          printf("\n Skipping %s \n",token);
-          skip_it = 1;
+          current_pos = last_cn->offset-1;
+          // printf("\n New offset: %ld \n", current_pos );
+          token = strtok(NULL," \n\t=");
+          token = strtok(NULL," \n\t=");
+          // printf("\n New offset: %s \n", token );
+          current_pos += atol(token);
+          token = strtok(NULL," \n\t=");
+          token = strtok(NULL," \n\t=");
+          step = atoi(token);
         }
-        strcpy(last_chrom,token);
       }
-
-      if(!skip_it)
+      else
       {
-        current_pos = last_cn->offset-1;
-        // printf("\n New offset: %ld \n", current_pos );
-        token = strtok(NULL," \n\t=");
-        token = strtok(NULL," \n\t=");
-        // printf("\n New offset: %s \n", token );
-        current_pos += atol(token);
-        token = strtok(NULL," \n\t=");
-        token = strtok(NULL," \n\t=");
-        step = atoi(token);
-      }
-    }
-    else
-    {
-    	if(!skip_it)
-    	{
-        this_x = (double)atof(sss);
-        if( (this_x > xmax) || (this_x < xmin) )
-        {
-          printf("\n Impossible X value encountered at position %ld which is %g \n",current_pos,this_x);
-          exit(2);
+    	  if(!skip_it)
+      	{
+          this_x = (double)atof(sss);
+          if( (this_x > max) || (this_x < min) )
+          {
+            printf("\n Impossible X value encountered at position %ld which is %g \n",current_pos,this_x);
+            exit(2);
+          }
+          this_y = 1 + floor((double)beta*(this_x - min));
+          int j;
+          for(j = 0;j<step;j++)
+            genome_buffer[current_pos++] = (char)this_y;
         }
-        this_y = 1 + floor((double)beta*(this_x - xmin));
-        int j;
-        for(j = 0;j<step;j++)
-          genome_buffer[current_pos++] = (char)this_y;
       }
+    sss[0] = '\0';
+    if(!gzeof(wigFixFh))
+      gzgets(wigFixFh,sss,4095);
+    len = strlen(sss);
     }
-  sss[0] = '\0';
-  if(!gzeof(wigfixfile))
-    gzgets(wigfixfile,sss,4095);
-  len = strlen(sss);
   }
-  fwrite(genome_buffer,sizeof(char),genome_size,outfile);
-  fclose(outfile);
+
+  // write final encoded file
+  fwrite(genome_buffer,sizeof(char),genomeSize,outFh);
+  fclose(outFh);
   return 0;
+
+error:
+  return 1;
 }
+
+int main( int argc, char *argv[] )
+{
+  void *argtable[] = {
+    help          = arg_litn(NULL, "help", 0, 1, "display this help and exit"),
+    argGenomeSize = arg_strn("g", "genomeSize", "<num>", 1, 1, "size of genome"),
+    argR          = arg_intn("r", "R", "<num>", 1, 1, "value of R"),
+    argChrFile    = arg_filen("c", "chr", "<file>", 1, 1, "chromosome offset file"),
+    argWigFixFile = arg_filen("w", "wig", "<file>", 1, 100, "wig fix file"),
+    argOutFile    = arg_filen("o", "out", "<file>", 1, 1, "output file"),
+    argMax        = arg_dbln(NULL, "max", "<num>", 1, 1, "maximum value"),
+    argMin        = arg_dbln(NULL, "min", "<num>", 1, 1, "minimum value"),
+    end           = arg_end(20),
+  };
+
+  int exitcode = 0;
+  char progName[] = "genome_scorer";
+  int nerrors = arg_parse(argc, argv, argtable);
+
+  if (help->count > 0) {
+    printf("Usage: %s", progName);
+    arg_print_syntax( stdout, argtable, "\n");
+    arg_print_glossary(stdout, argtable, " %-25s %s\n");
+    exitcode = 0;
+    goto exit;
+  }
+
+  if (nerrors > 0)
+  {
+    arg_print_errors(stdout, end, progName);
+    printf("Try '%s --help' for further information.\n", progName);
+    exitcode = 1;
+    goto exit;
+  }
+
+  if (nerrors == 0)
+  {
+    long genomeSize = (long)atol(argGenomeSize->sval[0]);
+
+    exitcode = genomeScorer( genomeSize, argR->ival[0], argMin->dval[0], argMax->dval[0], 
+        argOutFile->filename[0], argChrFile->filename[0], argWigFixFile->filename, 
+        argWigFixFile->count );
+    goto exit;
+  }
+
+exit:
+  arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0]));
+  return exitcode;
+}
+
+
