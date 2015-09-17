@@ -26,9 +26,9 @@ genome_chrs:
 - chrX
 - chrY
 genome_description: human
-genome_index_dir: /ssd/twingo/hg38/index
+genome_index_dir: /ssd/seqant_db_build/hg38_refGene_snp142/index
 genome_name: hg38
-genome_raw_dir: /ssd/twingo/hg38/raw
+genome_raw_dir: /ssd/seqant_db_build/hg38_refGene_snp142/raw
 genome_sized_tracks:
 - local_files:
   - chr1.fa.gz

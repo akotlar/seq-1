@@ -60,6 +60,12 @@ has out_file => (
   handles   => { output_path => 'stringify' }
 );
 
+has force => (
+  is      => 'ro',
+  isa     => 'Bool',
+  default => 0,
+);
+
 has debug => (
   is      => 'ro',
   isa     => 'Bool',
@@ -160,6 +166,63 @@ has genes_annotated => (
 );
 my $redisHost = 'localhost';
 my $redisPort = '6379';
+
+has counter => (
+  is => 'rw',
+  traits => ['Counter'],
+  isa => 'Num',
+  default => 0,
+  handles => {
+    inc_counter => 'inc',
+    dec_counter => 'dec',
+    reset_counter => 'reset',
+  },
+);
+
+has _printed_header => (
+  is => 'rw',
+  traits => ['Bool'],
+  isa => 'Bool',
+  default => 0,
+  handles => { set_printed_header => 'set', },
+);
+
+my %site_2_set_method = (
+  DEL => 'set_del_site',
+  INS => 'set_ins_site',
+  MULTIALLELIC => 'set_snp_site',
+  SNP => 'set_snp_site',
+);
+
+
+# the genotype codes below are based on the IUPAC ambiguity codes with the notable
+#   exception of the indel codes that are specified in the snpfile specifications
+
+my %het_genos = (
+  K => [ 'G', 'T' ],
+  M => [ 'A', 'C' ],
+  R => [ 'A', 'G' ],
+  S => [ 'C', 'G' ],
+  W => [ 'A', 'T' ],
+  Y => [ 'C', 'T' ],
+);
+
+my %hom_genos = (
+  A => [ 'A', 'A' ],
+  C => [ 'C', 'C' ],
+  G => [ 'G', 'G' ],
+  T => [ 'T', 'T' ],
+);
+
+my %hom_indel = (
+  D => [ '-', '-' ],
+  I => [ '+', '+' ],
+);
+
+my %het_indel = (
+  E => ['-'],
+  H => ['+'],
+);
 =head2 annotation_snpfile
 
 B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
@@ -178,7 +241,8 @@ sub annotate_snpfile {
   my $annotator = Seq::Annotate->new_with_config(
     {
       configfile => $self->configfile_path,
-      debug      => $self->debug
+      debug      => $self->debug,
+      force      => $self->force,
     }
   );
 
@@ -254,6 +318,19 @@ sub annotate_snpfile {
     my $allele_counts = $fields[ $header{Allele_Counts} ];
     my $abs_pos;
 
+    # check that $chr is an allowable chromosome
+    unless ( exists $chr_len_href->{$chr} ) {
+      my $err_msg = sprintf("ERROR: unrecognized chromosome in input: '%s', pos: %d", 
+        $chr, $pos);
+      $self->_logger->error( $err_msg );
+      if ( $self->force ) {
+        next;
+      }
+      else {
+        croak $err_msg . " " . $self->snpfile_path;
+      }
+    }
+
     # determine the absolute position of the base to annotate
     if ( $chr eq $last_chr ) {
       $abs_pos = $chr_offset + $pos - 1;
@@ -270,11 +347,10 @@ sub annotate_snpfile {
         $next_chr_offset = $genome_len;
       }
 
+      # check that we set the needed variables for determining position
       # say join " ", $chr, $pos, $chr_offset, $next_chr, $next_chr_offset;
-
       unless ( defined $chr_offset and defined $chr_index ) {
-        $self->_logger->error("unrecognized chromosome: $chr\n");
-        next READ;
+        croak "unable to set 'chr_offset' or 'chr_index' for: $chr\n";
       }
       $abs_pos = $chr_offset + $pos - 1;
     }
@@ -303,17 +379,18 @@ sub annotate_snpfile {
     #   p $hom_ids;
     # }
 
-    if ( $type eq 'INS' or $type eq 'DEL' or $type eq 'SNP' ) {
-      my $method = lc 'set_' . $type . '_site';
+    if ( exists $site_2_set_method{$type} ) {
+      my $method = $site_2_set_method{$type};
 
       $self->$method( $abs_pos => [ $chr, $pos ] );
 
       # get annotation for snp site
-      next READ unless $type eq 'SNP';
+      next READ unless $type eq 'SNP' or 'MULTIALLELIC';
 
       ALLELE: for my $allele ( split( /,/, $all_alleles ) ) {
-        next ALLELE if $allele eq $ref_allele;
-
+        next ALLELE if ( $allele eq $ref_allele 
+            or exists $hom_indel{$allele}
+            or exists $het_indel{$allele});
         my $record_href =
           $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
 
@@ -341,7 +418,14 @@ sub annotate_snpfile {
           p @record;
         }
         push @all_annotations, \@record;
+        $self->inc_counter;
       }
+    }
+    
+    if ($self->counter > 1000) {
+      $self->_print_annotations( \@all_annotations, \@header );
+      @all_annotations = ( );
+      $self->reset_counter;
     }
 
     if ( $i == $interval ) {
@@ -352,7 +436,12 @@ sub annotate_snpfile {
     }
     ++$i;
   }
-  $self->_print_annotations( \@all_annotations, \@header );
+
+  # finished printing the final annotations
+  if (@all_annotations) {
+    $self->_print_annotations( \@all_annotations, \@header );
+  }
+
 
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
@@ -420,7 +509,10 @@ sub _print_annotations {
   my ( $self, $annotations_aref, $header_aref ) = @_;
 
   # print header
-  say { $self->_out_fh } join "\t", @$header_aref;
+  if (!$self->_printed_header) {
+    say { $self->_out_fh } join "\t", @$header_aref;
+    $self->set_printed_header;
+  }
 
   # print entries
   for my $entry_aref (@$annotations_aref) {
@@ -439,35 +531,6 @@ sub _publish_message {
 }
 
 
-
-# the genotype codes below are based on the IUPAC ambiguity codes with the notable
-#   exception of the indel codes that are specified in the snpfile specifications
-
-my %het_genos = (
-  K => [ 'G', 'T' ],
-  M => [ 'A', 'C' ],
-  R => [ 'A', 'G' ],
-  S => [ 'C', 'G' ],
-  W => [ 'A', 'T' ],
-  Y => [ 'C', 'T' ],
-);
-
-my %hom_genos = (
-  A => [ 'A', 'A' ],
-  C => [ 'C', 'C' ],
-  G => [ 'G', 'G' ],
-  T => [ 'T', 'T' ],
-);
-
-my %hom_indel = (
-  D => [ '-', '-' ],
-  I => [ '+', '+' ],
-);
-
-my %het_indel = (
-  E => ['-'],
-  H => ['+'],
-);
 
 sub _get_minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
