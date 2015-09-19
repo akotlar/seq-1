@@ -66,7 +66,7 @@ try {
   say pp($config_href) if $debug;
 
   # set log file
-  my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
+  my $log_name = join '.', $out_file, 'annotation', $config_href->{genome_name}, 'log';
   my $log_file = File::Spec->rel2abs( ".", $log_name );
   say "writing log file here: $log_file" if $verbose;
   Log::Any::Adapter->set( 'File', $log_file );
