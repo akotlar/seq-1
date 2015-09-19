@@ -82,7 +82,7 @@ pod2usage( -exitval => 0, -verbose => 2)
 
 File::Spec->canonpath($sOutFile);
 
-my $log_file = join '.', $sOutFile, 'annotation', 'log';
+my $log_file = join '.', $sOutFile, 'snp_conversion', 'log';
 
 Log::Any::Adapter->set( 'File', $log_file );
 my $log = Log::Any->get_logger();
