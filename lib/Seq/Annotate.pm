@@ -753,24 +753,30 @@ sub annotate_dels {
 }
 
 # data for tx_sites:
-# hash{ abs_pos } = (
-# coding_start => $gene->coding_start,
-# coding_end => $gene->coding_end,
-# exon_starts => $gene->exon_starts,
-# exon_ends => $gene->exon_ends,
-# transcript_start => $gene->transcript_start,
-# transcript_end => $gene->transcript_end,
-# transcript_id => $gene->transcript_id,
-# transcript_seq => $gene->transcript_seq,
-# transcript_annotation => $gene->transcript_annotation,
-# transcript_abs_position => $gene->transcript_abs_position,
-# peptide_seq => $gene->peptide,
-# );
+# for my $gene_href (@$chr_data_aref) {
+#   my $gene = Seq::Gene->new($gene_href);
+#   $gene->set_alt_names( %{ $gene_href->{_alt_names} } );
+#   my $record_href = {
+#     coding_start            => $gene->coding_start,
+#     coding_end              => $gene->coding_end,
+#     exon_starts             => $gene->exon_starts,
+#     exon_ends               => $gene->exon_ends,
+#     transcript_start        => $gene->transcript_start,
+#     transcript_end          => $gene->transcript_end,
+#     transcript_id           => $gene->transcript_id,
+#     transcript_seq          => $gene->transcript_seq,
+#     transcript_annotation   => $gene->transcript_annotation,
+#     transcript_abs_position => $gene->transcript_abs_position,
+#     peptide_seq             => $gene->peptide,
+#   };
+#
+#   # save gene attr in dbm
+#   $db->db_put( $record_href->{transcript_id}, $record_href );
 
 sub _annotate_del_sites {
   state $check = compile( Object, ArrayRef );
   my ( $self, $site_aref ) = $check->(@_);
-  my ( @tx_hrefs, @records );
+  my ( %set_of_tx_href, @records );
 
   for my $abs_pos (@$site_aref) {
     # get a seq::site::gene record munged with seq::site::snp
@@ -780,18 +786,31 @@ sub _annotate_del_sites {
     for my $gene_data ( @{ $record->{gene_data} } ) {
       my $tx_id = $gene_data->{transcript_id};
 
-      for my $dbm_seq ( $self->_all_dbm_tx ) {
-        my $tx_href = $dbm_seq->db_get($tx_id);
+      for my $dbm_tx ( $self->_all_dbm_tx ) {
+        my $tx_href = $dbm_tx->db_get($tx_id);
         if ( defined $tx_href ) {
-          push @tx_hrefs, $tx_href;
+          $set_of_tx_href{$tx_id} = $tx_href;
         }
       }
     }
-    for my $tx_href (@tx_hrefs) {
-      p $tx_href;
-      # substring...
-      # stop gain, stop loss,
-    }
+  }
+
+  # now, we have a set of all transcripts that the deletions could affect.
+  # we will now consider each of them at a time
+  # -
+  for my $tx_id ( sort keys %set_of_tx_href ) {
+    my $tx_href = $set_of_tx_href->{$tx_id};
+    p $tx_id;
+    p $tx_href;
+    # exon_starts, exon_ends => Aref
+    # coding_start, coding_end => Aref
+    # transcript_abs_position => Aref
+    # transcript_annotation, transcript_id, transcript_seq => str
+    # transcript_start, transcript_end => str
+    # peptide_seq => str
+
+    # substring...
+    # stop gain, stop loss,
   }
 }
 
