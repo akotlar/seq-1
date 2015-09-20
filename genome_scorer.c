@@ -13,7 +13,8 @@
  * Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Name: genome_scorer.c
- * Compile: gcc -Wall -Wextra -O3 -lm -lz argtable3.c genome_scorer.c -o ./bin/genome_scorer
+ * Compile: j
+ *  gcc -Wall -Wextra -O3 -lm -lz -std=gnu11 argtable3.c genome_scorer.c -o ./bin/genome_scorer
  * Description: Encodes a genome using a user specified scheme
  *  Input:  genomeSize offset_file (YAML) wigFix_file Max Min R outputfile
  *            Max and Min are the range of the scores
@@ -77,7 +78,7 @@ CHROM_NODE * my_node_search(char *ss,CHROM_NODE **list,int count)
   if(count <= 0)
     return NULL;
 
-  int i = count/2;
+  int i = count / 2;
   int j = b_comp(ss,&(list[i]));
 
   if(j == 0)
@@ -85,7 +86,7 @@ CHROM_NODE * my_node_search(char *ss,CHROM_NODE **list,int count)
   if(j < 0)
     return  my_node_search(ss,list,i);
 
-  return my_node_search(ss,&(list[i+1]),count-(i+1));
+  return my_node_search(ss, &(list[i+1]), count-(i+1));
 }
 
 int genomeScorer( 
@@ -96,11 +97,10 @@ int genomeScorer(
 {
   FILE *chrFh, *outFh;
   char sss[4096];
-  long i;
   CHROM_NODE **clist;
 
   check( (min < max), "Impossible max = %g  min = %g.", max, min );
-  check( ((R > 5) && (R < 255)), "Impossible R [8..255] = %d.",R);
+  check( ((R > 5) && (R < 256)), "Impossible R [8..255] = %d.",R);
   check( ((outFh=fopen(outFile, "w"))!=(FILE *)NULL), "Cannot write output to '%s'.", outFile );
 
   char *genome_buffer = (char *)malloc(sizeof(char)*(genomeSize+1));
@@ -112,7 +112,7 @@ int genomeScorer(
   log_info("Genome Size is %ld", genomeSize);
 
   // zero out genome array
-  for(i=0;i<genomeSize;i++)
+  for(long i = 0; i < genomeSize; i++)
     genome_buffer[i] = (char)0;
 
   // read chromosome offset file
