@@ -626,7 +626,7 @@ sub get_snp_annotation {
       $abs_pos, $ref_base, $ref_site_annotation->{ref_base} );
     say $err_msg;
     $self->_logger->error($err_msg);
-    exit(1) unless $self->force;
+    exit(1);
   }
 
   p $ref_site_annotation if $self->debug;
@@ -744,6 +744,8 @@ sub annotate_dels {
 
       # save annotations
       push @annotations, $record;
+
+      # clear the array with continguous sites
       @contiguous_sites = ();
     }
   }
@@ -778,7 +780,7 @@ sub _annotate_del_sites {
     for my $gene_data ( @{ $record->{gene_data} } ) {
       my $tx_id = $gene_data->{transcript_id};
 
-      for my $dbm_seq ( $self->_all_dbm_seq ) {
+      for my $dbm_seq ( $self->_all_dbm_tx ) {
         my $tx_href = $dbm_seq->db_get($tx_id);
         if ( defined $tx_href ) {
           push @tx_hrefs, $tx_href;
@@ -786,7 +788,9 @@ sub _annotate_del_sites {
       }
     }
     for my $tx_href (@tx_hrefs) {
+      p $tx_href;
       # substring...
+      # stop gain, stop loss,
     }
   }
 }
