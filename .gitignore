@@ -72,3 +72,4 @@ Pileup.snp
 /stash
 /t/hg38/
 /big_files
+.build
