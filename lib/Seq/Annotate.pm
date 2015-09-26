@@ -833,32 +833,55 @@ sub annotate_ins_sites {
 
 sub _annotate_indel_sites {
   state $check = compile( Object, Str, Int, Int, Int, Int );
-  my ( $self, $chr, $rel_pos, $chr_index, $start, $stop ) = $check->(@_);
+  my ( $self, $chr, $rel_start, $chr_index, $abs_start, $abs_stop ) = $check->(@_);
 
-  my (%set_of_tx_href, @records);
+  # going assign the annotation to the relative start (rel_start) position
+  
+  my (%set_of_tx_href, %ann );
 
-  for (my $site = $start; $site <= $stop; $site++) { 
+  for (my $site = $abs_start; $site <= $abs_stop; $site++) { 
     my $record = $self->get_ref_annotation($chr_index, $site);
+
+    # save a count of the site types (i.e., intronic, intergenic, exonic )
+    $ann{$record->{genomic_annotation_code}}++;
 
     for my $gene_data ( @{ $record->{gene_data} } ) {
       my $tx_id = $gene_data->{transcript_id};
 
       for my $dbm_tx ( $self->_all_dbm_tx ) {
-        my $tx_href = $dbm_tx->db_get($tx_id);
+        # the way I'm storing stuff in the KC is as an arrayRef for the key
+        my $tx_href = shift @{ $dbm_tx->db_get($tx_id) };
+
         if ( defined $tx_href ) {
-          $set_of_tx_href{$tx_id} = $tx_href;
+          $set_of_tx_href{$tx_id} = { gene_data => $gene_data, tx => $tx_href };
         }
       }
     }
   }
+  if ( %set_of_tx_href ) {
+    say dump(\%set_of_tx_href);
+    exit;
+    my $rec = $self->_annotate_tx( \%set_of_tx_href, $abs_start, $abs_stop);
+    my $rec_href =  { chr => $chr, pos => $rel_start, ann => $rec, temp => \%ann};
+    say dump($rec_href);
+    return $rec_href;
+  }
+  else {
+    my $rec_href =  { chr => $chr, pos => $rel_start, ann => \%ann };
+    say dump($rec_href);
+    return $rec_href;
+  }
+}
 
+sub _annotate_tx{ 
+  my ($self, $txSetHref, $start, $stop ) = @_;
+
+  my %tx_ann;
   # annotate each transcript
-  for my $tx_id ( sort keys %set_of_tx_href ) {
-    say dump ( $tx_id ) ;
+  for my $tx_id ( sort keys $txSetHref ) {
     my %res;
-    my $tx_aref_href = $set_of_tx_href{$tx_id};
+    my $tx_aref_href = $txSetHref->{$tx_id};
     my $tx_href      = shift $tx_aref_href;
-    say dump($tx_href);
     my $tx_start     = $tx_href->{transcript_start};
     my $tx_end       = $tx_href->{transcript_end};
     my $coding_start = $tx_href->{coding_start};
@@ -901,7 +924,7 @@ sub _annotate_indel_sites {
         }
         elsif ( $site > $e_starts[$i] && $site < $e_starts[$i] + 6 ) {
           $res{SpliceDonor}++;
-        
+        }
         elsif ( $site > $e_ends[$i] && $site < $e_ends[$i] + 6 ) {
           $res{SpliceAcceptor}++;
         }
@@ -921,23 +944,16 @@ sub _annotate_indel_sites {
       }
     }
 
-    my @summary;
-
     # frameshift or inframe implies coding
-    for my $type ( qw/ CodingStart CodingStop FrameShift InFrame 5UTR 3UTR SpliceDonor SpliceAcceptor Intron / ) {
+    my @summary;
+    for my $type ( qw/ CodingStart CodingStop FrameShift InFrame 5UTR 3UTR SpliceDonor SpliceAcceptor Intronic / ) {
       if (exists $res{$type}) {
         push @summary, sprintf("%s = %d", $type, $res{$type});
       }
     }
-    $tx_ann{$tx} = join "\t", @summary;
+    $tx_ann{$tx_id} = join "\t", @summary;
   }
-  my @tx = map { $_ } ( sort keys %tx_ann );
-  my $tx = join ";", @tx;
-  my @ann = map { $tx_ann{$_} } ( sort keys %tx_ann );
-  my $ann = join ";", @ann;
-  my $rec = { chr => $chr, pos => $pos, tx => $tx, ann => $ann };
-
-  return $rec;
+  return \%tx_ann;
 }
 
 
