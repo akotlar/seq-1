@@ -56,6 +56,7 @@ use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
 use DDP; # for debugging
+use Data::Dump qw( dump ); #for debugging
 
 use Seq::GenomeSizedTrackChar;
 use Seq::KCManager;
@@ -723,30 +724,87 @@ sub _join_href {
   return \%merge;
 }
 
-sub annotate_dels {
-  state $check = compile( Object, HashRef );
-  my ( $self, $sites_href ) = $check->(@_);
-  my ( @annotations, @contiguous_sites, $last_abs_pos );
 
-  # $site_href is defined as %site{ abs_pos } = [ chr, pos ]
+# annotate_del_sites takes an hash reference of sites and chromosome 
+#   indicies hash reference and returns a list of the consequences for
+#   deleting the site
+#   - the site hash reference is defined like so:
+#     %site{ abs_pos } = [ chr, pos ]
+#   - the chromosome index hash reference is needed to determine the proper
+#     array to use for determining the annotation
+#   - this funciton works by grouping contiguous sites together and submitting
+#     those to _annotate_indel_site_list
+sub annotate_del_sites {
+  state $check = compile( Object, HashRef, HashRef );
+  my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
+  my ( @annotations, @contiguous_sites );
 
-  for my $abs_pos ( sort { $a <=> $b } keys %$sites_href ) {
-    if ( $last_abs_pos + 1 == $abs_pos ) {
-      push @contiguous_sites, $abs_pos;
-      $last_abs_pos = $abs_pos;
+  my @abs_sites = sort { $a <=> $b } keys %$sites_href;
+  push @contiguous_sites, $abs_sites[0];
+
+  for (my $i = 1; $i < @abs_sites; $i++) {
+    if ($abs_sites[$i-1] + 1 == $abs_sites[$i]) {
+      push @contiguous_sites, $abs_sites[$i];
     }
     else {
-      # annotate site
-      my $record = $self->_annotate_del_sites( \@contiguous_sites );
+      say "annotate these sites:" . dump( @contiguous_sites ); 
 
-      # arbitrarily assign the 1st del site as the one we'll report
-      ( $record->{chr}, $record->{pos} ) = @{ $sites_href->{ $contiguous_sites[0] } };
+      # annotate the sites
+      #   - get the relative chr and position
+      #   - get the chromosome index (needed to lookup te basic annotation)
+      #   - annotate the sites
+      my ($chr, $rel_pos) =  @{ $sites_href->{ $contiguous_sites[0] } };
+      my $chr_index = $chr_index_href->{$chr};
+      my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
+        $contiguous_sites[0], $contiguous_sites[-1] );
+      #p $records_aref;
+      
+      # save annotation
+      push @annotations, $records_aref;
+      # assign annotation to the 1st site
+      #p @annotations;
 
-      # save annotations
-      push @annotations, $record;
+      # clear old sites
+      @contiguous_sites = ( );
 
-      # clear the array with continguous sites
-      @contiguous_sites = ();
+      # add site we are presently on, which allowed us to determine if we were 
+      # in a contiguous region or not - for the next loop
+      push @contiguous_sites, $abs_sites[$i];
+
+      say "new sites:";
+      dump( @contiguous_sites );
+    }
+  }
+  return \@annotations;
+}
+
+# annotate_ins_sites takes a hash reference of sites and chromosome indicies
+#   hash reference and returns a list of consequences for altering the sites 
+#   over which the insertion occurs. 
+#   - the site hash reference differes from the one accepted by 
+#     annoate_del_sites:
+#     %site{ abs_pos } = [ chr, pos, insertion_string ]
+sub annotate_ins_sites {
+  state $check = compile( Object, HashRef, HashRef );
+  my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
+  my ( @annotations, @contiguous_sites );
+
+  for my $abs_pos ( sort { $a <=> $b } %$sites_href ) {
+    my ($chr, $rel_pos, $ins_str) = @{ $sites_href->{$abs_pos} };
+
+    if (defined $chr && defined $rel_pos && defined $ins_str) {
+      my $chr_index = $chr_index_href->{$chr};
+      my $stop = $abs_pos + length $ins_str;
+      my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
+        $abs_pos, $stop );
+      push @annotations, $records_aref;
+    }
+    else {
+      my $msg = sprintf("ERROR: %s could not process data for site '%d'", 
+        'annotate_ins_sites()', $abs_pos);
+
+      $self->_logger->error( $msg );
+      croak $msg;
     }
   }
   return \@annotations;
@@ -773,15 +831,14 @@ sub annotate_dels {
 #   # save gene attr in dbm
 #   $db->db_put( $record_href->{transcript_id}, $record_href );
 
-sub _annotate_del_sites {
-  state $check = compile( Object, ArrayRef );
-  my ( $self, $site_aref ) = $check->(@_);
-  my ( %set_of_tx_href, @records );
+sub _annotate_indel_sites {
+  state $check = compile( Object, Str, Int, Int, Int, Int );
+  my ( $self, $chr, $rel_pos, $chr_index, $start, $stop ) = $check->(@_);
 
-  for my $abs_pos (@$site_aref) {
-    # get a seq::site::gene record munged with seq::site::snp
+  my (%set_of_tx_href, @records);
 
-    my $record = $self->get_ref_annotation($abs_pos);
+  for (my $site = $start; $site <= $stop; $site++) { 
+    my $record = $self->get_ref_annotation($chr_index, $site);
 
     for my $gene_data ( @{ $record->{gene_data} } ) {
       my $tx_id = $gene_data->{transcript_id};
@@ -795,24 +852,94 @@ sub _annotate_del_sites {
     }
   }
 
-  # now, we have a set of all transcripts that the deletions could affect.
-  # we will now consider each of them at a time
-  # -
+  # annotate each transcript
   for my $tx_id ( sort keys %set_of_tx_href ) {
-    my $tx_href = $set_of_tx_href->{$tx_id};
-    p $tx_id;
-    p $tx_href;
-    # exon_starts, exon_ends => Aref
-    # coding_start, coding_end => Aref
-    # transcript_abs_position => Aref
-    # transcript_annotation, transcript_id, transcript_seq => str
-    # transcript_start, transcript_end => str
-    # peptide_seq => str
+    say dump ( $tx_id ) ;
+    my %res;
+    my $tx_aref_href = $set_of_tx_href{$tx_id};
+    my $tx_href      = shift $tx_aref_href;
+    say dump($tx_href);
+    my $tx_start     = $tx_href->{transcript_start};
+    my $tx_end       = $tx_href->{transcript_end};
+    my $coding_start = $tx_href->{coding_start};
+    my $coding_end   = $tx_href->{coding_end};
+    my @e_starts     = @{ $tx_href->{exon_starts} };
+    my @e_ends       = @{ $tx_href->{exon_ends} };
 
-    # substring...
-    # stop gain, stop loss,
+    for (my $site = $start; $site <= $stop; $site++) { 
+      for (my $i = 0; $i < @e_starts; $i++) {
+        # inside an exon
+        if ( $site >= $e_starts[$i] && $site < $e_ends[$i] ) {
+          # at the exon start/end
+          if ($site == $e_starts[$i] || $site == $e_ends[$i] - 1 ) {
+            $res{ExonJunction}++;
+          }
+          # inside coding region
+          if ($site >= $coding_start && $site < $coding_end ) {
+            # in the start site
+            if ($site > $coding_start && $site < ($coding_start + 3) ) {
+              $res{CodingStart}++;
+              $res{Coding}++;
+            }
+            # in the stop site
+            elsif ( $site < $coding_end && $site > ($coding_end - 3) ) {
+              $res{CodingStop}++;
+              $res{Coding}++;
+            }
+            else {
+              $res{Coding}++;
+            }
+          }
+          # between tx start and coding start (5' UTR)
+          elsif ( $site >= $tx_start && $site < $coding_start ) {
+            $res{'5UTR'}++;
+          }
+          # between tx end and coding end (3' UTR)
+          elsif ( $site < $tx_end && $site >= $coding_end ) {
+            $res{'3UTR'}++;
+          }
+        }
+        elsif ( $site > $e_starts[$i] && $site < $e_starts[$i] + 6 ) {
+          $res{SpliceDonor}++;
+        
+        elsif ( $site > $e_ends[$i] && $site < $e_ends[$i] + 6 ) {
+          $res{SpliceAcceptor}++;
+        }
+      }
+      if (!%res) {
+        $res{Intronic}++;
+      }
+    }
+
+    my $coding_count = $res{Coding};
+    if (defined $coding_count ) {
+      if ($coding_count % 3 == 0 ) {
+        $res{InFrame}++;
+      }
+      else {
+        $res{FrameShift}++;
+      }
+    }
+
+    my @summary;
+
+    # frameshift or inframe implies coding
+    for my $type ( qw/ CodingStart CodingStop FrameShift InFrame 5UTR 3UTR SpliceDonor SpliceAcceptor Intron / ) {
+      if (exists $res{$type}) {
+        push @summary, sprintf("%s = %d", $type, $res{$type});
+      }
+    }
+    $tx_ann{$tx} = join "\t", @summary;
   }
+  my @tx = map { $_ } ( sort keys %tx_ann );
+  my $tx = join ";", @tx;
+  my @ann = map { $tx_ann{$_} } ( sort keys %tx_ann );
+  my $ann = join ";", @ann;
+  my $rec = { chr => $chr, pos => $pos, tx => $tx, ann => $ann };
+
+  return $rec;
 }
+
 
 __PACKAGE__->meta->make_immutable;
 
