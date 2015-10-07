@@ -72,7 +72,7 @@ $jobKeys->{clientComm} = 'client',
 $jobKeys->{serverComm} = 'server',
 
 
-my $configPathBaseDir : shared = "../config/";
+my $configPathBaseDir : shared = "../config/web/";
 my $configFilePathHref : shared = shared_clone( {} );
 my $semSTDOUT : shared;
 
