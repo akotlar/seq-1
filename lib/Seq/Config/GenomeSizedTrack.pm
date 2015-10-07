@@ -535,7 +535,7 @@ sub BUILDARGS {
     }
     elsif ( $href->{type} eq "cadd" ) {
       $href->{score_min} = 0;
-      $href->{score_max} = 85;
+      $href->{score_max} = 127;
     }
     return $class->SUPER::BUILDARGS($href);
   }
