@@ -57,11 +57,13 @@ use YAML::XS qw/ LoadFile /;
 
 use DDP; # for debugging
 use Data::Dump qw( dump ); #for debugging
+use Cpanel::JSON::XS;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
+use Seq::Indel;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
@@ -724,7 +726,6 @@ sub _join_href {
   return \%merge;
 }
 
-
 # annotate_del_sites takes an hash reference of sites and chromosome 
 #   indicies hash reference and returns a list of the consequences for
 #   deleting the site
@@ -755,6 +756,10 @@ sub annotate_del_sites {
       #   - annotate the sites
       my ($chr, $rel_pos) =  @{ $sites_href->{ $contiguous_sites[0] } };
       my $chr_index = $chr_index_href->{$chr};
+
+      say dump( [ "going to _annotate_indel_sites() with: ", $chr, $rel_pos, 
+          $chr_index, $contiguous_sites[0], $contiguous_sites[-1] ]);
+
       my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
         $contiguous_sites[0], $contiguous_sites[-1] );
       #p $records_aref;
@@ -802,7 +807,6 @@ sub annotate_ins_sites {
     else {
       my $msg = sprintf("ERROR: %s could not process data for site '%d'", 
         'annotate_ins_sites()', $abs_pos);
-
       $self->_logger->error( $msg );
       croak $msg;
     }
@@ -810,152 +814,71 @@ sub annotate_ins_sites {
   return \@annotations;
 }
 
-# data for tx_sites:
-# for my $gene_href (@$chr_data_aref) {
-#   my $gene = Seq::Gene->new($gene_href);
-#   $gene->set_alt_names( %{ $gene_href->{_alt_names} } );
-#   my $record_href = {
-#     coding_start            => $gene->coding_start,
-#     coding_end              => $gene->coding_end,
-#     exon_starts             => $gene->exon_starts,
-#     exon_ends               => $gene->exon_ends,
-#     transcript_start        => $gene->transcript_start,
-#     transcript_end          => $gene->transcript_end,
-#     transcript_id           => $gene->transcript_id,
-#     transcript_seq          => $gene->transcript_seq,
-#     transcript_annotation   => $gene->transcript_annotation,
-#     transcript_abs_position => $gene->transcript_abs_position,
-#     peptide_seq             => $gene->peptide,
-#   };
-#
-#   # save gene attr in dbm
-#   $db->db_put( $record_href->{transcript_id}, $record_href );
-
 sub _annotate_indel_sites {
   state $check = compile( Object, Str, Int, Int, Int, Int );
   my ( $self, $chr, $rel_start, $chr_index, $abs_start, $abs_stop ) = $check->(@_);
 
+  # TODO: need to think of something that will give me Del vs Ins
+  #   - probably just pass the string of ins and if it's empty then it's a del
+
   # going assign the annotation to the relative start (rel_start) position
   
-  my (%set_of_tx_href, %ann );
+  my (%tx_list, @ref_annotations);
 
   for (my $site = $abs_start; $site <= $abs_stop; $site++) { 
     my $record = $self->get_ref_annotation($chr_index, $site);
 
-    # save a count of the site types (i.e., intronic, intergenic, exonic )
-    $ann{$record->{genomic_annotation_code}}++;
+    # save record
+    push @ref_annotations, $record;
 
+    # lookup transcript information
     for my $gene_data ( @{ $record->{gene_data} } ) {
       my $tx_id = $gene_data->{transcript_id};
 
+      # skip transcripts that have already been looked up
+      next if exists $tx_list{$tx_id};
+
+      # loop over all transcript data sets we might have
       for my $dbm_tx ( $self->_all_dbm_tx ) {
-        # the way I'm storing stuff in the KC is as an arrayRef for the key
+
+        # each transcript is stored as an array reference in the KC database
         my $tx_href = shift @{ $dbm_tx->db_get($tx_id) };
 
         if ( defined $tx_href ) {
-          $set_of_tx_href{$tx_id} = { gene_data => $gene_data, tx => $tx_href };
+          $tx_list{ $tx_id } = $tx_href;
         }
       }
     }
   }
-  if ( %set_of_tx_href ) {
-    say dump(\%set_of_tx_href);
-    exit;
-    my $rec = $self->_annotate_tx( \%set_of_tx_href, $abs_start, $abs_stop);
-    my $rec_href =  { chr => $chr, pos => $rel_start, ann => $rec, temp => \%ann};
-    say dump($rec_href);
-    return $rec_href;
+  if (@ref_annotations && %tx_list) {
+    open (my $fh, '>', 'data.json') || die "$!";
+    my $href = {
+        indel_type => 'Del',
+        chr => $chr,
+        pos => $rel_start,
+        abs_start_pos => $abs_start,
+        abs_stop_pos => $abs_stop,
+        ref_annotations => \@ref_annotations,
+        transcripts => \%tx_list,
+    };
+    print {$fh} encode_json($href);
+    my $indel = Seq::Indel->new( $href );
+    say dump( $indel );
   }
   else {
-    my $rec_href =  { chr => $chr, pos => $rel_start, ann => \%ann };
-    say dump($rec_href);
-    return $rec_href;
+    my $indel = Seq::Indel->new( {
+        indel_type => 'Del',
+        chr => $chr,
+        pos => $rel_start,
+        abs_start_pos => $abs_start,
+        abs_stop_pos => $abs_stop,
+        ref_annotations => \@ref_annotations,
+        transcripts => \%tx_list,
+      });
+    say dump( $indel );
   }
+  exit;
 }
-
-sub _annotate_tx{ 
-  my ($self, $txSetHref, $start, $stop ) = @_;
-
-  my %tx_ann;
-  # annotate each transcript
-  for my $tx_id ( sort keys $txSetHref ) {
-    my %res;
-    my $tx_aref_href = $txSetHref->{$tx_id};
-    my $tx_href      = shift $tx_aref_href;
-    my $tx_start     = $tx_href->{transcript_start};
-    my $tx_end       = $tx_href->{transcript_end};
-    my $coding_start = $tx_href->{coding_start};
-    my $coding_end   = $tx_href->{coding_end};
-    my @e_starts     = @{ $tx_href->{exon_starts} };
-    my @e_ends       = @{ $tx_href->{exon_ends} };
-
-    for (my $site = $start; $site <= $stop; $site++) { 
-      for (my $i = 0; $i < @e_starts; $i++) {
-        # inside an exon
-        if ( $site >= $e_starts[$i] && $site < $e_ends[$i] ) {
-          # at the exon start/end
-          if ($site == $e_starts[$i] || $site == $e_ends[$i] - 1 ) {
-            $res{ExonJunction}++;
-          }
-          # inside coding region
-          if ($site >= $coding_start && $site < $coding_end ) {
-            # in the start site
-            if ($site > $coding_start && $site < ($coding_start + 3) ) {
-              $res{CodingStart}++;
-              $res{Coding}++;
-            }
-            # in the stop site
-            elsif ( $site < $coding_end && $site > ($coding_end - 3) ) {
-              $res{CodingStop}++;
-              $res{Coding}++;
-            }
-            else {
-              $res{Coding}++;
-            }
-          }
-          # between tx start and coding start (5' UTR)
-          elsif ( $site >= $tx_start && $site < $coding_start ) {
-            $res{'5UTR'}++;
-          }
-          # between tx end and coding end (3' UTR)
-          elsif ( $site < $tx_end && $site >= $coding_end ) {
-            $res{'3UTR'}++;
-          }
-        }
-        elsif ( $site > $e_starts[$i] && $site < $e_starts[$i] + 6 ) {
-          $res{SpliceDonor}++;
-        }
-        elsif ( $site > $e_ends[$i] && $site < $e_ends[$i] + 6 ) {
-          $res{SpliceAcceptor}++;
-        }
-      }
-      if (!%res) {
-        $res{Intronic}++;
-      }
-    }
-
-    my $coding_count = $res{Coding};
-    if (defined $coding_count ) {
-      if ($coding_count % 3 == 0 ) {
-        $res{InFrame}++;
-      }
-      else {
-        $res{FrameShift}++;
-      }
-    }
-
-    # frameshift or inframe implies coding
-    my @summary;
-    for my $type ( qw/ CodingStart CodingStop FrameShift InFrame 5UTR 3UTR SpliceDonor SpliceAcceptor Intronic / ) {
-      if (exists $res{$type}) {
-        push @summary, sprintf("%s = %d", $type, $res{$type});
-      }
-    }
-    $tx_ann{$tx_id} = join "\t", @summary;
-  }
-  return \%tx_ann;
-}
-
 
 __PACKAGE__->meta->make_immutable;
 
