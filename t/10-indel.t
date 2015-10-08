@@ -66,7 +66,7 @@ for my $attr_name ( sort keys %attr_2_type ) {
 my $href = LoadJsonData( 't/10-single_del.json' );
 my $obj = $package->new( $href );
 ok( $obj, $package);
-$obj->annotate;
+$obj->as_href;
 
 # Methods tests
 
@@ -75,7 +75,7 @@ $obj->annotate;
 ###############################################################################
 
 sub SaveJsonData {
-  my ( $file, $data ) = @_; 
+  my ( $file, $data ) = @_;
   my $fh = IO::File->new( $file, 'w' ) || die "$file: $!\n";
   print {$fh} encode_json($data);
   close $fh;
@@ -84,11 +84,11 @@ sub SaveJsonData {
 sub LoadJsonData {
   my $file = shift;
   my $fh = IO::File->new( $file, 'r' ) || die "$file: $!\n";
-  local $\; 
+  local $\;
   my $json_txt = <$fh>;
   close $fh;
   my $jsonHref = decode_json($json_txt);
-  if ( !%$jsonHref ) { 
+  if ( !%$jsonHref ) {
     say "Bail out - no data for $file";
     exit(1);
   }

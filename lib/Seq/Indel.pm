@@ -7,7 +7,7 @@ package Seq::Indel;
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @class B<Seq::Indel>
   #TODO: Check description
 
@@ -83,6 +83,37 @@ has transcripts => (
   },
 );
 
+has splice_site_length => (
+  is => 'ro',
+  isa => 'Int',
+  default => 6,
+  required => 1,
+);
+
+has _tx_alt_names => (
+  traits => ['Hash'],
+  is        => 'ro',
+  isa       => 'HashRef[HashRef]',
+  required  => 1,
+  handles => {
+    get_alt_name => 'get',
+    set_alt_name => 'set',
+  },
+  default => sub {{ }},
+);
+
+has _tx_strand => (
+  traits => ['Hash'],
+  is        => 'ro',
+  isa       => 'HashRef[Str]',
+  required  => 1,
+  handles => {
+    get_tx_strand => 'get',
+    set_tx_strand => 'set',
+  },
+  default => sub {{ }},
+);
+
 # ref_annotations => [
 # {
 #   abs_pos => #
@@ -116,134 +147,172 @@ has transcripts => (
 #   },
 #  }, ...
 #
+sub as_href {
+  my $self = shift;
+  if ($self->indel_type eq 'Del' ) {
+    return $self->_annotate_del;
+  }
+  else {
+    return $self->_annotate_ins;
+  }
+}
 
-sub tx_info {
+sub _site_2_tx {
   my $self = shift;
 
-  my %tx;
+  my %site_2_tx;
 
   for my $site_record ( $self->all_ref_ann ) {
 
     my $pos = $site_record->{abs_pos};
-    my $genomic_annotation_code = $site_record->{genomic_annotation_code};
-    my $ref_base = $site_record->{ref_base};
+
+    for my $attr (qw/ ref_base genomic_annotation_code/ ) {
+      $site_2_tx{$pos}{$attr} = $site_record->{$attr};
+    }
 
     for my $gene_href ( @{ $site_record->{gene_data} } ) {
-      my $tx_id = $gene_href->{transcript_id};
-      my $tx_strand = $gene_href->{strand};
-
-      $tx{$tx_id}{$pos} = [ $genomic_annotation_code, $ref_base, $tx_strand, ];
+      push @{ $site_2_tx{$pos}{transcript_id} }, $gene_href->{transcript_id};
+      $self->set_alt_name( $gene_href->{transcript_id} => $gene_href->{alt_names} );
+      $self->set_tx_strand( $gene_href->{transcript_id} => $gene_href->{strand} );
     }
   }
-  return \%tx;
+  return \%site_2_tx;
 }
-
-
-sub annotate { 
+sub _annotate_del {
   my $self = shift;
 
-  my $tx_site_href = $self->tx_info;
+  my $tx_site_href = $self->_site_2_tx;
 
-  for my $tx_id ( $self->keys_tx ) {
-    my %res;
+  # {
+  #   "2803214660" => {
+  #     genomic_annotation_code => "Exonic",
+  #     ref_base => "A",
+  #     transcript_id => ["NM_001197297", "NM_002040"],
+  #   },
+  # }
 
-    my $tx_href      = $self->get_tx( $tx_id );
-    my $tx_start     = $tx_href->{transcript_start};
-    my $tx_end       = $tx_href->{transcript_end};
-    my $coding_start = $tx_href->{coding_start};
-    my $coding_end   = $tx_href->{coding_end};
-    my @e_starts     = @{ $tx_href->{exon_starts} };
-    my @e_ends       = @{ $tx_href->{exon_ends} };
-
-    my @tx_abs_pos   = @{ $tx_href->{transcript_abs_position} };
-
-    for (my $i = 0; $i < @tx_abs_pos; $i++) {
-      if ( $tx_abs_pos[$i] <= $self->abs_stop_pos && $tx_abs_pos[$i] >= $self->abs_start_pos) {
-        my $pos = $tx_abs_pos[$i];
-        my $ann = substr( $tx_href->{transcript_annotation}, $i, 1 );
-        my $genomic_annotation_code = $tx_site_href->{$tx_id}{$tx_abs_pos[$i]}[0];
-        my $ref_base = $tx_site_href->{$tx_id}{$tx_abs_pos[$i]}[1];
-        my $strand = $tx_site_href->{$tx_id}{$tx_abs_pos[$i]}[2];
-
+  my (%tx, %ann, @ref_bases);
+  for (my $site = $self->abs_start_pos; $site <= $self->abs_stop_pos; $site++) {
+    push @ref_bases, $tx_site_href->{$site}{ref_base};
+    for my $tx_id ( @{ $tx_site_href->{$site}{transcript_id} } ) {
+      my $dat = $self->_ann_tx_site( $tx_id, $site );
+      for my $type ( keys %$dat ) {
+        $tx{$tx_id}{$type}++;
       }
     }
+  }
 
-    for (my $site = $self->abs_start_pos; $site <= $self->abs_stop_pos; $site++) { 
-      my $gen_ann_code = $tx_site_href->{$tx_id}{$site}[0];
-      my $ref_base     = $tx_site_href->{$tx_id}{$site}[1];
-      my $strand       = $tx_site_href->{$tx_id}{$site}[2];
-      for (my $i = 0; $i < @e_starts; $i++) {
-        # inside an exon
-
-        if ( $site >= $e_starts[$i] && $site < $e_ends[$i] ) {
-          
-          # at the exon start/end
-          if ($site == $e_starts[$i] || $site == $e_ends[$i] - 1 ) {
-            $res{ExonJunction}++;
-          }
-
-          # inside coding region
-          if ($site >= $coding_start && $site < $coding_end ) {
-
-              # in the start site
-              if ($site > $coding_start && $site < ($coding_start + 3) ) {
-                $res{CodingStart}++;
-                $res{Coding}++;
-              }
-              # in the stop site
-              elsif ( $site < $coding_end && $site > ($coding_end - 3) ) {
-                $res{CodingStop}++;
-                $res{Coding}++;
-              }
-              else {
-                $res{Coding}++;
-              }
-            }
-          # between tx start and coding start (5' UTR)
-          elsif ( $site >= $tx_start && $site < $coding_start ) {
-            $res{'5UTR'}++;
-          }
-          # between tx end and coding end (3' UTR)
-          elsif ( $site < $tx_end && $site >= $coding_end ) {
-            $res{'3UTR'}++;
-          }
-        }
-        elsif ( $site < $e_starts[$i] && $site < $e_starts[$i] - 6 ) {
-          $res{SpliceDonor}++;
-        }
-        elsif ( $site > $e_ends[$i] && $site < $e_ends[$i] + 6 ) {
-          $res{SpliceAcceptor}++;
-        }
-        elsif( $site > $e_starts[$i] + 6 ) {
-          $res{Intronic}++;
-        }
-        elsif ($site < 
-
-      }
-      if (!%res) {
-        $res{Intronic}++;
-      }
-    }
-
-    if (exists $res{Coding} ) {
-      if ($res{Coding} % 3 == 0 ) {
-        $res{InFrame}++;
+  for my $tx_id ( keys %tx) {
+    if (exists $tx{$tx_id}{Coding}) {
+      if ($tx{$tx_id}{Coding} % 3 == 0) {
+        $tx{$tx_id}{InFrame}++;
       }
       else {
-        $res{FrameShift}++;
+        $tx{$tx_id}{FrameShift}++;
+      }
+    }
+    my @site_types = qw/ Exonic Coding Intronic /;
+    my @annotation_types = qw/ 5UTR 3UTR SpliceDonor SpliceAcceptor
+      StartLoss StopLoss FrameShift InFrame /;
+
+    my @site_type_summary;
+    for my $type (@site_types) {
+      if (exists $tx{$tx_id}{$type} ) {
+        push @site_type_summary, $type;
       }
     }
 
-    # frameshift or inframe implies coding
-    my @summary;
-    for my $type ( qw/ CodingStart CodingStop FrameShift InFrame 5UTR 3UTR SpliceDonor 
-      SpliceAcceptor Intronic / ) {
-      if (exists $res{$type}) {
-        push @summary, sprintf("%s = %d", $type, $res{$type});
+    my @ann_type_summary;
+    for my $type ( @annotation_types ) {
+      if (exists $tx{$tx_id}{$type}) {
+        push @ann_type_summary, $type;
       }
     }
-    say dump( { _tx => $tx_id, data => \@summary} );
+    if (!@ann_type_summary ){
+      push @ann_type_summary, 'Del';
+    }
+    push @{ $ann{site_type} }, join(",", @site_type_summary);
+    push @{ $ann{annotation_type} }, join(",", @ann_type_summary);
+    push @{ $ann{transcript_id} }, $tx_id;
+    push @{ $ann{alt_names} }, $self->get_alt_name( $tx_id );
   }
+  $ann{chr} = $self->chr;
+  $ann{pos} = $self->pos;
+  $ann{ref_base} = join "", @ref_bases;
+
+  say dump( \%ann );
+  return \%ann;
+}
+
+sub _ann_tx_site {
+  my ($self, $tx_id, $site) = @_;
+
+  my %res;
+  my $splice_site_length = $self->splice_site_length;
+  my $tx_href      = $self->get_tx( $tx_id );
+  my $strand       = $self->get_tx_strand( $tx_id );
+  my $tx_start     = $tx_href->{transcript_start};
+  my $tx_end       = $tx_href->{transcript_end};
+  my $coding_start = $tx_href->{coding_start};
+  my $coding_end   = $tx_href->{coding_end};
+  my @e_starts     = @{ $tx_href->{exon_starts} };
+  my @e_ends       = @{ $tx_href->{exon_ends} };
+
+  # loop over exons
+  for (my $i = 0; $i < @e_starts; $i++) {
+
+    # inside an exon
+    if ( $site >= $e_starts[$i] && $site < $e_ends[$i] ) {
+
+      # at the exon start/end
+      if ($site == $e_starts[$i] || $site == $e_ends[$i] - 1 ) {
+        $res{ExonJunction}++;
+      }
+
+      # inside coding region
+      if ($site >= $coding_start && $site < $coding_end ) {
+
+          # in the start site
+          if ($site >= $coding_start && $site < ($coding_start + 3) ) {
+            say join "\t", "Start Coding ", $site;
+            $res{StartLoss}++;
+            $res{Coding}++;
+          }
+          # in the stop site
+          elsif ( $site >= ($coding_end - 3) && $site < $coding_end ) {
+            say join "\t", "Stop Coding ", $site;
+            $res{StopLoss}++;
+            $res{Coding}++;
+          }
+          else {
+            say join "\t", "Coding ", $site;
+            $res{Coding}++;
+          }
+        }
+      # between tx start and coding start (5' UTR)
+      elsif ( $site >= $tx_start && $site < $coding_start ) {
+        $res{'5UTR'}++;
+        $res{Exonic}++;
+      }
+      # between tx end and coding end (3' UTR)
+      elsif ( $site >= $coding_end && $site < $tx_end ) {
+        $res{'3UTR'}++;
+        $res{Exonic}++;
+      }
+    }
+    elsif ( $site < $e_starts[$i] && $site > ($e_starts[$i] - $splice_site_length) ) {
+      $res{SpliceDonor}++;
+      $res{Intronic}++;
+    }
+    elsif ( $site > $e_ends[$i] && $site < ($e_ends[$i] + $splice_site_length)  ) {
+      $res{SpliceAcceptor}++;
+      $res{Intronic}++;
+    }
+  }
+  if (!%res) {
+    $res{Intronic}++;
+  }
+  return \%res;
 }
 
 __PACKAGE__->meta->make_immutable;
