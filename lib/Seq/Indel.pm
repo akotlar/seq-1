@@ -20,17 +20,16 @@ Used in: Seq::Annotate
 use Moose 2;
 use Moose::Util::TypeConstraints;
 
+use Carp qw/ confess /;
 use namespace::autoclean;
 
 use Data::Dump qw/ dump /;
 
-enum IndelType => [ 'Del', 'Ins' ];
+enum IndelType => ['Del', 'Ins'];
 enum IndelSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                        'Splice Donor', 'Splice Acceptor' ];
 enum IndelAnnotationType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                        'Splice Donor', 'Splice Acceptor' ];
-
-my @attributes = qw( abs_pos ref_base transcript_id site_type error_code alt_names genotype annotation_type );
 
 has indel_type => (
   is => 'ro',
@@ -48,6 +47,12 @@ has pos => (
   is => 'ro',
   isa => 'Int',
   required => 1,
+);
+
+has ins => (
+  is => 'ro',
+  isa => 'Str',
+  predicate => '_has_ins',
 );
 
 has abs_start_pos => (
@@ -147,37 +152,23 @@ has _tx_strand => (
 #   },
 #  }, ...
 #
+
 sub as_href {
   my $self = shift;
   if ($self->indel_type eq 'Del' ) {
     return $self->_annotate_del;
   }
   else {
-    return $self->_annotate_ins;
+    if ($self->_has_ins) {
+      return $self->_annotate_ins;
+    }
+    else {
+      my $msg = sprintf("Error: Indel of type %s without 'ins' string.", $self->indel_type);
+      confess $msg;
+    }
   }
 }
 
-sub _site_2_tx {
-  my $self = shift;
-
-  my %site_2_tx;
-
-  for my $site_record ( $self->all_ref_ann ) {
-
-    my $pos = $site_record->{abs_pos};
-
-    for my $attr (qw/ ref_base genomic_annotation_code/ ) {
-      $site_2_tx{$pos}{$attr} = $site_record->{$attr};
-    }
-
-    for my $gene_href ( @{ $site_record->{gene_data} } ) {
-      push @{ $site_2_tx{$pos}{transcript_id} }, $gene_href->{transcript_id};
-      $self->set_alt_name( $gene_href->{transcript_id} => $gene_href->{alt_names} );
-      $self->set_tx_strand( $gene_href->{transcript_id} => $gene_href->{strand} );
-    }
-  }
-  return \%site_2_tx;
-}
 sub _annotate_del {
   my $self = shift;
 
@@ -201,6 +192,7 @@ sub _annotate_del {
       }
     }
   }
+  my $ref_base = join '', @ref_bases;
 
   for my $tx_id ( keys %tx) {
     if (exists $tx{$tx_id}{Coding}) {
@@ -211,20 +203,65 @@ sub _annotate_del {
         $tx{$tx_id}{FrameShift}++;
       }
     }
-    my @site_types = qw/ Exonic Coding Intronic /;
-    my @annotation_types = qw/ 5UTR 3UTR SpliceDonor SpliceAcceptor
+  }
+  return $self->_format_results( \%tx, $ref_base );
+}
+
+sub _annotate_ins {
+  my $self = shift;
+
+  my $tx_site_href = $self->_site_2_tx;
+
+  # unlike del sites, we'll only get the 1st position of the insertion
+  # to assign annotation / site_type
+  
+  my (%tx, %ann);
+  my $site = $self->abs_start_pos;
+  my $ref_base = $tx_site_href->{$site}{ref_base};
+  for my $tx_id ( @{ $tx_site_href->{$site}{transcript_id} } ) {
+    my $site_href = $self->_ann_tx_site( $tx_id, $site );
+    for my $type (keys %$site_href ) {
+      $tx{$tx_id}{$type}++;
+    }
+  }
+
+  for my $tx_id ( keys %tx ) {
+    if ( exists $tx{$tx_id}{Coding} ) {
+      if ( ($self->abs_stop_pos - $self->abs_start_pos ) % 3 == 0 ) {
+        $tx{$tx_id}{InFrame}++;
+      }
+      else {
+        $tx{$tx_id}{FrameShift}++;
+      }
+    }
+  }
+  return $self->_format_results( \%tx, $ref_base );
+}
+
+sub _format_results {
+  my ( $self, $tx_href, $ref_base ) = @_;
+
+  my @site_types = qw/ Exonic Coding Intronic /;
+  my @annotation_types = qw/ 5UTR 3UTR SpliceDonor SpliceAcceptor
       StartLoss StopLoss FrameShift InFrame /;
+
+  my %ann;
+  $ann{chr} = $self->chr;
+  $ann{pos} = $self->pos;
+  $ann{ref_base} = $ref_base;
+
+  for my $tx_id ( keys %$tx_href ) {
 
     my @site_type_summary;
     for my $type (@site_types) {
-      if (exists $tx{$tx_id}{$type} ) {
+      if (exists $tx_href->{$tx_id}{$type} ) {
         push @site_type_summary, $type;
       }
     }
 
     my @ann_type_summary;
     for my $type ( @annotation_types ) {
-      if (exists $tx{$tx_id}{$type}) {
+      if (exists $tx_href->{$tx_id}{$type}) {
         push @ann_type_summary, $type;
       }
     }
@@ -236,12 +273,31 @@ sub _annotate_del {
     push @{ $ann{transcript_id} }, $tx_id;
     push @{ $ann{alt_names} }, $self->get_alt_name( $tx_id );
   }
-  $ann{chr} = $self->chr;
-  $ann{pos} = $self->pos;
-  $ann{ref_base} = join "", @ref_bases;
 
   say dump( \%ann );
   return \%ann;
+}
+
+sub _site_2_tx {
+  my $self = shift;
+
+  my %site_2_tx;
+
+  for my $site_record ( $self->all_ref_ann ) {
+
+    my $pos = $site_record->{abs_pos};
+
+    for my $attr (qw/ ref_base genomic_annotation_code/ ) {
+      $site_2_tx{$pos}{$attr} = $site_record->{$attr};
+    }
+
+    for my $gene_href ( @{ $site_record->{gene_data} } ) {
+      push @{ $site_2_tx{$pos}{transcript_id} }, $gene_href->{transcript_id};
+      $self->set_alt_name( $gene_href->{transcript_id} => $gene_href->{alt_names} );
+      $self->set_tx_strand( $gene_href->{transcript_id} => $gene_href->{strand} );
+    }
+  }
+  return \%site_2_tx;
 }
 
 sub _ann_tx_site {
