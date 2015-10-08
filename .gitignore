@@ -18,6 +18,7 @@ nytprof.out
 *.bs
 /_eumm/
 .tidyall.d
+.build
 
 # vim gitignore
 [._]*.s[a-w][a-z]
