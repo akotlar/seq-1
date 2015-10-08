@@ -273,8 +273,6 @@ sub _format_results {
     push @{ $ann{transcript_id} }, $tx_id;
     push @{ $ann{alt_names} }, $self->get_alt_name( $tx_id );
   }
-
-  say dump( \%ann );
   return \%ann;
 }
 
@@ -330,38 +328,65 @@ sub _ann_tx_site {
 
           # in the start site
           if ($site >= $coding_start && $site < ($coding_start + 3) ) {
-            say join "\t", "Start Coding ", $site;
-            $res{StartLoss}++;
+            if ($strand eq "+") {
+              $res{StartLoss}++;
+            }
+            else {
+              $res{StopLoss}++;
+            }
             $res{Coding}++;
           }
           # in the stop site
           elsif ( $site >= ($coding_end - 3) && $site < $coding_end ) {
-            say join "\t", "Stop Coding ", $site;
-            $res{StopLoss}++;
+            if ($strand eq "+") {
+              $res{StopLoss}++;
+            }
+            else {
+              $res{StartLoss}++;
+            }
             $res{Coding}++;
           }
           else {
-            say join "\t", "Coding ", $site;
             $res{Coding}++;
           }
         }
       # between tx start and coding start (5' UTR)
       elsif ( $site >= $tx_start && $site < $coding_start ) {
-        $res{'5UTR'}++;
+        if ($strand eq "+") {
+          $res{'5UTR'}++;
+        }
+        else {
+          $res{'3UTR'}++;
+        }
         $res{Exonic}++;
       }
       # between tx end and coding end (3' UTR)
       elsif ( $site >= $coding_end && $site < $tx_end ) {
-        $res{'3UTR'}++;
+        if ($strand eq "+") {
+          $res{'3UTR'}++;
+        }
+        else {
+          $res{'5UTR'}++;
+        }
         $res{Exonic}++;
       }
     }
     elsif ( $site < $e_starts[$i] && $site > ($e_starts[$i] - $splice_site_length) ) {
-      $res{SpliceDonor}++;
+      if ($strand eq "+") {
+        $res{SpliceDonor}++;
+      }
+      else {
+        $res{SpliceAcceptor}++;
+      }
       $res{Intronic}++;
     }
     elsif ( $site > $e_ends[$i] && $site < ($e_ends[$i] + $splice_site_length)  ) {
-      $res{SpliceAcceptor}++;
+      if ($strand eq "+") {
+        $res{SpliceAcceptor}++;
+      }
+      else {
+        $res{SpliceDonor}++;
+      }
       $res{Intronic}++;
     }
   }

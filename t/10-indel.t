@@ -13,7 +13,7 @@ use Cpanel::JSON::XS;
 use DDP;                   # for debugging
 use Data::Dump qw/ dump /; # for debugging
 
-plan tests => 39;
+plan tests => 46;
 
 my %attr_2_type = (
   indel_type => 'IndelType',
@@ -63,10 +63,20 @@ for my $attr_name ( sort keys %attr_2_type ) {
 }
 
 # object creation
-my $href = LoadJsonData( 't/10-single_del.json' );
-my $obj = $package->new( $href );
-ok( $obj, $package);
-$obj->as_href;
+for my $i (0..6) {
+  my $obj_data_href = LoadJsonData( "t/10-data.$i.json" );
+  my $obj = $package->new( $obj_data_href );
+
+  # only test package creation once
+  if ($i == 0) {
+    ok( $obj, $package);
+  }
+  my $obs_href = $obj->as_href;
+  #SaveJsonData( "10-exp.$i.json", $obs_href );
+
+  my $exp_href = LoadJsonData( "t/10-exp.$i.json" );
+  is_deeply( $obs_href, $exp_href, 'as_href()' );
+}
 
 # Methods tests
 
