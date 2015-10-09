@@ -322,7 +322,7 @@ sub annotate_snpfile {
 
     # check that $chr is an allowable chromosome
     unless ( exists $chr_len_href->{$chr} ) {
-      my $err_msg = sprintf("ERROR: unrecognized chromosome in input: '%s', pos: %d", 
+      my $err_msg = sprintf("ERROR: unrecognized chromosome in input: '%s', pos: %d",
         $chr, $pos);
       $self->_logger->error( $err_msg );
       if ( $self->force ) {
@@ -386,12 +386,17 @@ sub annotate_snpfile {
       $self->$method( $abs_pos => [ $chr, $pos ] );
 
       # get annotation for snp site
-      next unless $type eq 'SNP' or 'MULTIALLELIC';
+      next if ($type ne 'SNP') && ($type ne 'MULTIALLELIC');
 
       for my $allele ( split( /,/, $all_alleles ) ) {
-        next if ( $allele eq $ref_allele 
+        next if ( $allele eq $ref_allele
             or exists $hom_indel{$allele}
-            or exists $het_indel{$allele});
+            or exists $het_indel{$allele}
+            or $allele eq '-');
+
+      
+        say join "\t", "site", $abs_pos, $ref_allele, $type, $allele, $chr, $pos,, $all_alleles, $allele_counts;
+
         my $record_href =
           $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
 
@@ -422,7 +427,7 @@ sub annotate_snpfile {
         $self->inc_counter;
       }
     }
-    
+
     if ($self->counter > 1000) {
       $self->_print_annotations( \@all_annotations, \@header );
       @all_annotations = ( );
@@ -443,10 +448,11 @@ sub annotate_snpfile {
     $self->_print_annotations( \@all_annotations, \@header );
   }
 
+  #my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
+  #my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
+  #my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
 
-  my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
-  my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
-  my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
+  my @del_annotations = $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
 
   p $summary_href if $self->debug;
 

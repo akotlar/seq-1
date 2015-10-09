@@ -56,11 +56,14 @@ use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
 use DDP; # for debugging
+use Data::Dump qw( dump ); #for debugging
+use Cpanel::JSON::XS;
 
 use Seq::GenomeSizedTrackChar;
 use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Snp;
+use Seq::Indel;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
@@ -626,7 +629,7 @@ sub get_snp_annotation {
       $abs_pos, $ref_base, $ref_site_annotation->{ref_base} );
     say $err_msg;
     $self->_logger->error($err_msg);
-    exit(1) unless $self->force;
+    exit(1);
   }
 
   p $ref_site_annotation if $self->debug;
@@ -723,72 +726,158 @@ sub _join_href {
   return \%merge;
 }
 
-sub annotate_dels {
-  state $check = compile( Object, HashRef );
-  my ( $self, $sites_href ) = $check->(@_);
-  my ( @annotations, @contiguous_sites, $last_abs_pos );
+# annotate_del_sites takes an hash reference of sites and chromosome 
+#   indicies hash reference and returns a list of the consequences for
+#   deleting the site
+#   - the site hash reference is defined like so:
+#     %site{ abs_pos } = [ chr, pos ]
+#   - the chromosome index hash reference is needed to determine the proper
+#     array to use for determining the annotation
+#   - this funciton works by grouping contiguous sites together and submitting
+#     those to _annotate_indel_site_list
+sub annotate_del_sites {
+  state $check = compile( Object, HashRef, HashRef );
+  my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
+  my ( @annotations, @contiguous_sites );
 
-  # $site_href is defined as %site{ abs_pos } = [ chr, pos ]
+  my @abs_sites = sort { $a <=> $b } keys %$sites_href;
+  push @contiguous_sites, $abs_sites[0];
 
-  for my $abs_pos ( sort { $a <=> $b } keys %$sites_href ) {
-    if ( $last_abs_pos + 1 == $abs_pos ) {
-      push @contiguous_sites, $abs_pos;
-      $last_abs_pos = $abs_pos;
+  for (my $i = 1; $i < @abs_sites; $i++) {
+    if ($abs_sites[$i-1] + 1 == $abs_sites[$i]) {
+      push @contiguous_sites, $abs_sites[$i];
     }
     else {
-      # annotate site
-      my $record = $self->_annotate_del_sites( \@contiguous_sites );
+      say "annotate these sites:" . dump( @contiguous_sites ); 
 
-      # arbitrarily assign the 1st del site as the one we'll report
-      ( $record->{chr}, $record->{pos} ) = @{ $sites_href->{ $contiguous_sites[0] } };
+      # annotate the sites
+      #   - get the relative chr and position
+      #   - get the chromosome index (needed to lookup te basic annotation)
+      #   - annotate the sites
+      my ($chr, $rel_pos) =  @{ $sites_href->{ $contiguous_sites[0] } };
+      my $chr_index = $chr_index_href->{$chr};
 
-      # save annotations
-      push @annotations, $record;
-      @contiguous_sites = ();
+      say dump( [ "going to _annotate_indel_sites() with: ", $chr, $rel_pos, 
+          $chr_index, $contiguous_sites[0], $contiguous_sites[-1] ]);
+
+      my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
+        $contiguous_sites[0], $contiguous_sites[-1] );
+      #p $records_aref;
+      
+      # save annotation
+      push @annotations, $records_aref;
+      # assign annotation to the 1st site
+      #p @annotations;
+
+      # clear old sites
+      @contiguous_sites = ( );
+
+      # add site we are presently on, which allowed us to determine if we were 
+      # in a contiguous region or not - for the next loop
+      push @contiguous_sites, $abs_sites[$i];
+
+      say "new sites:";
+      dump( @contiguous_sites );
     }
   }
   return \@annotations;
 }
 
-# data for tx_sites:
-# hash{ abs_pos } = (
-# coding_start => $gene->coding_start,
-# coding_end => $gene->coding_end,
-# exon_starts => $gene->exon_starts,
-# exon_ends => $gene->exon_ends,
-# transcript_start => $gene->transcript_start,
-# transcript_end => $gene->transcript_end,
-# transcript_id => $gene->transcript_id,
-# transcript_seq => $gene->transcript_seq,
-# transcript_annotation => $gene->transcript_annotation,
-# transcript_abs_position => $gene->transcript_abs_position,
-# peptide_seq => $gene->peptide,
-# );
+# annotate_ins_sites takes a hash reference of sites and chromosome indicies
+#   hash reference and returns a list of consequences for altering the sites 
+#   over which the insertion occurs. 
+#   - the site hash reference differes from the one accepted by 
+#     annoate_del_sites:
+#     %site{ abs_pos } = [ chr, pos, insertion_string ]
+sub annotate_ins_sites {
+  state $check = compile( Object, HashRef, HashRef );
+  my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
+  my ( @annotations, @contiguous_sites );
 
-sub _annotate_del_sites {
-  state $check = compile( Object, ArrayRef );
-  my ( $self, $site_aref ) = $check->(@_);
-  my ( @tx_hrefs, @records );
+  for my $abs_pos ( sort { $a <=> $b } %$sites_href ) {
+    my ($chr, $rel_pos, $ins_str) = @{ $sites_href->{$abs_pos} };
 
-  for my $abs_pos (@$site_aref) {
-    # get a seq::site::gene record munged with seq::site::snp
+    if (defined $chr && defined $rel_pos && defined $ins_str) {
+      my $chr_index = $chr_index_href->{$chr};
+      my $stop = $abs_pos + length $ins_str;
+      my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
+        $abs_pos, $stop );
+      push @annotations, $records_aref;
+    }
+    else {
+      my $msg = sprintf("ERROR: %s could not process data for site '%d'", 
+        'annotate_ins_sites()', $abs_pos);
+      $self->_logger->error( $msg );
+      croak $msg;
+    }
+  }
+  return \@annotations;
+}
 
-    my $record = $self->get_ref_annotation($abs_pos);
+sub _annotate_indel_sites {
+  state $check = compile( Object, Str, Int, Int, Int, Int );
+  my ( $self, $chr, $rel_start, $chr_index, $abs_start, $abs_stop ) = $check->(@_);
 
+  # TODO: need to think of something that will give me Del vs Ins
+  #   - probably just pass the string of ins and if it's empty then it's a del
+
+  # going assign the annotation to the relative start (rel_start) position
+  
+  my (%tx_list, @ref_annotations);
+
+  for (my $site = $abs_start; $site <= $abs_stop; $site++) { 
+    my $record = $self->get_ref_annotation($chr_index, $site);
+
+    # save record
+    push @ref_annotations, $record;
+
+    # lookup transcript information
     for my $gene_data ( @{ $record->{gene_data} } ) {
       my $tx_id = $gene_data->{transcript_id};
 
-      for my $dbm_seq ( $self->_all_dbm_seq ) {
-        my $tx_href = $dbm_seq->db_get($tx_id);
+      # skip transcripts that have already been looked up
+      next if exists $tx_list{$tx_id};
+
+      # loop over all transcript data sets we might have
+      for my $dbm_tx ( $self->_all_dbm_tx ) {
+
+        # each transcript is stored as an array reference in the KC database
+        my $tx_href = shift @{ $dbm_tx->db_get($tx_id) };
+
         if ( defined $tx_href ) {
-          push @tx_hrefs, $tx_href;
+          $tx_list{ $tx_id } = $tx_href;
         }
       }
     }
-    for my $tx_href (@tx_hrefs) {
-      # substring...
-    }
   }
+  if (@ref_annotations && %tx_list) {
+    open (my $fh, '>', 'data.json') || die "$!";
+    my $href = {
+        indel_type => 'Del',
+        chr => $chr,
+        pos => $rel_start,
+        abs_start_pos => $abs_start,
+        abs_stop_pos => $abs_stop,
+        ref_annotations => \@ref_annotations,
+        transcripts => \%tx_list,
+    };
+    print {$fh} encode_json($href);
+    my $indel = Seq::Indel->new( $href );
+    say dump( $indel );
+  }
+  else {
+    my $indel = Seq::Indel->new( {
+        indel_type => 'Del',
+        chr => $chr,
+        pos => $rel_start,
+        abs_start_pos => $abs_start,
+        abs_stop_pos => $abs_stop,
+        ref_annotations => \@ref_annotations,
+        transcripts => \%tx_list,
+      });
+    say dump( $indel );
+  }
+  exit;
 }
 
 __PACKAGE__->meta->make_immutable;
