@@ -74,7 +74,8 @@ try {
   # create the annotator
   my $annotate_instance = Seq->new(
     {
-      configfile => $yaml_config,
+      file_type  => 'snp_2',
+      config_file => $yaml_config,
       debug      => $debug,
       force      => $force,
       out_file   => $out_file,

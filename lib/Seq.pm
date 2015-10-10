@@ -24,18 +24,33 @@ Extended by: None
 our $VERSION = '0.001';
 
 use Moose 2;
+use Moose::Util::TypeConstraints;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 use Path::Tiny;
 
 use Carp qw/ croak /;
 use Cpanel::JSON::XS;
-use DDP;
 use namespace::autoclean;
 # use Redis;
+
+use DDP;
+use Data::Dump qw/ dump/;
 
 use Seq::Annotate;
 
 with 'Seq::Role::IO', 'MooX::Role::Logger';
+
+enum fileTypes => [ 'snp_1', 'snp_2', 'vcf' ];
+
+# file_type defines the kind of file that is being annotated
+#   - snp_1 => snpfile format: [ "Fragment", "Position", "Reference" ]
+#   - snp_2 => snpfile format: ["Fragment", "Position", "Reference", "Alleles", "Allele_Counts", "Type"]
+#   - vcf => placeholder
+has file_type => (
+  is => 'ro',
+  isa => 'fileTypes',
+  required => 1,
+);
 
 has snpfile => (
   is       => 'ro',
@@ -45,12 +60,12 @@ has snpfile => (
   handles  => { snpfile_path => 'stringify' }
 );
 
-has configfile => (
+has config_file => (
   is       => 'ro',
   isa      => AbsFile,
   required => 1,
   coerce   => 1,
-  handles  => { configfile_path => 'stringify' }
+  handles  => { config_file_path => 'stringify' }
 );
 
 has out_file => (
@@ -179,14 +194,6 @@ has counter => (
   },
 );
 
-has _printed_header => (
-  is => 'rw',
-  traits => ['Bool'],
-  isa => 'Bool',
-  default => 0,
-  handles => { set_printed_header => 'set', },
-);
-
 has header => (
   traits => ['Array'],
   is => 'ro',
@@ -196,6 +203,14 @@ has header => (
     add_header_attr => 'push',
   },
   default => sub { [] },
+);
+
+has _printed_header => (
+  is => 'rw',
+  traits => ['Bool'],
+  isa => 'Bool',
+  default => 0,
+  handles => { set_printed_header => 'set', },
 );
 
 my %site_2_set_method = (
@@ -254,7 +269,7 @@ sub annotate_snpfile {
 
   my $annotator = Seq::Annotate->new_with_config(
     {
-      configfile => $self->configfile_path,
+      configfile => $self->config_file_path,
       debug      => $self->debug,
       force      => $self->force,
     }
@@ -268,30 +283,18 @@ sub annotate_snpfile {
   my $next_chr_href = $annotator->next_chr;
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
-  my @header        = ( $self->all_header_attr );
-
+  my @header        = ( $annotator->all_header, 'heterozygotes_ids', 'homozygote_ids' );
   my $summary_href;
 
-  $self->_logger->info( "Loaded assembly " . $annotator->genome_name );
+  # add header information to Seq class
+  $self->add_header_attr($_) for @header;
 
-  if ( $self->wants_to_publish_messages ) {
-    $self->_publish_message( "Loaded assembly " . $annotator->genome_name );
-  }
+  $self->_tee_logger( 'info', "Loaded assembly " . $annotator->genome_name );
 
-  # attributes / header
-  for my $header_attr ( $annotator->all_header, 'heterozygotes_ids', 'homozygote_ids') {
-    $self->add_header_attr( $header_attr );
-  }
- 
   # variables
   my ( %header, %ids, @sample_ids, @all_annotations ) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
-
-  #if we want to publish messages, publish only ever so often
-  #more efficient to declare for all instead of checking if we want to publish
-  my $i        = 0;
-  my $interval = 200;
 
   # let the annotation begin
   my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
@@ -307,22 +310,30 @@ sub annotate_snpfile {
     my @fields = split( /\t/, $clean_line );
 
     # for snpfile, define columns for expected header fields and ids
-    # FIXME: THIS DOES NOT ACTUALLY VAILDATE THE HEADER
     if ( !%header ) {
       if ( $. == 1 ) {
-        %header = map { $fields[$_] => $_ } ( 0 .. 5 );
-        for my $i ( 6 .. $#fields ) {
+        my $transition_column;
+        if ($self->file_type eq 'snp_1' ) {
+          $transition_column = 3;
+        }
+        if ($self->file_type eq 'snp_2' ) {
+          $transition_column = 5;
+        }
+        else {
+          my $msg = sprintf("Error: unrecognzied file_type");
+          $self->_tee_logger('error', $msg);
+        }
+
+        %header = map { $fields[$_] => $_ } ( 0 .. $transition_column);
+        $self->_check_header(\%header);
+
+        for my $i ( ($transition_column+1) .. $#fields ) {
           $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
         }
+        
         # save list of ids within the snpfile
         @sample_ids = sort( keys %ids );
         next;
-      }
-      else {
-        # exit if we've read the first line and didn't find the header
-        my $err_msg = qq{ERROR: Could not read header from file: };
-        $self->_logger->error( $err_msg . " " . $self->snpfile_path );
-        croak $err_msg . " " . $self->snpfile_path;
       }
     }
 
@@ -384,71 +395,79 @@ sub annotate_snpfile {
     # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
     #   later (hets currently ignored)
     my ( $het_ids, $hom_ids, $hom_ids_href ) =
-      $self->_get_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
+      $self->_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
     # if ( $self->debug ) {
     #   say join " ", $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts,
-   #     'abs_pos:', $abs_pos; #   say "het_ids:";
+    #     'abs_pos:', $abs_pos; #   say "het_ids:";
     #   p $het_ids;
     #   say "hom_ids";
     #   p $hom_ids;
     # }
 
     if ( exists $site_2_set_method{$type} ) {
-      my $method = $site_2_set_method{$type};
 
-      $self->$method( $abs_pos => [ $chr, $pos, $all_alleles ] );
-
-      # get annotation for snp site
-      next if ($type ne 'SNP') && ($type ne 'MULTIALLELIC');
-
-      for my $allele ( split( /,/, $all_alleles ) ) {
-        next if ( $allele eq $ref_allele
-            or exists $hom_indel{$allele}
-            or exists $het_indel{$allele}
-            or $allele eq '-');
-
-      
-        say join "\t", "site", $abs_pos, $ref_allele, $type, $allele, $chr, $pos,, $all_alleles, $allele_counts;
-
-        my $record_href =
-          $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
-
-        $record_href->{chr}               = $chr;
-        $record_href->{pos}               = $pos;
-        $record_href->{type}              = $type;
-        $record_href->{alleles}           = $all_alleles;
-        $record_href->{allele_counts}     = $allele_counts;
-        $record_href->{heterozygotes_ids} = $het_ids || 'NA';
-        $record_href->{homozygote_ids}    = $hom_ids || 'NA';
-
-        $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
-
-        my @record;
-        for my $attr (@header) {
-          if ( ref $record_href->{$attr} eq 'ARRAY' ) {
-            push @record, join ";", @{ $record_href->{$attr} };
+      # get annotation for snp site otherwise save the information
+      # (i.e., for indels since we'll annotate those afterward)
+      if ($type eq 'SNP' || $type eq 'MULTIALLELIC') {
+  
+        for my $allele ( split( /,/, $all_alleles ) ) {
+          next if ( $allele eq $ref_allele
+              or exists $hom_indel{$allele}
+              or exists $het_indel{$allele}
+              or $allele eq '-');
+  
+        
+          say join "\t", "site", $abs_pos, $ref_allele, $type, $allele, $chr, $pos, 
+            $all_alleles, $allele_counts;
+  
+          my $record_href =
+            $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
+  
+          $record_href->{chr}               = $chr;
+          $record_href->{pos}               = $pos;
+          $record_href->{type}              = $type;
+          $record_href->{alleles}           = $all_alleles;
+          $record_href->{allele_counts}     = $allele_counts;
+          $record_href->{heterozygotes_ids} = $het_ids || 'NA';
+          $record_href->{homozygote_ids}    = $hom_ids || 'NA';
+  
+          $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
+  
+          my @record;
+          for my $attr (@header) {
+            if ( ref $record_href->{$attr} eq 'ARRAY' ) {
+              push @record, join ";", @{ $record_href->{$attr} };
+            }
+            else {
+              push @record, $record_href->{$attr};
+            }
           }
-          else {
-            push @record, $record_href->{$attr};
+          if ( $self->debug ) {
+            p $record_href;
+            p @record;
           }
+          push @all_annotations, \@record;
+          $self->inc_counter;
         }
-        if ( $self->debug ) {
-          p $record_href;
-          p @record;
+      }
+      else {
+        my $method = $site_2_set_method{$type};
+        $self->$method( $abs_pos => [ $chr, $pos, $all_alleles ] );
+      }
+  
+      if ($self->counter > 1000) {
+        $self->_print_annotations( \@all_annotations, $self->headerr );
+        @all_annotations = ( );
+        $self->reset_counter;
+        if ( $self->wants_to_publish_messages ) {
+          $self->_publish_message("finished annotating position $pos");
         }
-        push @all_annotations, \@record;
-        $self->inc_counter;
       }
     }
-
-    if ($self->counter > 1000) {
-      $self->_print_annotations( \@all_annotations, $self->headerr );
-      @all_annotations = ( );
-      $self->reset_counter;
-      if ( $self->wants_to_publish_messages ) {
-        $self->_publish_message("finished annotating position $pos");
-      }
+    else {
+      my $msg = sprintf("Error: unrecognized variant type: '%s'", $type);
+      $self->_tee_logger( 'error', $msg );
     }
   }
 
@@ -501,15 +520,17 @@ sub _build_out_fh {
   return $self->get_write_bin_fh( $self->output_path );
 }
 
-sub _get_annotator {
+sub _build_annotator {
   my $self           = shift;
-  my $abs_configfile = File::Spec->rel2abs( $self->configfile );
-  my $abs_db_dir     = File::Spec->rel2abs( $self->db_dir );
 
-  # change to the root dir of the database
-  chdir($abs_db_dir) || die "cannot change to $abs_db_dir: $!";
-
-  return Seq::Annotate->new_with_config( { configfile => $abs_configfile } );
+  my $annotator = Seq::Annotate->new_with_config(
+    {
+      config_file => $self->config_file_path,
+      debug      => $self->debug,
+      force      => $self->force,
+    }
+  );
+  return $annotator;
 }
 
 sub _print_annotations {
@@ -524,6 +545,19 @@ sub _print_annotations {
   # print entries
   for my $entry_aref (@$annotations_aref) {
     say { $self->_out_fh } join "\t", @$entry_aref;
+  }
+}
+
+sub _tee_logger {
+  my ($self, $log_method, $msg) = @_;
+
+  if ( $self->wants_to_publish_messages ) {
+    $self->_publish_message( $msg );
+  }
+  $self->_logger->$log_method( $msg );
+
+  if ($log_method eq 'error' ) {
+    confess $msg;
   }
 }
 
@@ -555,7 +589,7 @@ sub _summarize {
   return;
 }
 
-sub _get_minor_allele_carriers {
+sub _minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
   my ( @het_ids, @hom_ids, $het_ids_str, $hom_ids_str );
@@ -580,6 +614,44 @@ sub _get_minor_allele_carriers {
   # return ids for printing
   return ( $het_ids_str, $hom_ids_str, \@hom_ids );
 }
+
+sub _check_header {
+  my ($self, $header_href) = @_;
+
+  my (@req_fields, %exp_header);
+  my $req_field_count = 0;
+
+  if ($self->file_type eq 'snp_1') {
+    @req_fields = qw/ Fragment Position Reference Type /;
+  }
+  elsif ($self->file_type eq 'snp_2') {
+    @req_fields = qw/ Fragment Position Reference Alleles Allele_Counts Type /;
+  }
+  elsif ($self->file_type eq 'vcf') {
+    my $msg = "Error: 'vcf' file_type is not implemented";
+    $self->_tee_logger( 'error', $msg );
+  }
+
+  # make temp hash for expected attributes
+  for my $attr (@req_fields) {
+    $exp_header{$attr} = 1;
+  }
+
+  for my $obs_attr (keys %$header_href) {
+    if (exists $exp_header{$obs_attr} ) {
+      $req_field_count++;
+    }
+  }
+
+  if ($req_field_count != scalar @req_fields) {
+    my $req_fields_str = join ",", @req_fields;
+    my $obs_fields_str = join ",", keys %$header_href;
+    my $msg = sprintf("Error: Expected header fields: '%s'\n\tBut found fields: %s\n",
+      $req_fields_str, $obs_fields_str);
+    say $self->_tee_logger('error', $msg);
+  }
+}
+
 
 __PACKAGE__->meta->make_immutable;
 
