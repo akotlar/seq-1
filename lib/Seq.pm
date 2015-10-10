@@ -21,6 +21,8 @@ Extended by: None
 
 =cut
 
+our $VERSION = '0.001';
+
 use Moose 2;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 use Path::Tiny;
@@ -185,13 +187,23 @@ has _printed_header => (
   handles => { set_printed_header => 'set', },
 );
 
+has header => (
+  traits => ['Array'],
+  is => 'ro',
+  isa => 'ArrayRef',
+  handles => {
+    all_header_attr => 'elements',
+    add_header_attr => 'push',
+  },
+  default => sub { [] },
+);
+
 my %site_2_set_method = (
   DEL => 'set_del_site',
   INS => 'set_ins_site',
   MULTIALLELIC => 'set_snp_site',
   SNP => 'set_snp_site',
 );
-
 
 # the genotype codes below are based on the IUPAC ambiguity codes with the notable
 #   exception of the indel codes that are specified in the snpfile specifications
@@ -256,6 +268,7 @@ sub annotate_snpfile {
   my $next_chr_href = $annotator->next_chr;
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
+  my @header        = ( $self->all_header_attr );
 
   my $summary_href;
 
@@ -266,9 +279,10 @@ sub annotate_snpfile {
   }
 
   # attributes / header
-  my @header = $annotator->all_header;
-  push @header, (qw/ heterozygotes_ids homozygote_ids /);
-
+  for my $header_attr ( $annotator->all_header, 'heterozygotes_ids', 'homozygote_ids') {
+    $self->add_header_attr( $header_attr );
+  }
+ 
   # variables
   my ( %header, %ids, @sample_ids, @all_annotations ) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
@@ -293,6 +307,7 @@ sub annotate_snpfile {
     my @fields = split( /\t/, $clean_line );
 
     # for snpfile, define columns for expected header fields and ids
+    # FIXME: THIS DOES NOT ACTUALLY VAILDATE THE HEADER
     if ( !%header ) {
       if ( $. == 1 ) {
         %header = map { $fields[$_] => $_ } ( 0 .. 5 );
@@ -373,8 +388,7 @@ sub annotate_snpfile {
 
     # if ( $self->debug ) {
     #   say join " ", $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts,
-    #     'abs_pos:', $abs_pos;
-    #   say "het_ids:";
+   #     'abs_pos:', $abs_pos; #   say "het_ids:";
     #   p $het_ids;
     #   say "hom_ids";
     #   p $hom_ids;
@@ -383,7 +397,7 @@ sub annotate_snpfile {
     if ( exists $site_2_set_method{$type} ) {
       my $method = $site_2_set_method{$type};
 
-      $self->$method( $abs_pos => [ $chr, $pos ] );
+      $self->$method( $abs_pos => [ $chr, $pos, $all_alleles ] );
 
       # get annotation for snp site
       next if ($type ne 'SNP') && ($type ne 'MULTIALLELIC');
@@ -429,30 +443,31 @@ sub annotate_snpfile {
     }
 
     if ($self->counter > 1000) {
-      $self->_print_annotations( \@all_annotations, \@header );
+      $self->_print_annotations( \@all_annotations, $self->headerr );
       @all_annotations = ( );
       $self->reset_counter;
-    }
-
-    if ( $i == $interval ) {
-      $i = 0;
       if ( $self->wants_to_publish_messages ) {
         $self->_publish_message("finished annotating position $pos");
       }
     }
-    ++$i;
   }
 
-  # finished printing the final annotations
+  # finished printing the final snp annotations
   if (@all_annotations) {
-    $self->_print_annotations( \@all_annotations, \@header );
+    $self->_print_annotations( \@all_annotations, $self->header );
   }
-
-  #my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
-  #my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
-  #my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
-
-  my @del_annotations = $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
+  
+  # print deletion sites
+  {
+    my @del_annotations = $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
+    $self->_print_annotations( \@del_annotations, $self->header);
+  }
+  
+  # print insertion sites
+  {
+    my @ins_annoations = $annotator->annotate_ins_sites( \%chr_index, $self->ins_sites() );
+    $self->_print_annotations( \@ins_annoations, $self->header);
+  }
 
   p $summary_href if $self->debug;
 

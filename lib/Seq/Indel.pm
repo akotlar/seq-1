@@ -74,18 +74,21 @@ has ref_annotations =>  (
   required  => 1,
   handles => {
     all_ref_ann => 'elements',
+    _has_no_ann  => 'is_empty',
   },
+  default => sub { [] },
 );
 
 has transcripts => (
   traits => ['Hash'],
   is        => 'ro',
   isa       => 'HashRef',
-  required  => 1,
   handles => {
     get_tx => 'get',
     keys_tx => 'keys',
+    _has_no_tx => 'is_empty',
   },
+  default => sub { {} },
 );
 
 has splice_site_length => (
@@ -111,7 +114,6 @@ has _tx_strand => (
   traits => ['Hash'],
   is        => 'ro',
   isa       => 'HashRef[Str]',
-  required  => 1,
   handles => {
     get_tx_strand => 'get',
     set_tx_strand => 'set',
@@ -155,7 +157,12 @@ has _tx_strand => (
 
 sub as_href {
   my $self = shift;
-  if ($self->indel_type eq 'Del' ) {
+
+  # determine if site is intronic then if it's an insertion or deletion
+  if ($self->_has_no_tx) {
+      return $self->_intronic_site;
+  }
+  elsif ($self->indel_type eq 'Del' ) {
     return $self->_annotate_del;
   }
   else {
@@ -178,7 +185,7 @@ sub _annotate_del {
   #   "2803214660" => {
   #     genomic_annotation_code => "Exonic",
   #     ref_base => "A",
-  #     transcript_id => ["NM_001197297", "NM_002040"],
+  #     transcript_id => ["NM_001197298", "NM_002040"],
   #   },
   # }
 
@@ -205,6 +212,38 @@ sub _annotate_del {
     }
   }
   return $self->_format_results( \%tx, $ref_base );
+}
+
+sub _intronic_site {
+  my $self = shift;
+
+  my %ann;
+  $ann{chr} = $self->chr;
+  $ann{pos} = $self->pos;
+  
+  if ($self->indel_type eq 'Del') {
+    $ann{minor_allele} = '-';
+  }
+  elsif ($self->_has_ins && $self->indel_type eq 'Ins' ) {
+    $ann{minor_allele} = $self->ins;
+  }
+  else {
+    my $msg = sprintf("Error: processing %s:%d", $self->chr, $self->pos);
+    confess $msg;
+  }
+
+  # get the reference base and the annotation information from the 1st site:
+  # i.e., self->pos
+  for my $site_record ( $self->all_ref_ann ) {
+    if ($self->abs_start_pos == $site_record->{abs_pos} ) {
+      $ann{ref_base} = $site_record->{ref_base};
+      $ann{genomic_annotation_code} = $site_record->{genomic_annotation_code};
+      # nearest gene stuff goes here
+      # $ann{nearest_gene} = $site_record->{_nearest_gene};
+    }
+  }
+  $ann{site_type} = $ann{annotation_type} = $ann{genomic_annotation_code};
+  return \%ann;
 }
 
 sub _annotate_ins {
@@ -249,6 +288,17 @@ sub _format_results {
   $ann{chr} = $self->chr;
   $ann{pos} = $self->pos;
   $ann{ref_base} = $ref_base;
+  
+  if ($self->indel_type eq 'Del') {
+    $ann{minor_allele} = '-';
+  }
+  elsif ($self->_has_ins && $self->indel_type eq 'Ins' ) {
+    $ann{minor_allele} = $self->ins;
+  }
+  else {
+    my $msg = sprintf("Error: processing %s:%d", $self->chr, $self->pos);
+    confess $msg;
+  }
 
   for my $tx_id ( keys %$tx_href ) {
 

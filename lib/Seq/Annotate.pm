@@ -748,7 +748,7 @@ sub annotate_del_sites {
       push @contiguous_sites, $abs_sites[$i];
     }
     else {
-      say "annotate these sites:" . dump( @contiguous_sites ); 
+      #say "annotate these sites:" . dump( @contiguous_sites ); 
 
       # annotate the sites
       #   - get the relative chr and position
@@ -776,8 +776,7 @@ sub annotate_del_sites {
       # in a contiguous region or not - for the next loop
       push @contiguous_sites, $abs_sites[$i];
 
-      say "new sites:";
-      dump( @contiguous_sites );
+      dump( { _new_sites => \@contiguous_sites });
     }
   }
   return \@annotations;
@@ -794,21 +793,23 @@ sub annotate_ins_sites {
   my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
   my ( @annotations, @contiguous_sites );
 
-  for my $abs_pos ( sort { $a <=> $b } %$sites_href ) {
-    my ($chr, $rel_pos, $ins_str) = @{ $sites_href->{$abs_pos} };
+  for my $abs_pos ( sort { $a <=> $b } keys %$sites_href ) {
+    my ($chr, $rel_pos, $all_alleles) = @{ $sites_href->{$abs_pos} };
 
-    if (defined $chr && defined $rel_pos && defined $ins_str) {
-      my $chr_index = $chr_index_href->{$chr};
-      my $stop = $abs_pos + length $ins_str;
-      my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
-        $abs_pos, $stop );
-      push @annotations, $records_aref;
-    }
-    else {
-      my $msg = sprintf("ERROR: %s could not process data for site '%d'", 
-        'annotate_ins_sites()', $abs_pos);
-      $self->_logger->error( $msg );
-      croak $msg;
+    for my $allele ( split /\,/, $all_alleles) {
+      if (defined $chr && defined $rel_pos && defined $allele) {
+        my $chr_index = $chr_index_href->{$chr};
+        my $stop = $abs_pos + length $allele;
+        my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
+          $abs_pos, $stop );
+        push @annotations, $records_aref;
+      }
+      else {
+        my $msg = sprintf("ERROR: %s could not process data for site '%d'", 
+          'annotate_ins_sites()', $abs_pos);
+        $self->_logger->error( $msg );
+        croak $msg;
+      }
     }
   }
   return \@annotations;
@@ -827,6 +828,8 @@ sub _annotate_indel_sites {
 
   for (my $site = $abs_start; $site <= $abs_stop; $site++) { 
     my $record = $self->get_ref_annotation($chr_index, $site);
+
+    say dump ( { _site => $site, record => $record } );
 
     # save record
     push @ref_annotations, $record;
@@ -850,9 +853,7 @@ sub _annotate_indel_sites {
       }
     }
   }
-  if (@ref_annotations && %tx_list) {
-    open (my $fh, '>', 'data.json') || die "$!";
-    my $href = {
+  my $href = {
         indel_type => 'Del',
         chr => $chr,
         pos => $rel_start,
@@ -860,24 +861,11 @@ sub _annotate_indel_sites {
         abs_stop_pos => $abs_stop,
         ref_annotations => \@ref_annotations,
         transcripts => \%tx_list,
-    };
-    print {$fh} encode_json($href);
-    my $indel = Seq::Indel->new( $href );
-    say dump( $indel );
-  }
-  else {
-    my $indel = Seq::Indel->new( {
-        indel_type => 'Del',
-        chr => $chr,
-        pos => $rel_start,
-        abs_start_pos => $abs_start,
-        abs_stop_pos => $abs_stop,
-        ref_annotations => \@ref_annotations,
-        transcripts => \%tx_list,
-      });
-    say dump( $indel );
-  }
-  exit;
+  };
+  my $indel = Seq::Indel->new( $href );
+  my $href_res = $indel->as_href();
+  say dump ($href_res);
+  return $indel;
 }
 
 __PACKAGE__->meta->make_immutable;
