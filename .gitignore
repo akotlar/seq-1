@@ -60,6 +60,7 @@ Temporary Items
 *.snp
 nytprof
 tmp*
+temp*
 test*
 sandbox
 big_files/
