@@ -271,7 +271,7 @@ sub write_remote_data {
     }
     sleep 5 if $self->act;
   }
-  say dump(\@return_files);
+  say dump( \@return_files );
   return \@return_files;
 }
 
