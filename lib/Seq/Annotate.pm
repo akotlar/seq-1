@@ -55,7 +55,7 @@ use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
-use DDP; # for debugging
+use DDP;                   # for debugging
 use Data::Dump qw( dump ); #for debugging
 use Cpanel::JSON::XS;
 
@@ -469,6 +469,7 @@ sub _build_dbm_tx {
   return \@array;
 }
 
+# could this be moved to Seq.pm ?
 sub _build_header {
   my $self = shift;
 
@@ -540,6 +541,94 @@ sub BUILD {
   }
 }
 
+sub snp_site {
+  my ( $self, $chr_index, $abs_pos, $chr, $pos, $site_type, $var_allele,
+    $het_ids_aref, $hom_ids_aref) = @_;
+
+  my %record;
+
+  my $site_code = $self->get_base($abs_pos);
+  my $base      = $self->get_idx_base($site_code);
+  my $gan       = ( $self->get_idx_in_gan($site_code) ) ? 1 : 0;
+  my $gene      = ( $self->get_idx_in_gene($site_code) ) ? 1 : 0;
+  my $exon      = ( $self->get_idx_in_exon($site_code) ) ? 1 : 0;
+  my $snp       = ( $self->get_idx_in_snp($site_code) ) ? 1 : 0;
+
+  $record{chr} = $chr;
+  $record{pos} = $pos;
+  $record{type} = $site_type;
+  $record{min_allele} = $min_allele;
+  $record{abs_pos}   = $abs_pos;
+  $record{site_code} = $site_code;
+  $record{ref_base}  = $base;
+
+  if ($gene) {
+    if ($exon) {
+      $record{genomic_annotation_code} = 'Exonic';
+    }
+    else {
+      $record{genomic_annotation_code} = 'Intronic';
+    }
+  }
+  else {
+    $record{genomic_annotation_code} = 'Intergenic';
+  }
+
+  # get scores at site
+  for my $gs ( $self->_all_genome_scores ) {
+    $record{scores}{ $gs->name } = $gs->get_score($abs_pos);
+  }
+
+  # add cadd score
+  if ( $self->has_cadd_track ) {
+    $record{scores}{cadd} = $self->get_cadd_score( $abs_pos, $base, $var_allele );
+  }
+
+  # get gene annotations at site
+  if ($gan) {
+    my @gene_data = ();
+    for my $gene_dbs ( $self->_all_dbm_gene ) {
+      my $kch = $gene_dbs->[$chr_index];
+
+      # if there's no file for the track then it will be undef
+      next unless defined $kch;
+
+      # all kc values come as aref's of href's
+      my $rec_aref = $kch->db_get($abs_pos);
+      
+      if (defined $rec_aref) {
+        for my $rec_href ( @$rec_aref ) {
+          $rec_href->{minor_allele} = $new_base;
+          push @gene_data, Seq::Site::Annotation->new( $rec_href );
+        }
+      }
+    }
+    $record{gene_data} = \@gene_data;
+  }
+
+  # get snp annotations at site
+  if ($snp) {
+    my @snp_data = ();
+    for my $snp_dbs ( $self->_all_dbm_snp ) {
+      my $kch = $snp_dbs->[$chr_index];
+
+      # if there's no file for the track then it will be undef
+      next unless defined $kch;
+
+      # all kc values come as aref's of href's
+      my $rec_aref = $kch->db_get($abs_pos);
+      if (defined $rec_aref) {
+        for my $rec_href ( @$rec_aref) {
+          push @snp_data, Seq::Site::Snp->new($rec_href);
+        }
+      }
+    }
+    $record{snp_data} = \@snp_data;
+  }
+  my $obj = Seq::Annotate::Snp->new( \%record );
+  return $obj;
+}
+
 sub get_ref_annotation {
   state $check = compile( Object, Int, Int );
   my ( $self, $chr_index, $abs_pos ) = $check->(@_);
@@ -569,8 +658,6 @@ sub get_ref_annotation {
     $record{genomic_annotation_code} = 'Intergenic';
   }
 
-  my ( @gene_data, @snp_data, %conserv_scores );
-
   # get scores at site
   for my $gs ( $self->_all_genome_scores ) {
     $record{ $gs->name } = $gs->get_score($abs_pos);
@@ -578,6 +665,7 @@ sub get_ref_annotation {
 
   # get gene annotations at site
   if ($gan) {
+    my @gene_data;
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
       p $kch if $self->debug;
@@ -585,10 +673,6 @@ sub get_ref_annotation {
       # if there's no file for the track then it will be undef
       next unless defined $kch;
       my $rec = $kch->db_get($abs_pos);
-      if ( $self->debug ) {
-        print "\n\nThis is rec:\n\n";
-        p $rec;
-      }
       push @gene_data, @$rec if defined $rec;
     }
     $record{gene_data} = \@gene_data;
@@ -596,21 +680,18 @@ sub get_ref_annotation {
 
   # get snp annotations at site
   if ($snp) {
+    my @snp_data;
     for my $snp_dbs ( $self->_all_dbm_snp ) {
       my $kch = $snp_dbs->[$chr_index];
 
       # if there's no file for the track then it will be undef
       next unless defined $kch;
       my $rec = $kch->db_get($abs_pos);
-      if ( $self->debug ) {
-        p $kch;
-        p $rec;
-      }
       push @snp_data, @$rec if defined $rec;
     }
     $record{snp_data} = \@snp_data;
   }
-
+  my $obj = Seq::Annotate::Snp->new( \%record);
   return \%record;
 }
 
@@ -726,7 +807,7 @@ sub _join_href {
   return \%merge;
 }
 
-# annotate_del_sites takes an hash reference of sites and chromosome 
+# annotate_del_sites takes an hash reference of sites and chromosome
 #   indicies hash reference and returns a list of the consequences for
 #   deleting the site
 #   - the site hash reference is defined like so:
@@ -743,49 +824,44 @@ sub annotate_del_sites {
   my @abs_sites = sort { $a <=> $b } keys %$sites_href;
   push @contiguous_sites, $abs_sites[0];
 
-  for (my $i = 1; $i < @abs_sites; $i++) {
-    if ($abs_sites[$i-1] + 1 == $abs_sites[$i]) {
+  for ( my $i = 1; $i < @abs_sites; $i++ ) {
+    if ( $abs_sites[ $i - 1 ] + 1 == $abs_sites[$i] ) {
       push @contiguous_sites, $abs_sites[$i];
     }
     else {
-      #say "annotate these sites:" . dump( @contiguous_sites ); 
+      #say "annotate these sites:" . dump( @contiguous_sites );
 
       # annotate the sites
       #   - get the relative chr and position
       #   - get the chromosome index (needed to lookup te basic annotation)
       #   - annotate the sites
-      my ($chr, $rel_pos) =  @{ $sites_href->{ $contiguous_sites[0] } };
+      my ( $chr, $rel_pos ) = @{ $sites_href->{ $contiguous_sites[0] } };
       my $chr_index = $chr_index_href->{$chr};
 
-      say dump( [ "going to _annotate_indel_sites() with: ", $chr, $rel_pos, 
-          $chr_index, $contiguous_sites[0], $contiguous_sites[-1] ]);
-
-      my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
+      my $records_aref =
+        $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index,
         $contiguous_sites[0], $contiguous_sites[-1] );
-      #p $records_aref;
-      
+
       # save annotation
       push @annotations, $records_aref;
       # assign annotation to the 1st site
       #p @annotations;
 
       # clear old sites
-      @contiguous_sites = ( );
+      @contiguous_sites = ();
 
-      # add site we are presently on, which allowed us to determine if we were 
+      # add site we are presently on, which allowed us to determine if we were
       # in a contiguous region or not - for the next loop
       push @contiguous_sites, $abs_sites[$i];
-
-      dump( { _new_sites => \@contiguous_sites });
     }
   }
   return \@annotations;
 }
 
 # annotate_ins_sites takes a hash reference of sites and chromosome indicies
-#   hash reference and returns a list of consequences for altering the sites 
-#   over which the insertion occurs. 
-#   - the site hash reference differes from the one accepted by 
+#   hash reference and returns a list of consequences for altering the sites
+#   over which the insertion occurs.
+#   - the site hash reference differes from the one accepted by
 #     annoate_del_sites:
 #     %site{ abs_pos } = [ chr, pos, insertion_string ]
 sub annotate_ins_sites {
@@ -794,20 +870,20 @@ sub annotate_ins_sites {
   my ( @annotations, @contiguous_sites );
 
   for my $abs_pos ( sort { $a <=> $b } keys %$sites_href ) {
-    my ($chr, $rel_pos, $all_alleles) = @{ $sites_href->{$abs_pos} };
+    my ( $chr, $rel_pos, $all_alleles ) = @{ $sites_href->{$abs_pos} };
 
-    for my $allele ( split /\,/, $all_alleles) {
-      if (defined $chr && defined $rel_pos && defined $allele) {
+    for my $allele ( split /\,/, $all_alleles ) {
+      if ( defined $chr && defined $rel_pos && defined $allele ) {
         my $chr_index = $chr_index_href->{$chr};
-        my $stop = $abs_pos + length $allele;
-        my $records_aref = $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, 
-          $abs_pos, $stop );
+        my $stop      = $abs_pos + length $allele;
+        my $records_aref =
+          $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, $abs_pos, $stop );
         push @annotations, $records_aref;
       }
       else {
-        my $msg = sprintf("ERROR: %s could not process data for site '%d'", 
-          'annotate_ins_sites()', $abs_pos);
-        $self->_logger->error( $msg );
+        my $msg = sprintf( "ERROR: %s could not process data for site '%d'",
+          'annotate_ins_sites()', $abs_pos );
+        $self->_logger->error($msg);
         croak $msg;
       }
     }
@@ -823,13 +899,11 @@ sub _annotate_indel_sites {
   #   - probably just pass the string of ins and if it's empty then it's a del
 
   # going assign the annotation to the relative start (rel_start) position
-  
-  my (%tx_list, @ref_annotations);
 
-  for (my $site = $abs_start; $site <= $abs_stop; $site++) { 
-    my $record = $self->get_ref_annotation($chr_index, $site);
+  my ( %tx_list, @ref_annotations );
 
-    say dump ( { _site => $site, record => $record } );
+  for ( my $site = $abs_start; $site <= $abs_stop; $site++ ) {
+    my $record = $self->get_ref_annotation( $chr_index, $site );
 
     # save record
     push @ref_annotations, $record;
@@ -848,23 +922,22 @@ sub _annotate_indel_sites {
         my $tx_href = shift @{ $dbm_tx->db_get($tx_id) };
 
         if ( defined $tx_href ) {
-          $tx_list{ $tx_id } = $tx_href;
+          $tx_list{$tx_id} = $tx_href;
         }
       }
     }
   }
   my $href = {
-        indel_type => 'Del',
-        chr => $chr,
-        pos => $rel_start,
-        abs_start_pos => $abs_start,
-        abs_stop_pos => $abs_stop,
-        ref_annotations => \@ref_annotations,
-        transcripts => \%tx_list,
+    indel_type      => 'Del',
+    chr             => $chr,
+    pos             => $rel_start,
+    abs_start_pos   => $abs_start,
+    abs_stop_pos    => $abs_stop,
+    ref_annotations => \@ref_annotations,
+    transcripts     => \%tx_list,
   };
-  my $indel = Seq::Indel->new( $href );
+  my $indel    = Seq::Indel->new($href);
   my $href_res = $indel->as_href();
-  say dump ($href_res);
   return $indel;
 }
 
