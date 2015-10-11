@@ -16,13 +16,13 @@ use Data::Dump qw/ dump /; # for debugging
 plan tests => 46;
 
 my %attr_2_type = (
-  indel_type => 'IndelType',
-  chr => 'Str',
-  pos => 'Int',
-  abs_start_pos => 'Int',
-  abs_stop_pos => 'Int',
+  indel_type      => 'IndelType',
+  chr             => 'Str',
+  pos             => 'Int',
+  abs_start_pos   => 'Int',
+  abs_stop_pos    => 'Int',
   ref_annotations => 'ArrayRef',
-  transcripts => 'HashRef',
+  transcripts     => 'HashRef',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
@@ -37,7 +37,7 @@ my $package = "Seq::Indel";
 use_ok($package) || die "$package cannot be loaded";
 
 # check extension of
-check_isa( $package, [ 'Moose::Object' ] );
+check_isa( $package, ['Moose::Object'] );
 
 # check role
 #does_role( $package, 'Seq::Role::Serialize' );
@@ -63,18 +63,18 @@ for my $attr_name ( sort keys %attr_2_type ) {
 }
 
 # object creation
-for my $i (0..6) {
-  my $obj_data_href = LoadJsonData( "t/10-data.$i.json" );
-  my $obj = $package->new( $obj_data_href );
+for my $i ( 0 .. 6 ) {
+  my $obj_data_href = LoadJsonData("t/10-data.$i.json");
+  my $obj           = $package->new($obj_data_href);
 
   # only test package creation once
-  if ($i == 0) {
-    ok( $obj, $package);
+  if ( $i == 0 ) {
+    ok( $obj, $package );
   }
   my $obs_href = $obj->as_href;
   #SaveJsonData( "10-exp.$i.json", $obs_href );
 
-  my $exp_href = LoadJsonData( "t/10-exp.$i.json" );
+  my $exp_href = LoadJsonData("t/10-exp.$i.json");
   is_deeply( $obs_href, $exp_href, 'as_href()' );
 }
 
