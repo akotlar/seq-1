@@ -31,7 +31,7 @@ my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 # set package name
-my $package = "Seq::Indel";
+my $package = "Seq::Annotate::Indel";
 
 # load package
 use_ok($package) || die "$package cannot be loaded";
