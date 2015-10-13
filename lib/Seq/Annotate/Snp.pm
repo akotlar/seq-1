@@ -8,7 +8,7 @@ package Seq::Annotate::Snp;
 
 =head1 DESCRIPTION
 
-  @class B<Seq::Indel>
+  @class B<Seq::Annotate::Snp>
   #TODO: Check description
 
   @example
@@ -28,30 +28,73 @@ use Seq::Site::Annotation;
 
 use Data::Dump qw/ dump /;
 
-has abs_pos => ( is => 'ro', isa => 'Int', required => 1,);
-has chr => ( is => 'ro', isa => 'Str', required => 1,);
-has pos => ( is => 'ro', isa => 'Int', required => 1, );
-has site_type => ( is => 'ro', isa => 'Str', required => 1,);
-has ref_base => ( is => 'ro', isa => 'Str', required => 1,);
-has min_allele => ( is => 'ro', isa => 'Str', required => 1,);
-has genomic_annotation_code => ( is => 'ro', isa => 'Str', required => 1,);
-has scores => ( is => 'ro', isa => 'HashRef[Str]', required => 1,);
+with 'Seq::Role::Serialize';
 
-has gene_sites => (
+enum SnpType => [ 'SNP', 'MULTIALLELIC', 'REF', ]; 
+enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
+enum AnnotationType  =>
+  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
+
+has abs_pos => ( is => 'ro', isa => 'Int', required => 1,);
+has allele_count => ( is => 'ro', isa => 'Str', required => 1,);
+has alleles => ( is => 'ro', isa => 'Str', required => 1,);
+has chr => ( is => 'ro', isa => 'Str', required => 1,);
+has genomic_type => ( is => 'ro', isa => 'GenomicType', required => 1,);
+has het_ids => ( is => 'ro', isa => 'Str', default => '',);
+has hom_ids => ( is => 'ro', isa => 'Str', default => '',);
+has pos => ( is => 'ro', isa => 'Int', required => 1, );
+has ref_base => ( is => 'ro', isa => 'Str', required => 1,);
+has scores => ( is => 'ro', isa => 'HashRef[Str]', default => sub { {} }, );
+has var_allele => ( is => 'ro', isa => 'Str', required => 1,);
+has var_type => ( is => 'ro', isa => 'SnpType', required => 1,);
+has warning => (is => 'ro', isa => 'Str', default => 'NA', );
+
+has gene_data => (
   is => 'ro',
   isa => 'ArrayRef[Maybe[Seq::Site::Annotation]]',
   required => 1,
 );
 
-has snp_sites => (
+has snp_data => (
   is => 'ro',
   isa => 'ArrayRef[Maybe[Seq::Site::Snp]]',
   required => 1,
 );
 
-#
-#  this method joins together data; preserving the sequential order
-#
+# these are the attributes to export
+my @attrs = qw/ chr pos allele_count alleles var_type ref_base genomic_type het_ids hom_ids warning /;
+
+sub as_href {
+  my $self = shift;
+
+  my %hash;
+
+  for my $attr ( @attrs ) {
+    $hash{$attr} = $self->$attr;
+  }
+
+  my $scores_href = $self->scores;
+
+  for my $score ( sort keys %$scores_href ) {
+    $hash{$score} = $scores_href->{$score};
+  }
+
+  my $gene_site_href = {};
+  for my $gene ( @{ $self->gene_data } ) {
+    $gene_site_href = $self->_join_href( $gene_site_href, $gene->as_href_with_NAs); 
+  }
+
+  my $snp_site_href = {};
+  for my $snp ( @{ $self->snp_data } ) {
+    $snp_site_href = $self->_join_href( $snp_site_href, $snp->as_href_with_NAs);
+  }
+
+  return { %hash, %$gene_site_href, %$snp_site_href };
+}
+
+# _join_href joins two hash references and any underlying hashes recursively.
+# It is assumed that if there's a value in one key that is a hash reference
+# then the other hashRef also has a hash reference for that key.
 sub _join_href {
   my ( $self, $old_href, $new_href ) = @_;
 
@@ -62,7 +105,11 @@ sub _join_href {
     my $old_val = $old_href->{$attr};
     my $new_val = $new_href->{$attr};
     if ( defined $old_val and defined $new_val ) {
-      if ( $old_val eq $new_val ) {
+      # assuming if one is a hashref then they both are.
+      if (ref $old_val eq 'HASH') {
+        $merge{$attr} = $self->_join_href( $old_val, $new_val );
+      }
+      elsif ( $old_val eq $new_val ) {
         $merge{$attr} = join ";", $old_val, $new_val;
       }
       else {
@@ -80,48 +127,6 @@ sub _join_href {
   }
   return \%merge;
 }
-
-
-#sub BUILDARGS {
-#  my $class = shift;
-#  my $href = $_[0];
-#
-#  if ( scalar @_ > 1 || reftype($href) ne 'HASH') {
-#    confess "Error: $class expects hash reference\n"; #  }
-#  else {
-#    my %hash;
-#
-#    my (@gene_objs, @snp_objs);
-#
-#    if (exists $href->{gene_data}) {
-#      for my $gene_href ( @{ $href->{gene_data} } ){
-#        my $gene_obj = Seq::Site::Annotation->new( $gene_href );
-#        push @gene_objs, $gene_obj;
-#      }
-#      $hash{gene_sites} = \@gene_objs;
-#    }
-#    else {
-#      $hash{gene_sites} = [];
-#    }
-#    
-#    if (exists $href->{snp_data}) {
-#      for my $snp_href ( @{ $href->{snp_data} }) {
-#        my $snp_obj = Seq::Site::Snp->new( $snp_href );
-#        push @snp_objs, $snp_obj;
-#      }
-#      $hash{snp_sites} = \@snp_objs;
-#    }
-#    else {
-#      $hash{snp_sites} = [];
-#    }
-#
-#    for my $attr (keys %$href) {
-#      next if $attr eq 'snp_data' || $attr eq 'gene_data';
-#      $hash{$attr} = $href->{$attr};
-#    }
-#    return $class->SUPER::BUILDARGS( \%hash );
-#  }
-#}
 
 __PACKAGE__->meta->make_immutable;
 

@@ -1,14 +1,14 @@
-use 5.10.0;
-use strict;
+use 5.10.0; 
+use strict; 
 use warnings;
 
-package Seq::Indel;
+package Seq::Annotate::Indel;
 # ABSTRACT: Base class for seralizing genomic indels.
 # VERSION
 
 =head1 DESCRIPTION
 
-  @class B<Seq::Indel>
+  @class B<Seq::Annotate::Indel>
   #TODO: Check description
 
   @example
@@ -26,46 +26,22 @@ use namespace::autoclean;
 use Data::Dump qw/ dump /;
 
 enum IndelType => [ 'Del', 'Ins' ];
-enum IndelSiteType =>
+enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
+enum AnnotationType  =>
   [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
-enum IndelAnnotationType =>
-  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
 
-has indel_type => (
-  is       => 'ro',
-  isa      => 'IndelType',
-  required => 1,
-);
-
-has chr => (
-  is       => 'ro',
-  isa      => 'Str',
-  required => 1,
-);
-
-has pos => (
-  is       => 'ro',
-  isa      => 'Int',
-  required => 1,
-);
-
-has ins => (
-  is        => 'ro',
-  isa       => 'Str',
-  predicate => '_has_ins',
-);
-
-has abs_start_pos => (
-  is       => 'ro',
-  isa      => 'Int',
-  required => 1,
-);
-
-has abs_stop_pos => (
-  is       => 'ro',
-  isa      => 'Int',
-  required => 1,
-);
+has abs_pos => ( is => 'ro', isa => 'Int', required => 1,);
+has abs_start_pos => ( is => 'ro', isa => 'Int', required => 1,); 
+has abs_stop_pos => ( is => 'ro', isa => 'Int', required => 1,);
+has chr => ( is => 'ro', isa => 'Str', required => 1,);
+has genomic_type => ( is => 'ro', isa => 'GenomicType', required => 1,);
+has het_ids => ( is => 'ro', isa => 'Str', default => '',);
+has hom_ids => ( is => 'ro', isa => 'Str', default => '',);
+has pos => ( is => 'ro', isa => 'Int', required => 1,);
+has ref_base => ( is => 'ro', isa => 'Str', required => 1,);
+has scores => ( is => 'ro', isa => 'HashRef[Str]', default => sub { {} }, );
+has var_allele => ( is => 'ro', isa => 'Str', predicate => '_has_ins',);
+has var_type => ( is => 'ro', isa => 'IndelType', required => 1,);
 
 has ref_annotations => (
   traits   => ['Array'],

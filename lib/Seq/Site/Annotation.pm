@@ -199,6 +199,18 @@ override seralizable_attributes => sub {
   return @attributes;
 };
 
+
+=method header_attr
+
+  Returns the attributes needed to make the header to organize the output.
+  Attributes that are HashRefs or ArrayRefs may or may not be present in 
+  all genome assemblies and, thus, those information should be obtained by 
+  querying the gene tracks or snp tracks themselves for their 'features'.
+
+@returns {HashRef<String>}
+
+=cut
+
 __PACKAGE__->meta->make_immutable;
 
 1;

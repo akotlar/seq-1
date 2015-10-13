@@ -43,7 +43,7 @@ with 'Seq::Role::IO', 'MooX::Role::Logger';
 enum fileTypes => [ 'snp_1', 'snp_2', 'vcf' ];
 
 # file_type defines the kind of file that is being annotated
-#   - snp_1 => snpfile format: [ "Fragment", "Position", "Reference" ]
+#   - snp_1 => snpfile format: [ "Fragment", "Position", "Reference", "Minor_Allele"]
 #   - snp_2 => snpfile format: ["Fragment", "Position", "Reference", "Alleles", "Allele_Counts", "Type"]
 #   - vcf => placeholder
 has file_type => (
@@ -289,7 +289,7 @@ sub annotate_snpfile {
   my $next_chr_href = $annotator->next_chr;
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
-  my @header = ( $annotator->all_header, 'heterozygotes_ids', 'homozygote_ids' );
+  my @header        = $annotator->all_header;
   my $summary_href;
 
   # add header information to Seq class
@@ -298,7 +298,7 @@ sub annotate_snpfile {
   $self->_tee_logger( 'info', "Loaded assembly " . $annotator->genome_name );
 
   # variables
-  my ( %header, %ids, @sample_ids, @all_annotations ) = ();
+  my ( %header, %ids, @sample_ids, @snp_annotations ) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
 
@@ -344,15 +344,19 @@ sub annotate_snpfile {
     }
 
     # process the snpfile line
-    my ( $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts ) =
+    my ( $chr, $pos, $ref_allele, $var_type, $all_allele_str, $allele_count ) =
       $self->_proc_line( \%header, \@fields );
+
+    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
+    #   later (hets currently ignored)
+    my ( $het_ids, $hom_ids, $hom_ids_href ) =
+      $self->_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
     my $abs_pos;
 
     # check that $chr is an allowable chromosome
     unless ( exists $chr_len_href->{$chr} ) {
-      my $msg =
-        sprintf( "Error: unrecognized chromosome in input: '%s', pos: %d", $chr, $pos );
+      my $msg = sprintf( "Error: unrecognized chromosome in input: '%s', pos: %d", $chr, $pos );
       # decide if we plow through the error or if we stop
       if ( $self->ignore_unknown_chr ) {
         $self->_tee_logger( 'warn', $msg );
@@ -380,8 +384,7 @@ sub annotate_snpfile {
 
       # check that we set the needed variables for determining position
       unless ( defined $chr_offset and defined $chr_index ) {
-        my $msg =
-          sprintf( "Error: unable to set 'chr_offset' or 'chr_index' for: '%s'", $chr );
+        my $msg = sprintf( "Error: unable to set 'chr_offset' or 'chr_index' for: '%s'", $chr );
         $self->_tee_logger( 'error', $msg );
       }
       $abs_pos = $chr_offset + $pos - 1;
@@ -395,80 +398,36 @@ sub annotate_snpfile {
     # save the current chr for next iteration of the loop
     $last_chr = $chr;
 
-    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
-    #   later (hets currently ignored)
-    my ( $het_ids, $hom_ids, $hom_ids_href ) =
-      $self->_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
-
-    if ( exists $site_2_set_method{$type} ) {
-
-      # get annotation for snp site otherwise save the information
-      # (i.e., for indels since we'll annotate those afterward)
-      if ( $type eq 'SNP' || $type eq 'MULTIALLELIC' ) {
-
-        for my $allele ( split( /,/, $all_alleles ) ) {
-          next
-            if ( $allele eq $ref_allele
-            or exists $hom_indel{$allele}
-            or exists $het_indel{$allele}
-            or $allele eq '-' );
-
-          say join "\t", "site", $abs_pos, $ref_allele, $type, $allele, $chr, $pos,
-            $all_alleles, $allele_counts;
-
-          my $record_href =
-            $annotator->get_snp_annotation( $chr_index, $abs_pos, $ref_allele, $allele );
-
-          $record_href->{chr}               = $chr;
-          $record_href->{pos}               = $pos;
-          $record_href->{type}              = $type;
-          $record_href->{alleles}           = $all_alleles;
-          $record_href->{allele_counts}     = $allele_counts;
-          $record_href->{heterozygotes_ids} = $het_ids || 'NA';
-          $record_href->{homozygote_ids}    = $hom_ids || 'NA';
-
-          $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
-
-          my @record;
-          for my $attr (@header) {
-            if ( ref $record_href->{$attr} eq 'ARRAY' ) {
-              push @record, join ";", @{ $record_href->{$attr} };
-            }
-            else {
-              push @record, $record_href->{$attr};
-            }
-          }
-          if ( $self->debug ) {
-            p $record_href;
-            p @record;
-          }
-          push @all_annotations, \@record;
-          $self->inc_counter;
-        }
-      }
-      else {
-        my $method = $site_2_set_method{$type};
-        $self->$method( $abs_pos => [ $chr, $pos, $all_alleles ] );
-      }
-
-      if ( $self->counter > 1000 ) {
-        $self->_print_annotations( \@all_annotations, $self->headerr );
-        @all_annotations = ();
-        $self->reset_counter;
-        if ( $self->wants_to_publish_messages ) {
-          $self->_publish_message("finished annotating position $pos");
-        }
-      }
+    if ( $var_type eq 'SNP' || $var_type eq 'MULTIALLELIC' ) {
+      my $record_href = $annotator->annotate_snp_site( $chr, $chr_index, $pos, $abs_pos, 
+        $ref_allele, $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids);
+      $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
+      push @snp_annotations, $self->_flatten_href( $record_href );
+      $self->inc_counter;
+    }
+    elsif (exists $site_2_set_method{$var_type}) {
+      my $method = $site_2_set_method{$var_type};
+      $self->$method( $abs_pos => [ $chr, $pos, $all_allele_str, $het_ids, $hom_ids ] );
     }
     else {
-      my $msg = sprintf( "Error: unrecognized variant type: '%s'", $type );
-      $self->_tee_logger( 'error', $msg );
+      my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
+      $self->_tee_logger( 'warn', $msg );
+    }
+
+    # write data, if needed
+    if ( $self->counter > 1000 ) {
+      $self->_print_annotations( \@snp_annotations, $self->header );
+      @snp_annotations = ();
+      $self->reset_counter;
+      if ( $self->wants_to_publish_messages ) {
+        $self->_publish_message("finished annotating position $pos");
+      }
     }
   }
 
   # finished printing the final snp annotations
-  if (@all_annotations) {
-    $self->_print_annotations( \@all_annotations, $self->header );
+  if (@snp_annotations) {
+    $self->_print_annotations( \@snp_annotations, $self->header );
   }
 
   # print deletion sites
@@ -499,6 +458,20 @@ sub annotate_snpfile {
 #   return Redis->new( host => $redisHost, port => $redisPort );
 # }
 
+sub _flatten_href {
+  my ($self, $href) = @_;
+  my @record;
+  for my $attr ($self->all_header_attr) {
+    if (exists $href->{$attr} ) {
+      push @record, $href->{$attr};
+    }
+    else {
+      push @record, 'NA';
+    }
+  }
+  return \@record;
+}
+
 sub _proc_line {
   my ( $self, $header_href, $fields_aref ) = @_;
 
@@ -506,18 +479,18 @@ sub _proc_line {
     my $chr         = $fields_aref->[ $header_href->{Fragment} ];
     my $pos         = $fields_aref->[ $header_href->{Position} ];
     my $ref_allele  = $fields_aref->[ $header_href->{Reference} ];
-    my $type        = $fields_aref->[ $header_href->{Type} ];
+    my $var_type    = $fields_aref->[ $header_href->{Type} ];
     my $all_alleles = $fields_aref->[ $header_href->{Minor_Allele} ];
-    return ( $chr, $pos, $ref_allele, $type, $all_alleles, '' );
+    return ( $chr, $pos, $ref_allele, $var_type, $all_alleles, '' );
   }
   elsif ( $self->file_type eq 'snp_2' ) {
     my $chr           = $fields_aref->[ $header_href->{Fragment} ];
     my $pos           = $fields_aref->[ $header_href->{Position} ];
     my $ref_allele    = $fields_aref->[ $header_href->{Reference} ];
-    my $type          = $fields_aref->[ $header_href->{Type} ];
+    my $var_type      = $fields_aref->[ $header_href->{Type} ];
     my $all_alleles   = $fields_aref->[ $header_href->{Alleles} ];
     my $allele_counts = $fields_aref->[ $header_href->{Allele_Counts} ];
-    return ( $chr, $pos, $ref_allele, $type, $all_alleles, $allele_counts );
+    return ( $chr, $pos, $ref_allele, $var_type, $all_alleles, $allele_counts );
   }
   else {
     my $msg = sprintf( "Error: unknown file_type '%s'", $self->file_type );
@@ -596,13 +569,13 @@ sub _publish_message {
 sub _summarize {
   my ( $self, $record_href, $summary_href, $sample_ids_aref, $hom_ids_href ) = @_;
 
-  my $count_key       = $self->_count_key;
-  my $site_type       = $record_href->{type};
-  my $annotation_code = $record_href->{genomic_annotation_code};
+  my $count_key    = $self->_count_key;
+  my $var_type     = $record_href->{var_type};
+  my $genomic_type = $record_href->{genomic_type};
 
   foreach my $id (@$sample_ids_aref) {
-    $summary_href->{$id}{$site_type}{$count_key} += 1;
-    $summary_href->{$id}{$site_type}{$annotation_code}{$count_key} += 1;
+    $summary_href->{$id}{$var_type}{$count_key} += 1;
+    $summary_href->{$id}{$var_type}{$genomic_type}{$count_key} += 1;
   }
 
   # run statistics code maybe, unless we wait for end to save function calls
@@ -631,8 +604,19 @@ sub _minor_allele_carriers {
     elsif ( exists $hom_genos{$id_geno} ) {
       push @hom_ids, $id;
     }
-    $het_ids_str = join ";", @het_ids;
-    $hom_ids_str = join ";", @hom_ids;
+
+    if (@het_ids) {
+      $het_ids_str = join ";", @het_ids;
+    } 
+    else {
+      $het_ids_str = 'NA';
+    }
+    if (@hom_ids) {
+      $hom_ids_str = join ";", @hom_ids;
+    }
+    else {
+      $hom_ids_str = 'NA';
+    }
   }
 
   # return ids for printing

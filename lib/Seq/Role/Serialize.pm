@@ -24,16 +24,29 @@ Extended by: None
 
 use Moose::Role 2;
 
-use namespace::autoclean;
-
 use Cpanel::JSON::XS;
+use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
-use YAML::XS qw/ Dump /;
 
-use DDP;
+use Data::Dump qw/ dump /;
 
-# not using this sub since we're asking the meta class about the attributes
-requires qw/ seralizable_attributes  /;
+my $tc_regex = qr{HashRef|ArrayRef};
+
+sub header_attr {
+  my $self = shift;
+  
+  my %hash;
+
+  for my $attr ( $self->meta->get_all_attributes ) {
+    my $name = $attr->name;
+    my $type_constraint = $attr->type_constraint;
+    if ( defined $self->$name ) {
+      next if ( $type_constraint =~ m/$tc_regex/ or $name eq 'abs_pos');
+      $hash{$name} = $self->$name;
+    }
+  }
+  return \%hash;
+}
 
 sub as_href_with_NAs {
   my $self = shift;

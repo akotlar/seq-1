@@ -473,64 +473,96 @@ sub _build_dbm_tx {
 
 sub _build_header {
   my $self = shift;
-
-  my @features = qw/ chr pos var_type alleles allele_count genomic_type /;
+  
+  my @features;
+  # make Seq::Site::Annotation and Seq::Site::Snp object, and use those to 
+  # make a Seq::Annotation::Snp object; gather all attributes from those
+  # objects, which constitutes the basic header; the remaining pieces will
+  # be gathered from the 'scores' and 'gene' and 'snp' tracks that might
+  # have various alternative data, depending on the assembly
 
   # make Seq::Site::Annotation object and add attrs to @features
   my $ann_href = {
-      alt_names => {
-      protAcc => 'NM_017766',
-      mRNA => 'NM_017766',
-      geneSymbol => 'CASZ1',
-      spID => 'Q86V15',
-      rfamAcc => 'NA',
-      description => 'Test',
-      kgID => 'uc001arp.3',
-      spDisplayID => 'CASZ1_HUMAN',
-      refseq => 'NM_017766',
-      },
-      codon_number => 879,
-      site_type => 'Coding',
       abs_pos => 10653420,
+      alt_names => {
+        protAcc => 'NM_017766',
+        mRNA => 'NM_017766',
+        geneSymbol => 'CASZ1',
+        spID => 'Q86V15',
+        rfamAcc => 'NA',
+        description => 'Test',
+        kgID => 'uc001arp.3',
+        spDisplayID => 'CASZ1_HUMAN',
+        refseq => 'NM_017766',
+      },
+      codon_position => 1,
+      codon_number => 879,
+      minor_allele => 'T',
       ref_base => 'G',
       ref_codon_seq => 'AGG',
       ref_aa_residue => 'R',
+      site_type => 'Coding',
       strand => '-',
-      minor_allele => 'T',
       transcript_id => 'NM_017766',
-      codon_position => 1,
-      minor_allele => 'T',
-};
-  my $ann_obj_href = Seq::Site::Annotation->new($ann_href)->header_attr;
-  delete $ann_obj_href->{abs_pos};
-  delete $ann_obj_href->{ref_base};
-  push @features, (sort keys %$ann_obj_href );
+  };
+  my $ann_obj = Seq::Site::Annotation->new($ann_href);
+  my $ann_attr_href = $ann_obj->header_attr;
 
   # make Seq::Site:Snp object and add attrs to @features
   my $snp_href = {
-    "snp_id" => "rs374344188",
-    "ref_base" => "T",
+    "abs_pos" => 10653420,
+    "ref_base" => "G",
+    "snp_id" => "rs123",
     "snp_feature" => {
       "alleleNs" => "NA",
       "refUCSC" => "T",
       "alleles" => "NA",
       "observed" => "G/T",
-      "name" => "rs374344188",
+      "name" => "rs123",
       "alleleFreqs" => "NA",
       "strand" => "+",
-      "func" => "missense",
+      "func" => "fake",
       "alleleFreqCount" => 0,
     },
-    "abs_pos" => 12859230
   };
+  my $snp_obj = Seq::Site::Snp->new($snp_href);
+  my $snp_attr_href = $snp_obj->header_attr;
 
-  my $snp_obj_href = Seq::Site::Snp->new($snp_href)->header_attr;
-  delete $snp_obj_href->{abs_pos};
-  delete $snp_obj_href->{ref_base};
-  push @features, ( sort keys %$snp_obj_href );
+  my $annotation_snp_href = {
+    chr => 'chr1',
+    pos => 10653420,
+    var_allele => 'T',
+    allele_count => 2,
+    alleles => 'G,T',
+    abs_pos => 10653420,
+    var_type => 'SNP',
+    ref_base => 'G',
+    het_ids => '',
+    hom_ids => 'Sample_3',
+    genomic_type => 'Exonic',
+    scores => {
+      cadd => 10,
+      phyloP => 3,
+      phasCons => 0.9,
+    },
+    gene_data => [ $ann_obj ],
+    snp_data => [ $snp_obj ],
+  };
+  my $ann_snp_obj = Seq::Annotate::Snp->new( $annotation_snp_href );
+  my $ann_snp_attr_href = $ann_snp_obj->header_attr;
 
-  # add carriers and warning to @features
-  push @features, (qw/ het_ids hom_ids warning /);
+  my %obj_attrs = map { $_ => 1 } (keys %$ann_snp_attr_href, keys %$ann_attr_href, keys %$snp_attr_href);
+
+  # some features are always expected
+  @features = qw/ chr pos var_type alleles allele_count genomic_type site_type annotation_type ref_base
+    minor_allele /;
+  my %exp_features = map { $_ => 1 } @features;
+
+  for my $feature ( sort keys %obj_attrs ) {
+    if (!exists $exp_features{$feature} ) {
+      push @features, $feature;
+    }
+  }
 
   # add genome score track names to @features
   for my $gs ( $self->_all_genome_scores ) {
@@ -560,10 +592,6 @@ sub _build_header {
 
   # add alt features
   push @features, @alt_features;
-
-  say dump(\@features); 
-
-  exit;
 
   return \@features;
 }
@@ -618,7 +646,7 @@ sub annotate_snp_site {
   my @var_alleles = grep { !/$base/ } (split /\,/, $all_allele_str);
 
   if ($base ne $ref_allele) {
-    my $msg = sprintf("Error: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'\n",
+    my $msg = sprintf("Error: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
       $chr, $rel_pos, $abs_pos, $base, $ref_allele);
     $self->_logger->warn($msg);
     $record{warning} = $msg;
@@ -724,7 +752,7 @@ sub annotate_ref_site {
 
   if ($ref_allele ne 'NA') {
     if ($base ne $ref_allele) {
-      my $msg = sprintf("Error: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'\n",
+      my $msg = sprintf("Error: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
         $chr, $rel_pos, $abs_pos, $base, $ref_allele);
       $self->_logger->error($msg);
       croak $msg;
