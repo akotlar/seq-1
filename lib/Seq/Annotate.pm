@@ -853,18 +853,19 @@ sub annotate_del_sites {
       #say "annotate these sites:" . dump( @contiguous_sites );
 
       # annotate the sites
-      #   - get the relative chr and position
+      #   - get the relative chr, position, alleles, and carriers (i.e., het_ids, hom_ids)
       #   - get the chromosome index (needed to lookup te basic annotation)
       #   - annotate the sites
-      my ( $chr, $rel_pos ) = @{ $sites_href->{ $contiguous_sites[0] } };
+      my ( $chr, $rel_pos, $all_alleles, $allele_count, $het_ids, $hom_ids ) = 
+        @{ $sites_href->{ $contiguous_sites[0] } };
       my $chr_index = $chr_index_href->{$chr};
 
-      my $records_aref =
+      my $records_href =
         $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index,
         $contiguous_sites[0], $contiguous_sites[-1] );
 
       # save annotation
-      push @annotations, $records_aref;
+      push @annotations, $records_href;
       # assign annotation to the 1st site
       #p @annotations;
 
@@ -880,46 +881,70 @@ sub annotate_del_sites {
 }
 
 # annotate_ins_sites takes a hash reference of sites and chromosome indicies
-#   hash reference and returns a list of consequences for altering the sites
-#   over which the insertion occurs.
-#   - the site hash reference differes from the one accepted by
-#     annoate_del_sites:
-#     %site{ abs_pos } = [ chr, pos, insertion_string ]
+# hash reference and returns a list of consequences for altering the sites
+# over which the insertion occurs.
 sub annotate_ins_sites {
   state $check = compile( Object, HashRef, HashRef );
   my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
-  my ( @annotations, @contiguous_sites );
+
+  my @records;
 
   for my $abs_pos ( sort { $a <=> $b } keys %$sites_href ) {
-    my ( $chr, $rel_pos, $all_alleles ) = @{ $sites_href->{$abs_pos} };
 
-    for my $allele ( split /\,/, $all_alleles ) {
-      if ( defined $chr && defined $rel_pos && defined $allele ) {
-        my $chr_index = $chr_index_href->{$chr};
-        my $stop      = $abs_pos + length $allele;
-        my $records_aref =
-          $self->_annotate_indel_sites( $chr, $rel_pos, $chr_index, $abs_pos, $stop );
-        push @annotations, $records_aref;
-      }
-      else {
-        my $msg = sprintf( "ERROR: %s could not process data for site '%d'",
-          'annotate_ins_sites()', $abs_pos );
-        $self->_logger->error($msg);
-        croak $msg;
+    my %tx_list;
+
+    # unpack data for the 1st site
+    my ( $chr, $rel_pos, $ref_base, $all_alleles, $allele_count, $het_ids, $hom_ids ) = 
+      @{ $sites_href->{$abs_pos} };
+    my @alleles = grep { !/$ref_base/ } ( split /\,/, $all_alleles );
+
+    if (scalar @alleles != 1) {
+      my $msg = sprintf("Error: Expected to only find 1 insertion for site '%s:%d' but found %s",
+        $chr, $pos, join(",", @alleles));
+    }
+
+    my $record_href = $self->annotate_ref_site( $chr_index_href, $abs_pos, 'NA');
+
+    # lookup transcript information
+    for my $gene_data ( @{ $record_href->{gene_data} } ) {
+      my $tx_id = $gene_data->{transcript_id};
+
+      # loop over all transcript data sets we might have
+      for my $dbm_tx ( $self->_all_dbm_tx ) {
+
+        # each transcript is stored as an array reference in the KC database
+        my $tx_href = shift @{ $dbm_tx->db_get($tx_id) };
+
+        # save tx_href
+        $tx_list{$tx_id} = $tx_href;
       }
     }
+    my $href = {
+      chr             => $chr,
+      pos             => $rel_start,
+      abs_start_pos   => $abs_start,
+      abs_stop_pos    => $abs_stop,
+      ref_base        => $ref_base,
+      het_ids         => $het_ids,
+      hom_ids         => $hom_ids,
+      genomic_type    => $record_href->{genomic_type},
+      scores          => $record_href->{scores},
+      ref_annotations => \@ref_annotations,
+      transcripts     => \%tx_list,
+      var_allele      => $alleles[0],
+      var_type        => 'INS',
+    };
+    my $ins_obj    = Seq::Annotate::Indel->new($href);
+    push @records, $indel->as_href;
   }
-  return \@annotations;
+  return \@records;
 }
 
+# _annotate_indel_sites() returns a hash reference of the annotation for the 
+# indel, which is arbitrarily set to the begining of the indel
 sub _annotate_indel_sites {
   state $check = compile( Object, Str, Int, Int, Int, Int );
   my ( $self, $chr, $rel_start, $chr_index, $abs_start, $abs_stop ) = $check->(@_);
-
-  # TODO: need to think of something that will give me Del vs Ins
-  #   - probably just pass the string of ins and if it's empty then it's a del
-
-  # going assign the annotation to the relative start (rel_start) position
 
   my ( %tx_list, @ref_annotations );
 
@@ -958,7 +983,7 @@ sub _annotate_indel_sites {
     transcripts     => \%tx_list,
   };
   my $indel    = Seq::Annotate::Indel->new($href);
-  return $indel;
+  return $indel->as_href;
 }
 
 __PACKAGE__->meta->make_immutable;

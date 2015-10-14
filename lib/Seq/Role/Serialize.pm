@@ -32,6 +32,13 @@ use Data::Dump qw/ dump /;
 
 my $tc_regex = qr{HashRef|ArrayRef};
 
+# header_attr() returns a hash reference of the header, which is defined as 
+# all attributes that are not references to hashes or arrays or abs_pos 
+# attribute. The rationale for this is that the hashes (presently not using
+# any array references) only hold "features" which may vary depending on
+# the assembly specification. In Seq::Annotate the _build_header() will
+# query the gene and snp tracks to build all features using the actual data
+# in the assembly.
 sub header_attr {
   my $self = shift;
   

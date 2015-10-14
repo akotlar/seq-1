@@ -27,19 +27,21 @@ use Data::Dump qw/ dump /;
 
 enum IndelType => [ 'Del', 'Ins' ];
 enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
-enum AnnotationType  =>
-  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
+#enum AnnotationType  =>
+#  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
 
 has abs_pos => ( is => 'ro', isa => 'Int', required => 1,);
 has abs_start_pos => ( is => 'ro', isa => 'Int', required => 1,); 
 has abs_stop_pos => ( is => 'ro', isa => 'Int', required => 1,);
+has allele_count => ( is => 'ro', isa => 'Str', required => 1,);
+has alleles => ( is => 'ro', isa => 'Str', required => 1,);
 has chr => ( is => 'ro', isa => 'Str', required => 1,);
 has genomic_type => ( is => 'ro', isa => 'GenomicType', required => 1,);
 has het_ids => ( is => 'ro', isa => 'Str', default => '',);
 has hom_ids => ( is => 'ro', isa => 'Str', default => '',);
 has pos => ( is => 'ro', isa => 'Int', required => 1,);
 has ref_base => ( is => 'ro', isa => 'Str', required => 1,);
-has scores => ( is => 'ro', isa => 'HashRef[Str]', default => sub { {} }, );
+has scores => ( is => 'ro', isa => 'HashRef[Maybe[Str]]', default => sub { {} }, );
 has var_allele => ( is => 'ro', isa => 'Str', predicate => '_has_ins',);
 has var_type => ( is => 'ro', isa => 'IndelType', required => 1,);
 

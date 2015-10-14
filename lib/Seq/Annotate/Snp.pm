@@ -32,8 +32,8 @@ with 'Seq::Role::Serialize';
 
 enum SnpType => [ 'SNP', 'MULTIALLELIC', 'REF', ]; 
 enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
-enum AnnotationType  =>
-  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
+#enum AnnotationType  =>
+#  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
 
 has abs_pos => ( is => 'ro', isa => 'Int', required => 1,);
 has allele_count => ( is => 'ro', isa => 'Str', required => 1,);

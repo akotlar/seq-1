@@ -407,7 +407,7 @@ sub annotate_snpfile {
     }
     elsif (exists $site_2_set_method{$var_type}) {
       my $method = $site_2_set_method{$var_type};
-      $self->$method( $abs_pos => [ $chr, $pos, $all_allele_str, $het_ids, $hom_ids ] );
+      $self->$method( $abs_pos => [ $chr, $pos, $all_allele_str, $allele_count, $het_ids, $hom_ids ] );
     }
     else {
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
