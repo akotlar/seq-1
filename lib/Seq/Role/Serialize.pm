@@ -39,6 +39,7 @@ sub as_href_with_NAs {
   my $self = shift;
   my %obj  = ();
   for my $attr ( $self->meta->get_all_attributes ) {
+    say "Attr is $attr" if($self->debug);
     my $name            = $attr->name;
     my $type_constraint = $attr->type_constraint;
     #  say join( ". .", $name, $type_constraint );
