@@ -104,6 +104,7 @@ has _count_key => (
   lazy     => 1,
   init_arg => undef,
   default  => 'count',
+  reader   => 'get_count_key',
 );
 
 has del_sites => (
@@ -232,10 +233,10 @@ B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
 sub annotate_snpfile {
   my $self = shift;
 
-  $self->_logger->info("about to load annotation data");
+  $self->_logger->info("loading Seqant database");
 
   if ( $self->wants_to_publish_messages ) {
-    $self->_publish_message("about to load annotation data");
+    $self->_publish_message("loading Seqant database");
   }
 
   my $annotator = Seq::Annotate->new_with_config(
@@ -365,9 +366,9 @@ sub annotate_snpfile {
     # save the current chr for next iteration of the loop
     $last_chr = $chr;
 
-    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
+    # get carrier ids for variant; returns id_geno_href for use in statistics calculator
     #   later (hets currently ignored)
-    my ( $het_ids, $hom_ids, $hom_ids_href ) =
+    my ( $het_ids, $hom_ids, $id_geno_href ) =
       $self->_get_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
     # if ( $self->debug ) {
@@ -378,6 +379,11 @@ sub annotate_snpfile {
     #   say "hom_ids";
     #   p $hom_ids;
     # }
+
+    for my $id (keys %{$id_geno_href} ) {
+      $summary{$id}->{$type}->{count } += 1;
+      say "summary of $type for $id is " . $summary{$id}->{$type}->{count};
+    }
 
     if ( exists $site_2_set_method{$type} ) {
       my $method = $site_2_set_method{$type};
@@ -401,8 +407,15 @@ sub annotate_snpfile {
         $record_href->{allele_counts}     = $allele_counts;
         $record_href->{heterozygotes_ids} = $het_ids || 'NA';
         $record_href->{homozygote_ids}    = $hom_ids || 'NA';
-
-        $self->_summarize( $record_href, \%summary, \@sample_ids, $hom_ids_href );
+        
+        for my $id (keys %{$id_geno_href} ) {
+          $summary{$id}->{$type}->{$record_href->{genomic_annotation_code} }->{count} += 1;
+          say "summary of ".$record_href->{genomic_annotation_code} ."for $id is " . $summary{$id}->{$type}->{count};
+        }
+        # kotlar: calculate statistics
+          # expects $siteType (str or array, ex: SNP), $siteCode (str or array, ex: Replacement), $referenceAllele (str), $sampleAllele (str), $sampleGenotypesRef (hash, ex {genotype1 => [sample1,sample2,etc]})
+          #
+        #$records{transition} = $statisticsCalculator->recordTransitionTransversion($records{type}, $records{site_code}, $records{ref_allele}, \%annotate_these_genos );
 
         my @record;
         for my $attr (@header) {
@@ -414,8 +427,16 @@ sub annotate_snpfile {
           }
         }
         if ( $self->debug ) {
+          say "the id geno href is";
           p $record_href;
+          say "the record array is";
           p @record;
+          say "the id geno href has";
+          p $id_geno_href;
+          say "the genomic_annotation_code";
+          p $record_href->{genomic_annotation_code};
+          say "the site type";
+          p $record_href->{type};
         }
         push @all_annotations, \@record;
         $self->inc_counter;
@@ -431,7 +452,7 @@ sub annotate_snpfile {
     if ( $i == $interval ) {
       $i = 0;
       if ( $self->wants_to_publish_messages ) {
-        $self->_publish_message("finished annotating position $pos");
+        $self->_publish_message("annotated $chr:$pos");
       }
     }
     ++$i;
@@ -450,23 +471,6 @@ sub annotate_snpfile {
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do interesting things.
   return \%summary;
-}
-
-sub _summarize {
-  my ( $self, $record_href, $summary_href, $sample_ids_aref, $hom_ids_href ) = @_;
-
-  my $count_key       = $self->_count_key;
-  my $site_type       = $record_href->{type};
-  my $annotation_code = $record_href->{genomic_annotation_code};
-
-  foreach my $id (@$sample_ids_aref) {
-    $summary_href->{$id}{$site_type}{$count_key} += 1;
-    $summary_href->{$id}{$site_type}{$annotation_code}{$count_key} += 1;
-  }
-  # run statistics code maybe, unless we wait for end to save function calls
-  # statistics code may include compound phylop/phastcons scores for the sample,
-  # or just tr:tv here we will use $hom_ids_href, and if needed we can add
-  # $het_ids_href
 }
 
 sub _build_message_publisher {
@@ -535,12 +539,13 @@ sub _publish_message {
 sub _get_minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
-  my ( @het_ids, @hom_ids, $het_ids_str, $hom_ids_str );
+  my ( @het_ids, @hom_ids, $het_ids_str, $hom_ids_str, %id_geno_href );
 
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
     my $id_prob = $fields_aref->[ $ids_href->{$id} + 1 ];
 
+    $id_geno_href{$id} = $id_geno;
     # skip homozygote reference && N's
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
@@ -555,7 +560,7 @@ sub _get_minor_allele_carriers {
   }
 
   # return ids for printing
-  return ( $het_ids_str, $hom_ids_str, \@hom_ids );
+  return ( $het_ids_str, $hom_ids_str, \@hom_ids, \%id_geno_href );
 }
 
 __PACKAGE__->meta->make_immutable;
