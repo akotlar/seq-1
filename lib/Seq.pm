@@ -164,7 +164,7 @@ has genes_annotated => (
     has_no_gene_ann => 'is_empty',
   },
 );
-my $redisHost = 'localhost';
+my $redisHost = 'genome.local';
 my $redisPort = '6379';
 
 has counter => (
@@ -422,7 +422,7 @@ sub annotate_snpfile {
       }
     }
     
-    if ($self->counter > 1000) {
+    if ($self->counter > 500) {
       $self->_print_annotations( \@all_annotations, \@header );
       @all_annotations = ( );
       $self->reset_counter;
@@ -431,7 +431,7 @@ sub annotate_snpfile {
     if ( $i == $interval ) {
       $i = 0;
       if ( $self->wants_to_publish_messages ) {
-        $self->_publish_message("finished annotating position $pos");
+        $self->_publish_message("annotated $chr:$pos");
       }
     }
     ++$i;
@@ -472,7 +472,7 @@ sub _summarize {
 sub _build_message_publisher {
   my $self = shift;
 
-  return Redis->new( host => $redisHost, port => $redisPort );
+  return Redis->new( server=> "$redisHost:$redisPort" );
 }
 
 =head2

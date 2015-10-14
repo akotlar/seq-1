@@ -8,7 +8,7 @@
 #Todo: Handle job expiration (what happens when job:id expired; make sure no other job operations happen, let Node know via sess:?)
 #There may be much more performant ways of handling this without loss of reliability; loook at just storing entire message in perl, and relying on decode_json
 #Todo: (Probably in Node.js): add failed jobs, and those stuck in processingJobs list for too long, back into job queue, for N attempts (stored in jobs:jobID)
-use 5.20.1;
+use 5.16.1;
 use autodie;
 use Cpanel::JSON::XS;
 
@@ -17,7 +17,7 @@ use warnings;
 
 use Try::Tiny;
 
-use lib '../lib';
+use lib './lib';
 use threads;
 use threads::shared;
 
@@ -27,8 +27,8 @@ use Seq;
 
 use Thread::Queue;
 use IO::Socket;
-use Sys::Info;
-use Sys::Info::Constants qw( :device_cpu )
+#use Sys::Info;
+#use Sys::Info::Constants qw( :device_cpu )
   ; #for choosing max connections based on available resources
 
 use Data::Dumper;
@@ -36,7 +36,7 @@ use Data::Dumper;
 use Redis;
 
 my $DEV                = 0;
-my $redisHost : shared = '127.0.0.1';
+my $redisHost : shared = 'genome.local';
 my $redisPort : shared = '6379';
 
 #these queues are only consumed by this service
@@ -72,7 +72,7 @@ $jobKeys->{clientComm} = 'client',
 $jobKeys->{serverComm} = 'server',
 
 
-my $configPathBaseDir : shared = "../config/web/";
+my $configPathBaseDir : shared = "config/web/";
 my $configFilePathHref : shared = shared_clone( {} );
 my $semSTDOUT : shared;
 
@@ -86,8 +86,8 @@ my $Qwork : shared = new Thread::Queue;
 my $Qdone : shared = new Thread::Queue;
 my $done : shared = 0;
 
-my $info = Sys::Info->new;
-my $cpu = $info->device( CPU => my %options );
+#my $info = Sys::Info->new;
+my $cpu = 4;#$info->device( CPU => my %options );
 
 my $verbose : shared = 1;
 
@@ -169,7 +169,7 @@ sub handleJob {
 
   say "Job id is $jobID";
   say "job result key is " . $jobKeys->{result};
-  my $redis = Redis->new( host => $redisHost, port => $redisPort ); 
+  my $redis = Redis->new( server=> "$redisHost:$redisPort" ); 
   my $documentKey = $submittedJobsDocument . ':' . $jobID;
   say "Processing job with key " . $documentKey;
 
@@ -308,7 +308,8 @@ sub worker {
 my @listenerThreads;
 
 my $normalQueue = threads->new(sub {
-  my $redis = Redis->new( host => $redisHost, port => $redisPort );
+  print $redisHost;
+  my $redis = Redis->new( server=> "$redisHost:$redisPort" );
 
   while (1) {
     #this can result in N identical items in $jobStartedQueue; 
