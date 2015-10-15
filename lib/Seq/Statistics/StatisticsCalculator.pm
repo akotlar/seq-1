@@ -56,9 +56,11 @@ sub recordTransitionTransversion
 
   foreach my $genotype (keys %$sampleGenotypesRef) #%sampleGenotypesRef expected to have : { $someGenotype => [sampleID#1,sampleID#2...sampleID#N] }
   {
-    if( !($genotype eq $referenceAllele) && !( exists( $self->disallowedTypesRef->{$genotype} ) ) )
+    if( !($genotype eq $referenceAllele)
+      && !( exists( $self->disallowedTypesRef->{$genotype} ) ) )
     {
-      if( exists( $self->_transitionTypesHref->{$genotype} ) || exists( $self->_transitionTypesHref->{$referenceAllele.$genotype} ) )
+      if( exists( $self->_transitionTypesHref->{$genotype} ) || exists(
+        $self->_transitionTypesHref->{$referenceAllele.$genotype} ) )
       {
         $isTransition = 1;
       }
@@ -113,15 +115,19 @@ sub calculateStatistics
     { 
       foreach my $siteCode ( keys %{ $masterHashReference->{$sampleID}->{$siteType} } )
       {
-        $self->_calculateSiteStatistic($sampleID,$masterHashReference,$siteType,$siteCode,$siteTypeCountKey);
+        $self->_calculateSiteStatistic($sampleID,$masterHashReference,$siteType,
+          $siteCode,$siteTypeCountKey);
       }
     }
 
     #and calculate summary statistics on siteTypes and siteCodes
     foreach my $siteCodeNumeratorKey (keys %{$self->siteTypeRatiosOrganizerRef})
     { 
-      my ($siteCodeDenominatorKey,$siteCodeRatioKey) = $self->_getSiteDenominatorRatioKeys($siteCodeNumeratorKey);   
-      my $ratio = $self->_calculateRatio($siteCodeNumeratorKey,$siteCodeDenominatorKey,$sampleStatisticsHashRef);
+      my ($siteCodeDenominatorKey,$siteCodeRatioKey) =
+      $self->_getSiteDenominatorRatioKeys($siteCodeNumeratorKey);   
+      my $ratio =
+      $self->_calculateRatio($siteCodeNumeratorKey,$siteCodeDenominatorKey,
+        $sampleStatisticsHashRef);
 
       $sampleStatisticsHashRef->{$siteCodeRatioKey} = $ratio;  
 
