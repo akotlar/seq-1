@@ -98,13 +98,11 @@ has _out_fh => (
   builder  => '_build_out_fh',
 );
 
-has _count_key => (
+has count_key => (
   is       => 'ro',
   isa      => 'Str',
   lazy     => 1,
-  init_arg => undef,
   default  => 'count',
-  reader   => 'get_count_key',
 );
 
 has del_sites => (
@@ -366,8 +364,7 @@ sub annotate_snpfile {
     # save the current chr for next iteration of the loop
     $last_chr = $chr;
 
-    # get carrier ids for variant; returns id_geno_href for use in statistics calculator
-    #   later (hets currently ignored)
+    # id_geno_href has {id=>genotype} for all minor allele carriers
     my ( $het_ids, $hom_ids, $id_geno_href ) =
       $self->_get_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
@@ -380,11 +377,10 @@ sub annotate_snpfile {
     #   p $hom_ids;
     # }
 
-    for my $id (keys %{$id_geno_href} ) {
-      $summary{$id}->{$type}->{count } += 1;
-      say "summary of $type for $id is " . $summary{$id}->{$type}->{count};
+    for my $id (keys %{$id_geno_href}) {
+      $summary{$id}{$type}{$self->count_key} += 1 ;
     }
-
+    
     if ( exists $site_2_set_method{$type} ) {
       my $method = $site_2_set_method{$type};
 
@@ -409,8 +405,9 @@ sub annotate_snpfile {
         $record_href->{homozygote_ids}    = $hom_ids || 'NA';
         
         for my $id (keys %{$id_geno_href} ) {
-          $summary{$id}->{$type}->{$record_href->{genomic_annotation_code} }->{count} += 1;
-          say "summary of ".$record_href->{genomic_annotation_code} ."for $id is " . $summary{$id}->{$type}->{count};
+          $summary{$id}{$type}{
+            $record_href->{genomic_annotation_code}
+          }{$self->count_key} += 1;
         }
         # kotlar: calculate statistics
           # expects $siteType (str or array, ex: SNP), $siteCode (str or array, ex: Replacement), $referenceAllele (str), $sampleAllele (str), $sampleGenotypesRef (hash, ex {genotype1 => [sample1,sample2,etc]})
@@ -442,6 +439,9 @@ sub annotate_snpfile {
         $self->inc_counter;
       }
     }
+
+    say "Feature counts are";
+    p %summary;
     
     if ($self->counter > 500) {
       $self->_print_annotations( \@all_annotations, \@header );
@@ -545,7 +545,6 @@ sub _get_minor_allele_carriers {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
     my $id_prob = $fields_aref->[ $ids_href->{$id} + 1 ];
 
-    $id_geno_href{$id} = $id_geno;
     # skip homozygote reference && N's
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
@@ -557,10 +556,12 @@ sub _get_minor_allele_carriers {
     }
     $het_ids_str = join ";", @het_ids;
     $hom_ids_str = join ";", @hom_ids;
+
+    $id_geno_href{$id} = $id_geno;
   }
 
   # return ids for printing
-  return ( $het_ids_str, $hom_ids_str, \@hom_ids, \%id_geno_href );
+  return ( $het_ids_str, $hom_ids_str, \%id_geno_href );
 }
 
 __PACKAGE__->meta->make_immutable;
