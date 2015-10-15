@@ -164,6 +164,12 @@ has genes_annotated => (
     has_no_gene_ann => 'is_empty',
   },
 );
+
+has redisAddress => (
+  is => 'ro',
+  default => 'genome.local:6379',
+);
+
 my $redisHost = 'genome.local';
 my $redisPort = '6379';
 
@@ -473,13 +479,14 @@ sub annotate_snpfile {
   # disabled: return $statisticsCalculator->leftHandMergeStatistics(\%summary);
   # something goes wrong, hash looks fine, but node.js doesn't receive, with errors 
   # in keymetrics : can't call property "annotaitonSummary" on undefined.
-  return \%summary; 
+  # return \%summary; 
+  return $statisticsCalculator->leftHandMergeStatistics(\%summary);
 }
 
 sub _build_message_publisher {
   my $self = shift;
 
-  return Redis->new( server=> "$redisHost:$redisPort" );
+  return Redis->new( server=> $self->redisAddress );
 }
 
 =head2

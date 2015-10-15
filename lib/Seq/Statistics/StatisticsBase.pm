@@ -532,7 +532,7 @@ sub _storePercentilesInHash
 
     my $experimentRatioPercentilessRef = \%{ $storageHashRef->{$ratioKey}->{$self->percentilesKey} }; #auto-vivify
 
-    %$experimentRatioPercentilessRef = map { $percentilesRef[$_] => $thisRatioPercentiles[$_] } 0..$#thisRatioPercentiles;
+    %$experimentRatioPercentilessRef = map { $percentilesRef[$_] * 100 . "th" => $thisRatioPercentiles[$_] } 0..$#thisRatioPercentiles;
   }
 }
 

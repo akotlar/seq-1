@@ -37,8 +37,8 @@ use Data::Dumper;
 use Redis;
 
 my $DEV                = 0;
-my $redisHost : shared = 'genome.local';
-my $redisPort : shared = '6379';
+my $redisHost : shared = $ARGV[0] || 'genome.local';
+my $redisPort : shared = $ARGV[1] || '6379';
 
 #these queues are only consumed by this service
 my $submittedJobsDocument: shared   = 'submittedJob';
@@ -226,7 +226,6 @@ sub handleJob {
 #Here we may wish to read a json or yaml file containing argument mappings
 sub coerceInputs {
   my $jobDetailsHref = shift;
-  print Dumper($jobDetailsHref);
 
   my $inputFilePath = $jobDetailsHref->{$jobKeys->{inputFilePath} };
   my $outputFilePath = $jobDetailsHref->{$jobKeys->{outputFilePath} };
@@ -251,7 +250,8 @@ sub coerceInputs {
     configfile         => $configFilePath,
     debug              => $debug,
     messangerHref      => $messangerHref,
-    }
+    redisAddress       => "$redisHost:$redisPort",
+  }
 
     # snpfile    => $jobDetailsHref->{'file'},
     #       configfile => $yaml_config,
@@ -310,7 +310,6 @@ sub worker {
 my @listenerThreads;
 
 my $normalQueue = threads->new(sub {
-  print $redisHost;
   my $redis = Redis->new( server=> "$redisHost:$redisPort" );
 
   while (1) {
