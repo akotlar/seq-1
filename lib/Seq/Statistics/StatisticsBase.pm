@@ -206,12 +206,12 @@ sub _buildTransitionTypesRef #this should live in yml
 
 sub _buildAllowedTypesRef #this should live in yml
 {
-  return {SNP => 1,LOW => 1,MESS => 1};
+  return {SNP => 1,MULTIALLELIC => 1};
 }
 
 sub _buildAllowedCodesRef
 {
-  return {SILENT => 1,REPLACEMENT => 1,INTRONIC => 1,INTERGENIC => 1}
+  return {Silent => 1,Replacement => 1}
 }
 
 # numeratorKey=>[denominatorKey,ratioKey] 
@@ -277,29 +277,44 @@ sub _calculateSiteStatistic
     return;
   }
   my $sampleHashRef = \%{ $self->statisticRecordRef->{$sampleID} };
-  my $summaryStatisticsHashRef = \%{ $sampleHashRef->{ $self->statisticsKey} };
+  
   my $siteTypeHashRef = \%{ $sampleHashRef->{$siteType} };
   my $siteCodeHashRef = \%{ $sampleHashRef->{$siteType}->{$siteCode} };
-  my $siteTypeHashStatsRef = \%{ $siteTypeHashRef->{ $self->statisticsKey} };
-  my $siteCodeHashStatsRef = \%{ $siteCodeHashRef->{ $self->statisticsKey} };  
+   
   my ($transitionKey,$transversionKey,$trTvRatioKey) = $self->_getTransitionTransversionKeys();
+
   my ($siteCodeDenominatorKey,$siteCodeRatioKey) = $self->_getSiteDenominatorRatioKeys($siteCode);
 
-  $siteTypeHashStatsRef->{$trTvRatioKey} = $self->_calculateRatio($transitionKey,$transversionKey,$siteTypeHashStatsRef);
-  $siteCodeHashStatsRef->{$trTvRatioKey} = $self->_calculateRatio($transitionKey,$transversionKey,$siteCodeHashStatsRef); 
+  my $siteTypeHashStatsRef = \%{ $siteTypeHashRef->{ $self->statisticsKey} };
+  my $siteTypeTrTv = $self->_calculateRatio($transitionKey,$transversionKey,$siteTypeHashStatsRef);
+  $siteTypeHashStatsRef->{$trTvRatioKey} = $siteTypeTrTv if defined $siteTypeTrTv;
 
+  # my $siteCodeHashStatsRef = \%{ $siteCodeHashRef->{ $self->statisticsKey} };
+  # my $siteCodeTrTv = $self->_calculateRatio($transitionKey,$transversionKey,$siteCodeHashStatsRef); 
+  # $siteCodeHashStatsRef->{$trTvRatioKey} = $siteCodeTrTv if defined $siteCodeTrTv;
+  
   #some siteCodes aren't allowed
   if($siteCodeDenominatorKey) #calculate siteType, siteCode ratios, passed hash to $self->_calculateRatio is always 1 up in the heirarchy 
   {
-    my $statisticsHashRef = \%{ $sampleHashRef->{$siteType}->{$self->statisticsKey} };
     my $siteTypeHashRef = \%{ $masterHashReference->{$sampleID}->{$siteType} };
 
     #calculate the summary statistic
-    $statisticsHashRef->{$siteCodeRatioKey} = $self->_calculateRatio($siteCode,$siteCodeDenominatorKey,$siteTypeHashRef,$siteTypeCountKey);
+    my $summaryStat = $self->_calculateRatio($siteCode,$siteCodeDenominatorKey,$siteTypeHashRef,$siteTypeCountKey);
+
+    if (defined $summaryStat) {
+      my $statisticsHashRef = \%{ $sampleHashRef->{$siteType}->{$self->statisticsKey} };
+      $statisticsHashRef->{$siteCodeRatioKey} = $summaryStat;
+    }
     
     #and store the values for the overall sample, for ratio later
     my $numeratorVal = $self->_getValue($siteCode,$siteTypeHashRef,$siteTypeCountKey);
     my $denominatorVal = $self->_getValue($siteCodeDenominatorKey,$siteTypeHashRef,$siteTypeCountKey);
+
+    my $summaryStatisticsHashRef;
+
+    if($numeratorVal || $denominatorVal) {
+      $summaryStatisticsHashRef = \%{ $sampleHashRef->{ $self->statisticsKey} };
+    }
 
     if($numeratorVal)
     {

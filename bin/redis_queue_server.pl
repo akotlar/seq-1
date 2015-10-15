@@ -23,6 +23,7 @@ use threads::shared;
 
 use Log::Any::Adapter;
 use File::Basename;
+use DDP;
 use Seq;
 
 use Thread::Queue;
@@ -168,10 +169,8 @@ sub handleJob {
   my $jobID = shift;
 
   say "Job id is $jobID";
-  say "job result key is " . $jobKeys->{result};
   my $redis = Redis->new( server=> "$redisHost:$redisPort" ); 
   my $documentKey = $submittedJobsDocument . ':' . $jobID;
-  say "Processing job with key " . $documentKey;
 
   my $log_name = join '.', 'annotation', 'jobID',$jobID,'log';
   my $log_file = File::Spec->rel2abs( ".", $log_name );
@@ -197,8 +196,11 @@ sub handleJob {
 
     handleJobStart($jobID, $documentKey, $submittedJob, $redis);
 
-    say "The user job data sent to annotator is: ";
-    print Dumper($inputHref);
+    if($verbose) {
+      say "The user job data sent to annotator is: ";
+      p $inputHref;
+    }
+    
     # create the annotator
     my $annotate_instance = Seq->new($inputHref);
 

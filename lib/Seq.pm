@@ -32,6 +32,7 @@ use namespace::autoclean;
 # use Redis;
 
 use Seq::Annotate;
+use Seq::Statistics::StatisticsCalculator;
 
 with 'Seq::Role::IO', 'MooX::Role::Logger';
 
@@ -276,6 +277,10 @@ sub annotate_snpfile {
   my $i        = 0;
   my $interval = 200;
 
+  my $statisticsCalculator = StatisticsCalculator->new_with_config(
+    assembly=>$annotator->genome_name,
+    experimentType=>'genome'
+  );
   # let the annotation begin
   my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
   READ: while ( my $line = $snpfile_fh->getline ) {
@@ -409,11 +414,11 @@ sub annotate_snpfile {
             $record_href->{genomic_annotation_code}
           }{$self->count_key} += 1;
         }
-        # kotlar: calculate statistics
-          # expects $siteType (str or array, ex: SNP), $siteCode (str or array, ex: Replacement), $referenceAllele (str), $sampleAllele (str), $sampleGenotypesRef (hash, ex {genotype1 => [sample1,sample2,etc]})
-          #
-        #$records{transition} = $statisticsCalculator->recordTransitionTransversion($records{type}, $records{site_code}, $records{ref_allele}, \%annotate_these_genos );
 
+        $statisticsCalculator->recordTransitionTransversion(
+          $type, $record_href->{genomic_annotation_code}, $ref_allele, $id_geno_href
+        );
+        
         my @record;
         for my $attr (@header) {
           if ( ref $record_href->{$attr} eq 'ARRAY' ) {
@@ -430,19 +435,15 @@ sub annotate_snpfile {
           p @record;
           say "the id geno href has";
           p $id_geno_href;
-          say "the genomic_annotation_code";
-          p $record_href->{genomic_annotation_code};
           say "the site type";
           p $record_href->{type};
         }
         push @all_annotations, \@record;
         $self->inc_counter;
       }
-    }
 
-    say "Feature counts are";
-    p %summary;
-    
+    }
+      
     if ($self->counter > 500) {
       $self->_print_annotations( \@all_annotations, \@header );
       @all_annotations = ( );
@@ -463,14 +464,16 @@ sub annotate_snpfile {
     $self->_print_annotations( \@all_annotations, \@header );
   }
 
+  $statisticsCalculator->calculateStatistics(\%summary,'count');
 
   my @snp_sites = sort { $a <=> $b } $self->keys_snp_sites;
   my @del_sites = sort { $a <=> $b } $self->keys_del_sites;
   my @ins_sites = sort { $a <=> $b } $self->keys_ins_sites;
 
-  # TODO: decide on the final return value, at a minimum we need the sample-level summary
-  #       we may want to consider returning the full experiment hash, in case we do interesting things.
-  return \%summary;
+  # disabled: return $statisticsCalculator->leftHandMergeStatistics(\%summary);
+  # something goes wrong, hash looks fine, but node.js doesn't receive, with errors 
+  # in keymetrics : can't call property "annotaitonSummary" on undefined.
+  return \%summary; 
 }
 
 sub _build_message_publisher {

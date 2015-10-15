@@ -34,7 +34,6 @@ use Hash::Merge;
 #############################################################################
 # Public Methods
 #############################################################################
-
 #
 #record Transitions and Transversions
 #@param $siteType (str or array) ex: SNP, MESS, DEL, INS
@@ -54,34 +53,35 @@ sub recordTransitionTransversion
   $siteType = $self->_makeUnique($siteType); #may be an array; precautionary, this may be removed if never possible to have array
   $siteCode = $self->_makeUnique($siteCode); #may be an array
 
-  foreach my $genotype (keys %$sampleGenotypesRef) #%sampleGenotypesRef expected to have : { $someGenotype => [sampleID#1,sampleID#2...sampleID#N] }
-  {
+  my $genotype;
+  my $sampleID;
+  foreach $sampleID (keys %$sampleGenotypesRef)
+  { 
+    $genotype = $sampleGenotypesRef->{$sampleID};
+    
     if( !($genotype eq $referenceAllele)
-      && !( exists( $self->disallowedTypesRef->{$genotype} ) ) )
+    && !( exists( $self->disallowedTypesRef->{$genotype} ) ) )
     {
       if( exists( $self->_transitionTypesHref->{$genotype} ) || exists(
-        $self->_transitionTypesHref->{$referenceAllele.$genotype} ) )
+      $self->_transitionTypesHref->{$referenceAllele.$genotype} ) )
       {
         $isTransition = 1;
       }
       $transitionKey = $self->_getTransitionTransversionKeys($isTransition);
 
-      foreach my $sampleID ( @{ $sampleGenotypesRef->{$genotype} } )
-      { 
-        my $sampleHashRef = \%{ $self->statisticRecordRef->{$sampleID} };  #if we just copy the ref, and $self->statisticRecordRef->{$sampleID} doesn't exist, won't be vivified, so wrap in \%{ratioKeys}
+      my $sampleHashRef = \%{ $self->statisticRecordRef->{$sampleID} };  #if we just copy the ref, and $self->statisticRecordRef->{$sampleID} doesn't exist, won't be vivified, so wrap in \%{ratioKeys}
 
-        $sampleHashRef->{$self->statisticsKey}->{$transitionKey}++; #top level statistic gets stored in $statisticsKey to avoid confusion
+      $sampleHashRef->{$self->statisticsKey}->{$transitionKey}++; #top level statistic gets stored in $statisticsKey to avoid confusion
 
-        if( exists( $self->allowedTypesRef->{ uc($siteType) } ) )
+      if( exists( $self->allowedTypesRef->{ uc($siteType) } ) )
+      {
+        my $sampleSiteTypeHashRef = \%{ $sampleHashRef->{$siteType} };
+
+        $sampleSiteTypeHashRef->{$self->statisticsKey}->{$transitionKey}++;
+
+        if( exists( $self->allowedCodesRef->{ uc($siteCode) } ) ) #if we ever decided to allow recording transition for heterozygous site codes
         {
-          my $sampleSiteTypeHashRef = \%{ $sampleHashRef->{$siteType} };
-
-          $sampleSiteTypeHashRef->{$self->statisticsKey}->{$transitionKey}++;
-
-          if( exists( $self->allowedCodesRef->{ uc($siteCode) } ) ) #if we ever decided to allow recording transition for heterozygous site codes
-          {
-            $sampleSiteTypeHashRef->{$siteCode}->{$self->statisticsKey}->{$transitionKey}++;
-          }
+          $sampleSiteTypeHashRef->{$siteCode}->{$self->statisticsKey}->{$transitionKey}++;
         }
       }
     }
@@ -124,14 +124,18 @@ sub calculateStatistics
     foreach my $siteCodeNumeratorKey (keys %{$self->siteTypeRatiosOrganizerRef})
     { 
       my ($siteCodeDenominatorKey,$siteCodeRatioKey) =
-      $self->_getSiteDenominatorRatioKeys($siteCodeNumeratorKey);   
-      my $ratio =
-      $self->_calculateRatio($siteCodeNumeratorKey,$siteCodeDenominatorKey,
-        $sampleStatisticsHashRef);
+      $self->_getSiteDenominatorRatioKeys($siteCodeNumeratorKey);
 
-      $sampleStatisticsHashRef->{$siteCodeRatioKey} = $ratio;  
+      if(defined $siteCodeDenominatorKey && defined $siteCodeRatioKey) {
+        my $ratio =
+        $self->_calculateRatio($siteCodeNumeratorKey,$siteCodeDenominatorKey,
+          $sampleStatisticsHashRef);
 
-      push( @{ $ratioCollection{$siteCodeRatioKey} },$ratio );  
+        if (defined $ratio) {
+          $sampleStatisticsHashRef->{$siteCodeRatioKey} = $ratio;  
+          push( @{ $ratioCollection{$siteCodeRatioKey} },$ratio );
+        }         
+      }
     }
   }
 
