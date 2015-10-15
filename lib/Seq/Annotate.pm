@@ -900,10 +900,13 @@ sub annotate_ins_sites {
 
     if (scalar @alleles != 1) {
       my $msg = sprintf("Error: Expected to only find 1 insertion for site '%s:%d' but found %s",
-        $chr, $pos, join(",", @alleles));
+        $chr, $rel_pos, join(",", @alleles));
     }
 
-    my $record_href = $self->annotate_ref_site( $chr_index_href, $abs_pos, 'NA');
+    my $abs_pos_stop = $abs_pos + length($alleles[0]);
+
+    my $record_href = $self->annotate_ref_site( $chr, $chr_index, $rel_pos, 
+      $site, 'NA');
 
     # lookup transcript information
     for my $gene_data ( @{ $record_href->{gene_data} } ) {
@@ -919,11 +922,13 @@ sub annotate_ins_sites {
         $tx_list{$tx_id} = $tx_href;
       }
     }
+
+
     my $href = {
       chr             => $chr,
-      pos             => $rel_start,
-      abs_start_pos   => $abs_start,
-      abs_stop_pos    => $abs_stop,
+      pos             => $rel_pos,
+      abs_start_pos   => $abs_pos,
+      abs_stop_pos    => $abs_pos_stop,
       ref_base        => $ref_base,
       het_ids         => $het_ids,
       hom_ids         => $hom_ids,
@@ -949,7 +954,9 @@ sub _annotate_indel_sites {
   my ( %tx_list, @ref_annotations );
 
   for ( my $site = $abs_start; $site <= $abs_stop; $site++ ) {
-    my $record_href = $self->annotate_ref_site( $chr_index, $site, 'NA');
+    my $rel_pos = $rel_start + ( $abs_start - $site );
+    my $record_href = $self->annotate_ref_site( $chr, $chr_index, $rel_pos, 
+      $site, 'NA');
 
     # save record
     push @ref_annotations, $record_href;
