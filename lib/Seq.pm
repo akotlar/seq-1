@@ -416,15 +416,22 @@ sub annotate_snpfile {
         $record_href->{homozygote_ids}    = $hom_ids || 'NA';
         
         for my $id (keys %{$id_geno_href} ) {
-          $summary{$id}{$type}{
-            $record_href->{genomic_annotation_code}
-          }{$self->count_key} += 1;
+          # $summary{$id}{$type}{
+          #   $record_href->{genomic_annotation_code}
+          # }{$self->count_key} += 1;
+
+          for my $aType (split(';', $record_href->{annotation_type} ) ) {
+            $summary{$id}{$type}{$aType}{$self->count_key} += 1;
+          }
         }
 
         $statisticsCalculator->recordTransitionTransversion(
           $type, $record_href->{genomic_annotation_code}, $ref_allele, $id_geno_href
         );
         
+        # say "The record_href is ";
+        # p $record_href;
+
         my @record;
         for my $attr (@header) {
           if ( ref $record_href->{$attr} eq 'ARRAY' ) {
