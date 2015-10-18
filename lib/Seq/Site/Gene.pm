@@ -181,19 +181,14 @@ sub _set_ref_aa_residue {
   }
 }
 
-# this function is really for storing in mongo db collection
-#TODO: can we get rid of this, since defined in Seq/Build/GeneTrack.pm, and also Seq/Config/SparseTrack.pm
 sub as_href {
   my $self = shift;
   my %hash;
 
-  for my $attr (@attributes) {
-    my $empty_attr = "no_" . $attr;
-    if ( $self->meta->has_method($empty_attr) ) {
-      $hash{$attr} = $self->$attr unless $self->$empty_attr;
-    }
-    elsif ( defined $self->$attr ) {
-      $hash{$attr} = $self->$attr;
+  for my $attr ( $self->meta->get_all_attributes ) {
+    my $name = $attr->name;
+    if ( defined $self->$name ) {
+      $hash{$name} = $self->$name;
     }
   }
   return \%hash;

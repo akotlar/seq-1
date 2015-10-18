@@ -2,13 +2,13 @@ use 5.10.0;
 use strict;
 use warnings;
 
-package Seq::Annotate::Snp;
-# ABSTRACT: Base class for seralizing annotated variant sites
+package Seq::Annotate::Site;
+# ABSTRACT: Base class for seralizing reference annotations
 # VERSION
 
 =head1 DESCRIPTION
 
-  @class B<Seq::Annotate::Snp>
+  @class B<Seq::Annotate::Site>
   #TODO: Check description
 
   @example
@@ -36,33 +36,30 @@ enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
 #  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
 
 has abs_pos => ( is => 'ro', isa => 'Int', required => 1,);
-has allele_count => ( is => 'ro', isa => 'Str', required => 1,);
-has alleles => ( is => 'ro', isa => 'Str', required => 1,);
 has chr => ( is => 'ro', isa => 'Str', required => 1,);
 has genomic_type => ( is => 'ro', isa => 'GenomicType', required => 1,);
-has het_ids => ( is => 'ro', isa => 'Str', default => '',);
-has hom_ids => ( is => 'ro', isa => 'Str', default => '',);
 has pos => ( is => 'ro', isa => 'Int', required => 1, );
 has ref_base => ( is => 'ro', isa => 'Str', required => 1,);
-has scores => ( is => 'ro', isa => 'HashRef[Str]', default => sub { {} }, );
-has var_allele => ( is => 'ro', isa => 'Str', required => 1,);
-has var_type => ( is => 'ro', isa => 'SnpType', required => 1,);
 has warning => (is => 'ro', isa => 'Str', default => 'NA', );
 
 has gene_data => (
+  traits => ['Array'],
   is => 'ro',
-  isa => 'ArrayRef[Maybe[Seq::Site::Annotation]]',
+  isa => 'ArrayRef[Maybe[Seq::Site::Gene]]',
   required => 1,
+  handles => { all_gene_obj => 'elements', },
 );
 
 has snp_data => (
+  traits => ['Array'],
   is => 'ro',
   isa => 'ArrayRef[Maybe[Seq::Site::Snp]]',
   required => 1,
+  handles => { all_snp_obj => 'elements', },
 );
 
 # these are the attributes to export
-my @attrs = qw/ chr pos allele_count alleles var_type ref_base genomic_type het_ids hom_ids warning /;
+my @attrs = qw/ chr pos var_type ref_base genomic_type het_ids hom_ids warning /;
 
 sub as_href {
   my $self = shift;

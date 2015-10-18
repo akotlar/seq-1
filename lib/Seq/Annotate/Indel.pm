@@ -23,406 +23,109 @@ use Moose::Util::TypeConstraints;
 use Carp qw/ confess /;
 use namespace::autoclean;
 
+use Seq::Site::Snp;
+use Seq::Site::Indel;
+
 use Data::Dump qw/ dump /;
 
-enum IndelType => [ 'Del', 'Ins' ];
+with 'Seq::Role::Serialize';
+
+enum IndelType => ['DEL', 'INS'];
 enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
 #enum AnnotationType  =>
 #  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
 
 has abs_pos => ( is => 'ro', isa => 'Int', required => 1,);
-has abs_start_pos => ( is => 'ro', isa => 'Int', required => 1,); 
-has abs_stop_pos => ( is => 'ro', isa => 'Int', required => 1,);
 has allele_count => ( is => 'ro', isa => 'Str', required => 1,);
 has alleles => ( is => 'ro', isa => 'Str', required => 1,);
 has chr => ( is => 'ro', isa => 'Str', required => 1,);
 has genomic_type => ( is => 'ro', isa => 'GenomicType', required => 1,);
 has het_ids => ( is => 'ro', isa => 'Str', default => '',);
 has hom_ids => ( is => 'ro', isa => 'Str', default => '',);
-has pos => ( is => 'ro', isa => 'Int', required => 1,);
+has pos => ( is => 'ro', isa => 'Int', required => 1, );
 has ref_base => ( is => 'ro', isa => 'Str', required => 1,);
-has scores => ( is => 'ro', isa => 'HashRef[Maybe[Str]]', default => sub { {} }, );
-has var_allele => ( is => 'ro', isa => 'Str', predicate => '_has_ins',);
+has scores => ( is => 'ro', isa => 'HashRef[Str]', default => sub { {} }, );
+has var_allele => ( is => 'ro', isa => 'Str', required => 1,);
 has var_type => ( is => 'ro', isa => 'IndelType', required => 1,);
+has warning => (is => 'ro', isa => 'Str', default => 'NA', );
 
-has ref_annotations => (
-  traits   => ['Array'],
-  is       => 'ro',
-  isa      => 'ArrayRef',
-  required => 1,
-  handles  => {
-    all_ref_ann => 'elements',
-    _has_no_ann => 'is_empty',
-  },
-  default => sub { [] },
-);
-
-has transcripts => (
-  traits  => ['Hash'],
-  is      => 'ro',
-  isa     => 'HashRef',
-  handles => {
-    get_tx     => 'get',
-    keys_tx    => 'keys',
-    _has_no_tx => 'is_empty',
-  },
-  default => sub { {} },
-);
-
-has splice_site_length => (
-  is       => 'ro',
-  isa      => 'Int',
-  default  => 6,
+has gene_data => (
+  is => 'ro',
+  isa => 'ArrayRef[Maybe[Seq::Site::Indel]]',
   required => 1,
 );
 
-has _tx_alt_names => (
-  traits   => ['Hash'],
-  is       => 'ro',
-  isa      => 'HashRef[HashRef]',
+has snp_data => (
+  is => 'ro',
+  isa => 'ArrayRef[Maybe[Seq::Site::Snp]]',
   required => 1,
-  handles  => {
-    get_alt_name => 'get',
-    set_alt_name => 'set',
-  },
-  default => sub { {} },
 );
 
-has _tx_strand => (
-  traits  => ['Hash'],
-  is      => 'ro',
-  isa     => 'HashRef[Str]',
-  handles => {
-    get_tx_strand => 'get',
-    set_tx_strand => 'set',
-  },
-  default => sub { {} },
-);
-
-# ref_annotations => [
-# {
-#   abs_pos => #
-#   gene_data => [
-#     {
-#       abs_pos => val
-#       alt_names => hash_ref
-#       ref_base => val
-#       site_type => val
-#       strand => val
-#       transcript_id => val
-#     }, ...
-#   ]
-#   genomic_annotation_code => Intron/Exonic/Intergenic
-#   ref_base => val
-#   site_code => (used to determine genomic_annotation_code)
-# }
-# transcripts => {
-#   transcriptID (val) => {
-#     coding_start            => $gene->coding_start,
-#     coding_end              => $gene->coding_end,
-#     exon_starts             => $gene->exon_starts,
-#     exon_ends               => $gene->exon_ends,
-#     transcript_start        => $gene->transcript_start,
-#     transcript_end          => $gene->transcript_end,
-#     transcript_id           => $gene->transcript_id,
-#     transcript_seq          => $gene->transcript_seq,
-#     transcript_annotation   => $gene->transcript_annotation,
-#     transcript_abs_position => $gene->transcript_abs_position,
-#     peptide_seq             => $gene->peptide,
-#   },
-#  }, ...
-#
+# these are the attributes to export
+my @attrs = qw/ chr pos allele_count alleles var_type ref_base genomic_type het_ids hom_ids warning /;
 
 sub as_href {
   my $self = shift;
 
-  # determine if site is intronic then if it's an insertion or deletion
-  if ( $self->_has_no_tx ) {
-    return $self->_intronic_site;
+  my %hash;
+
+  for my $attr ( @attrs ) {
+    $hash{$attr} = $self->$attr;
   }
-  elsif ( $self->indel_type eq 'Del' ) {
-    return $self->_annotate_del;
+
+  my $scores_href = $self->scores;
+
+  for my $score ( sort keys %$scores_href ) {
+    $hash{$score} = $scores_href->{$score};
   }
-  else {
-    if ( $self->_has_ins ) {
-      return $self->_annotate_ins;
-    }
-    else {
-      my $msg =
-        sprintf( "Error: Indel of type %s without 'ins' string.", $self->indel_type );
-      confess $msg;
-    }
+
+  my $gene_site_href = {};
+  for my $gene ( @{ $self->gene_data } ) {
+    $gene_site_href = $self->_join_href( $gene_site_href, $gene->as_href_with_NAs); 
   }
+
+  my $snp_site_href = {};
+  for my $snp ( @{ $self->snp_data } ) {
+    $snp_site_href = $self->_join_href( $snp_site_href, $snp->as_href_with_NAs);
+  }
+
+  return { %hash, %$gene_site_href, %$snp_site_href };
 }
 
-sub _annotate_del {
-  my $self = shift;
+# _join_href joins two hash references and any underlying hashes recursively.
+# It is assumed that if there's a value in one key that is a hash reference
+# then the other hashRef also has a hash reference for that key.
+sub _join_href {
+  my ( $self, $old_href, $new_href ) = @_;
 
-  my $tx_site_href = $self->_site_2_tx;
+  my %attrs = map { $_ => 1 } ( keys %$old_href, keys %$new_href );
+  my %merge;
 
-  # {
-  #   "2803214660" => {
-  #     genomic_annotation_code => "Exonic",
-  #     ref_base => "A",
-  #     transcript_id => ["NM_001197298", "NM_002040"],
-  #   },
-  # }
-
-  my ( %tx, %ann, @ref_bases );
-  for ( my $site = $self->abs_start_pos; $site <= $self->abs_stop_pos; $site++ ) {
-    push @ref_bases, $tx_site_href->{$site}{ref_base};
-    for my $tx_id ( @{ $tx_site_href->{$site}{transcript_id} } ) {
-      my $dat = $self->_ann_tx_site( $tx_id, $site );
-      for my $type ( keys %$dat ) {
-        $tx{$tx_id}{$type}++;
+  for my $attr ( keys %attrs ) {
+    my $old_val = $old_href->{$attr};
+    my $new_val = $new_href->{$attr};
+    if ( defined $old_val and defined $new_val ) {
+      # assuming if one is a hashref then they both are.
+      if (ref $old_val eq 'HASH') {
+        $merge{$attr} = $self->_join_href( $old_val, $new_val );
       }
-    }
-  }
-  my $ref_base = join '', @ref_bases;
-
-  for my $tx_id ( keys %tx ) {
-    if ( exists $tx{$tx_id}{Coding} ) {
-      if ( $tx{$tx_id}{Coding} % 3 == 0 ) {
-        $tx{$tx_id}{InFrame}++;
+      elsif ( $old_val eq $new_val ) {
+        $merge{$attr} = join ";", $old_val, $new_val;
       }
       else {
-        $tx{$tx_id}{FrameShift}++;
+        my @old_vals = split /\;/, $old_val;
+        push @old_vals, $new_val;
+        $merge{$attr} = join ";", @old_vals;
       }
     }
-  }
-  return $self->_format_results( \%tx, $ref_base );
-}
-
-sub _intronic_site {
-  my $self = shift;
-
-  my %ann;
-  $ann{chr} = $self->chr;
-  $ann{pos} = $self->pos;
-
-  if ( $self->indel_type eq 'Del' ) {
-    $ann{minor_allele} = '-';
-  }
-  elsif ( $self->_has_ins && $self->indel_type eq 'Ins' ) {
-    $ann{minor_allele} = $self->ins;
-  }
-  else {
-    my $msg = sprintf( "Error: processing %s:%d", $self->chr, $self->pos );
-    confess $msg;
-  }
-
-  # get the reference base and the annotation information from the 1st site:
-  # i.e., self->pos
-  for my $site_record ( $self->all_ref_ann ) {
-    if ( $self->abs_start_pos == $site_record->{abs_pos} ) {
-      $ann{ref_base}                = $site_record->{ref_base};
-      $ann{genomic_annotation_code} = $site_record->{genomic_annotation_code};
-      # nearest gene stuff goes here
-      # $ann{nearest_gene} = $site_record->{_nearest_gene};
+    elsif ( defined $old_val ) {
+      $merge{$attr} = $old_val;
+    }
+    elsif ( defined $new_val ) {
+      $merge{$attr} = $new_val;
     }
   }
-  $ann{site_type} = $ann{annotation_type} = $ann{genomic_annotation_code};
-  return \%ann;
-}
-
-sub _annotate_ins {
-  my $self = shift;
-
-  my $tx_site_href = $self->_site_2_tx;
-
-  # unlike del sites, we'll only get the 1st position of the insertion
-  # to assign annotation / site_type
-
-  my ( %tx, %ann );
-  my $site     = $self->abs_start_pos;
-  my $ref_base = $tx_site_href->{$site}{ref_base};
-  for my $tx_id ( @{ $tx_site_href->{$site}{transcript_id} } ) {
-    my $site_href = $self->_ann_tx_site( $tx_id, $site );
-    for my $type ( keys %$site_href ) {
-      $tx{$tx_id}{$type}++;
-    }
-  }
-
-  for my $tx_id ( keys %tx ) {
-    if ( exists $tx{$tx_id}{Coding} ) {
-      if ( ( $self->abs_stop_pos - $self->abs_start_pos ) % 3 == 0 ) {
-        $tx{$tx_id}{InFrame}++;
-      }
-      else {
-        $tx{$tx_id}{FrameShift}++;
-      }
-    }
-  }
-  return $self->_format_results( \%tx, $ref_base );
-}
-
-sub _format_results {
-  my ( $self, $tx_href, $ref_base ) = @_;
-
-  my @site_types       = qw/ Exonic Coding Intronic /;
-  my @annotation_types = qw/ 5UTR 3UTR SpliceDonor SpliceAcceptor
-    StartLoss StopLoss FrameShift InFrame /;
-
-  my %ann;
-  $ann{chr}      = $self->chr;
-  $ann{pos}      = $self->pos;
-  $ann{ref_base} = $ref_base;
-
-  if ( $self->indel_type eq 'Del' ) {
-    $ann{minor_allele} = '-';
-  }
-  elsif ( $self->_has_ins && $self->indel_type eq 'Ins' ) {
-    $ann{minor_allele} = $self->ins;
-  }
-  else {
-    my $msg = sprintf( "Error: processing %s:%d", $self->chr, $self->pos );
-    confess $msg;
-  }
-
-  for my $tx_id ( keys %$tx_href ) {
-
-    my @site_type_summary;
-    for my $type (@site_types) {
-      if ( exists $tx_href->{$tx_id}{$type} ) {
-        push @site_type_summary, $type;
-      }
-    }
-
-    my @ann_type_summary;
-    for my $type (@annotation_types) {
-      if ( exists $tx_href->{$tx_id}{$type} ) {
-        push @ann_type_summary, $type;
-      }
-    }
-    if ( !@ann_type_summary ) {
-      push @ann_type_summary, 'Del';
-    }
-    push @{ $ann{site_type} },       join( ",", @site_type_summary );
-    push @{ $ann{annotation_type} }, join( ",", @ann_type_summary );
-    push @{ $ann{transcript_id} },   $tx_id;
-    push @{ $ann{alt_names} },       $self->get_alt_name($tx_id);
-  }
-  return \%ann;
-}
-
-sub _site_2_tx {
-  my $self = shift;
-
-  my %site_2_tx;
-
-  for my $site_record ( $self->all_ref_ann ) {
-
-    my $pos = $site_record->{abs_pos};
-
-    for my $attr (qw/ ref_base genomic_annotation_code/) {
-      $site_2_tx{$pos}{$attr} = $site_record->{$attr};
-    }
-
-    for my $gene_href ( @{ $site_record->{gene_data} } ) {
-      push @{ $site_2_tx{$pos}{transcript_id} }, $gene_href->{transcript_id};
-      $self->set_alt_name( $gene_href->{transcript_id} => $gene_href->{alt_names} );
-      $self->set_tx_strand( $gene_href->{transcript_id} => $gene_href->{strand} );
-    }
-  }
-  return \%site_2_tx;
-}
-
-sub _ann_tx_site {
-  my ( $self, $tx_id, $site ) = @_;
-
-  my %res;
-  my $splice_site_length = $self->splice_site_length;
-  my $tx_href            = $self->get_tx($tx_id);
-  my $strand             = $self->get_tx_strand($tx_id);
-  my $tx_start           = $tx_href->{transcript_start};
-  my $tx_end             = $tx_href->{transcript_end};
-  my $coding_start       = $tx_href->{coding_start};
-  my $coding_end         = $tx_href->{coding_end};
-  my @e_starts           = @{ $tx_href->{exon_starts} };
-  my @e_ends             = @{ $tx_href->{exon_ends} };
-
-  # loop over exons
-  for ( my $i = 0; $i < @e_starts; $i++ ) {
-
-    # inside an exon
-    if ( $site >= $e_starts[$i] && $site < $e_ends[$i] ) {
-
-      # at the exon start/end
-      if ( $site == $e_starts[$i] || $site == $e_ends[$i] - 1 ) {
-        $res{ExonJunction}++;
-      }
-
-      # inside coding region
-      if ( $site >= $coding_start && $site < $coding_end ) {
-
-        # in the start site
-        if ( $site >= $coding_start && $site < ( $coding_start + 3 ) ) {
-          if ( $strand eq "+" ) {
-            $res{StartLoss}++;
-          }
-          else {
-            $res{StopLoss}++;
-          }
-          $res{Coding}++;
-        }
-        # in the stop site
-        elsif ( $site >= ( $coding_end - 3 ) && $site < $coding_end ) {
-          if ( $strand eq "+" ) {
-            $res{StopLoss}++;
-          }
-          else {
-            $res{StartLoss}++;
-          }
-          $res{Coding}++;
-        }
-        else {
-          $res{Coding}++;
-        }
-      }
-      # between tx start and coding start (5' UTR)
-      elsif ( $site >= $tx_start && $site < $coding_start ) {
-        if ( $strand eq "+" ) {
-          $res{'5UTR'}++;
-        }
-        else {
-          $res{'3UTR'}++;
-        }
-        $res{Exonic}++;
-      }
-      # between tx end and coding end (3' UTR)
-      elsif ( $site >= $coding_end && $site < $tx_end ) {
-        if ( $strand eq "+" ) {
-          $res{'3UTR'}++;
-        }
-        else {
-          $res{'5UTR'}++;
-        }
-        $res{Exonic}++;
-      }
-    }
-    elsif ( $site < $e_starts[$i] && $site > ( $e_starts[$i] - $splice_site_length ) ) {
-      if ( $strand eq "+" ) {
-        $res{SpliceDonor}++;
-      }
-      else {
-        $res{SpliceAcceptor}++;
-      }
-      $res{Intronic}++;
-    }
-    elsif ( $site > $e_ends[$i] && $site < ( $e_ends[$i] + $splice_site_length ) ) {
-      if ( $strand eq "+" ) {
-        $res{SpliceAcceptor}++;
-      }
-      else {
-        $res{SpliceDonor}++;
-      }
-      $res{Intronic}++;
-    }
-  }
-  if ( !%res ) {
-    $res{Intronic}++;
-  }
-  return \%res;
+  return \%merge;
 }
 
 __PACKAGE__->meta->make_immutable;
