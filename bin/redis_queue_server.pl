@@ -330,9 +330,12 @@ my $normalQueue = threads->new(sub {
 
 push @listenerThreads, $normalQueue;
 
+$_->join for @workers;
+
+$_->join for @listenerThreads;
+
 #If user presses control+C exit
 $SIG{INT} = sub {
-  print "Got control + c";
   #close the listener
   $done = 1;
 
@@ -341,10 +344,6 @@ $SIG{INT} = sub {
 
   $_->kill('KILL')->kill() for @listenerThreads; #not working
 };
-
-$_->join for @workers;
-
-#$_->join for @listenerThreads;
 
 tprint "Listener closed";
 
