@@ -18,7 +18,7 @@ with 'Seq::Role::Serialize';
 
 has minor_allele => (
   is       => 'ro',
-  isa     => 'Maybe[Str]',
+  isa      => 'Maybe[Str]',
   required => 1,
 );
 
@@ -37,8 +37,8 @@ has new_aa_residue => (
 );
 
 has annotation_type => (
-  is      => 'ro',
-  isa     => 'Str',
+  is       => 'ro',
+  isa      => 'Str',
   required => 1,
 );
 

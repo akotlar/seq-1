@@ -77,7 +77,7 @@ has out_file => (
   handles   => { output_path => 'stringify' }
 );
 
-has ignore_unknown_chr  => (
+has ignore_unknown_chr => (
   is      => 'ro',
   isa     => 'Bool',
   default => 1,
@@ -96,8 +96,8 @@ has debug => (
 );
 
 has write_batch => (
-  is => 'ro',
-  isa => 'Int',
+  is      => 'ro',
+  isa     => 'Int',
   default => 1000,
 );
 
@@ -236,7 +236,7 @@ my %site_2_set_method = (
 #   exception of the indel codes that are specified in the snpfile specifications
 
 my %het_genos = (
- K => [ 'G', 'T' ],
+  K => [ 'G', 'T' ],
   M => [ 'A', 'C' ],
   R => [ 'A', 'G' ],
   S => [ 'C', 'G' ],
@@ -366,7 +366,8 @@ sub annotate_snpfile {
 
     # check that $chr is an allowable chromosome
     unless ( exists $chr_len_href->{$chr} ) {
-      my $msg = sprintf( "Error: unrecognized chromosome in input: '%s', pos: %d", $chr, $pos );
+      my $msg =
+        sprintf( "Error: unrecognized chromosome in input: '%s', pos: %d", $chr, $pos );
       # decide if we plow through the error or if we stop
       if ( $self->ignore_unknown_chr ) {
         $self->_tee_logger( 'warn', $msg );
@@ -394,7 +395,8 @@ sub annotate_snpfile {
 
       # check that we set the needed variables for determining position
       unless ( defined $chr_offset and defined $chr_index ) {
-        my $msg = sprintf( "Error: unable to set 'chr_offset' or 'chr_index' for: '%s'", $chr );
+        my $msg =
+          sprintf( "Error: unable to set 'chr_offset' or 'chr_index' for: '%s'", $chr );
         $self->_tee_logger( 'error', $msg );
       }
       $abs_pos = $chr_offset + $pos - 1;
@@ -413,20 +415,22 @@ sub annotate_snpfile {
     #   - indels are saved in an array (because deletions might be 1 off or contiguous over
     #     any number of bases that cannot be determined a prior) and annotated en masse
     #     after all SNPs are annotated
-    #   - NOTE: the way the annotations for INS sites now work (due to changes in the 
+    #   - NOTE: the way the annotations for INS sites now work (due to changes in the
     #     snpfile format, we could change their annotation to one off annotations like
     #     the SNPs
     if ( $var_type eq 'SNP' || $var_type eq 'MULTIALLELIC' ) {
-      my $record_href = $annotator->annotate_snp_site( $chr, $chr_index, $pos, $abs_pos, 
-        $ref_allele, $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids);
+      my $record_href = $annotator->annotate_snp_site(
+        $chr,      $chr_index,      $pos,          $abs_pos, $ref_allele,
+        $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids
+      );
       $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
       push @snp_annotations, $record_href;
       $self->inc_counter;
     }
-    elsif (exists $site_2_set_method{$var_type}) {
+    elsif ( exists $site_2_set_method{$var_type} ) {
       my $method = $site_2_set_method{$var_type};
-      $self->$method( $abs_pos => [ $chr, $pos, $ref_allele, $all_allele_str, $allele_count, 
-          $het_ids, $hom_ids ] );
+      $self->$method( $abs_pos =>
+          [ $chr, $pos, $ref_allele, $all_allele_str, $allele_count, $het_ids, $hom_ids ] );
     }
     else {
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
@@ -447,7 +451,7 @@ sub annotate_snpfile {
   # finished printing the final snp annotations
   if (@snp_annotations) {
     $self->_print_annotations( \@snp_annotations, $self->header );
-    @snp_annotations = ( );
+    @snp_annotations = ();
   }
 
   # print deletion sites
@@ -455,11 +459,11 @@ sub annotate_snpfile {
   #   - the _print_annotations function flattens the hash reference and
   #     prints them in order
   unless ( $self->has_no_del_sites ) {
-    my $del_annotations_aref  =
+    my $del_annotations_aref =
       $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
     $self->_print_annotations( $del_annotations_aref, $self->header );
   }
-  
+
   # print insertion sites
   #   - indel annotations come back as an array reference of hash references
   #   - the _print_annotations function flattens the hash reference and
@@ -542,8 +546,8 @@ sub _build_annotator {
   return $annotator;
 }
 
-# _print_annotations takes an array reference of annotations and hash 
-# reference of header attributes and writes the header (if needed) to the 
+# _print_annotations takes an array reference of annotations and hash
+# reference of header attributes and writes the header (if needed) to the
 # output file and flattens the hash references for each entry and writes
 # them to the output file
 sub _print_annotations {
@@ -559,9 +563,9 @@ sub _print_annotations {
   my @header = $self->all_header_attr;
 
   # flatten entry hash references and print to file
-  for my $entry_href ( @$annotations_aref ) {
+  for my $entry_href (@$annotations_aref) {
     my @prt_record;
-    for my $attr ( @header ) {
+    for my $attr (@header) {
       if ( exists $entry_href->{$attr} ) {
         push @prt_record, $entry_href->{$attr};
       }
@@ -635,7 +639,7 @@ sub _minor_allele_carriers {
 
     if (@het_ids) {
       $het_ids_str = join ";", @het_ids;
-    } 
+    }
     else {
       $het_ids_str = 'NA';
     }

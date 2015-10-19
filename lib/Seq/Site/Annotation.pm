@@ -199,7 +199,6 @@ override seralizable_attributes => sub {
   return @attributes;
 };
 
-
 =method header_attr
 
   Returns the attributes needed to make the header to organize the output.

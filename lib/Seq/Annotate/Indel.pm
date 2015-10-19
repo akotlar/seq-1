@@ -1,5 +1,5 @@
-use 5.10.0; 
-use strict; 
+use 5.10.0;
+use strict;
 use warnings;
 
 package Seq::Annotate::Indel;
@@ -30,46 +30,47 @@ use Data::Dump qw/ dump /;
 
 with 'Seq::Role::Serialize';
 
-enum IndelType => ['DEL', 'INS'];
+enum IndelType => [ 'DEL', 'INS' ];
 enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
 #enum AnnotationType  =>
 #  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
 
-has abs_pos => ( is => 'ro', isa => 'Int', required => 1,);
-has allele_count => ( is => 'ro', isa => 'Str', required => 1,);
-has alleles => ( is => 'ro', isa => 'Str', required => 1,);
-has chr => ( is => 'ro', isa => 'Str', required => 1,);
-has genomic_type => ( is => 'ro', isa => 'GenomicType', required => 1,);
-has het_ids => ( is => 'ro', isa => 'Str', default => '',);
-has hom_ids => ( is => 'ro', isa => 'Str', default => '',);
-has pos => ( is => 'ro', isa => 'Int', required => 1, );
-has ref_base => ( is => 'ro', isa => 'Str', required => 1,);
-has scores => ( is => 'ro', isa => 'HashRef[Str]', default => sub { {} }, );
-has var_allele => ( is => 'ro', isa => 'Str', required => 1,);
-has var_type => ( is => 'ro', isa => 'IndelType', required => 1,);
-has warning => (is => 'ro', isa => 'Str', default => 'NA', );
+has abs_pos      => ( is => 'ro', isa => 'Int',          required => 1, );
+has allele_count => ( is => 'ro', isa => 'Str',          required => 1, );
+has alleles      => ( is => 'ro', isa => 'Str',          required => 1, );
+has chr          => ( is => 'ro', isa => 'Str',          required => 1, );
+has genomic_type => ( is => 'ro', isa => 'GenomicType',  required => 1, );
+has het_ids      => ( is => 'ro', isa => 'Str',          default  => '', );
+has hom_ids      => ( is => 'ro', isa => 'Str',          default  => '', );
+has pos          => ( is => 'ro', isa => 'Int',          required => 1, );
+has ref_base     => ( is => 'ro', isa => 'Str',          required => 1, );
+has scores       => ( is => 'ro', isa => 'HashRef[Str]', default  => sub { {} }, );
+has var_allele   => ( is => 'ro', isa => 'Str',          required => 1, );
+has var_type     => ( is => 'ro', isa => 'IndelType',    required => 1, );
+has warning      => ( is => 'ro', isa => 'Str',          default  => 'NA', );
 
 has gene_data => (
-  is => 'ro',
-  isa => 'ArrayRef[Maybe[Seq::Site::Indel]]',
+  is       => 'ro',
+  isa      => 'ArrayRef[Maybe[Seq::Site::Indel]]',
   required => 1,
 );
 
 has snp_data => (
-  is => 'ro',
-  isa => 'ArrayRef[Maybe[Seq::Site::Snp]]',
+  is       => 'ro',
+  isa      => 'ArrayRef[Maybe[Seq::Site::Snp]]',
   required => 1,
 );
 
 # these are the attributes to export
-my @attrs = qw/ chr pos allele_count alleles var_type ref_base genomic_type het_ids hom_ids warning /;
+my @attrs =
+  qw/ chr pos allele_count alleles var_type ref_base genomic_type het_ids hom_ids warning /;
 
 sub as_href {
   my $self = shift;
 
   my %hash;
 
-  for my $attr ( @attrs ) {
+  for my $attr (@attrs) {
     $hash{$attr} = $self->$attr;
   }
 
@@ -81,12 +82,12 @@ sub as_href {
 
   my $gene_site_href = {};
   for my $gene ( @{ $self->gene_data } ) {
-    $gene_site_href = $self->_join_href( $gene_site_href, $gene->as_href_with_NAs); 
+    $gene_site_href = $self->_join_href( $gene_site_href, $gene->as_href_with_NAs );
   }
 
   my $snp_site_href = {};
   for my $snp ( @{ $self->snp_data } ) {
-    $snp_site_href = $self->_join_href( $snp_site_href, $snp->as_href_with_NAs);
+    $snp_site_href = $self->_join_href( $snp_site_href, $snp->as_href_with_NAs );
   }
 
   return { %hash, %$gene_site_href, %$snp_site_href };
@@ -106,7 +107,7 @@ sub _join_href {
     my $new_val = $new_href->{$attr};
     if ( defined $old_val and defined $new_val ) {
       # assuming if one is a hashref then they both are.
-      if (ref $old_val eq 'HASH') {
+      if ( ref $old_val eq 'HASH' ) {
         $merge{$attr} = $self->_join_href( $old_val, $new_val );
       }
       elsif ( $old_val eq $new_val ) {

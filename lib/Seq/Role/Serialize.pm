@@ -33,8 +33,8 @@ use DDP;
 
 my $tc_regex = qr{HashRef|ArrayRef};
 
-# header_attr() returns a hash reference of the header, which is defined as 
-# all attributes that are not references to hashes or arrays or abs_pos 
+# header_attr() returns a hash reference of the header, which is defined as
+# all attributes that are not references to hashes or arrays or abs_pos
 # attribute. The rationale for this is that the hashes (presently not using
 # any array references) only hold "features" which may vary depending on
 # the assembly specification. In Seq::Annotate the _build_header() will
@@ -42,14 +42,14 @@ my $tc_regex = qr{HashRef|ArrayRef};
 # in the assembly.
 sub header_attr {
   my $self = shift;
-  
+
   my %hash;
 
   for my $attr ( $self->meta->get_all_attributes ) {
-    my $name = $attr->name;
+    my $name            = $attr->name;
     my $type_constraint = $attr->type_constraint;
     if ( defined $self->$name ) {
-      next if ( $type_constraint =~ m/$tc_regex/ or $name eq 'abs_pos');
+      next if ( $type_constraint =~ m/$tc_regex/ or $name eq 'abs_pos' );
       $hash{$name} = $self->$name;
     }
   }
