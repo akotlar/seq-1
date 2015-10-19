@@ -19,7 +19,8 @@ use Data::Dump qw/ dump pp /;
 
 use Seq;
 
-my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $overwrite, $no_skip_chr, $debug );
+my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $overwrite, $no_skip_chr,
+  $debug );
 
 # TODO: read directly from argument_format.json
 
@@ -75,13 +76,13 @@ try {
   # create the annotator
   my $annotate_instance = Seq->new(
     {
-      file_type   => 'snp_2',
-      config_file => $yaml_config,
-      debug       => $debug,
-      overwrite   => $overwrite,
-      ignore_unkown_chr => (!$no_skip_chr),
-      out_file    => $out_file,
-      snpfile     => $snpfile,
+      file_type         => 'snp_2',
+      config_file       => $yaml_config,
+      debug             => $debug,
+      overwrite         => $overwrite,
+      ignore_unkown_chr => ( !$no_skip_chr ),
+      out_file          => $out_file,
+      snpfile           => $snpfile,
     }
   );
   $annotate_instance->annotate_snpfile;
