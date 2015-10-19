@@ -15,11 +15,11 @@ use Log::Any::Adapter;
 use YAML::XS qw/ LoadFile /;
 use Try::Tiny;
 
-use Data::Dump qw/ pp /;
+use Data::Dump qw/ dump pp /;
 
 use Seq;
 
-my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $force, $debug );
+my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $overwrite, $no_skip_chr, $debug );
 
 # TODO: read directly from argument_format.json
 
@@ -30,7 +30,8 @@ GetOptions(
   'v|verbose'   => \$verbose,
   'h|help'      => \$help,
   'o|out=s'     => \$out_file,
-  'f|force'     => \$force,
+  'overwrite'   => \$overwrite,
+  'no_skip_chr' => \$no_skip_chr,
   'd|debug'     => \$debug,
 );
 
@@ -48,8 +49,8 @@ unless ( $yaml_config
 
 try {
   # sanity checking
-  if ( -f $out_file && !$force ) {
-    say "ERROR: '$out_file' already exists. Use '--force' switch to over write it.";
+  if ( -f $out_file && !$overwrite ) {
+    say "ERROR: '$out_file' already exists. Use '--overwrite' switch to over write it.";
     exit;
   }
 
@@ -77,13 +78,12 @@ try {
       file_type   => 'snp_2',
       config_file => $yaml_config,
       debug       => $debug,
-      force       => $force,
+      overwrite   => $overwrite,
+      ignore_unkown_chr => (!$no_skip_chr),
       out_file    => $out_file,
       snpfile     => $snpfile,
     }
   );
-
-  # annotate the snp file
   $annotate_instance->annotate_snpfile;
 }
 catch {
@@ -123,9 +123,14 @@ used by the Seq Package to build the binary genome without any alteration.
 
 Output directory: This is the output director.
 
-=item B<-f>, B<--force>
+=item B<--overwrite>
 
-Force: Overwrite the annotation file if it exists.
+Overwrite: Overwrite the annotation file if it exists.
+
+=item B<--no_skip_chr>
+
+No_Skip_Chr: Try to annotate all chromosomes in the snpfile and die if unable
+to do so.
 
 
 =back

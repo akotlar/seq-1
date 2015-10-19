@@ -33,8 +33,8 @@ use Cpanel::JSON::XS;
 use namespace::autoclean;
 # use Redis;
 
+use Data::Dump qw/ dump /;
 use DDP;
-use Data::Dump qw/ dump/;
 
 use Seq::Annotate;
 
@@ -83,7 +83,7 @@ has ignore_unknown_chr => (
   default => 1,
 );
 
-has force => (
+has overwrite => (
   is      => 'ro',
   isa     => 'Bool',
   default => 0,
@@ -287,7 +287,6 @@ sub annotate_snpfile {
     {
       configfile => $self->config_file_path,
       debug      => $self->debug,
-      force      => $self->force,
     }
   );
 
@@ -371,6 +370,7 @@ sub annotate_snpfile {
       # decide if we plow through the error or if we stop
       if ( $self->ignore_unknown_chr ) {
         $self->_tee_logger( 'warn', $msg );
+        next;
       }
       else {
         $self->_tee_logger( 'error', $msg );
@@ -540,7 +540,6 @@ sub _build_annotator {
     {
       configfile => $self->config_file_path,
       debug      => $self->debug,
-      force      => $self->force,
     }
   );
   return $annotator;

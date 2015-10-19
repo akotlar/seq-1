@@ -9,13 +9,17 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 55;
+plan tests => 75;
 
 my %attr_2_type_ro = (
   snpfile            => 'MooseX::Types::Path::Tiny::AbsFile',
   config_file        => 'MooseX::Types::Path::Tiny::AbsFile',
   out_file           => 'MooseX::Types::Path::Tiny::AbsPath',
+  file_type          => 'fileTypes',
+  ignore_unknown_chr => 'Bool',
+  overwrite          => 'Bool',
   debug              => 'Bool',
+  write_batch        => 'Int',
   messageChannelHref => 'HashRef',
   _message_publisher => undef,
   _out_fh            => undef,
