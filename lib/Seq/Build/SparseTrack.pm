@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Build::SparseTrack;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Base class for sparse track building
 # VERSION
 

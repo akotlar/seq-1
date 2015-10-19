@@ -4,6 +4,8 @@ use warnings;
 
 package Seq::Role::IO;
 
+our $VERSION = '0.001';
+
 # ABSTRACT: A moose role for all of our file handle needs
 # VERSION
 

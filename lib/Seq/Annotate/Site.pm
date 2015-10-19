@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Annotate::Site;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Base class for seralizing reference annotations
 # VERSION
 

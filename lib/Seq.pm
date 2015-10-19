@@ -4,7 +4,9 @@ use warnings;
 
 package Seq;
 
-# ABSTRACT: A class for kickstarting building or annotating things
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for kickstarting building or annotating snpfiles
 # VERSION
 
 =head1 DESCRIPTION
@@ -20,8 +22,6 @@ Used in: None
 Extended by: None
 
 =cut
-
-our $VERSION = '0.001';
 
 use Moose 2;
 use Moose::Util::TypeConstraints;
@@ -411,7 +411,7 @@ sub annotate_snpfile {
     $last_chr = $chr;
 
     # Annotate variant sites
-    #   - SNP and MULTIALLELELIC sites are annotated individually and added to an array
+    #   - SNP and MULTIALLELIC sites are annotated individually and added to an array
     #   - indels are saved in an array (because deletions might be 1 off or contiguous over
     #     any number of bases that cannot be determined a prior) and annotated en masse
     #     after all SNPs are annotated

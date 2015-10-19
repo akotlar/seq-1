@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Build::GeneTrack;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Builds Gene Tracks and places into MongoDB instance.
 # VERSION
 

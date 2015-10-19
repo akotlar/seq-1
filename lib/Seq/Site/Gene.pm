@@ -3,11 +3,14 @@ use strict;
 use warnings;
 
 package Seq::Site::Gene;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Class for seralizing gene sites
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @class Seq::Site::Gene
   #TODO: Check description
 
@@ -46,7 +49,7 @@ package Seq::Site::Gene;
 Used in:
 =for :list
 * Seq::Gene
-* 
+*
 
 Extended by:
 =for :list
@@ -62,9 +65,6 @@ use namespace::autoclean;
 extends 'Seq::Site';
 
 #<<< No perltidy
-#TODO: some these attributes are defined in multiple places, including Seq/Site/Annotation.pm, can we combine them
-my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
-    codon_number codon_position ref_aa_residue error_code alt_names );
 
 my %Eu_codon_2_aa = (
   "AAA" => "K", "AAC" => "N", "AAG" => "K", "AAT" => "N",
@@ -85,11 +85,15 @@ my %Eu_codon_2_aa = (
   "TTA" => "L", "TTC" => "F", "TTG" => "L", "TTT" => "F"
 );
 
-=type {Str} GeneSiteType 
-=cut 
+=type {Str} GeneSiteType
 
+=cut
 enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                        'Splice Donor', 'Splice Acceptor' ];
+
+=type {Str} StrandType
+
+=cut
 enum StrandType   => [ '+', '-' ];
 #>>>
 
@@ -192,10 +196,6 @@ sub as_href {
     }
   }
   return \%hash;
-}
-
-sub seralizable_attributes {
-  return @attributes;
 }
 
 __PACKAGE__->meta->make_immutable;

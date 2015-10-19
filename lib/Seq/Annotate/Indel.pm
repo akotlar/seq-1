@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Annotate::Indel;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Base class for seralizing genomic indels.
 # VERSION
 

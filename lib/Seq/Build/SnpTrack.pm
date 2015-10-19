@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Build::SnpTrack;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Builds a snp track using dbSnp data, derived from UCSC
 # VERSION
 

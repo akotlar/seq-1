@@ -3,11 +3,14 @@ use strict;
 use warnings;
 
 package Seq::Site::Snp;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: A class for seralizing Snp sites
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @class Seq::Site::Snp
   #TODO: Check description
 
@@ -25,8 +28,6 @@ Extended by: None
 use Moose 2;
 
 use namespace::autoclean;
-
-my @attributes = qw( abs_pos ref_base snp_id snp_feature );
 
 extends 'Seq::Site';
 with 'Seq::Role::Serialize';
@@ -52,25 +53,17 @@ has snp_feature => (
   },
 );
 
-# this function is really for storing in mongo db collection
-#TODO: can we get rid of this, since defined in Seq/Build/GeneTrack.pm, and also Seq/Config/SparseTrack.pm
 sub as_href {
   my $self = shift;
   my %hash;
 
-  for my $attr (@attributes) {
-    if ( $attr eq "feature" ) {
-      $hash{$attr} = $self->$attr unless $self->no_feature;
-    }
-    else {
-      $hash{$attr} = $self->$attr;
+  for my $attr ( $self->meta->get_all_attributes ) {
+    my $name = $attr->name;
+    if ( defined $self->$name ) {
+      $hash{$name} = $self->$name;
     }
   }
   return \%hash;
-}
-
-sub seralizable_attributes {
-  return @attributes;
 }
 
 __PACKAGE__->meta->make_immutable;

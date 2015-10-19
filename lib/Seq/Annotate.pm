@@ -4,12 +4,16 @@ use warnings;
 
 package Seq::Annotate;
 
-# ABSTRACT: Annotates sites of a given genome assembly.
+our $VERSION = '0.001';
+
+# ABSTRACT: Annotates arbitrary sites of a genome assembly.
 # VERSION
 
 =head1 DESCRIPTION Seq::Annotate
 
-  Contains helper functions for genome annotation of a given genome assembly.
+  Given a genomic position (and a few other needed pieces) this package
+  will provides functions that return annotations for the reference, SNP,
+  MULTIALLELIC, INS, and DEL sites.
 
 Used in:
 
@@ -40,10 +44,15 @@ Uses:
 * @class Seq::GenomeSizedTrackChar
 * @class Seq::KCManager
 * @class Seq::Site::Annotation
+* @class Seq::Site::Gene
+* @class Seq::Site::Indel
+* @class Seq::Site::SNP
 * @class Seq::Site::Snp
+* @class Seq::Annotate::Indel;
+* @class Seq::Annotate::Site;
+* @class Seq::Annotate::Snp;
 * @role Seq::Role::IO
 
-TODO: extend this description
 =cut
 
 use Moose 2;
@@ -56,7 +65,7 @@ use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
 use DDP;                   # for debugging
-use Data::Dump qw( dump ); # for debugging
+use Data::Dump qw/ dump /; # for debugging
 use Cpanel::JSON::XS;
 
 use Seq::GenomeSizedTrackChar;
@@ -71,14 +80,6 @@ use Seq::Annotate::Snp;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
-
-# TODO: remove `genome_index_dir` after testing; NOTE: `genome_index_dir` is
-#       already defined in Seq::Assembly, which Seq::Annotate extends.
-# has genome_index_dir => (
-#   is       => 'ro',
-#   isa      => 'Str',
-#   required => 1
-# );
 
 =property @private {Seq::GenomeSizedTrackChar<Str>} _genome
 
@@ -630,6 +631,36 @@ sub BUILD {
   }
 }
 
+sub _var_alleles {
+  my ( $self, $alleles_str, $ref_allele ) = @_;
+  my @var_alleles;
+
+  for my $allele ( split /\,/, $alleles_str ) {
+    if ( $allele ne $ref_allele || $allele ne 'N' ) {
+      push @var_alleles;
+    }
+  }
+  return \@var_alleles;
+}
+
+sub _var_alleles_no_indel {
+  my ( $self, $alleles_str, $ref_allele ) = @_;
+  my @var_alleles;
+
+  for my $allele ( split /\,/, $alleles_str ) {
+    if ( $allele ne $ref_allele
+      || $allele ne 'D'
+      || $allele ne 'E'
+      || $allele ne 'H'
+      || $allele ne 'I'
+      || $allele ne 'N' )
+    {
+      push @var_alleles;
+    }
+  }
+  return \@var_alleles;
+}
+
 # annotate_snp_site returns a hash reference of the annotation data for a
 # given position and variant alleles
 sub annotate_snp_site {
@@ -650,7 +681,8 @@ sub annotate_snp_site {
 
   # purposely filtering away indels, which can happen for multiallelelic sites
   # TODO: discuss re-working the format of the snpfile a bit
-  my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $all_allele_str );
+  #my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $all_allele_str );
+  my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $ref_allele ) };
 
   if ( $base ne $ref_allele ) {
     my $msg = sprintf(
@@ -893,7 +925,7 @@ sub _sort_del_sites {
 #   - the list of sites are grouped into contiguous sites by _sort_del_sites()
 #   - the annotation for the 1st site of each contiguous site is assigned the
 #     start of the del
-#   - the gene object tells us what is being deleted, which is counted
+#   - the actual annotations come from gene_obj
 #   - seralization is performed by Seq::Annotate::Indel
 sub annotate_del_sites {
   state $check = compile( Object, HashRef, HashRef );
@@ -916,16 +948,17 @@ sub annotate_del_sites {
         $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $i, $ref_allele, 1 );
 
       if ( !%record ) {
-        $record{chr}            = $chr;
-        $record{pos}            = $rel_pos,
-          $record{abs_pos}      = $i,
-          $record{alleles}      = $all_alleles,
-          $record{allele_count} = $allele_count,
-          $record{het_ids}      = $het_ids,
-          $record{hom_ids}      = $hom_ids,
-          $record{genomic_type} = $ref_obj->genomic_type;
-        $record{ref_base} = $ref_obj->ref_base;
-        $record{var_allele} = '-', $record{var_type} = 'DEL',;
+        $record{abs_pos}      = $i;
+        $record{alleles}      = $all_alleles;
+        $record{allele_count} = $allele_count;
+        $record{chr}          = $chr;
+        $record{pos}          = $rel_pos;
+        $record{genomic_type} = $ref_obj->genomic_type;
+        $record{het_ids}      = $het_ids;
+        $record{hom_ids}      = $hom_ids;
+        $record{ref_base}     = $ref_obj->ref_base;
+        $record{var_allele}   = '-';
+        $record{var_type}     = 'DEL';
       }
 
       # examine underling genomic data
@@ -981,12 +1014,19 @@ sub annotate_del_sites {
       $record{gene_data} = \@gene_data;
       my $obj = Seq::Annotate::Indel->new( \%record );
       push @del_annotations, $obj->as_href;
-
     }
   }
   return \@del_annotations;
 }
 
+# annotate_ins_sites performs very similarly to annotate_del_sites except that
+# it onlny looks at the first position of the insertion to assign functional
+# significance. It takes a hash reference of the chromosome index and a hash
+# reference of the inserted sites and returns an array reference of annotated
+# sites as hash references
+#   - the site hash reference is defined like so:
+#     %site{ abs_pos } = [ chr, rel_pos, ref_allele, all_alleles, allele_counts
+#       het_ids, hom_ids ]
 sub annotate_ins_sites {
   state $check = compile( Object, HashRef, HashRef );
   my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
@@ -999,22 +1039,23 @@ sub annotate_ins_sites {
       = @{ $sites_href->{$site} };
     my $chr_index = $chr_index_href->{$chr};
     # @var_alleles should have _all_ variant alleles but only the 1st will be used
-    my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $all_alleles );
+    #my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $all_alleles );
+    my @var_alleles = @{ $self->_var_alleles( $all_alleles, $ref_allele ) };
     my $ref_obj =
       $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $site, $ref_allele, 1 );
 
     if ( !%record ) {
-      $record{chr}            = $chr;
-      $record{pos}            = $rel_pos,
-        $record{abs_pos}      = $site,
-        $record{alleles}      = $all_alleles,
-        $record{allele_count} = $allele_count,
-        $record{het_ids}      = $het_ids,
-        $record{hom_ids}      = $hom_ids,
-        $record{genomic_type} = $ref_obj->genomic_type;
-      $record{ref_base}   = $ref_obj->ref_base;
-      $record{var_allele} = $var_alleles[0];
-      $record{var_type}   = 'INS',;
+      $record{abs_pos}      = $site;
+      $record{alleles}      = $all_alleles;
+      $record{allele_count} = $allele_count;
+      $record{chr}          = $chr;
+      $record{pos}          = $rel_pos;
+      $record{genomic_type} = $ref_obj->genomic_type;
+      $record{het_ids}      = $het_ids;
+      $record{hom_ids}      = $hom_ids;
+      $record{ref_base}     = $ref_obj->ref_base;
+      $record{var_allele}   = $var_alleles[0];
+      $record{var_type}     = 'INS';
     }
 
     # examine underling genomic data

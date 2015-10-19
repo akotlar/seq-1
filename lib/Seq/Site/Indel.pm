@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Site::Indel;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Class for seralizing indel sites
 # VERSION
 

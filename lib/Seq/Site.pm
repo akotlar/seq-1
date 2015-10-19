@@ -3,11 +3,14 @@ use strict;
 use warnings;
 
 package Seq::Site;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Base class for seralizing all sites.
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @class B<Seq::Site>
   #TODO: Check description
 

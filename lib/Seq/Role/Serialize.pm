@@ -3,19 +3,22 @@ use strict;
 use warnings;
 
 package Seq::Role::Serialize;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: A moose role for serializing data
 # VERSION
 
 =head1 DESCRIPTION
-  
-  @role B<Seq::Role::Serialize> 
+
+  @role B<Seq::Role::Serialize>
   #TODO: Check description
 
   @example
 
 Used in:
 =for :list
-* Seq/Site/Annotation.pm 
+* Seq/Site/Annotation.pm
 * Seq/Site/Snp.pm
 
 Extended by: None
@@ -27,9 +30,6 @@ use Moose::Role 2;
 use Cpanel::JSON::XS;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
-
-use Data::Dump qw/ dump /;
-use DDP;
 
 my $tc_regex = qr{HashRef|ArrayRef};
 
@@ -62,7 +62,6 @@ sub as_href_with_NAs {
   for my $attr ( $self->meta->get_all_attributes ) {
     my $name            = $attr->name;
     my $type_constraint = $attr->type_constraint;
-    # p( $attr );
     if ( defined $self->$name ) {
       if ( $type_constraint eq 'HashRef' ) {
         map { $obj{"$name.$_"} = $self->$name->{$_} } keys %{ $self->$name };

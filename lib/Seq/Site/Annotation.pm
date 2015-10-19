@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Site::Annotation;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Class for seralizing annotation sites
 # VERSION
 
@@ -34,10 +37,6 @@ use Moose 2;
 use Moose::Util::TypeConstraints;
 
 use namespace::autoclean;
-
-my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
-  codon_number codon_position ref_aa_residue error_code alt_names
-  genotype new_codon_seq new_aa_residue annotation_type );
 
 extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
@@ -186,29 +185,6 @@ sub _set_annotation_type {
     return 'Non-Coding';
   }
 }
-
-=method @override @public serializable_attributes
-
-  Overloads the serializable_attributes sub found in Seq::Site::Gene and required by @role Seq::Role::Serialize
-
-@returns {Array<String>}
-
-=cut
-
-override seralizable_attributes => sub {
-  return @attributes;
-};
-
-=method header_attr
-
-  Returns the attributes needed to make the header to organize the output.
-  Attributes that are HashRefs or ArrayRefs may or may not be present in 
-  all genome assemblies and, thus, those information should be obtained by 
-  querying the gene tracks or snp tracks themselves for their 'features'.
-
-@returns {HashRef<String>}
-
-=cut
 
 __PACKAGE__->meta->make_immutable;
 

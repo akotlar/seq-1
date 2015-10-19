@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Annotate::Snp;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Base class for seralizing annotated variant sites
 # VERSION
 
