@@ -29,6 +29,7 @@ use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
 use Data::Dump qw/ dump /;
+use DDP;
 
 my $tc_regex = qr{HashRef|ArrayRef};
 
@@ -61,9 +62,7 @@ sub as_href_with_NAs {
   for my $attr ( $self->meta->get_all_attributes ) {
     my $name            = $attr->name;
     my $type_constraint = $attr->type_constraint;
-    #  say join( ". .", $name, $type_constraint );
-    #  say "this attrib: " . $attr->name . " has value: ";
-    #  p $self->$name;
+    # p( $attr );
     if ( defined $self->$name ) {
       if ( $type_constraint eq 'HashRef' ) {
         map { $obj{"$name.$_"} = $self->$name->{$_} } keys %{ $self->$name };

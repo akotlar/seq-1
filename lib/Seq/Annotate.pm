@@ -287,11 +287,8 @@ sub get_cadd_score {
 
   my $key = join ":", $ref, $allele;
   my $i = $self->get_cadd_index($key);
-  if ( $self->debug ) {
-    say "Cadd score key:";
-    p $key;
-    say "Cadd score index:";
-    p $i;
+  if ($self->debug) {
+    say dump( { "cadd score key:" => $key, "cadd score index:" => $i } );
   }
   if ( defined $i ) {
     my $cadd_track = $self->_get_cadd_track($i);
@@ -646,7 +643,10 @@ sub annotate_snp_site {
   my $gene      = ( $self->get_idx_in_gene($site_code) ) ? 1 : 0;
   my $exon      = ( $self->get_idx_in_exon($site_code) ) ? 1 : 0;
   my $snp       = ( $self->get_idx_in_snp($site_code) ) ? 1 : 0;
-  my @var_alleles = grep { !/$base/ } (split /\,/, $all_allele_str);
+
+  # purposely filtering away indels, which can happen for multiallelelic sites
+  # TODO: discuss re-working the format of the snpfile a bit
+  my @var_alleles = grep { !/($base|D|E|I|H)/ } (split /\,/, $all_allele_str);
 
   if ($base ne $ref_allele) {
     my $msg = sprintf("Error: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
@@ -736,8 +736,6 @@ sub annotate_snp_site {
 
   # create object for href export
   my $obj = Seq::Annotate::Snp->new( \%record );
-
-  say $obj;
 
   if ($return_obj) {
     return $obj;
@@ -882,27 +880,27 @@ sub _sort_del_sites {
 }
 
 # annotate_del_sites takes an hash reference of sites and chromosome
-#   indicies hash reference and returns a list of the consequences for
-#   deleting the site
+#   indicies hash reference and returns a list of annotations
 #   - the site hash reference is defined like so:
-#     %site{ abs_pos } = [ chr, pos ]
-#   - the chromosome index hash reference is needed to determine the proper
-#     array to use for determining the annotation
-#   - this funciton works by grouping contiguous sites together and submitting
-#     those to _annotate_indel_site_list
+#     %site{ abs_pos } = [ chr, rel_pos, ref_allele, all_alleles, allele_counts
+#       het_ids, hom_ids ]
+#   - the list of sites are grouped into contiguous sites by _sort_del_sites()
+#   - the annotation for the 1st site of each contiguous site is assigned the
+#     start of the del
+#   - the gene object tells us what is being deleted, which is counted
+#   - seralization is performed by Seq::Annotate::Indel
 sub annotate_del_sites {
   state $check = compile( Object, HashRef, HashRef );
   my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
-  my ( @annotations, @contiguous_sites );
+
+  my @del_annotations;
   
   my $contiguous_sites_aref = $self->_sort_del_sites( $sites_href );
 
   for my $region_aref ( @$contiguous_sites_aref ) {
-    # region_aref => [ start, stop ]
 
-    my %data;
-    my %record;
-    my (@snp_data, @gene_data);
+    # region_aref => [ start, stop ]
+    my ( %data, %record, @snp_data, @gene_data);
 
     for ( my $i = $region_aref->[0]; $i <= $region_aref->[1]; $i++ ) {
       my ($chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, $het_ids, $hom_ids) = @{ $sites_href->{$i} };
@@ -942,19 +940,18 @@ sub annotate_del_sites {
       for my $snp_obj ( $ref_obj->all_snp_obj ) {
         push @snp_data, $snp_obj;
       }
-
      $record{snp_data} = \@snp_data;
 
-     if (%data) {
        for my $gene_obj ( $ref_obj->all_gene_obj) {
          my $gene_href = $gene_obj->as_href;
+         $gene_href->{minor_allele} = '-';
          my $tx = $gene_obj->transcript_id;
          if ( exists $data{ $tx }{ Coding } ) {
            if ( $data{$tx}{Coding} % 3 == 0 ) {
-             $gene_href->{annotation_type} = "InFrame";
+             $gene_href->{annotation_type} = "Del-InFrame";
            }
            else {
-             $gene_href->{annotation_type} = "FrameShift";
+             $gene_href->{annotation_type} = "Del-FrameShift";
            }
            if ( exists $data{$tx}{Start} ) {
              $gene_href->{annotation_type} .= ", StartLoss";
@@ -975,126 +972,101 @@ sub annotate_del_sites {
          push @gene_data, Seq::Site::Indel->new( $gene_href );
        }
        $record{gene_data} = \@gene_data;
-     }
-     my $indel_obj = Seq::Annotate::Indel->new( \%record );
-     say dump($indel_obj);
-     exit;
+     my $obj = Seq::Annotate::Indel->new( \%record );
+     push @del_annotations, $obj->as_href;
+
    }
   }
-  exit;
+  return \@del_annotations;
 }
 
-# annotate_ins_sites takes a hash reference of sites and chromosome indicies
-# hash reference and returns a list of consequences for altering the sites
-# over which the insertion occurs.
-# sub annotate_ins_sites {
-#   state $check = compile( Object, HashRef, HashRef );
-#   my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
-# 
-#   my @records;
-# 
-#   for my $abs_pos ( sort { $a <=> $b } keys %$sites_href ) {
-# 
-#     my %tx_list;
-# 
-#     # unpack data for the 1st site
-#     my ( $chr, $rel_pos, $ref_base, $all_alleles, $allele_count, $het_ids, $hom_ids ) = 
-#       @{ $sites_href->{$abs_pos} };
-#     my @alleles = grep { !/$ref_base/ } ( split /\,/, $all_alleles );
-# 
-#     if (scalar @alleles != 1) {
-#       my $msg = sprintf("Error: Expected to only find 1 insertion for site '%s:%d' but found %s",
-#         $chr, $rel_pos, join(",", @alleles));
-#     }
-# 
-#     my $abs_pos_stop = $abs_pos + length($alleles[0]);
-# 
-#     my $record_href = $self->annotate_ref_site( $chr, $chr_index, $rel_pos, 
-#       $site, 'NA');
-# 
-#     # lookup transcript information
-#     for my $gene_data ( @{ $record_href->{gene_data} } ) {
-#       my $tx_id = $gene_data->{transcript_id};
-# 
-#       # loop over all transcript data sets we might have
-#       for my $dbm_tx ( $self->_all_dbm_tx ) {
-# 
-#         # each transcript is stored as an array reference in the KC database
-#         my $tx_href = shift @{ $dbm_tx->db_get($tx_id) };
-# 
-#         # save tx_href
-#         $tx_list{$tx_id} = $tx_href;
-#       }
-#     }
-# 
-#     my $href = {
-#       chr             => $chr,
-#       pos             => $rel_pos,
-#       abs_start_pos   => $abs_pos,
-#       abs_stop_pos    => $abs_pos_stop,
-#       ref_base        => $ref_base,
-#       het_ids         => $het_ids,
-#       hom_ids         => $hom_ids,
-#       genomic_type    => $record_href->{genomic_type},
-#       scores          => $record_href->{scores},
-#       ref_annotations => \@ref_annotations,
-#       transcripts     => \%tx_list,
-#       var_allele      => $alleles[0],
-#       var_type        => 'INS',
-#     };
-#     my $ins_obj    = Seq::Annotate::Indel->new($href);
-#     push @records, $indel->as_href;
-#   }
-#   return \@records;
-# }
-# 
-# # _annotate_indel_sites() returns a hash reference of the annotation for the 
-# # indel, which is arbitrarily set to the begining of the indel
-# sub _annotate_indel_sites {
-#   state $check = compile( Object, Str, Int, Int, Int, Int );
-#   my ( $self, $chr, $rel_start, $chr_index, $abs_start, $abs_stop ) = $check->(@_);
-# 
-#   my ( %tx_list, @ref_annotations );
-# 
-#   for ( my $site = $abs_start; $site <= $abs_stop; $site++ ) {
-#     my $rel_pos = $rel_start + ( $abs_start - $site );
-#     my $record_href = $self->annotate_ref_site( $chr, $chr_index, $rel_pos, 
-#       $site, 'NA');
-# 
-#     # save record
-#     push @ref_annotations, $record_href;
-# 
-#     # lookup transcript information
-#     for my $gene_data ( @{ $record_href->{gene_data} } ) {
-#       my $tx_id = $gene_data->{transcript_id};
-# 
-#       # skip transcripts that have already been looked up
-#       next if exists $tx_list{$tx_id};
-# 
-#       # loop over all transcript data sets we might have
-#       for my $dbm_tx ( $self->_all_dbm_tx ) {
-# 
-#         # each transcript is stored as an array reference in the KC database
-#         my $tx_href = shift @{ $dbm_tx->db_get($tx_id) };
-# 
-#         if ( defined $tx_href ) {
-#           $tx_list{$tx_id} = $tx_href;
-#         }
-#       }
-#     }
-#   }
-#   my $href = {
-#     indel_type      => 'Del',
-#     chr             => $chr,
-#     pos             => $rel_start,
-#     abs_start_pos   => $abs_start,
-#     abs_stop_pos    => $abs_stop,
-#     ref_annotations => \@ref_annotations,
-#     transcripts     => \%tx_list,
-#   };
-#   my $indel    = Seq::Annotate::Indel->new($href);
-#   return $indel->as_href;
-# }
+sub annotate_ins_sites {
+  state $check = compile( Object, HashRef, HashRef );
+  my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
+
+  my @ins_annotations;
+
+  for my $site ( sort { $a <=> $b } keys %$sites_href ) {
+    my ( %data, %record );
+    my ($chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, $het_ids, $hom_ids) 
+      = @{ $sites_href->{$site} };
+    my $chr_index = $chr_index_href->{$chr};
+    # @var_alleles should have _all_ variant alleles but only the 1st will be used
+    my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $all_alleles );
+    my $ref_obj = $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $site, $ref_allele, 1 );
+
+      if (!%record) {
+        $record{chr} = $chr;
+        $record{pos} = $rel_pos,
+        $record{abs_pos} = $site,
+        $record{alleles} = $all_alleles,
+        $record{allele_count} = $allele_count,
+        $record{het_ids} = $het_ids,
+        $record{hom_ids} = $hom_ids,
+        $record{genomic_type} = $ref_obj->genomic_type;
+        $record{ref_base} = $ref_obj->ref_base;
+        $record{var_allele} = $var_alleles[0];
+        $record{var_type} = 'INS',
+      };
+
+      # examine underling genomic data
+      for my $gene_obj ( $ref_obj->all_gene_obj ) {
+        if ($gene_obj->site_type() ) {
+          $data{ $gene_obj->transcript_id }{ $gene_obj->site_type}++;
+          if ($gene_obj->site_type eq 'Coding') {
+            if ($gene_obj->codon_number == 1 ) {
+              $data{ $gene_obj->transcript_id }{Start}++;
+            }
+            if ($gene_obj->ref_aa_residue eq '*') {
+              $data{ $gene_obj->transcript_id }{Stop}++;
+            }
+          }
+        }
+      }
+
+      # save snp data
+      my @snp_data;
+      for my $snp_obj ( $ref_obj->all_snp_obj ) {
+        push @snp_data, $snp_obj;
+      }
+     $record{snp_data} = \@snp_data;
+
+     my @gene_data;
+       for my $gene_obj ( $ref_obj->all_gene_obj) {
+         my $gene_href = $gene_obj->as_href;
+         $gene_href->{minor_allele} = $var_alleles[0];
+         my $tx = $gene_obj->transcript_id;
+         if ( exists $data{ $tx }{ Coding } ) {
+           if ( length( $var_alleles[0] ) % 3 == 0 ) {
+             $gene_href->{annotation_type} = "Ins-InFrame";
+           }
+           else {
+             $gene_href->{annotation_type} = "Ins-FrameShift";
+           }
+           if ( exists $data{$tx}{Start} ) {
+             $gene_href->{annotation_type} .= ", StartLoss";
+           }
+           elsif ( exists $data{$tx}{Stop} ) {
+            $gene_href->{annotation_type} .= ", StopLoss";
+           }
+         }
+         elsif (exists $data{$tx}{'5UTR'} || exists $data{$tx}{'3UTR'} ) {
+           $gene_href->{annotation_type} = "Ins-UTR";
+         }
+         elsif (exists $data{$tx}{'Splice Donor'} || exists $data{$tx}{'Splice Acceptor'} ) {
+           $gene_href->{annotation_type} = "Ins-Splice";
+         }
+         else {
+           $gene_href->{annotation_type} = 'NA';
+         }
+         push @gene_data, Seq::Site::Indel->new( $gene_href );
+       }
+     $record{gene_data} = \@gene_data;
+     my $obj = Seq::Annotate::Indel->new( \%record );
+     push @ins_annotations, $obj->as_href;
+   }
+  return \@ins_annotations;
+}
 
 __PACKAGE__->meta->make_immutable;
 

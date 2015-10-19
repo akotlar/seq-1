@@ -18,7 +18,8 @@ with 'Seq::Role::Serialize';
 
 has minor_allele => (
   is       => 'ro',
-  default => '-',
+  isa     => 'Maybe[Str]',
+  required => 1,
 );
 
 has new_codon_seq => (

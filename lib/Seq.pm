@@ -95,6 +95,12 @@ has debug => (
   default => 0,
 );
 
+has write_batch => (
+  is => 'ro',
+  isa => 'Int',
+  default => 1000,
+);
+
 has messageChannelHref => (
   is        => 'ro',
   isa       => 'HashRef',
@@ -236,6 +242,8 @@ my %het_genos = (
   S => [ 'C', 'G' ],
   W => [ 'A', 'T' ],
   Y => [ 'C', 'T' ],
+  E => ['-'],
+  H => ['+'],
 );
 
 my %hom_genos = (
@@ -243,6 +251,8 @@ my %hom_genos = (
   C => [ 'C', 'C' ],
   G => [ 'G', 'G' ],
   T => [ 'T', 'T' ],
+  D => [ '-', '-' ],
+  I => [ '+', '+' ],
 );
 
 my %hom_indel = (
@@ -398,11 +408,19 @@ sub annotate_snpfile {
     # save the current chr for next iteration of the loop
     $last_chr = $chr;
 
+    # Annotate variant sites
+    #   - SNP and MULTIALLELELIC sites are annotated individually and added to an array
+    #   - indels are saved in an array (because deletions might be 1 off or contiguous over
+    #     any number of bases that cannot be determined a prior) and annotated en masse
+    #     after all SNPs are annotated
+    #   - NOTE: the way the annotations for INS sites now work (due to changes in the 
+    #     snpfile format, we could change their annotation to one off annotations like
+    #     the SNPs
     if ( $var_type eq 'SNP' || $var_type eq 'MULTIALLELIC' ) {
       my $record_href = $annotator->annotate_snp_site( $chr, $chr_index, $pos, $abs_pos, 
         $ref_allele, $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids);
       $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
-      push @snp_annotations, $self->_flatten_href( $record_href );
+      push @snp_annotations, $record_href;
       $self->inc_counter;
     }
     elsif (exists $site_2_set_method{$var_type}) {
@@ -415,8 +433,8 @@ sub annotate_snpfile {
       $self->_tee_logger( 'warn', $msg );
     }
 
-    # write data, if needed
-    if ( $self->counter > 1000 ) {
+    # write data in batches
+    if ( $self->counter > $self->write_batch ) {
       $self->_print_annotations( \@snp_annotations, $self->header );
       @snp_annotations = ();
       $self->reset_counter;
@@ -429,20 +447,27 @@ sub annotate_snpfile {
   # finished printing the final snp annotations
   if (@snp_annotations) {
     $self->_print_annotations( \@snp_annotations, $self->header );
+    @snp_annotations = ( );
   }
 
   # print deletion sites
-  {
-    my @del_annotations =
+  #   - indel annotations come back as an array reference of hash references
+  #   - the _print_annotations function flattens the hash reference and
+  #     prints them in order
+  unless ( $self->has_no_del_sites ) {
+    my $del_annotations_aref  =
       $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
-    $self->_print_annotations( \@del_annotations, $self->header );
+    $self->_print_annotations( $del_annotations_aref, $self->header );
   }
-
+  
   # print insertion sites
-  {
-    my @ins_annoations =
+  #   - indel annotations come back as an array reference of hash references
+  #   - the _print_annotations function flattens the hash reference and
+  #     prints them in order
+  unless ( $self->has_no_ins_sites ) {
+    my $ins_annoations_aref =
       $annotator->annotate_ins_sites( \%chr_index, $self->ins_sites() );
-    $self->_print_annotations( \@ins_annoations, $self->header );
+    $self->_print_annotations( $ins_annoations_aref, $self->header );
   }
 
   p $summary_href if $self->debug;
@@ -458,20 +483,6 @@ sub annotate_snpfile {
 #
 #   return Redis->new( host => $redisHost, port => $redisPort );
 # }
-
-sub _flatten_href {
-  my ($self, $href) = @_;
-  my @record;
-  for my $attr ($self->all_header_attr) {
-    if (exists $href->{$attr} ) {
-      push @record, $href->{$attr};
-    }
-    else {
-      push @record, 'NA';
-    }
-  }
-  return \@record;
-}
 
 sub _proc_line {
   my ( $self, $header_href, $fields_aref ) = @_;
@@ -514,7 +525,7 @@ sub _build_out_fh {
     return \*STDOUT;
   }
 
-  #can't use is_file or is_dir check before file made, unless it alraedy exists
+  # can't use is_file or is_dir check before file made, unless it alraedy exists
   return $self->get_write_bin_fh( $self->output_path );
 }
 
@@ -531,6 +542,10 @@ sub _build_annotator {
   return $annotator;
 }
 
+# _print_annotations takes an array reference of annotations and hash 
+# reference of header attributes and writes the header (if needed) to the 
+# output file and flattens the hash references for each entry and writes
+# them to the output file
 sub _print_annotations {
   my ( $self, $annotations_aref, $header_aref ) = @_;
 
@@ -540,9 +555,21 @@ sub _print_annotations {
     $self->set_printed_header;
   }
 
-  # print entries
-  for my $entry_aref (@$annotations_aref) {
-    say { $self->_out_fh } join "\t", @$entry_aref;
+  # cache header attributes
+  my @header = $self->all_header_attr;
+
+  # flatten entry hash references and print to file
+  for my $entry_href ( @$annotations_aref ) {
+    my @prt_record;
+    for my $attr ( @header ) {
+      if ( exists $entry_href->{$attr} ) {
+        push @prt_record, $entry_href->{$attr};
+      }
+      else {
+        push @prt_record, 'NA';
+      }
+    }
+    say { $self->_out_fh } join "\t", @prt_record;
   }
 }
 
@@ -596,7 +623,7 @@ sub _minor_allele_carriers {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
     my $id_prob = $fields_aref->[ $ids_href->{$id} + 1 ];
 
-    # skip homozygote reference && N's
+    # skip reference && N's
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
     if ( exists $het_genos{$id_geno} ) {
