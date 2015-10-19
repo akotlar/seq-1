@@ -160,9 +160,6 @@ sub _getBases{
 	
 	my $refLength = length $ref;
  
-	# ref should always be left most
-	# TODO: verify this
-	$ref = substr($ref,0,1);
  	# TODO: implement the count check, but the Clarity vcf doesn't use AC field.
 	#my $acIdx = first { $rowAref->[$_] =~ m\AC=\ } 1 .. $#$rowAref;
  	my $rc = scalar @allelesA;
