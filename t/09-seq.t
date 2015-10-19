@@ -13,7 +13,7 @@ plan tests => 55;
 
 my %attr_2_type_ro = (
   snpfile            => 'MooseX::Types::Path::Tiny::AbsFile',
-  configfile         => 'MooseX::Types::Path::Tiny::AbsFile',
+  config_file        => 'MooseX::Types::Path::Tiny::AbsFile',
   out_file           => 'MooseX::Types::Path::Tiny::AbsPath',
   debug              => 'Bool',
   messageChannelHref => 'HashRef',
@@ -73,7 +73,13 @@ for my $attr_name ( sort ( keys %attr_2_type_ro, keys %attr_2_type_rw ) ) {
   # make fake snpfile
   open my $fh, '>', 'test.snp' || die "cannot open 'test.snp': $!\n";
   close $fh;
-  my $obj = $package->new( { configfile => $ga_config, snpfile => 'test.snp' } );
+  my $obj = $package->new(
+    {
+      config_file => $ga_config,
+      file_type   => 'snp_2',
+      snpfile     => 't/snp_test.snp'
+    }
+  );
   ok( $obj, 'object creation' );
 
   # clean up
