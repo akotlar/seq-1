@@ -29,14 +29,9 @@ use namespace::autoclean;
 use Seq::Site::Snp;
 use Seq::Site::Annotation;
 
-use Data::Dump qw/ dump /;
-
 with 'Seq::Role::Serialize';
 
-enum SnpType     => [ 'SNP',    'MULTIALLELIC', 'REF', ];
-enum GenomicType => [ 'Exonic', 'Intronic',     'Intergenic' ];
-#enum AnnotationType  =>
-#  [ '5UTR', 'Coding', '3UTR', 'non-coding RNA', 'Splice Donor', 'Splice Acceptor' ];
+enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
 
 has abs_pos      => ( is => 'ro', isa => 'Int',         required => 1, );
 has chr          => ( is => 'ro', isa => 'Str',         required => 1, );
@@ -45,6 +40,8 @@ has pos          => ( is => 'ro', isa => 'Int',         required => 1, );
 has ref_base     => ( is => 'ro', isa => 'Str',         required => 1, );
 has warning      => ( is => 'ro', isa => 'Str',         default  => 'NA', );
 
+# the objects stored in gene_data really only need to do as_href_with_NAs(),
+# which is a method in Seq::Role::Seralize
 has gene_data => (
   traits   => ['Array'],
   is       => 'ro',
@@ -53,6 +50,8 @@ has gene_data => (
   handles  => { all_gene_obj => 'elements', },
 );
 
+# the objects stored in snp_data really only need to do as_href_with_NAs(), 
+# which is a method in Seq::Role::Seralize
 has snp_data => (
   traits   => ['Array'],
   is       => 'ro',
@@ -61,15 +60,17 @@ has snp_data => (
   handles  => { all_snp_obj => 'elements', },
 );
 
-# these are the attributes to export
-my @attrs = qw/ chr pos var_type ref_base genomic_type het_ids hom_ids warning /;
+sub attrs {
+  my @attrs = qw/ chr pos var_type ref_base genomic_type warning /;
+  return \@attrs;
+}
 
 sub as_href {
   my $self = shift;
 
   my %hash;
 
-  for my $attr (@attrs) {
+  for my $attr (@{ $self->attrs }) {
     $hash{$attr} = $self->$attr;
   }
 
@@ -105,6 +106,7 @@ sub _join_href {
     my $old_val = $old_href->{$attr};
     my $new_val = $new_href->{$attr};
     if ( defined $old_val and defined $new_val ) {
+
       # assuming if one is a hashref then they both are.
       if ( ref $old_val eq 'HASH' ) {
         $merge{$attr} = $self->_join_href( $old_val, $new_val );
