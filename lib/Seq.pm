@@ -423,9 +423,11 @@ sub annotate_snpfile {
         $chr,      $chr_index,      $pos,          $abs_pos, $ref_allele,
         $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids
       );
-      $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
-      push @snp_annotations, $record_href;
-      $self->inc_counter;
+      if ( defined $record_href ) {
+        $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
+        push @snp_annotations, $record_href;
+        $self->inc_counter;
+      }
     }
     elsif ( exists $site_2_set_method{$var_type} ) {
       my $method = $site_2_set_method{$var_type};

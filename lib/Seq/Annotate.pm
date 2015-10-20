@@ -636,7 +636,7 @@ sub _var_alleles {
   my @var_alleles;
 
   for my $allele ( split /\,/, $alleles_str ) {
-    if ( $allele ne $ref_allele || $allele ne 'N' ) {
+    if ( $allele ne $ref_allele && $allele ne 'N' ) {
       push @var_alleles, $allele;
     }
   }
@@ -649,11 +649,11 @@ sub _var_alleles_no_indel {
 
   for my $allele ( split /\,/, $alleles_str ) {
     if ( $allele ne $ref_allele
-      || $allele ne 'D'
-      || $allele ne 'E'
-      || $allele ne 'H'
-      || $allele ne 'I'
-      || $allele ne 'N' )
+      && $allele ne 'D'
+      && $allele ne 'E'
+      && $allele ne 'H'
+      && $allele ne 'I'
+      && $allele ne 'N' )
     {
       push @var_alleles, $allele;
     }
@@ -693,6 +693,14 @@ sub annotate_snp_site {
   # determine variant alleles
   # my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $base );
   my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
+
+  if ( !@var_alleles ) {
+    my $msg = "Error: No alleles to annotate";
+    $msg .= sprintf(" Provided alleles and reference '%s' and '%s' db reference '%s'",
+      $all_allele_str, $ref_allele, $base);
+    $self->_logger->warn($msg);
+    return;
+  }
 
   $record{chr}          = $chr;
   $record{pos}          = $rel_pos;
@@ -1038,30 +1046,36 @@ sub annotate_ins_sites {
 
   for my $site ( sort { $a <=> $b } keys %$sites_href ) {
     my ( %data, %record );
-    my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, $het_ids, $hom_ids )
+
+    my ( $chr, $rel_pos, $ref_allele, $all_allele_str, $allele_count, $het_ids, $hom_ids )
       = @{ $sites_href->{$site} };
     my $chr_index = $chr_index_href->{$chr};
-
     my $ref_obj =
       $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $site, $ref_allele, 1 );
       
     # @var_alleles has all variant alleles but only the 1st will be reported
     # my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $record{ref_base} );
-    my @var_alleles = @{ $self->_var_alleles( $all_alleles, $record{ref_base}) };
+    my @var_alleles = @{ $self->_var_alleles( $all_allele_str, $ref_obj->ref_base) };
 
-    if ( !%record ) {
-      $record{abs_pos}      = $site;
-      $record{alleles}      = $all_alleles;
-      $record{allele_count} = $allele_count;
-      $record{chr}          = $chr;
-      $record{pos}          = $rel_pos;
-      $record{genomic_type} = $ref_obj->genomic_type;
-      $record{het_ids}      = $het_ids;
-      $record{hom_ids}      = $hom_ids;
-      $record{ref_base}     = $ref_obj->ref_base;
-      $record{var_allele}   = $var_alleles[0];
-      $record{var_type}     = 'INS';
+    if ( !@var_alleles ) {
+      my $msg = "Error: No alleles to annotate";
+      $msg .= sprintf(" Provided alleles and reference '%s' and '%s' db reference '%s'",
+        $all_allele_str, $ref_allele, $ref_obj->ref_base);
+      $self->_logger->warn($msg);
+      return;
     }
+
+    $record{abs_pos}      = $site;
+    $record{alleles}      = $all_allele_str;
+    $record{allele_count} = $allele_count;
+    $record{chr}          = $chr;
+    $record{pos}          = $rel_pos;
+    $record{genomic_type} = $ref_obj->genomic_type;
+    $record{het_ids}      = $het_ids;
+    $record{hom_ids}      = $hom_ids;
+    $record{ref_base}     = $ref_obj->ref_base;
+    $record{var_allele}   = $var_alleles[0];
+    $record{var_type}     = 'INS';
 
     # examine underling genomic data
     for my $gene_obj ( $ref_obj->all_gene_obj ) {
