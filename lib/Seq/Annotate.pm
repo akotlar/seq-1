@@ -679,11 +679,7 @@ sub annotate_snp_site {
   my $exon      = ( $self->get_idx_in_exon($site_code) ) ? 1 : 0;
   my $snp       = ( $self->get_idx_in_snp($site_code) ) ? 1 : 0;
 
-  # purposely filtering away indels, which can happen for multiallelelic sites
-  # TODO: discuss re-working the format of the snpfile a bit
-  #my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $all_allele_str );
-  my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $ref_allele ) };
-
+  # check reference base in assembly is the same as the one suppiled by the user
   if ( $base ne $ref_allele ) {
     my $msg = sprintf(
       "Error: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
@@ -691,6 +687,12 @@ sub annotate_snp_site {
     $self->_logger->warn($msg);
     $record{warning} = $msg;
   }
+
+  # purposely filtering away indels, which can happen for multiallelelic sites
+  # TODO: discuss re-working the format of the snpfile a bit
+  # determine variant alleles
+  # my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $base );
+  my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
 
   $record{chr}          = $chr;
   $record{pos}          = $rel_pos;
@@ -796,6 +798,7 @@ sub annotate_ref_site {
   my $exon      = ( $self->get_idx_in_exon($site_code) ) ? 1 : 0;
   my $snp       = ( $self->get_idx_in_snp($site_code) ) ? 1 : 0;
 
+  # check reference base in the genome assembly is the same as provided by the user
   if ( $ref_allele ne 'NA' ) {
     if ( $base ne $ref_allele ) {
       my $msg = sprintf(
@@ -1038,11 +1041,13 @@ sub annotate_ins_sites {
     my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, $het_ids, $hom_ids )
       = @{ $sites_href->{$site} };
     my $chr_index = $chr_index_href->{$chr};
-    # @var_alleles should have _all_ variant alleles but only the 1st will be used
-    #my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $all_alleles );
-    my @var_alleles = @{ $self->_var_alleles( $all_alleles, $ref_allele ) };
+
     my $ref_obj =
       $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $site, $ref_allele, 1 );
+      
+    # @var_alleles has all variant alleles but only the 1st will be reported
+    # my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $record{ref_base} );
+    my @var_alleles = @{ $self->_var_alleles( $all_alleles, $record{ref_base}) };
 
     if ( !%record ) {
       $record{abs_pos}      = $site;
