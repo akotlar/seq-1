@@ -637,7 +637,7 @@ sub _var_alleles {
 
   for my $allele ( split /\,/, $alleles_str ) {
     if ( $allele ne $ref_allele || $allele ne 'N' ) {
-      push @var_alleles;
+      push @var_alleles, $allele;
     }
   }
   return \@var_alleles;
@@ -655,7 +655,7 @@ sub _var_alleles_no_indel {
       || $allele ne 'I'
       || $allele ne 'N' )
     {
-      push @var_alleles;
+      push @var_alleles, $allele;
     }
   }
   return \@var_alleles;
