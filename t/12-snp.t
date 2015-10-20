@@ -21,8 +21,8 @@ my %attr_2_type = (
   hom_ids => 'Str',
   scores => 'HashRef[Str]',
   var_allele => 'Str',
-  var_type => 'IndelType',
-  gene_data => 'ArrayRef[Maybe[Seq::Site::Indel]]',
+  var_type => 'SnpType',
+  gene_data => 'ArrayRef[Maybe[Seq::Site::Annotation]]',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
@@ -31,7 +31,7 @@ my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 # set package name
-my $package = "Seq::Annotate::Indel";
+my $package = "Seq::Annotate::Snp";
 
 # load package
 use_ok($package) || die "$package cannot be loaded";

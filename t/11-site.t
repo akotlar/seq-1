@@ -12,17 +12,16 @@ use Cpanel::JSON::XS;
 use DDP;                   # for debugging
 use Data::Dump qw/ dump /; # for debugging
 
-plan tests => 44;
+plan tests => 38;
 
 my %attr_2_type = (
-  alleles => 'Str',
-  allele_count => 'Str',
-  het_ids => 'Str',
-  hom_ids => 'Str',
-  scores => 'HashRef[Str]',
-  var_allele => 'Str',
-  var_type => 'IndelType',
-  gene_data => 'ArrayRef[Maybe[Seq::Site::Indel]]',
+  abs_pos => 'Int',
+  chr => 'Str',
+  genomic_type => 'GenomicType',
+  pos => 'Int',
+  ref_base => 'Str',
+  warning => 'Str',
+  snp_data => 'ArrayRef[Maybe[Seq::Site::Snp]]',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
@@ -31,13 +30,13 @@ my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 # set package name
-my $package = "Seq::Annotate::Indel";
+my $package = "Seq::Annotate::Site";
 
 # load package
 use_ok($package) || die "$package cannot be loaded";
 
 # check extension of
-check_isa( $package, ['Seq::Annotate::Site', 'Moose::Object'] );
+check_isa( $package, ['Moose::Object'] );
 
 # check role
 #does_role( $package, 'Seq::Role::Serialize' );
