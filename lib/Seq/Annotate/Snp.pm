@@ -34,7 +34,6 @@ has alleles      => ( is => 'ro', isa => 'Str',          required => 1, );
 has allele_count => ( is => 'ro', isa => 'Str',          required => 1, );
 has het_ids      => ( is => 'ro', isa => 'Str',          default  => 'NA', );
 has hom_ids      => ( is => 'ro', isa => 'Str',          default  => 'NA', );
-has scores       => ( is => 'ro', isa => 'HashRef[Str]', default  => sub { {} }, );
 has var_allele   => ( is => 'ro', isa => 'Str',          required => 1, );
 has var_type     => ( is => 'ro', isa => 'SnpType',      required => 1, );
 

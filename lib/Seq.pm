@@ -429,9 +429,20 @@ sub annotate_snpfile {
         $self->inc_counter;
       }
     }
-    elsif ( exists $site_2_set_method{$var_type} ) {
-      my $method = $site_2_set_method{$var_type};
-      $self->$method( $abs_pos =>
+    elsif ( $var_type eq 'INS' ) {
+      my $record_href = $annotator->annotate_ins_site(
+        $chr,      $chr_index,      $pos,          $abs_pos, $ref_allele,
+        $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids
+      );
+      if ( defined $record_href ) {
+        $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
+        push @snp_annotations, $record_href;
+        $self->inc_counter;
+      }
+    }
+    elsif ( $var_type eq 'DEL' ) {
+      # deletions are saved so they can be aggregated and annotated en block later
+      $self->set_del_site( $abs_pos =>
           [ $chr, $pos, $ref_allele, $all_allele_str, $allele_count, $het_ids, $hom_ids ] );
     }
     else {
@@ -464,16 +475,6 @@ sub annotate_snpfile {
     my $del_annotations_aref =
       $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
     $self->_print_annotations( $del_annotations_aref, $self->header );
-  }
-
-  # print insertion sites
-  #   - indel annotations come back as an array reference of hash references
-  #   - the _print_annotations function flattens the hash reference and
-  #     prints them in order
-  unless ( $self->has_no_ins_sites ) {
-    my $ins_annoations_aref =
-      $annotator->annotate_ins_sites( \%chr_index, $self->ins_sites() );
-    $self->_print_annotations( $ins_annoations_aref, $self->header );
   }
 
   p $summary_href if $self->debug;

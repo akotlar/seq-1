@@ -891,6 +891,112 @@ sub annotate_ref_site {
   }
 }
 
+# annotate_ins_sites takes the same arguments as annoate_snp_site but 
+# internally calls annotate_ref_site and uses any gene_data in that object 
+# to assign functional relevance of the insertion
+sub annotate_ins_site {
+  my (
+    $self,         $chr,        $chr_index, $rel_pos,
+    $abs_pos,      $ref_allele, $var_type,  $all_allele_str,
+    $allele_count, $het_ids,    $hom_ids,   $return_obj
+  ) = @_;
+
+  my %record;
+
+  my $ref_obj = $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $abs_pos, $ref_allele, 1 );
+    
+  # @var_alleles has all variant alleles but only the 1st will be reported
+  # my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $record{ref_base} );
+  my @var_alleles = @{ $self->_var_alleles( $all_allele_str, $ref_obj->ref_base) };
+
+  if ( !@var_alleles ) {
+    my $msg = "Error: No alleles to annotate";
+    $msg .= sprintf(" Provided alleles and reference '%s' and '%s' db reference '%s'",
+      $all_allele_str, $ref_allele, $ref_obj->ref_base);
+    $self->_logger->warn($msg);
+    return;
+  }
+
+  $record{abs_pos}      = $abs_pos;
+  $record{alleles}      = $all_allele_str;
+  $record{allele_count} = $allele_count;
+  $record{chr}          = $chr;
+  $record{pos}          = $rel_pos;
+  $record{genomic_type} = $ref_obj->genomic_type;
+  $record{het_ids}      = $het_ids;
+  $record{hom_ids}      = $hom_ids;
+  $record{ref_base}     = $ref_obj->ref_base;
+  $record{var_allele}   = $var_alleles[0];
+  $record{var_type}     = $var_type;
+
+  # examine underling genomic data
+  my %data;
+  for my $gene_obj ( $ref_obj->all_gene_obj ) {
+    if ( $gene_obj->site_type() ) {
+      $data{ $gene_obj->transcript_id }{ $gene_obj->site_type }++;
+      if ( $gene_obj->site_type eq 'Coding' ) {
+        if ( $gene_obj->codon_number == 1 ) {
+          $data{ $gene_obj->transcript_id }{Start}++;
+        }
+        if ( $gene_obj->ref_aa_residue eq '*' ) {
+          $data{ $gene_obj->transcript_id }{Stop}++;
+        }
+      }
+    }
+  }
+
+  # save snp data
+  my @snp_data;
+  for my $snp_obj ( $ref_obj->all_snp_obj ) {
+    push @snp_data, $snp_obj;
+  }
+  $record{snp_data} = \@snp_data;
+
+  # process gene data to determine functional relevance of insertion
+  my @gene_data;
+  for my $gene_obj ( $ref_obj->all_gene_obj ) {
+    my $gene_href = $gene_obj->as_href;
+    $gene_href->{minor_allele} = $var_alleles[0];
+    my $tx = $gene_obj->transcript_id;
+    if ( exists $data{$tx}{Coding} ) {
+      if ( length( $var_alleles[0] ) % 3 == 0 ) {
+        $gene_href->{annotation_type} = "Ins-InFrame";
+      }
+      else {
+        $gene_href->{annotation_type} = "Ins-FrameShift";
+      }
+      if ( exists $data{$tx}{Start} ) {
+        $gene_href->{annotation_type} .= ", StartLoss";
+      }
+      elsif ( exists $data{$tx}{Stop} ) {
+        $gene_href->{annotation_type} .= ", StopLoss";
+      }
+    }
+    elsif ( exists $data{$tx}{'5UTR'} || exists $data{$tx}{'3UTR'} ) {
+      $gene_href->{annotation_type} = "Ins-UTR";
+    }
+    elsif ( exists $data{$tx}{'Splice Donor'} || exists $data{$tx}{'Splice Acceptor'} ) {
+      $gene_href->{annotation_type} = "Ins-Splice";
+    }
+    else {
+      $gene_href->{annotation_type} = 'NA';
+    }
+    push @gene_data, Seq::Site::Indel->new($gene_href);
+  }
+  $record{gene_data} = \@gene_data;
+
+  # save scores
+  $record{scores} = $ref_obj->scores;
+
+  my $obj = Seq::Annotate::Indel->new( \%record );
+  if ($return_obj) {
+    return $obj;
+  }
+  else {
+    return $obj->as_href;
+  }
+}
+
 # _sort_del_sites takes a hash reference of sites and returns a sorted
 # array reference of the start of each contiguous regions and the length
 # of each region
@@ -1028,112 +1134,6 @@ sub annotate_del_sites {
     }
   }
   return \@del_annotations;
-}
-
-# annotate_ins_sites performs very similarly to annotate_del_sites except that
-# it onlny looks at the first position of the insertion to assign functional
-# significance. It takes a hash reference of the chromosome index and a hash
-# reference of the inserted sites and returns an array reference of annotated
-# sites as hash references
-#   - the site hash reference is defined like so:
-#     %site{ abs_pos } = [ chr, rel_pos, ref_allele, all_alleles, allele_counts
-#       het_ids, hom_ids ]
-sub annotate_ins_sites {
-  state $check = compile( Object, HashRef, HashRef );
-  my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
-
-  my @ins_annotations;
-
-  for my $site ( sort { $a <=> $b } keys %$sites_href ) {
-    my ( %data, %record );
-
-    my ( $chr, $rel_pos, $ref_allele, $all_allele_str, $allele_count, $het_ids, $hom_ids )
-      = @{ $sites_href->{$site} };
-    my $chr_index = $chr_index_href->{$chr};
-    my $ref_obj =
-      $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $site, $ref_allele, 1 );
-      
-    # @var_alleles has all variant alleles but only the 1st will be reported
-    # my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $record{ref_base} );
-    my @var_alleles = @{ $self->_var_alleles( $all_allele_str, $ref_obj->ref_base) };
-
-    if ( !@var_alleles ) {
-      my $msg = "Error: No alleles to annotate";
-      $msg .= sprintf(" Provided alleles and reference '%s' and '%s' db reference '%s'",
-        $all_allele_str, $ref_allele, $ref_obj->ref_base);
-      $self->_logger->warn($msg);
-      return;
-    }
-
-    $record{abs_pos}      = $site;
-    $record{alleles}      = $all_allele_str;
-    $record{allele_count} = $allele_count;
-    $record{chr}          = $chr;
-    $record{pos}          = $rel_pos;
-    $record{genomic_type} = $ref_obj->genomic_type;
-    $record{het_ids}      = $het_ids;
-    $record{hom_ids}      = $hom_ids;
-    $record{ref_base}     = $ref_obj->ref_base;
-    $record{var_allele}   = $var_alleles[0];
-    $record{var_type}     = 'INS';
-
-    # examine underling genomic data
-    for my $gene_obj ( $ref_obj->all_gene_obj ) {
-      if ( $gene_obj->site_type() ) {
-        $data{ $gene_obj->transcript_id }{ $gene_obj->site_type }++;
-        if ( $gene_obj->site_type eq 'Coding' ) {
-          if ( $gene_obj->codon_number == 1 ) {
-            $data{ $gene_obj->transcript_id }{Start}++;
-          }
-          if ( $gene_obj->ref_aa_residue eq '*' ) {
-            $data{ $gene_obj->transcript_id }{Stop}++;
-          }
-        }
-      }
-    }
-
-    # save snp data
-    my @snp_data;
-    for my $snp_obj ( $ref_obj->all_snp_obj ) {
-      push @snp_data, $snp_obj;
-    }
-    $record{snp_data} = \@snp_data;
-
-    my @gene_data;
-    for my $gene_obj ( $ref_obj->all_gene_obj ) {
-      my $gene_href = $gene_obj->as_href;
-      $gene_href->{minor_allele} = $var_alleles[0];
-      my $tx = $gene_obj->transcript_id;
-      if ( exists $data{$tx}{Coding} ) {
-        if ( length( $var_alleles[0] ) % 3 == 0 ) {
-          $gene_href->{annotation_type} = "Ins-InFrame";
-        }
-        else {
-          $gene_href->{annotation_type} = "Ins-FrameShift";
-        }
-        if ( exists $data{$tx}{Start} ) {
-          $gene_href->{annotation_type} .= ", StartLoss";
-        }
-        elsif ( exists $data{$tx}{Stop} ) {
-          $gene_href->{annotation_type} .= ", StopLoss";
-        }
-      }
-      elsif ( exists $data{$tx}{'5UTR'} || exists $data{$tx}{'3UTR'} ) {
-        $gene_href->{annotation_type} = "Ins-UTR";
-      }
-      elsif ( exists $data{$tx}{'Splice Donor'} || exists $data{$tx}{'Splice Acceptor'} ) {
-        $gene_href->{annotation_type} = "Ins-Splice";
-      }
-      else {
-        $gene_href->{annotation_type} = 'NA';
-      }
-      push @gene_data, Seq::Site::Indel->new($gene_href);
-    }
-    $record{gene_data} = \@gene_data;
-    my $obj = Seq::Annotate::Indel->new( \%record );
-    push @ins_annotations, $obj->as_href;
-  }
-  return \@ins_annotations;
 }
 
 __PACKAGE__->meta->make_immutable;

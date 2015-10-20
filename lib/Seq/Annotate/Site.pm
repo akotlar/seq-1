@@ -38,6 +38,7 @@ has chr          => ( is => 'ro', isa => 'Str',         required => 1, );
 has genomic_type => ( is => 'ro', isa => 'GenomicType', required => 1, );
 has pos          => ( is => 'ro', isa => 'Int',         required => 1, );
 has ref_base     => ( is => 'ro', isa => 'Str',         required => 1, );
+has scores       => ( is => 'ro', isa => 'HashRef[Str]', default  => sub { {} }, );
 has warning      => ( is => 'ro', isa => 'Str',         default  => 'NA', );
 
 # the objects stored in gene_data really only need to do as_href_with_NAs(),

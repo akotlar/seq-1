@@ -12,17 +12,16 @@ use Cpanel::JSON::XS;
 use DDP;                   # for debugging
 use Data::Dump qw/ dump /; # for debugging
 
-plan tests => 44;
+plan tests => 39;
 
 my %attr_2_type = (
   alleles => 'Str',
   allele_count => 'Str',
+  gene_data => 'ArrayRef[Maybe[Seq::Site::Annotation]]',
   het_ids => 'Str',
   hom_ids => 'Str',
-  scores => 'HashRef[Str]',
   var_allele => 'Str',
   var_type => 'SnpType',
-  gene_data => 'ArrayRef[Maybe[Seq::Site::Annotation]]',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
