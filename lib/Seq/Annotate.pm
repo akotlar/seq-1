@@ -682,7 +682,7 @@ sub annotate_snp_site {
   # check reference base in assembly is the same as the one suppiled by the user
   if ( $base ne $ref_allele ) {
     my $msg = sprintf(
-      "Error: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
+      "Error: Discordant ref base at SNP/MULTIALLELIC site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
       $chr, $rel_pos, $abs_pos, $base, $ref_allele );
     $self->_logger->warn($msg);
     $record{warning} = $msg;
@@ -695,9 +695,9 @@ sub annotate_snp_site {
   my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
 
   if ( !@var_alleles ) {
-    my $msg = "Error: No alleles to annotate";
-    $msg .= sprintf( " Provided alleles and reference '%s' and '%s' db reference '%s'",
-      $all_allele_str, $ref_allele, $base );
+    my $msg = sprintf("Error: No alleles to annotate at site %s:%d;", $chr, $rel_pos);
+    $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
+      $all_allele_str, $ref_allele, $ref_allele );
     $self->_logger->warn($msg);
     return;
   }
@@ -911,8 +911,8 @@ sub annotate_ins_site {
   my @var_alleles = @{ $self->_var_alleles( $all_allele_str, $ref_obj->ref_base ) };
 
   if ( !@var_alleles ) {
-    my $msg = "Error: No alleles to annotate";
-    $msg .= sprintf( " Provided alleles and reference '%s' and '%s' db reference '%s'",
+    my $msg = sprintf("Error: No alleles to annotate at INS site %s:%d;", $chr, $rel_pos);
+    $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
       $all_allele_str, $ref_allele, $ref_obj->ref_base );
     $self->_logger->warn($msg);
     return;
