@@ -16,8 +16,6 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-
-use lib '../lib';
 use threads;
 use threads::shared;
 

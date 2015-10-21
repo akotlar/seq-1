@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Build::GeneTrack;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Builds Gene Tracks and places into MongoDB instance.
 # VERSION
 
@@ -169,13 +172,14 @@ sub build_tx_db_for_genome {
       coding_end              => $gene->coding_end,
       exon_starts             => $gene->exon_starts,
       exon_ends               => $gene->exon_ends,
+      peptide_seq             => $gene->peptide,
+      strand                  => $gene->strand,
       transcript_start        => $gene->transcript_start,
       transcript_end          => $gene->transcript_end,
       transcript_id           => $gene->transcript_id,
       transcript_seq          => $gene->transcript_seq,
       transcript_annotation   => $gene->transcript_annotation,
       transcript_abs_position => $gene->transcript_abs_position,
-      peptide_seq             => $gene->peptide,
     };
 
     # save gene attr in dbm

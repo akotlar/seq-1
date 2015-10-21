@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Role::ConfigFromFile;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: A moose role for configuring a class from a YAML file
 # VERSION
 

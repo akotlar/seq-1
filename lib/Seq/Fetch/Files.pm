@@ -1,4 +1,10 @@
+use 5.10.0;
+use strict;
+use warnings;
+
 package Seq::Fetch::Files;
+
+our $VERSION = '0.001';
 
 =head1 DESCRIPTION
 
@@ -17,7 +23,6 @@ Extended by: None
 
 =cut
 
-use 5.10.0;
 use Carp;
 use File::Path;
 use File::Spec;

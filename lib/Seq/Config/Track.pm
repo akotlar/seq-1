@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Config::Track;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: A base class for track classes
 # VERSION
 

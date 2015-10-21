@@ -4,19 +4,21 @@ use warnings;
 
 package Seq::Role::Genome;
 
+our $VERSION = '0.001';
+
 # ABSTRACT: A moose role for getting the 0-indexed absolute position in the genome
 # VERSION
 
-=head1 DESCRIPTION 
+=head1 DESCRIPTION
 
   @role B<Seq::Role::Genome>
-  
+
   TODO:Check description
   A Moose Role that defines how to find a base in the reference genome
-  
+
   package <Package Name> with "Seq::Role::Genome"
 
-Used in: 
+Used in:
 
 =for :list
 * Seq::Build::GenomeSizedTrackStr
@@ -28,9 +30,7 @@ Extended in: None
 
 use Moose::Role;
 
-# requires qw/ genome_length exists_chr_len /;
-
-use Carp;
+use Carp qw/ confess /;
 # use Type::Params qw/ compile /;
 # use Types::Standard qw/ :types /;
 
@@ -38,10 +38,14 @@ sub get_abs_pos {
   # state $check = compile( Object, Str, Int );
   my ( $class, $chr, $pos ) = @_;
 
-  confess "can't find chr: $chr in build" unless $class->exists_chr_len($chr);
-  confess sprintf( "ERROR: get_abs_pos() chr (%s) and pos (%d) should be within %d",
-    $chr, $pos, $class->genome_length )
-    unless $pos >= 1 and $pos < $class->genome_length;
+  unless ( $class->exists_chr_len($chr) ) {
+    confess "can't find chr: $chr in build";
+  }
+
+  unless ( $pos >= 1 and $pos < $class->genome_length ) {
+    confess sprintf( "ERROR: get_abs_pos() chr (%s) and pos (%d) should be within %d",
+      $chr, $pos, $class->genome_length );
+  }
 
   # grab the next chromosome start site, but if there is not next chromosome
   # then we're at the end of the genome so get the length of the genome; these
@@ -58,7 +62,7 @@ sub get_abs_pos {
 
     # getting end of chromosome and converting to 1-index for printing
     my $chr_end = $next_chr_start - $class->char_genome_length($chr) + 1;
-    croak "get_abs_pos(): site $pos is beyond end of the chr ($chr)"
+    confess "get_abs_pos(): site $pos is beyond end of the chr ($chr)"
       . ", which ends at $chr:$chr_end.\n";
   }
 

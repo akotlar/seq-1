@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::KCManager;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Manages KyotoCabinet db
 # VERSION
 

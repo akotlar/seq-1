@@ -1,8 +1,6 @@
 #!/usr/bin/env perl
 
-#
 # TODO: Ensure this is consistent with recent revamped Seq package scheme
-#
 
 use 5.10.0;
 use strict;

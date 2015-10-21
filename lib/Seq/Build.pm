@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Build;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: A class for building all files associated with a genome assembly
 # VERSION
 
@@ -46,8 +49,6 @@ use Seq::Build::SnpTrack;
 use Seq::Build::GeneTrack;
 use Seq::Build::GenomeSizedTrackStr;
 use Seq::KCManager;
-
-use DDP;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
