@@ -67,11 +67,10 @@ foreach (qw/A T C G/) {
 
 # note on interpolation vs join vs concatenation:
 # in perl, all compile to the same optree: http://www.perlmonks.org/?node_id=964608
-my ($sInFile, $sOutFile, $sType, $bVerbose);
+my ($sInFile, $sOutFile, $bVerbose);
 GetOptions( \%hCmdLineOption,
             'infile|i=s' => \$sInFile,
             'outfile|o=s' => \$sOutFile,
-            'type|t=s' => \$sType,
             'help',
             'man') or pod2usage(2);
 
@@ -88,11 +87,16 @@ Log::Any::Adapter->set( 'File', $log_file );
 my $log = Log::Any->get_logger();
 
 my ($fpIn, $fpOut);
-unless (open ($fpIn, "<$sInFile") ) {
-	my $err = "\tError : Cannot open $sInFile for reading .....\n";
-	$log->error($err);
-	die $err;
+if(!$sInFile) {
+	$fpIn = \*STDIN;
+}else{
+	unless (open ($fpIn, "<$sInFile") ) {
+		my $err = "\tError : Cannot open $sInFile for reading .....\n";
+		$log->error($err);
+		die $err;
+	}
 }
+
 unless ( open($fpOut, ">$sOutFile") ) {
 	my $err = "\tError : Cannot open $sInFile for reading .....\n";
 	$log->error($err);
