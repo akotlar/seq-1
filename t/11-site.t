@@ -15,14 +15,14 @@ use Data::Dump qw/ dump /; # for debugging
 plan tests => 43;
 
 my %attr_2_type = (
-  abs_pos => 'Int',
-  chr => 'Str',
+  abs_pos      => 'Int',
+  chr          => 'Str',
   genomic_type => 'GenomicType',
-  pos => 'Int',
-  ref_base => 'Str',
-  scores => 'HashRef[Str]',
-  snp_data => 'ArrayRef[Maybe[Seq::Site::Snp]]',
-  warning => 'Str',
+  pos          => 'Int',
+  ref_base     => 'Str',
+  scores       => 'HashRef[Str]',
+  snp_data     => 'ArrayRef[Maybe[Seq::Site::Snp]]',
+  warning      => 'Str',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 

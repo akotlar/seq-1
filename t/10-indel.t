@@ -15,13 +15,13 @@ use Data::Dump qw/ dump /; # for debugging
 plan tests => 39;
 
 my %attr_2_type = (
-  alleles => 'Str',
+  alleles      => 'Str',
   allele_count => 'Str',
-  gene_data => 'ArrayRef[Maybe[Seq::Site::Indel]]',
-  het_ids => 'Str',
-  hom_ids => 'Str',
-  var_allele => 'Str',
-  var_type => 'IndelType',
+  gene_data    => 'ArrayRef[Maybe[Seq::Site::Indel]]',
+  het_ids      => 'Str',
+  hom_ids      => 'Str',
+  var_allele   => 'Str',
+  var_type     => 'IndelType',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
@@ -36,7 +36,7 @@ my $package = "Seq::Annotate::Indel";
 use_ok($package) || die "$package cannot be loaded";
 
 # check extension of
-check_isa( $package, ['Seq::Annotate::Site', 'Moose::Object'] );
+check_isa( $package, [ 'Seq::Annotate::Site', 'Moose::Object' ] );
 
 # check role
 #does_role( $package, 'Seq::Role::Serialize' );
