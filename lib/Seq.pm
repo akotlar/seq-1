@@ -326,30 +326,28 @@ sub annotate_snpfile {
 
     # for snpfile, define columns for expected header fields and ids
     if ( !%header ) {
-      if ( $. == 1 ) {
-        my $transition_column;
-        if ( $self->file_type eq 'snp_1' ) {
-          $transition_column = 3;
-        }
-        if ( $self->file_type eq 'snp_2' ) {
-          $transition_column = 5;
-        }
-        else {
-          my $msg = sprintf("Error: unrecognzied file_type");
-          $self->_tee_logger( 'error', $msg );
-        }
-
-        %header = map { $fields[$_] => $_ } ( 0 .. $transition_column );
-        $self->_check_header( \%header );
-
-        for my $i ( ( $transition_column + 1 ) .. $#fields ) {
-          $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
-        }
-
-        # save list of ids within the snpfile
-        @sample_ids = sort( keys %ids );
-        next;
+      my $transition_column;
+      if ( $self->file_type eq 'snp_1' ) {
+        $transition_column = 3;
       }
+      if ( $self->file_type eq 'snp_2' ) {
+        $transition_column = 5;
+      }
+      else {
+        my $msg = sprintf("Error: unrecognzied file_type");
+        $self->_tee_logger( 'error', $msg );
+      }
+
+      %header = map { $fields[$_] => $_ } ( 0 .. $transition_column );
+      $self->_check_header( \%header );
+
+      for my $i ( ( $transition_column + 1 ) .. $#fields ) {
+        $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
+      }
+
+      # save list of ids within the snpfile
+      @sample_ids = sort( keys %ids );
+      next;
     }
 
     # process the snpfile line

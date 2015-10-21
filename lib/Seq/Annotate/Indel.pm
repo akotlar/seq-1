@@ -30,12 +30,12 @@ with 'Seq::Role::Serialize';
 
 enum IndelType => [ 'DEL', 'INS' ];
 
-has alleles      => ( is => 'ro', isa => 'Str',          required => 1, );
-has allele_count => ( is => 'ro', isa => 'Str',          required => 1, );
-has het_ids      => ( is => 'ro', isa => 'Str',          default  => 'NA', );
-has hom_ids      => ( is => 'ro', isa => 'Str',          default  => 'NA', );
-has var_allele   => ( is => 'ro', isa => 'Str',          required => 1, );
-has var_type     => ( is => 'ro', isa => 'IndelType',    required => 1, );
+has alleles      => ( is => 'ro', isa => 'Str',       required => 1, );
+has allele_count => ( is => 'ro', isa => 'Str',       required => 1, );
+has het_ids      => ( is => 'ro', isa => 'Str',       default  => 'NA', );
+has hom_ids      => ( is => 'ro', isa => 'Str',       default  => 'NA', );
+has var_allele   => ( is => 'ro', isa => 'Str',       required => 1, );
+has var_type     => ( is => 'ro', isa => 'IndelType', required => 1, );
 
 # the objects stored in gene_data really only need to do as_href_with_NAs(),
 # which is a method in Seq::Role::Seralize

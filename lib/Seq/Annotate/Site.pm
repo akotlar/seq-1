@@ -33,13 +33,13 @@ with 'Seq::Role::Serialize';
 
 enum GenomicType => [ 'Exonic', 'Intronic', 'Intergenic' ];
 
-has abs_pos      => ( is => 'ro', isa => 'Int',         required => 1, );
-has chr          => ( is => 'ro', isa => 'Str',         required => 1, );
-has genomic_type => ( is => 'ro', isa => 'GenomicType', required => 1, );
-has pos          => ( is => 'ro', isa => 'Int',         required => 1, );
-has ref_base     => ( is => 'ro', isa => 'Str',         required => 1, );
+has abs_pos      => ( is => 'ro', isa => 'Int',          required => 1, );
+has chr          => ( is => 'ro', isa => 'Str',          required => 1, );
+has genomic_type => ( is => 'ro', isa => 'GenomicType',  required => 1, );
+has pos          => ( is => 'ro', isa => 'Int',          required => 1, );
+has ref_base     => ( is => 'ro', isa => 'Str',          required => 1, );
 has scores       => ( is => 'ro', isa => 'HashRef[Str]', default  => sub { {} }, );
-has warning      => ( is => 'ro', isa => 'Str',         default  => 'NA', );
+has warning      => ( is => 'ro', isa => 'Str',          default  => 'NA', );
 
 # the objects stored in gene_data really only need to do as_href_with_NAs(),
 # which is a method in Seq::Role::Seralize
@@ -51,7 +51,7 @@ has gene_data => (
   handles  => { all_gene_obj => 'elements', },
 );
 
-# the objects stored in snp_data really only need to do as_href_with_NAs(), 
+# the objects stored in snp_data really only need to do as_href_with_NAs(),
 # which is a method in Seq::Role::Seralize
 has snp_data => (
   traits   => ['Array'],
@@ -71,7 +71,7 @@ sub as_href {
 
   my %hash;
 
-  for my $attr (@{ $self->attrs }) {
+  for my $attr ( @{ $self->attrs } ) {
     $hash{$attr} = $self->$attr;
   }
 

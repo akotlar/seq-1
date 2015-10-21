@@ -88,12 +88,14 @@ my %Eu_codon_2_aa = (
 =type {Str} GeneSiteType
 
 =cut
+
 enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                        'Splice Donor', 'Splice Acceptor' ];
 
 =type {Str} StrandType
 
 =cut
+
 enum StrandType   => [ '+', '-' ];
 #>>>
 
