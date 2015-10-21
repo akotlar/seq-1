@@ -3,7 +3,6 @@
 use 5.10.0;
 use strict;
 use warnings;
-use lib './lib';
 use Carp qw/ croak /;
 use Getopt::Long;
 use Path::Tiny;

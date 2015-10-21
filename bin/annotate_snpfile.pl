@@ -4,7 +4,6 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use lib './lib';
 use Carp;
 use Getopt::Long;
 use File::Spec;
