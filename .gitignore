@@ -18,6 +18,7 @@ nytprof.out
 *.bs
 /_eumm/
 .tidyall.d
+.build
 
 # vim gitignore
 [._]*.s[a-w][a-z]
@@ -57,18 +58,18 @@ Temporary Items
 *.log
 *.sh
 *.snp
+.build/
 nytprof
 tmp*
+temp*
 test*
-sandbox
+sandbox/
 big_files/
-/t/*.sh
-/bin/genome_hasher
-/bin/genome_scorer
-/bin/genome_cadd
+t/*.sh
+t/hg38/
+c/bin/
+stash/
+big_files/
 Pileup.annotation.txt.gz
 Pileup.annotation.txt
 Pileup.snp
-/stash
-/t/hg38/
-/big_files

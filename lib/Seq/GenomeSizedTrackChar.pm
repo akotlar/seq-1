@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::GenomeSizedTrackChar;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Decodes genome sized char tracks - genomes, scores, etc.
 # VERSION
 
@@ -37,9 +40,6 @@ use File::Path;
 use File::Spec;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
-use YAML::XS;
-
-use DDP;
 
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome';

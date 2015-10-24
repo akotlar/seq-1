@@ -3,11 +3,14 @@ use strict;
 use warnings;
 
 package Seq::Site::Gene;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Class for seralizing gene sites
 # VERSION
 
 =head1 DESCRIPTION
-  
+
   @class Seq::Site::Gene
   #TODO: Check description
 
@@ -46,7 +49,7 @@ package Seq::Site::Gene;
 Used in:
 =for :list
 * Seq::Gene
-* 
+*
 
 Extended by:
 =for :list
@@ -62,9 +65,6 @@ use namespace::autoclean;
 extends 'Seq::Site';
 
 #<<< No perltidy
-#TODO: some these attributes are defined in multiple places, including Seq/Site/Annotation.pm, can we combine them
-my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
-    codon_number codon_position ref_aa_residue error_code alt_names );
 
 my %Eu_codon_2_aa = (
   "AAA" => "K", "AAC" => "N", "AAG" => "K", "AAT" => "N",
@@ -85,11 +85,17 @@ my %Eu_codon_2_aa = (
   "TTA" => "L", "TTC" => "F", "TTG" => "L", "TTT" => "F"
 );
 
-=type {Str} GeneSiteType 
-=cut 
+=type {Str} GeneSiteType
+
+=cut
 
 enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                        'Splice Donor', 'Splice Acceptor' ];
+
+=type {Str} StrandType
+
+=cut
+
 enum StrandType   => [ '+', '-' ];
 #>>>
 
@@ -181,26 +187,17 @@ sub _set_ref_aa_residue {
   }
 }
 
-# this function is really for storing in mongo db collection
-#TODO: can we get rid of this, since defined in Seq/Build/GeneTrack.pm, and also Seq/Config/SparseTrack.pm
 sub as_href {
   my $self = shift;
   my %hash;
 
-  for my $attr (@attributes) {
-    my $empty_attr = "no_" . $attr;
-    if ( $self->meta->has_method($empty_attr) ) {
-      $hash{$attr} = $self->$attr unless $self->$empty_attr;
-    }
-    elsif ( defined $self->$attr ) {
-      $hash{$attr} = $self->$attr;
+  for my $attr ( $self->meta->get_all_attributes ) {
+    my $name = $attr->name;
+    if ( defined $self->$name ) {
+      $hash{$name} = $self->$name;
     }
   }
   return \%hash;
-}
-
-sub seralizable_attributes {
-  return @attributes;
 }
 
 __PACKAGE__->meta->make_immutable;

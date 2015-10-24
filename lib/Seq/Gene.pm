@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Gene;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Class for creating particular sites for a given gene / transcript
 # VERSION
 
@@ -27,8 +30,8 @@ Extended by: None
 use Moose 2;
 
 use Carp qw/ confess /;
-use Data::Dump qw/ dump /;
 use namespace::autoclean;
+use Data::Dump qw/ dump /;
 
 use Seq::Site::Gene;
 

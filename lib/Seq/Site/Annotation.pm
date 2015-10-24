@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Site::Annotation;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Class for seralizing annotation sites
 # VERSION
 
@@ -34,10 +37,6 @@ use Moose 2;
 use Moose::Util::TypeConstraints;
 
 use namespace::autoclean;
-
-my @attributes = qw( abs_pos ref_base transcript_id site_type strand ref_codon_seq
-  codon_number codon_position ref_aa_residue error_code alt_names
-  genotype new_codon_seq new_aa_residue annotation_type );
 
 extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
@@ -186,18 +185,6 @@ sub _set_annotation_type {
     return 'Non-Coding';
   }
 }
-
-=method @override @public serializable_attributes
-
-  Overloads the serializable_attributes sub found in Seq::Site::Gene and required by @role Seq::Role::Serialize
-
-@returns {Array<String>}
-
-=cut
-
-override seralizable_attributes => sub {
-  return @attributes;
-};
 
 __PACKAGE__->meta->make_immutable;
 

@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Build::GenomeSizedTrackStr;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Builds a plain text genome used for binary genome creation
 # VERSION
 
@@ -30,8 +33,6 @@ use File::Path;
 use File::Spec;
 use namespace::autoclean;
 use YAML::XS qw/ Dump LoadFile /;
-
-use DDP;
 
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome';

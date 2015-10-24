@@ -247,7 +247,9 @@ sub coerceInputs {
   return {
     snpfile            => $inputFilePath,
     out_file           => $outputFilePath,
-    configfile         => $configFilePath,
+    config_file        => $configFilePath,
+    ignore_unknown_chr => 1,
+    overwrite          => 1,
     debug              => $debug,
     messangerHref      => $messangerHref,
     redisAddress       => "$redisHost:$redisPort",

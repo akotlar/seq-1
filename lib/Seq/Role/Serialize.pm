@@ -3,19 +3,22 @@ use strict;
 use warnings;
 
 package Seq::Role::Serialize;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: A moose role for serializing data
 # VERSION
 
 =head1 DESCRIPTION
-  
-  @role B<Seq::Role::Serialize> 
+
+  @role B<Seq::Role::Serialize>
   #TODO: Check description
 
   @example
 
 Used in:
 =for :list
-* Seq/Site/Annotation.pm 
+* Seq/Site/Annotation.pm
 * Seq/Site/Snp.pm
 
 Extended by: None
@@ -24,16 +27,34 @@ Extended by: None
 
 use Moose::Role 2;
 
-use namespace::autoclean;
-
 use Cpanel::JSON::XS;
+use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
-use YAML::XS qw/ Dump /;
 
-use DDP;
+my $tc_regex = qr{HashRef|ArrayRef};
 
-# not using this sub since we're asking the meta class about the attributes
-requires qw/ seralizable_attributes  /;
+# header_attr() returns a hash reference of the header, which is defined as
+# all attributes that are not references to hashes or arrays or abs_pos
+# attribute. The rationale for this is that the hashes (presently not using
+# any array references) only hold "features" which may vary depending on
+# the assembly specification. In Seq::Annotate the _build_header() will
+# query the gene and snp tracks to build all features using the actual data
+# in the assembly.
+sub header_attr {
+  my $self = shift;
+
+  my %hash;
+
+  for my $attr ( $self->meta->get_all_attributes ) {
+    my $name            = $attr->name;
+    my $type_constraint = $attr->type_constraint;
+    if ( defined $self->$name ) {
+      next if ( $type_constraint =~ m/$tc_regex/ or $name eq 'abs_pos' );
+      $hash{$name} = $self->$name;
+    }
+  }
+  return \%hash;
+}
 
 sub as_href_with_NAs {
   my $self = shift;
@@ -41,9 +62,6 @@ sub as_href_with_NAs {
   for my $attr ( $self->meta->get_all_attributes ) {
     my $name            = $attr->name;
     my $type_constraint = $attr->type_constraint;
-    #  say join( ". .", $name, $type_constraint );
-    #  say "this attrib: " . $attr->name . " has value: ";
-    #  p $self->$name;
     if ( defined $self->$name ) {
       if ( $type_constraint eq 'HashRef' ) {
         map { $obj{"$name.$_"} = $self->$name->{$_} } keys %{ $self->$name };

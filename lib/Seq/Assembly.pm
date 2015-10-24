@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Assembly;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: A class for assembly information
 # VERSION
 
@@ -37,8 +40,6 @@ use Path::Tiny qw/ path /;
 
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
-
-use DDP; # for debugging
 
 with 'Seq::Role::ConfigFromFile', 'MooX::Role::Logger';
 

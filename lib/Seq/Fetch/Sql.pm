@@ -1,4 +1,11 @@
+use 5.10.0;
+use strict;
+use warnings;
+
 package Seq::Fetch::Sql;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: This class fetches and cleans genomic data from sql servers.
 
 =head1 DESCRIPTION
@@ -16,10 +23,10 @@ Extended by: None
 
 =cut
 
-use 5.10.0;
+use Moose;
+
 use Carp;
 use DBI;
-use Moose;
 use namespace::autoclean;
 use Time::localtime;
 use Data::Dump qw/ dump /;
@@ -271,7 +278,7 @@ sub write_remote_data {
     }
     sleep 5 if $self->act;
   }
-  say dump(\@return_files);
+  say dump( \@return_files );
   return \@return_files;
 }
 

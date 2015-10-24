@@ -4,10 +4,9 @@ use strict;
 use warnings;
 use Test::More;
 
-plan tests => 24;
+plan tests => 26;
 
 BEGIN {
-  use_ok('Seq')                             || print "Bail out!\n";
   use_ok('Seq::Assembly')                   || print "Bail out!\n";
   use_ok('Seq::KCManager')                  || print "Bail out!\n";
   use_ok('Seq::Config::GenomeSizedTrack')   || print "Bail out!\n";
@@ -30,6 +29,9 @@ BEGIN {
   use_ok('Seq::Build::SnpTrack')            || print "Bail out!\n";
   use_ok('Seq::Build::SparseTrack')         || print "Bail out!\n";
   use_ok('Seq::Build')                      || print "Bail out!\n";
+  use_ok('Seq::Annotate::Snp')              || print "Bail out!\n";
+  use_ok('Seq::Annotate::Indel')            || print "Bail out!\n";
   use_ok('Seq::Annotate')                   || print "Bail out!\n";
+  use_ok('Seq')                             || print "Bail out!\n";
 }
 diag("Testing Seq, Perl $], $^X");

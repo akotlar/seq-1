@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Config::GenomeSizedTrack;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Configure a genome-sized track
 # VERSION
 

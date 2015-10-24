@@ -3,6 +3,9 @@ use strict;
 use warnings;
 
 package Seq::Fetch;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Class for fetching files from UCSC
 # VERSION
 
@@ -28,8 +31,6 @@ use Scalar::Util qw/ reftype /;
 
 use Seq::Fetch::Files;
 use Seq::Fetch::Sql;
-
-use DDP;
 
 extends 'Seq::Assembly';
 

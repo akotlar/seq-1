@@ -4,6 +4,8 @@ use feature "state";
 
 package Seq::Role::AnnotatorDataStore;
 
+our $VERSION = '0.001';
+
 # ABSTRACT: Builds a plain text genome used for binary genome creation
 # VERSION
 use Moose::Role;

@@ -3,60 +3,49 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use Data::Dump qw/ dump /;
 use Lingua::EN::Inflect qw/ A PL_N /;
 use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
+use Cpanel::JSON::XS;
 
-plan tests => 75;
+use DDP;                   # for debugging
+use Data::Dump qw/ dump /; # for debugging
 
-my %attr_2_type_ro = (
-  snpfile            => 'MooseX::Types::Path::Tiny::AbsFile',
-  config_file        => 'MooseX::Types::Path::Tiny::AbsFile',
-  out_file           => 'MooseX::Types::Path::Tiny::AbsPath',
-  file_type          => 'fileTypes',
-  ignore_unknown_chr => 'Bool',
-  overwrite          => 'Bool',
-  debug              => 'Bool',
-  write_batch        => 'Int',
-  messageChannelHref => 'HashRef',
-  _message_publisher => undef,
-  _out_fh            => undef,
-  _count_key         => 'Str',
+plan tests => 39;
+
+my %attr_2_type = (
+  alleles      => 'Str',
+  allele_count => 'Str',
+  gene_data    => 'ArrayRef[Maybe[Seq::Site::Annotation]]',
+  het_ids      => 'Str',
+  hom_ids      => 'Str',
+  var_allele   => 'Str',
+  var_type     => 'SnpType',
 );
-my %attr_2_type_rw = (
-  del_sites       => 'HashRef',
-  ins_sites       => 'HashRef',
-  snp_sites       => 'HashRef',
-  genes_annotated => 'HashRef',
-);
-my %attr_to_is_ro = map { $_ => 'ro' } ( keys %attr_2_type_ro );
-my %attr_to_is_rw = map { $_ => 'rw' } ( keys %attr_2_type_rw );
-my %attr_to_is = ( %attr_to_is_ro, %attr_to_is_rw );
+my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 
 # set test genome
 my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 # set package name
-my $package = "Seq";
+my $package = "Seq::Annotate::Snp";
 
 # load package
 use_ok($package) || die "$package cannot be loaded";
 
 # check extension of
-check_isa( $package, ['Moose::Object'] );
+check_isa( $package, [ 'Seq::Annotate::Site', 'Moose::Object' ] );
 
-# check roles
-does_role( $package, 'MooX::Role::Logger' );
+# check role
+#does_role( $package, 'Seq::Role::Serialize' );
 
 # check attributes, their type constraint, and 'ro'/'rw' status
-for my $attr_name ( sort ( keys %attr_2_type_ro, keys %attr_2_type_rw ) ) {
-  my $exp_type = $attr_2_type_ro{$attr_name} || $attr_2_type_rw{$attr_name};
-  my $attr = $package->meta->get_attribute($attr_name);
-  next unless $exp_type;
-  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint %s" );
+for my $attr_name ( sort keys %attr_2_type ) {
+  my $exp_type = $attr_2_type{$attr_name};
+  my $attr     = $package->meta->get_attribute($attr_name);
+  ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name, $exp_type, "$attr_name type is $exp_type" );
 
   # check 'ro' / 'rw' status
@@ -73,28 +62,49 @@ for my $attr_name ( sort ( keys %attr_2_type_ro, keys %attr_2_type_rw ) ) {
 }
 
 # object creation
-{
-  # make fake snpfile
-  open my $fh, '>', 'test.snp' || die "cannot open 'test.snp': $!\n";
-  close $fh;
-  my $obj = $package->new(
-    {
-      config_file => $ga_config,
-      file_type   => 'snp_2',
-      snpfile     => 't/snp_test.snp'
-    }
-  );
-  ok( $obj, 'object creation' );
-
-  # clean up
-  unlink 'test.snp' || die "cannot rm 'test.snp': $!\n";
-}
+# for my $i ( 0 .. 6 ) {
+#   my $obj_data_href = LoadJsonData("t/10-data.$i.json");
+#   my $obj           = $package->new($obj_data_href);
+#
+#   # only test package creation once
+#   if ( $i == 0 ) {
+#     ok( $obj, $package );
+#   }
+#   my $obs_href = $obj->as_href;
+#   #SaveJsonData( "10-exp.$i.json", $obs_href );
+#
+#   my $exp_href = LoadJsonData("t/10-exp.$i.json");
+#   is_deeply( $obs_href, $exp_href, 'as_href()' );
+# }
 
 # Methods tests
 
 ###############################################################################
 # sub routines
 ###############################################################################
+
+sub SaveJsonData {
+  my ( $file, $data ) = @_;
+  my $fh = IO::File->new( $file, 'w' ) || die "$file: $!\n";
+  print {$fh} encode_json($data);
+  close $fh;
+}
+
+sub LoadJsonData {
+  my $file = shift;
+  my $fh = IO::File->new( $file, 'r' ) || die "$file: $!\n";
+  local $\;
+  my $json_txt = <$fh>;
+  close $fh;
+  my $jsonHref = decode_json($json_txt);
+  if ( !%$jsonHref ) {
+    say "Bail out - no data for $file";
+    exit(1);
+  }
+  else {
+    return $jsonHref;
+  }
+}
 
 sub build_obj_data {
   my ( $track_type, $type, $href ) = @_;

@@ -1,9 +1,11 @@
 use 5.10.0;
 use strict;
 use warnings;
-use Carp qw/ croak /;
 
 package Seq::Config::SparseTrack;
+
+our $VERSION = '0.001';
+
 # ABSTRACT: Configure a sparse traack
 # VERSION
 
@@ -42,6 +44,7 @@ use Moose 2;
 use Moose::Util::TypeConstraints;
 use MooseX::Types::Path::Tiny qw/ AbsPath AbsPaths /;
 
+use Carp qw/ croak /;
 use namespace::autoclean;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ Object Maybe Str /;
