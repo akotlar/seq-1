@@ -356,7 +356,7 @@ sub annotate_snpfile {
 
     # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
     #   later (hets currently ignored)
-    my ( $het_ids, $hom_ids, $hom_ids_href ) =
+    my ( $het_ids, $hom_ids, $id_genos_href ) =
       $self->_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
     my $abs_pos;
@@ -419,10 +419,9 @@ sub annotate_snpfile {
     if ( $var_type eq 'SNP' || $var_type eq 'MULTIALLELIC' ) {
       my $record_href = $annotator->annotate_snp_site(
         $chr,      $chr_index,      $pos,          $abs_pos, $ref_allele,
-        $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids
+        $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids, $id_genos_href
       );
       if ( defined $record_href ) {
-        $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
         push @snp_annotations, $record_href;
         $self->inc_counter;
       }
@@ -433,7 +432,6 @@ sub annotate_snpfile {
         $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids
       );
       if ( defined $record_href ) {
-        $self->_summarize( $record_href, $summary_href, \@sample_ids, $hom_ids_href );
         push @snp_annotations, $record_href;
         $self->inc_counter;
       }
@@ -598,30 +596,10 @@ sub _publish_message {
     encode_json( { %{ $self->channelInfo('recordLocator') }, message => $message } ) );
 }
 
-sub _summarize {
-  my ( $self, $record_href, $summary_href, $sample_ids_aref, $hom_ids_href ) = @_;
-
-  my $count_key    = $self->_count_key;
-  my $var_type     = $record_href->{var_type};
-  my $genomic_type = $record_href->{genomic_type};
-
-  foreach my $id (@$sample_ids_aref) {
-    $summary_href->{$id}{$var_type}{$count_key} += 1;
-    $summary_href->{$id}{$var_type}{$genomic_type}{$count_key} += 1;
-  }
-
-  # run statistics code maybe, unless we wait for end to save function calls
-  # statistics code may include compound phylop/phastcons scores for the sample,
-  # or just tr:tv here we will use $hom_ids_href, and if needed we can add
-  # $het_ids_href
-
-  return;
-}
-
 sub _minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
-  my ( @het_ids, @hom_ids, $het_ids_str, $hom_ids_str );
+  my ( @het_ids, @hom_ids, $het_ids_str, $hom_ids_str, %id_genos_href);
 
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
@@ -649,10 +627,11 @@ sub _minor_allele_carriers {
     else {
       $hom_ids_str = 'NA';
     }
+    $id_genos_href{$id} = $id_geno;
   }
 
   # return ids for printing
-  return ( $het_ids_str, $hom_ids_str, \@hom_ids );
+  return ( $het_ids_str, $hom_ids_str, \%id_genos_href);
 }
 
 sub _check_header {

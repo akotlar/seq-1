@@ -77,6 +77,7 @@ use Seq::Site::Snp;
 use Seq::Annotate::Indel;
 use Seq::Annotate::Site;
 use Seq::Annotate::Snp;
+use Seq::Statistics;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
@@ -667,9 +668,11 @@ sub annotate_snp_site {
   my (
     $self,         $chr,        $chr_index, $rel_pos,
     $abs_pos,      $ref_allele, $var_type,  $all_allele_str,
-    $allele_count, $het_ids,    $hom_ids,   $return_obj
+    $allele_count, $het_ids,    $hom_ids, $id_genos_href, $return_obj
   ) = @_;
 
+  say "id_geno_href";
+  p $id_genos_href;
   my %record;
 
   my $site_code = $self->get_base($abs_pos);
@@ -694,6 +697,8 @@ sub annotate_snp_site {
   # my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $base );
   my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
 
+  say "var_alleles";
+  p @var_alleles;
   if ( !@var_alleles ) {
     my $msg = sprintf("Error: No alleles to annotate at site %s:%d;", $chr, $rel_pos);
     $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
@@ -730,6 +735,9 @@ sub annotate_snp_site {
     $record{scores}{ $gs->name } = $gs->get_score($abs_pos);
   }
 
+  say "record";
+  p %record;
+
   # add cadd score
   if ( $self->has_cadd_track ) {
     for my $var_allele (@var_alleles) {
@@ -743,13 +751,14 @@ sub annotate_snp_site {
   if ($gan) {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
-
+      p $kch;
       # if there's no file for the track then it will be undef
       next unless defined $kch;
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
-
+      say 'record aref';
+      p $rec_aref;
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           for my $allele (@var_alleles) {
@@ -759,6 +768,9 @@ sub annotate_snp_site {
         }
       }
     }
+    say "gene_data";
+    p @gene_data;
+    $statisticsCalculator->build($id_geno_href, @gene_data);
   }
   $record{gene_data} = \@gene_data;
 
@@ -772,9 +784,11 @@ sub annotate_snp_site {
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
+      p $rec_aref;
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           push @snp_data, Seq::Site::Snp->new($rec_href);
+          #p $rec_href;
         }
       }
     }

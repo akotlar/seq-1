@@ -20,16 +20,22 @@ siteTypes or siteCodes
 ====
 
 =cut
-package StatisticsCalculator;
+package Seq::Statistics;
 
 use Moose;
-extends 'StatisticsBase';
+extends 'Seq::Statistics::Base';
+with 'Seq::Statistics::Ratios'
 
 use File::Basename;   
 use lib dirname(__FILE__);
 
-use Data::Dumper;
+use DDP;
 use Hash::Merge;
+
+has ratio => (
+  isa => ['Seq::Statistics::Ratios']
+
+)
 
 #############################################################################
 # Public Methods
@@ -42,23 +48,66 @@ use Hash::Merge;
 #@param $sampleGenotypesRef (HASH reference) : ex { 'Y' : [sample1id,sample2id,sample3id], 'C' : [sample1id] }
 #@return HASH : in format 'sampleID' => { transition: int, transversion:int, 'siteType1' => { transition: int, transversion:int, siteCode1' => { transition: int, transversion:int}} } 
 #
-sub recordTransitionTransversion
+sub summarize
 { 
   my $self = shift;
-  my ($siteType,$siteCode,$referenceAllele,$sampleGenotypesRef) = @_; #siteCode is Intronic, Replacement, etc ; $varTypeCounts is $var_type_counts {}
-  my %annotateThis = ($siteType => 0,$siteCode => 0);
-  my $isTransition = 0;
-  my $transitionKey;
-
-  $siteType = $self->_makeUnique($siteType); #may be an array; precautionary, this may be removed if never possible to have array
-  $siteCode = $self->_makeUnique($siteCode); #may be an array
+  my ($varType, $sampleGenotypesRef, $annotationRecordAref) = @_; #siteCode is Intronic, Replacement, etc ; $varTypeCounts is $var_type_counts {}
 
   my $genotype;
+  my $iupac;
   my $sampleID;
-  foreach $sampleID (keys %$sampleGenotypesRef)
+
+  my $viewedAlleles;
+  my $recordSiteType;
+  my $recordAllele;
+  my $recordAlleleSiteType;
+  for my $sampleID (keys %$sampleGenotypesRef)
   { 
     $genotype = $sampleGenotypesRef->{$sampleID};
-    
+    if ($self->disallowedGeno($genotype) ) {
+      next;
+    }
+
+    $iupac = $self->convertGeno($genotype);
+    $viewedAlleles = '';
+    for my $recordHref (@$annotationRecordAref) {
+      # avoid function call overhead for n-1 lookups
+      $recordAllele = $recordHref->minor_allele;
+      $recordSiteType = $recordHref->site_type;
+      $recordAlleleSiteType = $recordAllele.$recordSiteType;
+
+      p $recordSiteType;
+      
+      if ( index($iupac, $recordAllele) == -1) { next; }
+      if ( index($viewedAlleles, $recordAlleleSiteType) > -1 ) { next; }
+      $viewedAlleles .= $recordAlleleSiteType;
+
+      $self->recordCount($sampleID, $varType, $recordAllele, $recordSiteType,
+        $recordHref->annotationType);
+      $self->recordTrTv($sampleID, $varType, $recordAllele, $recordSiteType,
+        $recordHref->annotationType);
+    }
+  }
+}
+
+sub recordCount
+{
+  my ($self, $sampleID, $recordAllele, $recordSiteType, $recordAnnotationType);
+  $self->
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
     if( !($genotype eq $referenceAllele)
     && !( exists( $self->disallowedTypesRef->{$genotype} ) ) )
     {
@@ -88,6 +137,53 @@ sub recordTransitionTransversion
   }
   return $isTransition;
 }
+
+# sub recordTransitionTransversion
+# { 
+#   my $self = shift;
+#   my ($siteType,$siteCode,$referenceAllele,$sampleGenotypesRef) = @_; #siteCode is Intronic, Replacement, etc ; $varTypeCounts is $var_type_counts {}
+#   my %annotateThis = ($siteType => 0,$siteCode => 0);
+#   my $isTransition = 0;
+#   my $transitionKey;
+
+#   $siteType = $self->_makeUnique($siteType); #may be an array; precautionary, this may be removed if never possible to have array
+#   $siteCode = $self->_makeUnique($siteCode); #may be an array
+
+#   my $genotype;
+#   my $sampleID;
+#   foreach $sampleID (keys %$sampleGenotypesRef)
+#   { 
+#     $genotype = $sampleGenotypesRef->{$sampleID};
+    
+#     if( !($genotype eq $referenceAllele)
+#     && !( exists( $self->disallowedTypesRef->{$genotype} ) ) )
+#     {
+#       if( exists( $self->_transitionTypesHref->{$genotype} ) || exists(
+#       $self->_transitionTypesHref->{$referenceAllele.$genotype} ) )
+#       {
+#         $isTransition = 1;
+#       }
+#       $transitionKey = $self->_getTransitionTransversionKeys($isTransition);
+
+#       my $sampleHashRef = \%{ $self->statisticRecordRef->{$sampleID} };  #if we just copy the ref, and $self->statisticRecordRef->{$sampleID} doesn't exist, won't be vivified, so wrap in \%{ratioKeys}
+
+#       $sampleHashRef->{$self->statisticsKey}->{$transitionKey}++; #top level statistic gets stored in $statisticsKey to avoid confusion
+
+#       if( exists( $self->allowedTypesRef->{ uc($siteType) } ) )
+#       {
+#         my $sampleSiteTypeHashRef = \%{ $sampleHashRef->{$siteType} };
+
+#         $sampleSiteTypeHashRef->{$self->statisticsKey}->{$transitionKey}++;
+
+#         if( exists( $self->allowedCodesRef->{ uc($siteCode) } ) ) #if we ever decided to allow recording transition for heterozygous site codes
+#         {
+#           $sampleSiteTypeHashRef->{$siteCode}->{$self->statisticsKey}->{$transitionKey}++;
+#         }
+#       }
+#     }
+#   }
+#   return $isTransition;
+# }
 
 #
 #Calculate the ratios from some counts
@@ -150,6 +246,17 @@ sub calculateStatistics
   $self->_storeExperimentMetaData();
 }
 
+sub store
+{
+  my $self = shift;
+  my $experimentStatisticsRef = $self->statisticRecordRef->{$self->statisticsKey};
+
+  $self->_storeRatioKeysInHash($experimentStatisticsRef);
+
+  $self->_storeExpectedValuesInHash($experimentStatisticsRef);
+
+  $self->_storePercentilesInHash($experimentStatisticsRef);
+}
 #
 #merge the calling package's hash with the statistics recorded here
 #
