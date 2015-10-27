@@ -84,6 +84,8 @@ sub _fetch_sparse_data {
 sub fetch_genome_size_data {
   my $self = shift;
 
+  my %files;
+
   for my $track ( $self->all_genome_sized_tracks ) {
     # extract keys from snp_track for creation of Seq::Build::SnpTrack
     my $record = $track->as_href;
@@ -100,9 +102,10 @@ sub fetch_genome_size_data {
     }
 
     my $obj = Seq::Fetch::Files->new($record);
-    $obj->fetch_files;
+    my $files_aref = $obj->fetch_files;
+    $files{ $track->name } = $files_aref;
   }
-  return 1;
+  return \%files;
 }
 
 __PACKAGE__->meta->make_immutable;

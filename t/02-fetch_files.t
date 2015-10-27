@@ -9,12 +9,11 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 22;
+plan tests => 17;
 
 my %attr_2_type = (
   act       => 'Bool',
   debug     => 'Bool',
-  rsync_bin => 'Str',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 

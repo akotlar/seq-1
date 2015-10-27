@@ -26,67 +26,76 @@ Extended by: None
 use Carp;
 use File::Path;
 use File::Spec;
-use File::Rsync;
+#use File::Rsync;
 
 use Moose;
 use namespace::autoclean;
+
+
+use DDP;
+use Data::Dump qw/ dump /;
+
+use Seq::Fetch::Rsync;
 
 extends 'Seq::Config::GenomeSizedTrack';
 
 has act   => ( is => 'ro', isa => 'Bool', );
 has debug => ( is => 'ro', isa => 'Bool', );
-has rsync_bin =>
-  ( is => 'ro', isa => 'Str', required => 1, builder => '_build_rsync_bin', );
-
-sub _build_rsync_bin {
-  my $self          = shift;
-  my %rsync_loc_for = (
-    loc_1 => '/opt/local/bin/rsync',
-    loc_2 => '/usr/local/bin/rsync',
-    loc_3 => '/usr/bin/rsync'
-  );
-  for my $sys ( sort keys %rsync_loc_for ) {
-    return $rsync_loc_for{$sys} if -f $rsync_loc_for{$sys};
-  }
-  return;
-}
 
 sub fetch_files {
   my $self = shift;
 
+  my @fetched_files;
+
   my $name              = $self->name;
   my $remote_files_aref = $self->remote_files;
+  my $local_dir = $self->genome_raw_dir->child( $self->type );
 
   # get rsync cmd and opts
-  my %rsync_opt = ( compress => 1, 'rsync-path' => $self->rsync_bin );
-  $rsync_opt{verbose}++ if $self->debug;
-  $rsync_opt{'dry-run'}++ unless $self->act;
+  my $rsync_basic_opt = { compress => 1, dry_run => !$self->act, 
+    verbose => $self->debug };
 
-  my $rsync_obj = File::Rsync->new( \%rsync_opt );
-
-  # prepare directories
-  my $local_dir = $self->genome_raw_dir->child( $self->type );
-  $local_dir->mkpath unless -d $local_dir->absolute;
-
-  # File::Rsync expects host:dir format for remote files (if needed)
-  # $remote_dir =~ s/\//::/xm unless ( $remote_dir =~ m/::/xm );
   my @remote_src  = split /\//, $self->remote_dir;
-  my $remote_host = $remote_src[0] . ":";
+  my $remote_host = $remote_src[0];
   my $remote_dir  = join "/", @remote_src[ 1 .. $#remote_src ];
 
   # fetch files
   for my $file ( @{$remote_files_aref} ) {
-    my $this_remote_file = $local_dir->child($file);
+    my $dest_file = $local_dir->child( $file );
     my $cmd_href         = {
-      srchost => $remote_host,
-      source  => $this_remote_file,
-      dest    => $local_dir->absolute->stringify
+      remote_host => $remote_host,
+      remote_dir => $remote_dir,
+      remote_file => $file,
+      local_dest  => $dest_file->parent->absolute->stringify
     };
-    my $cmd = $rsync_obj->getcmd($cmd_href);
-    my $cmd_txt = join " ", @$cmd;
-    $self->_logger->info( "rsync cmd: " . $cmd_txt ) if $self->debug;
-    system $cmd_txt if $self->act || $self->_logger->error( "failed: " . $cmd_txt );
+    push @fetched_files, $dest_file->basename;
+
+    my $rsync = Seq::Fetch::Rsync->new( %$rsync_basic_opt, %$cmd_href );
+
+    my $cmd_txt = $rsync->cmd();
+
+    if ( $self->act ) {
+      if ( system($cmd_txt) == 0) {
+        if ( $self->debug ) {
+          $self->_logger->info( "rsync cmd: " . $cmd_txt ) 
+        }
+        my $msg = sprintf("Successfully downloaded: '%s'",
+          $dest_file->absolute->stringify);
+        $self->_logger->info( $msg );
+      }
+      else {
+        my $msg = sprintf("Error downloading: '%s' with cmd: '%s'", 
+          $dest_file->absolute->stringify, $cmd_txt);
+        $self->_logger->error( $msg );
+      }
+      # stagger requests to be kind to the remote server
+      sleep 3;
+    }
+    elsif ( $self->debug ){
+      $self->_logger->info( "rsync cmd: " . $cmd_txt ) 
+    }
   }
+  return \@fetched_files;
 }
 
 __PACKAGE__->meta->make_immutable;
