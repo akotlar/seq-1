@@ -82,7 +82,7 @@ for my $binary ( keys %bin_2_path ) {
 
   # check the file exists
   unless ( -f $bin_2_path{$binary} ) {
-    my $msg = sprintf( "ERROR: cannot file, '%s'", $bin_2_path{$binary} );
+    my $msg = sprintf( "ERROR: cannot find binary file: '%s'", $bin_2_path{$binary} );
     say $msg;
     exit(1);
   }
