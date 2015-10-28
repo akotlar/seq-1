@@ -122,3 +122,7 @@ sub _getTr
   }
   return 0;
 }
+
+no Moose::Role;
+1;
+
