@@ -14,7 +14,7 @@ SNP, MESS, LOW
 - INS & DEL are treated as SNP
 =cut
 
-package Seq::StatisticsBase;
+package Seq::Statistics::Base;
 
 use Moose;
   with 'MooseX::SimpleConfig'; #all constructor arguments can be overriden by passing the constructor (during "new") : {configfile=>'path/to/yamlfile.yaml'} with appropriate key:value pairs 
