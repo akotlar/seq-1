@@ -58,7 +58,7 @@ has ratios =>
 
 has percentiles => 
 (
-  is => 'HashRef',
+  is => 'rw',
   isa => 'HashRef[Num]',
   traits => ['Hash'],
   handles => {
