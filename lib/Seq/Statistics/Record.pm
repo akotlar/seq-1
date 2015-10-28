@@ -10,7 +10,7 @@ use List::MoreUtils qw(first_index);
 use DDP;
 
 requires 'deconvoluteIUPAC';
-requires 'isDisallowedGeno';
+requires 'badGenos';
 requires 'statsKey';
 requires 'statsRecord';
 requires 'debug';
