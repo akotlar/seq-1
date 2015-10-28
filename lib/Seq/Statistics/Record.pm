@@ -1,5 +1,6 @@
 package Seq::Statistics::Record;
 
+use 5.10.0;
 use Moose::Role;
 use strict;
 use warnings;
@@ -85,7 +86,10 @@ sub record
         $sampleStats, $trTvKey);
     }
   }
-  p $self->statsRecord if $self->debug;
+  if($self->debug) {
+    say "Stat record is";
+    p $self->statsRecord;
+  }
 }
 
 #topTargetHref remains the top level hash, always gets transitions/transversion record
