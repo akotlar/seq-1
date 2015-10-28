@@ -81,7 +81,7 @@ sub _buildDisallowedFeatures {
 
 sub _buildIUPAC #this should live in yml
 {
-  return {A => "A",C => "C",G => "G",T => "T",R => "AG",Y => "CT", S => 'GC'.
+  return {A => 'A',C => 'C',G => 'G',T => 'T',R => 'AG',Y => 'CT', S => 'GC',
     W => 'AT', K => 'GT', M => 'AC', B => 'CGT', D => 'AGT', H => 'ACT',
     V => 'ACG', N => 'N'}; #R is IUPAC AG, Y is IUPAC CT
 }
