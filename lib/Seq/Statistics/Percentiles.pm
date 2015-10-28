@@ -39,7 +39,7 @@ has qcFailKey =>
 ( 
   is      => 'ro',
   isa     => 'Str',
-  default => 'qcFail',
+  default => 'qcFail'
 );
 
 #should always contain keys 5 and 95; maybe later we allow any keys set by
@@ -67,7 +67,8 @@ has percentiles =>
     getPercentilesKv => 'kv',
     hasNoPercentiles => 'is_empty',
   },
-  required => 1,
+  require => 1,
+  default => {},
   init_arg => undef,
 );
 
