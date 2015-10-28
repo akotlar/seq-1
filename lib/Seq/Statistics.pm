@@ -27,7 +27,7 @@ use namespace::autoclean;
 
 extends 'Seq::Statistics::Base';
 
-use Percentiles;
+use Seq::Statistics::Percentiles;
 
 use File::Basename;   
 use lib dirname(__FILE__);

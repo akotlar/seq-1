@@ -1,4 +1,4 @@
-package Statistics::Percentiles;
+package Seq::Statistics::Percentiles;
 
 use strict;
 use warnings;
