@@ -3,7 +3,6 @@ package Seq::Statistics::Percentiles;
 use strict;
 use warnings;
 use Moose;
-with 'Seq::Statistics::Percentiles::QualityControl';
 
 use namespace::autoclean;
 use Carp qw/cluck confess/;
@@ -71,6 +70,8 @@ has percentiles =>
   required => 1,
   init_arg => undef,
 );
+
+with 'Seq::Statistics::Percentiles::QualityControl';
 
 sub BUILD
 {
