@@ -24,18 +24,40 @@ package Seq::Statistics;
 
 use Moose;
 extends 'Seq::Statistics::Base';
-with 'Seq::Statistics::Ratios'
+with 'Seq::Statistics::Record';
+use namespace::autoclean;
+
+use Seq::Statistics::Percentiles;
 
 use File::Basename;   
 use lib dirname(__FILE__);
 
-use DDP;
-use Hash::Merge;
-
-has ratio => (
-  isa => ['Seq::Statistics::Ratios']
-
-)
+has statsKey =>
+( is      => 'ro',
+  isa     => 'Str',
+  default => 'statistics',
+);
+has percentilesKey =>
+(
+  is      => 'ro',
+  isa     => 'Str',
+  default => 'percentiles',
+);
+has ratioKey =>
+( is      => 'ro',
+  isa     => 'Str',
+  default => 'ratios',
+);
+has qcFailKey =>
+( is      => 'ro',
+  isa     => 'Str',
+  default => 'qcFail',
+);
+has debug =>
+( is      => 'ro',
+  isa     => 'Int',
+  default => '0'
+);
 
 #############################################################################
 # Public Methods
@@ -51,227 +73,39 @@ has ratio => (
 sub summarize
 { 
   my $self = shift;
-  my ($varType, $sampleGenotypesRef, $annotationRecordAref) = @_; #siteCode is Intronic, Replacement, etc ; $varTypeCounts is $var_type_counts {}
+  my ($percentilesHref, $samples, $ratios, $samplesAref, $ratiosAref, $destHref);
 
-  my $genotype;
-  my $iupac;
-  my $sampleID;
+  $self->makeRatios;
 
-  my $viewedAlleles;
-  my $recordSiteType;
-  my $recordAllele;
-  my $recordAlleleSiteType;
-  for my $sampleID (keys %$sampleGenotypesRef)
-  { 
-    $genotype = $sampleGenotypesRef->{$sampleID};
-    if ($self->disallowedGeno($genotype) ) {
-      next;
-    }
-
-    $iupac = $self->convertGeno($genotype);
-    $viewedAlleles = '';
-    for my $recordHref (@$annotationRecordAref) {
-      # avoid function call overhead for n-1 lookups
-      $recordAllele = $recordHref->minor_allele;
-      $recordSiteType = $recordHref->site_type;
-      $recordAlleleSiteType = $recordAllele.$recordSiteType;
-
-      p $recordSiteType;
-      
-      if ( index($iupac, $recordAllele) == -1) { next; }
-      if ( index($viewedAlleles, $recordAlleleSiteType) > -1 ) { next; }
-      $viewedAlleles .= $recordAlleleSiteType;
-
-      $self->recordCount($sampleID, $varType, $recordAllele, $recordSiteType,
-        $recordHref->annotationType);
-      $self->recordTrTv($sampleID, $varType, $recordAllele, $recordSiteType,
-        $recordHref->annotationType);
-    }
+  if($self->hasNoRatios) {
+    #message
+    return;
   }
-}
 
-sub recordCount
-{
-  my ($self, $sampleID, $recordAllele, $recordSiteType, $recordAnnotationType);
-  $self->
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if( !($genotype eq $referenceAllele)
-    && !( exists( $self->disallowedTypesRef->{$genotype} ) ) )
-    {
-      if( exists( $self->_transitionTypesHref->{$genotype} ) || exists(
-      $self->_transitionTypesHref->{$referenceAllele.$genotype} ) )
-      {
-        $isTransition = 1;
-      }
-      $transitionKey = $self->_getTransitionTransversionKeys($isTransition);
-
-      my $sampleHashRef = \%{ $self->statisticRecordRef->{$sampleID} };  #if we just copy the ref, and $self->statisticRecordRef->{$sampleID} doesn't exist, won't be vivified, so wrap in \%{ratioKeys}
-
-      $sampleHashRef->{$self->statisticsKey}->{$transitionKey}++; #top level statistic gets stored in $statisticsKey to avoid confusion
-
-      if( exists( $self->allowedTypesRef->{ uc($siteType) } ) )
-      {
-        my $sampleSiteTypeHashRef = \%{ $sampleHashRef->{$siteType} };
-
-        $sampleSiteTypeHashRef->{$self->statisticsKey}->{$transitionKey}++;
-
-        if( exists( $self->allowedCodesRef->{ uc($siteCode) } ) ) #if we ever decided to allow recording transition for heterozygous site codes
-        {
-          $sampleSiteTypeHashRef->{$siteCode}->{$self->statisticsKey}->{$transitionKey}++;
-        }
-      }
-    }
-  }
-  return $isTransition;
-}
-
-# sub recordTransitionTransversion
-# { 
-#   my $self = shift;
-#   my ($siteType,$siteCode,$referenceAllele,$sampleGenotypesRef) = @_; #siteCode is Intronic, Replacement, etc ; $varTypeCounts is $var_type_counts {}
-#   my %annotateThis = ($siteType => 0,$siteCode => 0);
-#   my $isTransition = 0;
-#   my $transitionKey;
-
-#   $siteType = $self->_makeUnique($siteType); #may be an array; precautionary, this may be removed if never possible to have array
-#   $siteCode = $self->_makeUnique($siteCode); #may be an array
-
-#   my $genotype;
-#   my $sampleID;
-#   foreach $sampleID (keys %$sampleGenotypesRef)
-#   { 
-#     $genotype = $sampleGenotypesRef->{$sampleID};
-    
-#     if( !($genotype eq $referenceAllele)
-#     && !( exists( $self->disallowedTypesRef->{$genotype} ) ) )
-#     {
-#       if( exists( $self->_transitionTypesHref->{$genotype} ) || exists(
-#       $self->_transitionTypesHref->{$referenceAllele.$genotype} ) )
-#       {
-#         $isTransition = 1;
-#       }
-#       $transitionKey = $self->_getTransitionTransversionKeys($isTransition);
-
-#       my $sampleHashRef = \%{ $self->statisticRecordRef->{$sampleID} };  #if we just copy the ref, and $self->statisticRecordRef->{$sampleID} doesn't exist, won't be vivified, so wrap in \%{ratioKeys}
-
-#       $sampleHashRef->{$self->statisticsKey}->{$transitionKey}++; #top level statistic gets stored in $statisticsKey to avoid confusion
-
-#       if( exists( $self->allowedTypesRef->{ uc($siteType) } ) )
-#       {
-#         my $sampleSiteTypeHashRef = \%{ $sampleHashRef->{$siteType} };
-
-#         $sampleSiteTypeHashRef->{$self->statisticsKey}->{$transitionKey}++;
-
-#         if( exists( $self->allowedCodesRef->{ uc($siteCode) } ) ) #if we ever decided to allow recording transition for heterozygous site codes
-#         {
-#           $sampleSiteTypeHashRef->{$siteCode}->{$self->statisticsKey}->{$transitionKey}++;
-#         }
-#       }
-#     }
-#   }
-#   return $isTransition;
-# }
-
-#
-#Calculate the ratios from some counts
-#
-#expects format like {'sampleID' => { 'transition' => (int), transversions => int $siteType => { transitions => int, transversions => int, { 'siteCode1' => { transitions => int, transversions => int }, 'siteCode2' => same as siteCode1 }}}
-sub calculateStatistics
-{
-  my $self = shift;
-  my ($masterHashReference, $siteTypeCountKey) = @_; #$siteTypeCountKey is optional
-  my %ratioCollection; #hash of array ref { 'ratioName' => [1,2,3,...N-1] }
-
-  foreach my $sampleID (keys %$masterHashReference)
+  for my $kv ($self->allRatiosKv)
   {
-    my $sampleStatisticsHashRef = \%{ $self->statisticRecordRef->{$sampleID}->{$self->statisticsKey} };
-    my ($transitionKey,$transversionKey,$trTvRatioKey) = $self->_getTransitionTransversionKeys();
+    if(!$self->hasRatioCollection($kv->[0]) ) {next;}
 
-    #the sampleID level should get statistics placed in the $statisticsKey to avoid confusion
-    my $trTvRatio = $self->_calculateRatio($transitionKey,$transversionKey,$sampleStatisticsHashRef);    
+    $percentilesHref = Seq::Statistics::Percentiles->new(
+      ratioName => $kv->[0],
+      ratios => $kv->[1],
+    );
 
-    $sampleStatisticsHashRef->{$trTvRatioKey} = $trTvRatio;
+    $percentilesHref->makePercentiles;
 
-    push( @{ $ratioCollection{$trTvRatioKey} },$trTvRatio ); #record all the summary tr:tv ratios
+    if($percentilesHref->hasNoPercentiles) {next;}
+   
+    $destHref = $self->getStat($self->statsKey);
 
-    foreach my $siteType ( keys %{ $masterHashReference->{$sampleID} } )
-    { 
-      foreach my $siteCode ( keys %{ $masterHashReference->{$sampleID}->{$siteType} } )
-      {
-        $self->_calculateSiteStatistic($sampleID,$masterHashReference,$siteType,
-          $siteCode,$siteTypeCountKey);
-      }
-    }
+    $percentilesHref->storePercentiles($destHref);
 
-    #and calculate summary statistics on siteTypes and siteCodes
-    foreach my $siteCodeNumeratorKey (keys %{$self->siteTypeRatiosOrganizerRef})
-    { 
-      my ($siteCodeDenominatorKey,$siteCodeRatioKey) =
-      $self->_getSiteDenominatorRatioKeys($siteCodeNumeratorKey);
-
-      if(defined $siteCodeDenominatorKey && defined $siteCodeRatioKey) {
-        my $ratio =
-        $self->_calculateRatio($siteCodeNumeratorKey,$siteCodeDenominatorKey,
-          $sampleStatisticsHashRef);
-
-        if (defined $ratio) {
-          $sampleStatisticsHashRef->{$siteCodeRatioKey} = $ratio;  
-          push( @{ $ratioCollection{$siteCodeRatioKey} },$ratio );
-        }         
-      }
-    }
+    #order of sample keys must match ratio values
+    $percentilesHref->qc(
+      $self->oneRatioKeys($kv->[0] ), $self->oneRatioVals($kv->[0] ), $destHref
+    )
   }
-
-  if(keys %ratioCollection)
-  {
-    $self->_calculatePercentiles(\%ratioCollection);
-
-    ##add percentiles above sample keys in the result hierarchy
-    $self->_qcOnPercentiles($masterHashReference);
-  }
-
-  $self->_storeExperimentMetaData();
 }
-
-sub store
-{
-  my $self = shift;
-  my $experimentStatisticsRef = $self->statisticRecordRef->{$self->statisticsKey};
-
-  $self->_storeRatioKeysInHash($experimentStatisticsRef);
-
-  $self->_storeExpectedValuesInHash($experimentStatisticsRef);
-
-  $self->_storePercentilesInHash($experimentStatisticsRef);
-}
-#
-#merge the calling package's hash with the statistics recorded here
-#
-#conservative; only merges on keys found in $masterHashReference
-###default: Hash::Merge::set_set_behavior('LEFT_PRECEDENT');
-sub leftHandMergeStatistics
-{
-  my $self = shift;
-  my $masterHashReference = shift;
-
-  Hash::Merge::merge($masterHashReference,$self->statisticRecordRef); #returns hash reference
-}
-
 __PACKAGE__->meta->make_immutable;
-
 1;
 =head1 COPYRIGHT
 

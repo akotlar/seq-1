@@ -1,15 +1,41 @@
+#not currently in use; stores expected values;
 package Seq::Statistics::Expected;
 
-use Moose::Role;
+use 5.10.0;
 use strict;
 use warnings;
+
+use Moose::Role;
+use Moose::Util::TypeConstraints;
+use namespace::autoclean;#remove moose keywords after compilation
+
+use YAML::XS;
+use File::Basename; 
+#############################################################################
+# Subtypes
+#############################################################################
+subtype 'ExperimentType',
+as 'Str',  
+where { $_ eq 'exome' || $_ eq 'genome' };
 
 #if the user supplies an experiment type, we can include expected ratio values in the experiment statistics summary
 has expectedValuesRef =>
 ( is      => 'rw',
+  traits  => ['Hash'],
   isa     => 'Maybe[HashRef]', #hashref or undefined
+  handles => {
+    setExpected => 'set',
+  },
   lazy => '1',
   builder => '_buildExpectedValuesRef'
+);
+
+has experimentType => 
+(
+  is  => 'ro',
+  isa => 'Maybe[ExperimentType]', #ExperimentType or undef
+  default => 'genome',
+  predicate => 'has_experimentType'
 );
 
 has expectedKey =>
@@ -50,13 +76,9 @@ sub _buildExpectedValuesRef
 sub _storeExpectedValuesInHash
 {
   my $self = shift;
-  my $storageHashRef = shift;
-
-  if( defined($self->expectedValuesRef) )
-  {
-    $storageHashRef->{$self->expectedKey} = $self->expectedValuesRef;
-  }
+  
+  $self->setExpected($self->expectedKey, $self->expectedValuesRef);
 }
 
-use Moose::Role;
-use 1;
+no Moose::Role;
+1;

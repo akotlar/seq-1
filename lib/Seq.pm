@@ -299,7 +299,6 @@ sub annotate_snpfile {
   my $chr_len_href  = $annotator->chr_len;
   my $genome_len    = $annotator->genome_length;
   my @header        = $annotator->all_header;
-  my $summary_href;
 
   # add header information to Seq class
   $self->add_header_attr($_) for @header;
@@ -473,12 +472,18 @@ sub annotate_snpfile {
     $self->_print_annotations( $del_annotations_aref, $self->header );
   }
 
-  p $summary_href if $self->debug;
+  annotator->summarize;
+
+  if($self->debug) {
+    p "The stats record is:";
+    p $annotator->statsRecord;
+  }
+  
 
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do
   #       interesting things.
-  return $summary_href;
+  return $annotator->statsRecord;
 }
 
 # sub _build_message_publisher {

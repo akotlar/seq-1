@@ -2,83 +2,115 @@ package Seq::Statistics::Percentiles;
 
 use strict;
 use warnings;
-use Moose::Role;
+use Moose;
+with 'Seq::Statistics::Percentiles::QualityControl';
 
+use namespace::autoclean;
 use Carp qw/cluck confess/;
 
 #all percentiles investigated
-has percentilesRef =>
+has percentileThresholdNames =>
 ( is      => 'ro',
+  traits => ['Array'],
+  isa     => 'ArrayRef[Num]',
+  default => sub{ ['5th', 'median', '95th'] },
+  handles => {
+    getThresholdName => 'get',
+  }
+);
+
+has percentileThresholds =>
+( is      => 'ro',
+  traits => ['Array'],
   isa     => 'ArrayRef[Num]',
   default => sub{ [.05, .50, .95] },
-  predicate => 'has_confidenceIntervalRef'
+  handles => {
+    getThreshold => 'get',
+  }
 );
 
-has percentilesKey =>
+has ratioName => 
 (
-  is      => 'ro',
-  isa     => 'Str',
-  default => 'percentiles',
-  init_arg => undef 
+  is => 'ro',
+  isa => 'Str',
+  required => 1,
 );
 
-#should always contain keys 5 and 95; maybe later we allow any keys set by 
-has ratioPercentilesRef =>
+#should always contain keys 5 and 95; maybe later we allow any keys set by
+has ratios =>
 (
   is  => 'rw',
-  isa => 'HashRef[HashRef[Num]]',
-  lazy => '1',
-  default => sub{ {} },
-  init_arg => undef
+  isa => 'ArrayRef[Num]',
+  traits => ['Array'],
+  handles => {
+    sortRatios => 'sort_in_place',
+    getRatio => 'get',
+    numRatios => 'count',
+  },
+  default => sub{ [] },
+  required => 1,
 );
 
-sub calculate
+has percentiles => 
+(
+  is => 'HashRef',
+  isa => 'HashRef[Num]',
+  traits => ['Hash'],
+  handles => {
+    setPercentile => 'set',
+    getPercentile => 'get',
+    getPercentilesKv => 'kv',
+    hasNoPercentiles => 'is_empty',
+  }
+);
+
+sub BUILD
 {
   my $self = shift;
-  my $ratioCollectionReference = shift;
-  
-  #sort decimal percentiles ascending; are we ok with this side-effect , or better to copy the array?
-  @{$self->percentilesRef} = sort{$a <=> $b} @{$self->percentilesRef}; 
 
-  for my $ratioKey (keys %$ratioCollectionReference )
-  { 
-    #sort array ascending; are we ok with this side-effect , or better to copy the array?
-    @{ $ratioCollectionReference->{$ratioKey} } = sort{ $a <=> $b } @{ $ratioCollectionReference->{$ratioKey} }; 
-
-    my @percentileValues;
-    for my $percentile ( @{$self->percentilesRef} )
-    {
-      push @percentileValues, $self->_getPercentile($ratioCollectionReference->{$ratioKey},$percentile);
-    }
-    $self->ratioPercentilesRef->{$ratioKey}->{ $self->percentilesKey } = \@percentileValues;
-
-    print "\nThe " . join(",",@{$self->percentilesRef}) ." percentiles of $ratioKey are ". join(",",@percentileValues) . "\n\n" if $self->verbose;
-  }
+  $self->sortRatios;
 }
 
-#todo: check that percentiles between 0 and 1
-sub _getPercentile 
+sub makePercentiles
 {
   my $self = shift;
-  my ($arrayReference,$percentileFactor) = @_;
-  
-  my $lastIndex = scalar $#{$arrayReference};
-  my $maybeIndex = $lastIndex * $percentileFactor;
-  my $floor = floor($maybeIndex);
-  my $ceil = ceil($maybeIndex);
+  my $lastIndex = $self->numRatios - 1;
 
-  if($ceil == $floor)
-  { 
-    return $arrayReference->[$ceil]; 
-  }
-  else
+  my ($maybeIndex, $floor, $ceil, $lowerVal, $higherVal);
+  
+  my $thIndex = 0;
+  for my $threshold (@$self->percentileThresholds)
   {
-    my $lowerVal = $arrayReference->[$floor] * ($maybeIndex - $floor);
-    my $higherVal = $arrayReference->[$ceil] * ($ceil - $maybeIndex);
+    $self->setPercentile($self->getThresholdName($thIndex, sub
+    {
+      $maybeIndex = $lastIndex * $threshold;
+      $floor = floor($maybeIndex);
+      $ceil = ceil($maybeIndex);
+      if($ceil == $floor)
+      { 
+        return $self->getRatio($ceil); 
+      }
+      else
+      {
+        #distance interpolated composite value
+        my $lowerVal = $self->getRatio($floor) * ($maybeIndex - $floor);
+        my $higherVal = $self->getRatio($ceil) * ($ceil - $maybeIndex);
 
-    return $lowerVal + $higherVal;
-  }
+        return $lowerVal + $higherVal;
+      }
+    } ) );
+    $thIndex++;
+  } 
 }
 
-no Moose::Role;
+sub storePercentiles
+{
+  my ($self, $targetHref) = @_;
+
+  for my $kv ($self->getPercentilesKv)
+  {
+    $targetHref->{$kv->[0] } = $kv->[1];
+  }
+}
+__PACKAGE__->meta->make_immutable;
 1;

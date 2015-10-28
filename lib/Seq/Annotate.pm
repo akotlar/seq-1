@@ -77,7 +77,6 @@ use Seq::Site::Snp;
 use Seq::Annotate::Indel;
 use Seq::Annotate::Site;
 use Seq::Annotate::Snp;
-use Seq::Statistics;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
@@ -88,6 +87,18 @@ with 'Seq::Role::IO';
 
 @see @class Seq::GenomeSizedTrackChar
 =cut
+
+has statisticsCalculator => (
+  is => 'ro',
+  isa => 'Seq::Statistics',
+  handles => {
+    recordStat => 'record',
+    summarizeStats => 'summarize',
+  },
+  lazy => 1,
+  required => 1,
+  default => {sub{ return Seq::Statistics->new(debug => $self->debug) } },
+);
 
 has _genome => (
   is       => 'ro',
@@ -770,7 +781,9 @@ sub annotate_snp_site {
     }
     say "gene_data";
     p @gene_data;
-    $statisticsCalculator->build($id_geno_href, @gene_data);
+    $self->recordStat(
+      $id_geno_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+    );
   }
   $record{gene_data} = \@gene_data;
 
@@ -998,6 +1011,12 @@ sub annotate_ins_site {
       $gene_href->{annotation_type} = 'NA';
     }
     push @gene_data, Seq::Site::Indel->new($gene_href);
+
+    say "gene_data";
+    p @gene_data;
+    $self->recordStat(
+      $id_geno_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+    );
   }
   $record{gene_data} = \@gene_data;
 
@@ -1168,6 +1187,11 @@ sub annotate_del_sites {
       }
     }
     $record{gene_data} = \@gene_data;
+    say "gene_data";
+    p @gene_data;
+    # $self->recordStat(
+    #   $id_geno_href, \@gene_data, $ref_allele, $var_type, $record{genomic_type}
+    # );
 
     my $obj = Seq::Annotate::Indel->new( \%record );
     push @del_annotations, $obj->as_href;
