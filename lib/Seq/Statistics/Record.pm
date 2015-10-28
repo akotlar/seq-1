@@ -61,7 +61,7 @@ sub record
   {
     $geno = $sampleIDgenoHref->{$sampleID};
     #in case not passed carriers/hom mut's
-    if($geno eq $refAllele|| $self->badGenos(sub{$_ eq $geno} > -1 ) ) {next; } 
+    if($geno eq $refAllele|| $self->badGenos(sub{$_ eq $geno} ) > -1 ) {next; } 
     
     $deconvolutedGeno = $self->deconvoluteIUPAC($geno);
     for my $annotationHref (@$annotationsAref)
