@@ -72,7 +72,7 @@ has percentiles =>
   init_arg => undef,
 );
 
-with 'Percentiles::QualityControl';
+with 'Seq::Statistics::Percentiles::QualityControl';
 
 sub BUILD
 {
