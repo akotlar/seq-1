@@ -23,11 +23,11 @@ siteTypes or siteCodes
 package Seq::Statistics;
 
 use Moose;
-extends 'Seq::Statistics::Base';
-with 'Seq::Statistics::Record';
 use namespace::autoclean;
 
-use Seq::Statistics::Percentiles;
+extends 'Seq::Statistics::Base';
+
+use Percentiles;
 
 use File::Basename;   
 use lib dirname(__FILE__);
@@ -60,6 +60,8 @@ has debug =>
   isa     => 'Int',
   default => '0'
 );
+
+with 'Seq::Statistics::Record';
 
 #############################################################################
 # Public Methods
