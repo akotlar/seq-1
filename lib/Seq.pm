@@ -428,7 +428,7 @@ sub annotate_snpfile {
     elsif ( $var_type eq 'INS' ) {
       my $record_href = $annotator->annotate_ins_site(
         $chr,      $chr_index,      $pos,          $abs_pos, $ref_allele,
-        $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids
+        $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids, $id_genos_href
       );
       if ( defined $record_href ) {
         push @snp_annotations, $record_href;
@@ -475,7 +475,7 @@ sub annotate_snpfile {
   annotator->summarize;
 
   if($self->debug) {
-    p "The stats record is:";
+    say "The stats record is:";
     p $annotator->statsRecord;
   }
   

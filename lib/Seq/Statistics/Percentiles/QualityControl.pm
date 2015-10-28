@@ -4,7 +4,7 @@ use Moose::Role;
 use strict;
 use warnings;
 
-requires 'getPercentile';
+requires 'percentiles';
 requires 'qcFailKey';
 requires 'ratioName';
 

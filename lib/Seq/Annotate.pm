@@ -77,6 +77,7 @@ use Seq::Site::Snp;
 use Seq::Annotate::Indel;
 use Seq::Annotate::Site;
 use Seq::Annotate::Snp;
+use Seq::Statistics;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
@@ -97,8 +98,13 @@ has statisticsCalculator => (
   },
   lazy => 1,
   required => 1,
-  default => {sub{ return Seq::Statistics->new(debug => $self->debug) } },
+  builder => '_buildStatistics',
 );
+
+sub _buildStatistics
+{
+  return Seq::Statistics->new(debug => 1);
+}
 
 has _genome => (
   is       => 'ro',
@@ -782,7 +788,7 @@ sub annotate_snp_site {
     say "gene_data";
     p @gene_data;
     $self->recordStat(
-      $id_geno_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+      $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
     );
   }
   $record{gene_data} = \@gene_data;
@@ -925,7 +931,7 @@ sub annotate_ins_site {
   my (
     $self,         $chr,        $chr_index, $rel_pos,
     $abs_pos,      $ref_allele, $var_type,  $all_allele_str,
-    $allele_count, $het_ids,    $hom_ids,   $return_obj
+    $allele_count, $het_ids,    $hom_ids, $id_genos_href, $return_obj
   ) = @_;
 
   my %record;
@@ -1015,7 +1021,7 @@ sub annotate_ins_site {
     say "gene_data";
     p @gene_data;
     $self->recordStat(
-      $id_geno_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+      $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
     );
   }
   $record{gene_data} = \@gene_data;

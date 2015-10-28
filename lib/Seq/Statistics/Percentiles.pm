@@ -13,7 +13,7 @@ has percentileThresholdNames =>
 ( is      => 'ro',
   traits => ['Array'],
   isa     => 'ArrayRef[Num]',
-  default => sub{ ['5th', 'median', '95th'] },
+  default => sub{ return ['5th', 'median', '95th'] },
   handles => {
     getThresholdName => 'get',
   }
@@ -23,7 +23,7 @@ has percentileThresholds =>
 ( is      => 'ro',
   traits => ['Array'],
   isa     => 'ArrayRef[Num]',
-  default => sub{ [.05, .50, .95] },
+  default => sub{ return [.05, .50, .95] },
   handles => {
     getThreshold => 'get',
   }
@@ -47,7 +47,6 @@ has ratios =>
     getRatio => 'get',
     numRatios => 'count',
   },
-  default => sub{ [] },
   required => 1,
 );
 
@@ -61,7 +60,9 @@ has percentiles =>
     getPercentile => 'get',
     getPercentilesKv => 'kv',
     hasNoPercentiles => 'is_empty',
-  }
+  },
+  required => 1,
+  init_arg => undef,
 );
 
 sub BUILD
