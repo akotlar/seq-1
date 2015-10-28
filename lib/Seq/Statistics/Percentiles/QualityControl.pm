@@ -37,5 +37,4 @@ sub qc
   }
 }
 
-no Moose::Role;
 1;
