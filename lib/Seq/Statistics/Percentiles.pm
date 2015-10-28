@@ -68,7 +68,7 @@ has percentiles =>
     hasNoPercentiles => 'is_empty',
   },
   required => 1,
-  default => {},
+  default => sub { return {} },
   init_arg => undef,
 );
 
