@@ -67,7 +67,7 @@ has percentiles =>
     getPercentilesKv => 'kv',
     hasNoPercentiles => 'is_empty',
   },
-  require => 1,
+  required => 1,
   default => {},
   init_arg => undef,
 );
