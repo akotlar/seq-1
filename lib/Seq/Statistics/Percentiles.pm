@@ -36,6 +36,13 @@ has ratioName =>
   required => 1,
 );
 
+has qcFailKey =>
+( 
+  is      => 'ro',
+  isa     => 'Str',
+  default => 'qcFail',
+);
+
 #should always contain keys 5 and 95; maybe later we allow any keys set by
 has ratios =>
 (

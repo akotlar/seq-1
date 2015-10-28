@@ -33,7 +33,8 @@ use File::Basename;
 use lib dirname(__FILE__);
 
 has statsKey =>
-( is      => 'ro',
+( 
+  is      => 'ro',
   isa     => 'Str',
   default => 'statistics',
 );
@@ -44,7 +45,8 @@ has percentilesKey =>
   default => 'percentiles',
 );
 has ratioKey =>
-( is      => 'ro',
+( 
+  is      => 'ro',
   isa     => 'Str',
   default => 'ratios',
 );
@@ -89,6 +91,7 @@ sub summarize
     $percentilesHref = Seq::Statistics::Percentiles->new(
       ratioName => $kv->[0],
       ratios => $kv->[1],
+      qcFailKey => $self->qcFailKey,
     );
 
     $percentilesHref->makePercentiles;
