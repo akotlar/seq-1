@@ -1,4 +1,4 @@
-package Seq::Statistics::Percentiles::QualityControl;
+package Percentiles::QualityControl;
 
 use Moose::Role;
 use strict;
