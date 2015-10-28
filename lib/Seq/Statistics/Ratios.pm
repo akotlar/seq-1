@@ -108,10 +108,11 @@ sub ratioValues
 
 ###########Private#####################
 # requires non-0 value for denominator
+# 9999 is inf; case when no transversions
 sub _calcRatio
 {
   my ($numerator, $denominator) = @_;
-  if(!$denominator) {return; } #numerator may 
+  if(!$denominator) {return 9999; } #numerator may 
   if(!$numerator) {return 0; }
   return $numerator/$denominator;
 }

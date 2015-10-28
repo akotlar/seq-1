@@ -7,6 +7,7 @@ use warnings;
 
 use Carp qw/cluck confess/;
 use List::MoreUtils qw(first_index);
+use syntax 'junction';
 
 use DDP;
 
@@ -32,7 +33,7 @@ has _transitionTypesHref =>
   handles => {
     isTr => 'get',
   },
-  default => sub { {AG => 1,GA => 1,CT => 1,TC => 1,R => 1,Y => 1} },
+  default => sub { return {AG => 1,GA => 1,CT => 1,TC => 1,R => 1,Y => 1} },
   lazy => 1,
   init_arg => undef 
 );
@@ -61,52 +62,65 @@ sub record
   for my $sampleID (keys %$sampleIDgenoHref)
   {
     $geno = $sampleIDgenoHref->{$sampleID};
+
     #in case not passed carriers/hom mut's
-    if($geno eq $refAllele|| $self->badGenos(sub{$_ eq $geno} ) > -1 ) {next; } 
+    if($geno eq $refAllele|| $self->badGenos(sub{$_ eq $geno} ) > -1 ) {next;} 
     
     $deconvolutedGeno = $self->deconvoluteIUPAC($geno);
+
     for my $annotationHref (@$annotationsAref)
     {
       $minorAllele = $annotationHref->minor_allele;
-      if(index($deconvolutedGeno, $minorAllele) > -1) {next;}
+
+      # if it's an ins or del, there will be no deconvolutedGeno
+      if($geno ne $minorAllele && index($deconvolutedGeno, $minorAllele) == -1) {next;}
      
       $annotationType = $annotationHref->annotation_type;
+
+      # say "annotation type is $annotationType";
       $combo = $minorAllele. $annotationHref->annotation_type;
+      # say "combo is $combo"; say "countedCombos are"; p @countedCombos;
 
       #count each allele/feature combo one to fairly attribute multi-allelic variants
       #to samples that have one of the minor alleles but not the other (when both represented)
-      if(first_index { $_ eq $combo } @countedCombos > -1) {next;}
+      if(any(@countedCombos) eq $combo) {next;}
+
       push @countedCombos, $combo;
 
-      $sampleStats = $self->getStats($sampleID);
+      if(!$self->hasStat($sampleID) ) {  $self->setStat($sampleID, {}); }
 
-      $trTvKey = $self->_getTr($refAllele, $geno);
+      # if deconvolutedGeno falsy, it's not a SNP, can't have a tr or tv
+      $trTvKey = $deconvolutedGeno ? $self->_getTr($refAllele, $geno) : undef;
 
       $self->storeTrTvAndCount([$varType, $genomicType, $annotationType],
-        $sampleStats, $trTvKey);
+        $self->getStat($sampleID), $trTvKey);
     }
   }
-  if($self->debug) {
-    say "Stat record is";
-    p $self->statsRecord;
-  }
+  # if($self->debug) {
+  #   say "Stat record is";
+  #   p $self->statsRecord;
+  # }
 }
 
 #topTargetHref remains the top level hash, always gets transitions/transversion record
 #because we want genome-wide tr:tv
+#insertions and deletions don't have transitions and transversions, so check for that
 sub storeTrTvAndCount
 {
   my ($self, $featuresAref, $topTargetHref, $trTvKey, $targetHref) = @_;
 
-  if(!scalar @$featuresAref) { return };
+  if(!@$featuresAref) { return };
 
   $targetHref = defined $targetHref ? $targetHref : $topTargetHref;
 
   my $feature = shift @$featuresAref;
-  my $statHref = \%{$targetHref->{$feature}{$self->statsKey} };
 
-  $statHref->{$trTvKey} += 1;
-  $topTargetHref->{$self->statsKey}{$trTvKey} += 1; #genome-wide tr:tv
+  my $statHref = \%{$targetHref->{$feature}{$self->statsKey} };
+  
+  if(defined $trTvKey) {
+    $statHref->{$trTvKey} += 1;
+    $topTargetHref->{$self->statsKey}{$trTvKey} += 1; #genome-wide tr:tv
+  }
   $statHref->{$self->countKey} += 1;
 
   $self->storeTrTvAndCount($featuresAref, $topTargetHref, $trTvKey,
@@ -116,17 +130,8 @@ sub storeTrTvAndCount
 sub _getTr
 {
   my ($self, $refAllele, $geno) = @_;
-
-  #heterozygotes
-  if($self->trTvKey($self->isTr($geno) )
-  # homozygotes
-  || ($self->trTvKey($refAllele.$geno) ) )
-  {
-    return 1;
-  }
-  return 0;
+  return $self->trTvKey(int(!!($self->isTr($geno) || $self->isTr($refAllele.$geno) ) ) );
 }
 
 no Moose::Role;
 1;
-

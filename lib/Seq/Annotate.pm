@@ -79,6 +79,8 @@ use Seq::Annotate::Site;
 use Seq::Annotate::Snp;
 use Seq::Statistics;
 
+use Coro;
+
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
 
@@ -95,6 +97,7 @@ has statisticsCalculator => (
   handles => {
     recordStat => 'record',
     summarizeStats => 'summarize',
+    statsRecord => 'statsRecord',
   },
   lazy => 1,
   required => 1,
@@ -688,8 +691,8 @@ sub annotate_snp_site {
     $allele_count, $het_ids,    $hom_ids, $id_genos_href, $return_obj
   ) = @_;
 
-  say "id_geno_href";
-  p $id_genos_href;
+  # say "id_geno_href";
+  # p $id_genos_href;
   my %record;
 
   my $site_code = $self->get_base($abs_pos);
@@ -701,11 +704,13 @@ sub annotate_snp_site {
 
   # check reference base in assembly is the same as the one suppiled by the user
   if ( $base ne $ref_allele ) {
-    my $msg = sprintf(
+    async {
+      my $msg = sprintf(
       "Error: Discordant ref base at SNP/MULTIALLELIC site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
       $chr, $rel_pos, $abs_pos, $base, $ref_allele );
-    $self->_logger->warn($msg);
-    $record{warning} = $msg;
+      $self->_logger->warn($msg);
+      $record{warning} = $msg;
+    }
   }
 
   # purposely filtering away indels, which can happen for multiallelelic sites
@@ -714,13 +719,15 @@ sub annotate_snp_site {
   # my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $base );
   my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
 
-  say "var_alleles";
-  p @var_alleles;
+  # say "var_alleles";
+  # p @var_alleles;
   if ( !@var_alleles ) {
-    my $msg = sprintf("Error: No alleles to annotate at site %s:%d;", $chr, $rel_pos);
-    $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
-      $all_allele_str, $ref_allele, $ref_allele );
-    $self->_logger->warn($msg);
+    async {
+      my $msg = sprintf("Error: No alleles to annotate at site %s:%d;", $chr, $rel_pos);
+      $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
+        $all_allele_str, $ref_allele, $ref_allele );
+      $self->_logger->warn($msg);
+    }   
     return;
   }
 
@@ -752,8 +759,8 @@ sub annotate_snp_site {
     $record{scores}{ $gs->name } = $gs->get_score($abs_pos);
   }
 
-  say "record";
-  p %record;
+  # say "record";
+  # p %record;
 
   # add cadd score
   if ( $self->has_cadd_track ) {
@@ -768,14 +775,14 @@ sub annotate_snp_site {
   if ($gan) {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
-      p $kch;
+      #p $kch;
       # if there's no file for the track then it will be undef
       next unless defined $kch;
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
-      say 'record aref';
-      p $rec_aref;
+      # say 'record aref';
+      # p $rec_aref;
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           for my $allele (@var_alleles) {
@@ -785,8 +792,8 @@ sub annotate_snp_site {
         }
       }
     }
-    say "gene_data";
-    p @gene_data;
+    # say "gene_data";
+    # p @gene_data;
     $self->recordStat(
       $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
     );
@@ -803,7 +810,7 @@ sub annotate_snp_site {
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
-      p $rec_aref;
+      # p $rec_aref;
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           push @snp_data, Seq::Site::Snp->new($rec_href);
@@ -1018,8 +1025,8 @@ sub annotate_ins_site {
     }
     push @gene_data, Seq::Site::Indel->new($gene_href);
 
-    say "gene_data";
-    p @gene_data;
+    # say "gene_data";
+    # p @gene_data;
     $self->recordStat(
       $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
     );
@@ -1193,8 +1200,8 @@ sub annotate_del_sites {
       }
     }
     $record{gene_data} = \@gene_data;
-    say "gene_data";
-    p @gene_data;
+    # say "gene_data";
+    # p @gene_data;
     # $self->recordStat(
     #   $id_geno_href, \@gene_data, $ref_allele, $var_type, $record{genomic_type}
     # );

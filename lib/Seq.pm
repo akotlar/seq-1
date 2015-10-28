@@ -36,6 +36,8 @@ use namespace::autoclean;
 use Data::Dump qw/ dump /;
 use DDP;
 
+use Coro;
+
 use Seq::Annotate;
 
 with 'Seq::Role::IO', 'MooX::Role::Logger';
@@ -453,6 +455,7 @@ sub annotate_snpfile {
       if ( $self->wants_to_publish_messages ) {
         $self->_publish_message("annotated $chr:$pos");
       }
+      cede;
     }
   }
 
@@ -472,14 +475,20 @@ sub annotate_snpfile {
     $self->_print_annotations( $del_annotations_aref, $self->header );
   }
 
-  annotator->summarize;
+  cede; #give back control to coro
 
-  if($self->debug) {
-    say "The stats record is:";
+  # if($self->debug) {
+    # say "The stats record is:";
+    # p $annotator->statsRecord;
+  # }
+
+  $annotator->summarizeStats;
+
+  # if($self->debug) {
+    say "The stats record after summarize is:";
     p $annotator->statsRecord;
-  }
+  # }
   
-
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do
   #       interesting things.
@@ -583,9 +592,13 @@ sub _print_annotations {
 sub _tee_logger {
   my ( $self, $log_method, $msg ) = @_;
 
-  if ( $self->wants_to_publish_messages ) {
-    $self->_publish_message($msg);
-  }
+  async {
+    if ( $self->wants_to_publish_messages ) {
+      $self->_publish_message($_[0]);
+    }
+    cede;
+  } $msg;
+
   $self->_logger->$log_method($msg);
 
   if ( $log_method eq 'error' ) {

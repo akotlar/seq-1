@@ -39,6 +39,7 @@ has statsRecord => (
   handles => {
     getStat => 'get',
     setStat => 'set',
+    hasStat => 'exists',
     statsKv => 'kv',
     statSamples => 'keys',
   },

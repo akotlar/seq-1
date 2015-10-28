@@ -62,6 +62,7 @@ has debug =>
 );
 
 with 'Seq::Statistics::Record';
+with 'Seq::Statistics::Ratios';
 
 #############################################################################
 # Public Methods
