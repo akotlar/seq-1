@@ -43,7 +43,7 @@ has statsRecord => (
     statSamples => 'keys',
   },
   init_arg => undef,
-  default => {}
+  default => sub { return {} },
 );
 
 has disallowedGeno =>
