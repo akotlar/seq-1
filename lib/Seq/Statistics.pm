@@ -37,28 +37,32 @@ has statsKey =>
   is      => 'ro',
   isa     => 'Str',
   default => 'statistics',
+  required => 1,
 );
 has percentilesKey =>
 (
   is      => 'ro',
   isa     => 'Str',
   default => 'percentiles',
+  required => 1,
 );
 has ratioKey =>
 ( 
   is      => 'ro',
   isa     => 'Str',
   default => 'ratios',
+  required => 1,
 );
 has qcFailKey =>
 ( is      => 'ro',
   isa     => 'Str',
   default => 'qcFail',
+  required => 1,
 );
 has debug =>
 ( is      => 'ro',
   isa     => 'Int',
-  default => '0'
+  default => '0',
 );
 
 #############################################################################
