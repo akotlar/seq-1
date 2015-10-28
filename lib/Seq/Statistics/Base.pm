@@ -51,15 +51,9 @@ has disallowedGeno =>
   traits  => ['Array'],
   isa     => 'ArrayRef[Str]',
   handles => {
-    genoDisallowed => 'first',
+    badGenos => 'first_index',
   },
   builder => '_buildDisallowedGeno',
-);
-
-has verbose =>
-( is      => 'ro',
-  isa     => 'Int',
-  default => '0'
 );
 
 #############################################################################
