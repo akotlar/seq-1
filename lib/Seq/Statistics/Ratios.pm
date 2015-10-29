@@ -103,8 +103,10 @@ sub _recursiveCalc
     say "val in recursiveCalc is";
     p $statVal;
     #less than 2 because need at least a statKey => {countKey => val}
-    say "statVal in recuirsiveCalc has this many keys: " . @{keys %$statVal};
-    if(ref $statVal ne 'HASH' || @{keys %$statVal} < 2){ return ($nCount, $dCount); }
+    say "statVal in recuirsiveCalc has this many keys: " . scalar keys %$statVal;
+    if(ref $statVal ne 'HASH' || keys %$statVal < 2){ 
+      say "less than 2 keys, or statVal isn't a hash";
+      return ($nCount, $dCount); }
 
     say "checking stat value for key $key";
     p $statVal;
@@ -171,7 +173,8 @@ sub _nestedVal
   my ($self, $mRef, $keysAref) = @_;
   say "in _nestedVal mRef is";
   p $mRef;
-  if(@{keys %$mRef} < @$keysAref) {return undef; } #definitely don't have nec. depth
+  say "in _nesetedVal number of keys in mRef is" . scalar keys %$mRef;
+  if(keys %$mRef < @$keysAref) {return undef; } #definitely don't have nec. depth
   if(@$keysAref == 0)
   {
     say "returning $mRef from _nestedVal";
