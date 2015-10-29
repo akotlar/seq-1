@@ -65,13 +65,13 @@ sub makeRatios
   {
     for my $sKv ($self->statsKv) #return [sampleID.{HashRef}]
     {
-      #say "checking ratioNumerator {$rKv->[0]}, denom {$rKv->[1][0]},
-       # statsKv key {$sKv->[0]} and value:";
-      #p $sKv->[1];
+      say "checking ratioNumerator {$rKv->[0]}, denom {$rKv->[1][0]},
+       statsKv key {$sKv->[0]} and value:";
+      p $sKv->[1];
       ($numerator, $denominator) = 
         $self->_recursiveCalc($rKv->[0], $rKv->[1][0], $sKv->[1] );
 
-      #say "We got from recursiveCalc numerator: $numerator and denominator: $denominator";
+      say "We got from recursiveCalc numerator: $numerator and denominator: $denominator";
       $ratio = _calcRatio($numerator, $denominator);
       if(defined $ratio)
       {
@@ -79,7 +79,7 @@ sub makeRatios
         $sKv->[1]{$self->statsKey}{$ratioKey} = $ratio;
         if(!$self->hasRatios($ratioKey) ) { $self->setRatios($ratioKey, []); }
         push @{$self->getRatios($ratioKey) }, [$sKv->[0], $ratio];
-        #say "we are pushing ratio for $ratioKey, for {$sKv->[0]} val $ratio";
+        say "we are pushing ratio for $ratioKey, for {$sKv->[0]} val $ratio";
       }
     }
   }
@@ -95,16 +95,19 @@ sub _recursiveCalc
   
   my $statKey = $self->statsKey;
   my $countKey = $self->countKey;
-  #say "in recurise calc statKey is $statKey and countKey is $countKey";
+  say "in recurise calc statKey is $statKey and countKey is $countKey";
   for my $statVal (values %$statsHref)
   {
-    #say "checking stat value";
-    #p $statVal;
+    if(ref $statVal ne 'HASH'){ return ($nCount, $dCount); }
+
+    say "checking stat value";
+    p $statVal;
+
     my $numer = $self->_nestedVal($statVal, [$numKey, $statKey, $countKey] );
     my $denom = $self->_nestedVal($statVal, [$denomKey, $statKey, $countKey] );
 
-   # say "Numerator is $numer";
-   # say "Denominator is $denom";
+   say "Numerator is $numer";
+   say "Denominator is $denom";
 
     #if one defined, we found the right level, but by chance a missing value
     #_calcRatio will handle that
@@ -120,8 +123,8 @@ sub _recursiveCalc
       if(defined $numer){$nCount += $numer; }
       if(defined $denom){$dCount += $denom; }
     
-     # say "nCount is $nCount";
-     # say "dCount is $dCount";
+     say "nCount is $nCount";
+     say "dCount is $dCount";
     }
   }
   return ($nCount, $dCount);
@@ -158,20 +161,24 @@ sub _calcRatio
 sub _nestedVal
 {
   my ($self, $mRef, $keysAref) = @_;
+  if(keys %$mRef < @$keysAref) { return undef; } #definitely don't have nec. depth
   if(@$keysAref == 0)
   {
     if(defined $mRef) {return $mRef;}
     return undef;
   }
-  # say "in _nestedVal checking keys";
-  # p @$keysAref;
-  # say "in _nestedVal checked mref";
-  # p $mRef;
+  say "in _nestedVal checking keys";
+  p $keysAref;
+  say "in _nestedVal checked mref";
+  p $mRef;
   if(ref $mRef ne 'HASH'){ return undef;}
-  my $key = shift @$keysAref;
-  if(!defined $mRef->{$key} ) {return undef;}
-  #say "mref has key $key, next loop";
-  $self->_nestedVal($mRef->{$key}, $keysAref);
+  my %cp = %$mRef;
+  my $key = shift $keysAref;
+  if(!defined $cp{$key} ) {return undef;}
+  say "mref has key $key, next loop";
+  say "now keys has";
+  p $keysAref;
+  $self->_nestedVal($cp{$key}, $keysAref);
 }
 
 no Moose::Role;
