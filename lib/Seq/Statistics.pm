@@ -82,6 +82,11 @@ sub summarize
 
   $self->makeRatios;
 
+  if($self->debug) {
+    say "Ratios:";
+    p $self->ratiosHref;
+  }
+
   if($self->hasNoRatios) {
     #message
     return;

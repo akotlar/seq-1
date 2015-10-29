@@ -10,6 +10,7 @@ use Carp qw(cluck confess);
 use DDP;
 
 requires 'statsKey';
+requires 'countKey';
 requires 'ratioKey';
 requires 'statsRecord';
 
@@ -19,6 +20,7 @@ has ratioFeaturesRef =>
   isa     => 'HashRef[ArrayRef[Str]]',
   handles => {
     ratioNumerators => 'keys',
+    ratioFeaturesKv => 'kv',
     allowedNumerator => 'exists',
     getDenomRatioKeys => 'get',
   },
@@ -56,50 +58,55 @@ sub makeRatios
 
   my $statsKey = $self->statsKey;
   
-  say "in ratios";
   #calculate ratios for samples;
-  for my $kv ($self->statsKv)
+  my ($ratio, $ratioKey, $numerator, $denominator);
+  for my $rKv ($self->ratioFeaturesKv) #return [denom.[denom, ratioKey]]
   {
-    say "stats key is {$kv->[0]}";
-    say "stats value is ";
-    p $kv->[1];
-    $self->_storeFeatureRatios($kv->[0], \%{$kv->[1]{$statsKey} } );
+    for my $sKv ($self->statsKv) #return [sampleID.{HashRef}]
+    {
+      ($numerator, $denominator) = 
+        $self->_recursiveCalc($rKv->[0], $rKv->[1][0], $sKv->[1] );
+
+      $ratio = $self->_calcRatio($numerator, $denominator);
+      if(defined $ratio)
+      {
+        $ratioKey = $rKv->[1][1];
+        $sKv->[1]{$self->statsKey}{$ratioKey} = $ratio;
+        push @{$self->allRatios($ratioKey) }, [$sKv->[0], $ratio];
+      }
+    }
   }
 }
 
-sub _iterate
-{
-  my ($self, $statsKey, $statsHref) = @_;
-}
 #@param $statsHref; the hash ref that holds the numerator & denominator,
 #and where the ratio is stored
 #this does not recurse
 #@return void
-sub _storeFeatureRatios
+sub _recursiveCalc
 {
-  my ($self, $statsKey, $statsHref) = @_;
-  my ($denomKeysAref, $ratioKey, $numerator, $denominator, $ratio, $ratiosHref);
-
-  for my $numeratorKey (keys %$statsHref)
+  my ($self, $numKey, $denomKey, $statsHref, $numCount, $denomCount) = @_;
+  
+  for my $statVal (values %$statsHref)
   {
-    if(!$self->allowedNumerator($numeratorKey) ) {next;}
-    $numerator = $statsHref->{$numeratorKey};
-    #if numerator undefined, don't calc ratio; alt. we could calc as 0
-    if(!defined $numerator) {next;}
-    
-    $denomKeysAref = $self->getDenomRatioKeys($numerator);
-    if(!exists $statsHref->{$denomKeysAref->[0] } ) {next;}
-    $denominator = $statsHref->{$denomKeysAref->[0] };
-    #if denom undefined, don't calc ratio; alt. we could calc as inf, but meaning?
-    if(!defined $denominator) {next;}
-    
-    $ratio = _calcRatio($numerator, $denominator);
-    if(defined $ratio) {
-      $ratioKey = $denomKeysAref->[1];
-      $statsHref->{$ratioKey} = $ratio; 
-      push @{$self->allRatios($ratioKey) }, [$statsKey, $ratio];
+    if(ref $statVal ne 'HASH') { return ($numCount, $denomCount); }
+      
+    if(defined $statVal->{$numKey} && defined $statVal->{$denomKey} )
+    {
+      # avoid autovivification 
+      if(defined $statVal->{$numKey}{$self->statsKey} && 
+      defined $statVal->{$numKey}{$self->statsKey}{$self->countKey} ) {
+        $numCount += $statVal->{$numKey}{$self->statsKey}{$self->countKey};
+      }
+      
+      if(defined $statVal->{$denomKey}{$self->statsKey} && 
+      defined $statVal->{$denomKey}{$self->statsKey}{$self->countKey} ) {
+        $denomCount += $statVal->{$denomKey}{$self->statsKey}{$self->countKey};
+      }
     }
+    ($numCount, $denomCount) = 
+      $self->_recursiveCalc($numKey, $denomKey, $statVal, $numCount, $denomCount);
   }
+  return ($numCount, $denomCount);
 }
 
 sub ratioKeys
@@ -118,12 +125,13 @@ sub ratioValues
 
 ###########Private#####################
 # requires non-0 value for denominator
-# 9999 is inf; case when no transversions
+# 9999 is inf; case when no transversions; actual 'Infinity' is platform-specific
 sub _calcRatio
 {
   my ($numerator, $denominator) = @_;
-  if(!$denominator) {return 9999; } #numerator may 
-  if(!$numerator) {return 0; }
+  if(!($numerator && $denominator) ) { return undef; }
+  elsif($numerator && !$denominator) {return 9999; } #safe inf 
+  elsif(!$numerator) {return 0; }
   return $numerator/$denominator;
 }
 
