@@ -98,13 +98,16 @@ sub _recursiveCalc
   say "in recurise calc statKey is $statKey and countKey is $countKey";
   for my $statVal (values %$statsHref)
   {
-    if(ref $statVal ne 'HASH'){ return ($nCount, $dCount); }
+    if(ref $statVal ne 'HASH' || !defined $statVal->{$numKey} )
+    { 
+      return ($nCount, $dCount); 
+    }
 
     say "checking stat value";
     p $statVal;
 
-    my $numer = $self->_nestedVal($statVal, [$numKey, $statKey, $countKey] );
-    my $denom = $self->_nestedVal($statVal, [$denomKey, $statKey, $countKey] );
+    my $numer = $self->_nestedVal($statVal, [$statKey, $countKey] );
+    my $denom = $self->_nestedVal($statVal, [$statKey, $countKey] );
 
    say "Numerator is $numer";
    say "Denominator is $denom";
@@ -164,22 +167,55 @@ sub _nestedVal
   if(keys %$mRef < @$keysAref) { return undef; } #definitely don't have nec. depth
   if(@$keysAref == 0)
   {
-    if(defined $mRef) {return $mRef;}
+    if(defined $mRef) { say "returning $mRef from _nestedVal"; return $mRef;}
     return undef;
   }
+  if(ref $mRef ne 'HASH'){ return undef;}
+
   say "in _nestedVal checking keys";
   p $keysAref;
   say "in _nestedVal checked mref";
   p $mRef;
-  if(ref $mRef ne 'HASH'){ return undef;}
-  my %cp = %$mRef;
-  my $key = shift $keysAref;
-  if(!defined $cp{$key} ) {return undef;}
+  
+  my $key = shift @$keysAref;
+  if(!defined $mRef->{$key} ) {return undef;}
   say "mref has key $key, next loop";
   say "now keys has";
   p $keysAref;
-  $self->_nestedVal($cp{$key}, $keysAref);
+  $self->_nestedVal($mRef->{$key}, $keysAref);
 }
 
+# sub _nestedValFast
+# {
+#   my ($self, $mRef, $keysAref) = @_;
+#   if(keys %$mRef < @$keysAref) { return undef; } #definitely don't have nec. depth
+#   if(@$keysAref == 0)
+#   {
+#     if(defined $mRef) {return $mRef;}
+#     return undef;
+#   }
+#   if(ref $mRef ne 'HASH'){ return undef;}
+#   for my $key (@$keysAref)
+#   {
+#     if(!defined $mRef->{$key} ) {return undef; }
+#     return sub {
+
+#     }
+#   }
+#   say "in _nestedVal checking keys";
+#   p $keysAref;
+#   say "in _nestedVal checked mref";
+#   p $mRef;
+#   if(ref $mRef ne 'HASH'){ return undef;}
+
+
+#   my %cp = %$mRef;
+#   my $key = shift $keysAref;
+#   if(!defined $cp{$key} ) {return undef;}
+#   say "mref has key $key, next loop";
+#   say "now keys has";
+#   p $keysAref;
+#   $self->_nestedVal($cp{$key}, $keysAref);
+# }
 no Moose::Role;
 1;
