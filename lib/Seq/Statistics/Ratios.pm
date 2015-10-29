@@ -172,6 +172,8 @@ sub _nestedVal
   p $mRef;
   say "and keys are ";
   p $keysAref;
+  say "and num keys left is" . scalar @$keysAref;
+
   if(@$keysAref == 0)
   {
     say "returning mRef from _nestedVal with value $mRef";
