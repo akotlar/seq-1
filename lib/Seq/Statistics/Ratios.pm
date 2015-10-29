@@ -117,18 +117,16 @@ sub _recursiveCalc
     #_calcRatio will handle that
     if(!(defined $numer || defined $denom) )
     {
-      if(ref $statVal eq 'HASH') { #let's check down to the bottom
-        ($nCount, $dCount) = 
-          $self->_recursiveCalc($numKey, $denomKey, $statVal, $nCount, $dCount);
-      }
+      ($nCount, $dCount) = 
+        $self->_recursiveCalc($numKey, $denomKey, $statVal, $nCount, $dCount);
     } 
     else
     {
       if(defined $numer){$nCount += $numer; }
       if(defined $denom){$dCount += $denom; }
     
-     say "nCount is $nCount";
-     say "dCount is $dCount";
+      say "nCount is $nCount";
+      say "dCount is $dCount";
     }
   }
   return ($nCount, $dCount);
@@ -155,7 +153,7 @@ sub _calcRatio
 {
   my ($numerator, $denominator) = @_;
   #say "_calcRatio called with numerator $numerator && denominator: $denominator";
-  if(!($numerator || $denominator) ) { return undef; }
+  if(!($numerator || $denominator) ) {return undef; }
   elsif($numerator && !$denominator) {return 9999; } #safe inf 
   elsif(!$numerator) {return 0; }
   return $numerator/$denominator;
@@ -165,11 +163,11 @@ sub _calcRatio
 sub _nestedVal
 {
   my ($self, $mRef, $keysAref) = @_;
-  if(keys %$mRef < @$keysAref) { return undef; } #definitely don't have nec. depth
+  if(keys %$mRef < @$keysAref) {return undef; } #definitely don't have nec. depth
   if(@$keysAref == 0)
   {
-    if(defined $mRef) { say "returning $mRef from _nestedVal"; return $mRef;}
-    return undef;
+    say "returning $mRef from _nestedVal";
+    return $mRef;
   }
   if(ref $mRef ne 'HASH'){ return undef;}
 
@@ -181,7 +179,7 @@ sub _nestedVal
   my $key = shift @$keysAref;
   if(!defined $mRef->{$key} ) {return undef;}
   say "mref has key $key, next loop";
-  say "now keys has";
+  say "after shift keys are";
   p $keysAref;
   $self->_nestedVal($mRef->{$key}, $keysAref);
 }
