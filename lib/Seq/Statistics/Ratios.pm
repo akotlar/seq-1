@@ -100,7 +100,7 @@ sub _recursiveCalc
   {
     my $statVal = $statsHref->{$key};
     #less than 2 because need at least a statKey => {countKey => val}
-    say "statVal in recuirsiveCalc has this many keys: {keys %$statVal}";
+    say "statVal in recuirsiveCalc has this many keys: " . keys %$statVal;
     if(ref $statVal ne 'HASH' || keys %$statVal < 2){ return ($nCount, $dCount); }
 
     say "checking stat value for key $key";
