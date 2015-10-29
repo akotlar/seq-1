@@ -99,7 +99,8 @@ sub _recursiveCalc
   for my $key (keys %$statsHref)
   {
     my $statVal = $statsHref->{$key};
-    if(ref $statVal ne 'HASH'){ return ($nCount, $dCount); }
+    #less than 2 because need at least a statKey => {countKey => val}
+    if(ref $statVal ne 'HASH' || keys %$statVal < 2){ return ($nCount, $dCount); }
 
     say "checking stat value for key $key";
     p $statVal;
@@ -109,9 +110,10 @@ sub _recursiveCalc
     {
       $numer = $self->_nestedVal($statVal, [$statKey, $countKey] );
       $denom = $self->_nestedVal($statVal, [$statKey, $countKey] );
-    }   
-    say "Numerator is $numer";
-    say "Denominator is $denom";
+
+      say "Numerator is $numer";
+      say "Denominator is $denom";
+    } 
 
     #if one defined, we found the right level, but by chance a missing value
     #_calcRatio will handle that
