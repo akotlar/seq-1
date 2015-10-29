@@ -96,15 +96,15 @@ sub _recursiveCalc
   my $statKey = $self->statsKey;
   my $countKey = $self->countKey;
   say "in recurise calc statKey is $statKey and countKey is $countKey";
-  for my $key ( @{keys %$statsHref} )
+  for my $key ( keys %$statsHref )
   {
     my $statVal = $statsHref->{$key};
     say "key in recursiveCalc is " . $key;
     say "val in recursiveCalc is";
     p $statVal;
     #less than 2 because need at least a statKey => {countKey => val}
-    say "statVal in recuirsiveCalc has this many keys: " . keys %$statVal;
-    if(ref $statVal ne 'HASH' || keys %$statVal < 2){ return ($nCount, $dCount); }
+    say "statVal in recuirsiveCalc has this many keys: " . @{keys %$statVal};
+    if(ref $statVal ne 'HASH' || @{keys %$statVal} < 2){ return ($nCount, $dCount); }
 
     say "checking stat value for key $key";
     p $statVal;
@@ -171,7 +171,7 @@ sub _nestedVal
   my ($self, $mRef, $keysAref) = @_;
   say "in _nestedVal mRef is";
   p $mRef;
-  if(keys %$mRef < @$keysAref) {return undef; } #definitely don't have nec. depth
+  if(@{keys %$mRef} < @$keysAref) {return undef; } #definitely don't have nec. depth
   if(@$keysAref == 0)
   {
     say "returning $mRef from _nestedVal";
