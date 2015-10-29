@@ -26,6 +26,20 @@ has ratioFeaturesRef =>
   },
   builder => '_buildRatioFeaturesRef'
 );
+sub _buildRatioFeaturesRef
+{
+  my $self = shift;
+  return {
+    Silent => ['Replacement','Silent:Replacement'],
+    Transitions => ['Transversions', 'Transitions:Transversions'],
+  };   
+}
+
+# has ratioKeys => 
+# (
+#   is => 'ro',
+  
+# )
 
 # each key should be the ratio name, each value all ratios for that name
 # one ratio per sample
@@ -44,14 +58,6 @@ has ratiosHref =>
   }
 );
 # numeratorKey=>[denominatorKey,ratioKey] 
-sub _buildRatioFeaturesRef
-{
-  my $self = shift;
-  return {
-    Silent => ['Replacement','Silent:Replacement'],
-    Transitions => ['Transversions', 'Transitions:Transversions'],
-  };   
-}
 
 sub makeRatios
 {
@@ -98,6 +104,8 @@ sub _recursiveCalc
   say "in recurise calc statKey is $statKey and countKey is $countKey";
   for my $key ( keys %$statsHref )
   {
+    if($key eq $statKey || $key eq $countKey){next; }
+    #TODO: also check if one of the ratio keys
     my $statVal = $statsHref->{$key};
     say "key in recursiveCalc is " . $key;
     say "val in recursiveCalc is";
@@ -109,12 +117,14 @@ sub _recursiveCalc
     p $statVal;
 
     my ($numer, $denom);
-    if($key eq $numKey || $key eq $denomKey)
+    if($key eq $numKey)
     {
       $numer = $self->_nestedVal($statVal, [$statKey, $countKey] );
-      $denom = $self->_nestedVal($statVal, [$statKey, $countKey] );
-
       say "Numerator is $numer";
+    }
+    elsif($key eq $denomKey)
+    {
+      $denom = $self->_nestedVal($statVal, [$statKey, $countKey] );
       say "Denominator is $denom";
     } 
 
@@ -172,6 +182,8 @@ sub _nestedVal
   p $mRef;
   say "and keys are ";
   p $keysAref;
+  say "and keys left is ". scalar @$keysAref;
+
   if(@$keysAref == 0)
   {
     say "returning mRef from _nestedVal with value $mRef";
