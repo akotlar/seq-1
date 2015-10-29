@@ -165,6 +165,8 @@ sub _calcRatio
 sub _nestedVal
 {
   my ($self, $mRef, $keysAref) = @_;
+  say "in _nestedVal mRef is";
+  p $mRef;
   if(keys %$mRef < @$keysAref) {return undef; } #definitely don't have nec. depth
   if(@$keysAref == 0)
   {
