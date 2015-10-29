@@ -252,7 +252,7 @@ sub write_remote_data {
     #   this will cause failure of the build since we expect to find all files
     #   in the list
     if ( $self->act ) {
-      if ( -s $master_file->absolute ) {
+      unless ( -z $master_file ) {
         push @return_files, $master_file->basename;
       }
     }

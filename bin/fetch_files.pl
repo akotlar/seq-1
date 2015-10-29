@@ -4,6 +4,7 @@ use 5.10.0;
 use strict;
 use warnings;
 
+use lib './lib';
 use Carp qw/ croak /;
 use Getopt::Long;
 use Path::Tiny;
@@ -71,7 +72,7 @@ my $log_file = path(".")->child($log_name)->absolute->stringify;
 Log::Any::Adapter->set( 'File', $log_file );
 
 # only need to update the file list if it's a sparse track (i.e., gene or snp)
-if ( $cmd eq 'gene' or 'snp' ) {
+if ( $cmd eq 'gene' or $cmd eq 'snp' ) {
   # set method
   my $method     = $cmd_2_method{$cmd};
   my $files_href = $fetch_obj->$method;
@@ -90,14 +91,22 @@ if ( $cmd eq 'gene' or 'snp' ) {
       say "=" x 80;
     }
   }
+  say "\n" . "=" x 80;
+  say "Updated configuration file written: '$out_ext.yml'";
+  say "=" x 80;
+  
+  my $out_fh = IO::File->new( "$out_ext.yml", 'w' );
+  say {$out_fh} Dump($config_href);
+}
+else {
+  my $method     = $cmd_2_method{$cmd};
+  my $files_href = $fetch_obj->$method;
+  say "\n" . "=" x 80;
+  say "fetched these files:";
+  say Dump($files_href) if $verbose;
+  say "=" x 80;
 }
 
-say "\n" . "=" x 80;
-say "Updated configuration file written: '$out_ext.yml'";
-say "=" x 80;
-
-my $out_fh = IO::File->new( "$out_ext.yml", 'w' );
-say {$out_fh} Dump($config_href);
 
 __END__
 
