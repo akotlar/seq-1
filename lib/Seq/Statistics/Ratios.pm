@@ -37,7 +37,7 @@ has ratiosHref =>
   handles => {
     allRatiosKv => 'kv',
     allRatioVals => 'values',
-    ratios => 'accessor',
+    ratios => 'get',
     hasRatioCollection => 'defined',
     hasNoRatios => 'is_empty',
   }
@@ -59,7 +59,7 @@ sub makeRatios
   my $statsKey = $self->statsKey;
   
   #calculate ratios for samples;
-  my ($ratio, $ratioKey, $numerator, $denominator);
+  my ($ratio, $allRatios, $ratioKey, $numerator, $denominator);
   for my $rKv ($self->ratioFeaturesKv) #return [denom.[denom, ratioKey]]
   {
     for my $sKv ($self->statsKv) #return [sampleID.{HashRef}]
@@ -72,7 +72,9 @@ sub makeRatios
       {
         $ratioKey = $rKv->[1][1];
         $sKv->[1]{$self->statsKey}{$ratioKey} = $ratio;
-        push @{$self->allRatios($ratioKey) }, [$sKv->[0], $ratio];
+        $allRatios = $self->ratios($ratioKey);
+        if(!defined $allRatios) { $allRatios = []; }
+        push @{$allRatios}, [$sKv->[0], $ratio];
       }
     }
   }
@@ -86,23 +88,24 @@ sub _recursiveCalc
 {
   my ($self, $numKey, $denomKey, $statsHref, $numCount, $denomCount) = @_;
   
+  my $statKey = $self->statsKey;
+  my $countKey = $self->countKey;
   for my $statVal (values %$statsHref)
   {
-    if(ref $statVal ne 'HASH') { return ($numCount, $denomCount); }
-      
-    if(defined $statVal->{$numKey} && defined $statVal->{$denomKey} )
+    my $hasNumer = $self->_isHashRef($statVal, [$numKey, $statKey, $countKey] );
+    my $hasDenom = $self->_isHashRef($statVal, [$denomKey, $statKey, $countKey] );
+    
+    if(!($hasNumer && $hasDenom) ) 
     {
-      # avoid autovivification 
-      if(defined $statVal->{$numKey}{$self->statsKey} && 
-      defined $statVal->{$numKey}{$self->statsKey}{$self->countKey} ) {
-        $numCount += $statVal->{$numKey}{$self->statsKey}{$self->countKey};
-      }
-      
-      if(defined $statVal->{$denomKey}{$self->statsKey} && 
-      defined $statVal->{$denomKey}{$self->statsKey}{$self->countKey} ) {
-        $denomCount += $statVal->{$denomKey}{$self->statsKey}{$self->countKey};
-      }
+      return ($numCount, $denomCount); 
     }
+    if($hasNumer) {
+      $numCount += $statVal->{$numKey}{$statKey}{$countKey};
+    }
+    if($hasDenom) {
+      $denomCount += $statVal->{$denomKey}{$statKey}{$countKey};
+    }
+
     ($numCount, $denomCount) = 
       $self->_recursiveCalc($numKey, $denomKey, $statVal, $numCount, $denomCount);
   }
@@ -133,6 +136,17 @@ sub _calcRatio
   elsif($numerator && !$denominator) {return 9999; } #safe inf 
   elsif(!$numerator) {return 0; }
   return $numerator/$denominator;
+}
+
+sub _isHashRef
+{
+  my ($self, $mRef, $keysAref) = @_;
+  if(ref $mRef ne 'HASH'){ return 0;}
+  for my $key (@{$keysAref} )
+  {
+    if(!defined $mRef->{$key} ) { return 0; }
+    $self->_isHashRef($mRef->{$key})
+  }
 }
 
 no Moose::Role;

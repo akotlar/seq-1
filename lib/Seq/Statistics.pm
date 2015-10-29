@@ -22,6 +22,7 @@ siteTypes or siteCodes
 =cut
 package Seq::Statistics;
 
+use 5.10.0;
 use Moose;
 use namespace::autoclean;
 
