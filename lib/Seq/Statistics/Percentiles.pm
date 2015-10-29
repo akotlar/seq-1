@@ -11,7 +11,7 @@ use Carp qw/cluck confess/;
 has percentileThresholdNames =>
 ( is      => 'ro',
   traits => ['Array'],
-  isa     => 'ArrayRef[Num]',
+  isa     => 'ArrayRef[Str]',
   default => sub{ return ['5th', 'median', '95th'] },
   handles => {
     getThresholdName => 'get',
@@ -46,7 +46,7 @@ has qcFailKey =>
 has ratios =>
 (
   is  => 'rw',
-  isa => 'ArrayRef[Num]',
+  isa => 'ArrayRef',
   traits => ['Array'],
   handles => {
     sortRatios => 'sort_in_place',

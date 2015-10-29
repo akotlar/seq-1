@@ -107,27 +107,19 @@ sub record
 #insertions and deletions don't have transitions and transversions, so check for that
 sub storeTrTvAndCount
 {
-  my ($self, $featuresAref, $topTargetHref, $trTvKey, $targetHref) = @_;
-
+  my ($self, $featuresAref, $targetHref, $trTvKey) = @_;
   if(!@$featuresAref) { return };
 
-  $targetHref = defined $targetHref ? $targetHref : $topTargetHref;
-
   my $feature = shift @$featuresAref;
-
-  my $statHref = \%{$targetHref->{$feature}{$self->statsKey} };
+  $targetHref = \%{$targetHref->{$feature} };
   
   #transitions are unique, they are the only StatsCalculator created feature
   if(defined $trTvKey) {
-    $targetHref->{$feature}{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
-    #genome-wide tr:tv
-    $topTargetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
+    $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
   }
+  $targetHref->{$self->statsKey}{$self->countKey} += 1;
 
-  $statHref->{$self->countKey} += 1;
-
-  $self->storeTrTvAndCount($featuresAref, $topTargetHref, $trTvKey,
-    $targetHref->{$feature});
+  $self->storeTrTvAndCount($featuresAref, $targetHref, $trTvKey);
 }
 
 sub _getTr

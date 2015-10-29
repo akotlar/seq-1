@@ -93,7 +93,7 @@ sub summarize
 
   for my $kv ($self->allRatiosKv)
   {
-    if(!$self->hasRatioCollection($kv->[0]) ) {next;}
+    if(!defined $kv->[1] ) {next;} #not certain this needed
 
     $percentilesHref = Seq::Statistics::Percentiles->new(
       ratioName => $kv->[0],

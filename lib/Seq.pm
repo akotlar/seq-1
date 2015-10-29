@@ -475,7 +475,7 @@ sub annotate_snpfile {
     $self->_print_annotations( $del_annotations_aref, $self->header );
   }
 
-  cede; #give back control to coro
+  cede; #give back control to coro threads
 
   # if($self->debug) {
     # say "The stats record is:";
