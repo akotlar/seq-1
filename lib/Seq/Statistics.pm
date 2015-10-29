@@ -29,9 +29,7 @@ use namespace::autoclean;
 extends 'Seq::Statistics::Base';
 
 use Seq::Statistics::Percentiles;
-
-use File::Basename;   
-use lib dirname(__FILE__);
+use DDP;
 
 has statsKey =>
 ( 

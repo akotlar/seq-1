@@ -117,10 +117,13 @@ sub storeTrTvAndCount
 
   my $statHref = \%{$targetHref->{$feature}{$self->statsKey} };
   
+  #transitions are unique, they are the only StatsCalculator created feature
   if(defined $trTvKey) {
-    $statHref->{$trTvKey} += 1;
-    $topTargetHref->{$self->statsKey}{$trTvKey} += 1; #genome-wide tr:tv
+    $targetHref->{$feature}{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
+    #genome-wide tr:tv
+    $topTargetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
   }
+
   $statHref->{$self->countKey} += 1;
 
   $self->storeTrTvAndCount($featuresAref, $topTargetHref, $trTvKey,
