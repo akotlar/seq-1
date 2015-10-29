@@ -107,19 +107,21 @@ sub record
 #insertions and deletions don't have transitions and transversions, so check for that
 sub storeTrTvAndCount
 {
-  my ($self, $featuresAref, $targetHref, $trTvKey) = @_;
+  my ($self, $featuresAref, $topTargetHref, $trTvKey, $targetHref) = @_;
   if(!@$featuresAref) { return };
 
   my $feature = shift @$featuresAref;
-  $targetHref = \%{$targetHref->{$feature} };
+  $targetHref = defined $targetHref ? \%{$targetHref->{$feature} } : $topTargetHref;
   
   #transitions are unique, they are the only StatsCalculator created feature
+  #they should only be inserted in a single locaiton, else they'll be counted
+  #by sum(n*tr_i)
   if(defined $trTvKey) {
-    $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
+    $topTargetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
   }
   $targetHref->{$self->statsKey}{$self->countKey} += 1;
 
-  $self->storeTrTvAndCount($featuresAref, $targetHref, $trTvKey);
+  $self->storeTrTvAndCount($featuresAref, $topTargetHref, $trTvKey, $targetHref);
 }
 
 sub _getTr
