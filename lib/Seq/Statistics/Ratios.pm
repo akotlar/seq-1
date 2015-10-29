@@ -1,11 +1,13 @@
 package Seq::Statistics::Ratios;
 our $VERSION = '0.001';
 
+use 5.10.0;
 use strict;
 use warnings;
 use Moose::Role;
 
 use Carp qw(cluck confess);
+use DDP;
 
 requires 'statsKey';
 requires 'ratioKey';
@@ -54,13 +56,21 @@ sub makeRatios
 
   my $statsKey = $self->statsKey;
   
+  say "in ratios";
   #calculate ratios for samples;
   for my $kv ($self->statsKv)
   {
+    say "stats key is {$kv->[0]}";
+    say "stats value is ";
+    p $kv->[1];
     $self->_storeFeatureRatios($kv->[0], \%{$kv->[1]{$statsKey} } );
   }
 }
 
+sub _iterate
+{
+  my ($self, $statsKey, $statsHref) = @_;
+}
 #@param $statsHref; the hash ref that holds the numerator & denominator,
 #and where the ratio is stored
 #this does not recurse

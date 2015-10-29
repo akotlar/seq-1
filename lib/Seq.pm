@@ -485,8 +485,8 @@ sub annotate_snpfile {
   $annotator->summarizeStats;
 
   # if($self->debug) {
-    say "The stats record after summarize is:";
-    p $annotator->statsRecord;
+    #say "The stats record after summarize is:";
+    #p $annotator->statsRecord;
   # }
   
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
