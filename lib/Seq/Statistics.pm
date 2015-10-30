@@ -92,8 +92,8 @@ sub summarize {
     $percentilesHref->storeAndQc;
 
     if($self->debug) {
-      say "after qc, destHref has";
-      p $destHref;
+      say "after qc, stats record has";
+      p $self->statsRecord;
     }
   }
 }
