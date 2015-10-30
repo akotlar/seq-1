@@ -4,36 +4,58 @@ use Moose::Role;
 use strict;
 use warnings;
 
-requires 'percentiles';
-requires 'qcFailKey';
+requires 'allRatios';
+requires 'getPercVal';
+requires 'target';
 requires 'ratioName';
 
-has ciMessage =>
-( 
+has qcFailKey => ( 
+  is      => 'ro',
+  isa     => 'Str',
+  default => 'qcFail'
+);
+
+has failMessage => ( 
   is      => 'ro',
   isa     => 'Str',
   default => 'outside 95th percentile'
 );
 
-sub qc
-{
-  my ($self, $keysAref, $valuesAref, $destHref) = @_;
+# any values that didn't have numerical values
+has preScreened => (
+  is => 'rw',
+  isa => 'ArrayRef[Str|Num]',
+  traits => ['Array'],
+  handles => {
+    blacklistID => 'push',
+    blacklistedIDs => 'elements',
+  }
+);
 
-  my $qcFailKey = $self->qcFailKey;
-  my $ciMessage = $self->ciMessage;
+#could also do this by checking ratioID position in ratios
+#but wouldn't work for interpolated values
+sub qc {
+  my $self = shift; 
+
+  my $failKey = $self->qcFailKey;
+  my $mesage = $self->failMessage;
   my $ratioName = $self->ratioName;
 
-  my $lower = $self->getPercentile(0);
-  my $upper = $self->getPercentile(2);
+  my $lower = $self->getPercVal(0);
+  my $upper = $self->getPercVal(2);
   
-  my $index = 0;
-  for my $ratio (@$valuesAref)
-  {
-    if($ratio < $lower || $ratio > $upper)
-    {
-      $destHref->{$qcFailKey}{$keysAref->[$index] } = "$ratioName $ciMessage";
+  my ($id, $val);
+  for my $ratio ($self->allRatios) {
+    $id = $ratio->[0];
+    $val = $ratio->[1];
+
+    if($val < $lower || $val > $upper) {
+      push @{$self->target->{$failKey}{$id} }, "$ratioName $mesage";
     }
-    $index++;
+  }
+  
+  for my $id ($self->blacklistedIDs) {
+    push @{$self->target->{$failKey}{$id} }, "$ratioName $mesage";
   }
 }
 

@@ -17,21 +17,12 @@ SNP, MESS, LOW
 package Seq::Statistics::Base;
 
 use Moose;
-  with 'MooseX::SimpleConfig'; #all constructor arguments can be overriden by passing the constructor (during "new") : {configfile=>'path/to/yamlfile.yaml'} with appropriate key:value pairs 
-  with 'MooseX::Getopt'; #allows passing command line args, including -configfile, when used with StatisticsCalculator->new_with_optinos()
-
 use namespace::autoclean;#remove moose keywords after compilation
 
 #############################################################################
 # Non required vars passable to constructor during new 
 # All can be passed either by new( {varName1:value,...} ) or new( {configfile=>'path/to/yamlfile.yaml'} ) 
 #############################################################################
-# has assembly => 
-# (
-#   is  => 'ro',
-#   isa => 'Str',
-#   predicate => 'has_assembly'
-# );
 has statsRecord => (
   is => 'rw',
   isa => 'HashRef',
@@ -47,8 +38,8 @@ has statsRecord => (
   default => sub { return {} },
 );
 
-has disallowedGeno =>
-( is      => 'ro',
+has disallowedGeno => (
+  is      => 'ro',
   traits  => ['Array'],
   isa     => 'ArrayRef[Str]',
   handles => {
@@ -60,8 +51,7 @@ has disallowedGeno =>
 #############################################################################
 # Vars not passable to constructor (private vars)
 #############################################################################
-has iupac =>
-(
+has iupac => (
   is  => 'rw',
   isa => 'HashRef[Str]',
   traits => ['Hash'],
@@ -80,41 +70,15 @@ sub _buildDisallowedFeatures {
   return []
 }
 
-sub _buildIUPAC #this should live in yml
-{
+#only SNP IUPAC codes, I, D, and other Indel codes don't belong here
+sub _buildIUPAC {
   return {A => 'A',C => 'C',G => 'G',T => 'T',R => 'AG',Y => 'CT', S => 'GC',
     W => 'AT', K => 'GT', M => 'AC', B => 'CGT', D => 'AGT', H => 'ACT',
-    V => 'ACG', N => 'N'}; #R is IUPAC AG, Y is IUPAC CT
+    V => 'ACG', N => 'N'};  
 }
 
-sub _buildDisallowedGeno
-{
+sub _buildDisallowedGeno {
   return ['N'];
-}
-
-#############################################################################
-# Private Methods
-#############################################################################
-sub _makeUnique
-{
-  my $self = shift;
-  my $recordReferenceOrPrimitive = shift;
-
-  if(ref($recordReferenceOrPrimitive) eq 'ARRAY')
-  {
-    my %unique;
-
-    for my $key (keys @$recordReferenceOrPrimitive)
-    {
-      $unique{$key} = 1;
-    }
-    return join(";",keys %unique);
-  }
-  elsif(ref($recordReferenceOrPrimitive) eq 'HASH')
-  {
-    confess "Record passed to Snpfile::StatisticsCalculator::makeUnique was hash, unsupported";
-  } 
-  return $recordReferenceOrPrimitive;
 }
 
 __PACKAGE__->meta->make_immutable;

@@ -31,31 +31,23 @@ extends 'Seq::Statistics::Base';
 use Seq::Statistics::Percentiles;
 use DDP;
 
-has statsKey =>
-( 
+has statsKey => ( 
   is      => 'ro',
   isa     => 'Str',
   default => 'statistics',
 );
-has percentilesKey =>
-(
-  is      => 'ro',
-  isa     => 'Str',
-  default => 'percentiles',
-);
-has ratioKey =>
-( 
+has ratioKey => ( 
   is      => 'ro',
   isa     => 'Str',
   default => 'ratios',
 );
-has qcFailKey =>
-( is      => 'ro',
+has qcFailKey => (
+  is      => 'ro',
   isa     => 'Str',
   default => 'qcFail',
 );
-has debug =>
-( is      => 'ro',
+has debug => (
+  is      => 'ro',
   isa     => 'Int',
   default => '0'
 );
@@ -66,16 +58,8 @@ with 'Seq::Statistics::Ratios';
 #############################################################################
 # Public Methods
 #############################################################################
-#
-#record Transitions and Transversions
-#@param $siteType (str or array) ex: SNP, MESS, DEL, INS
-#@param $siteCode (str or array) ex: Replacement, Intronic, Silent
-#@param $referenceAllele (str) ex: 'A'
-#@param $sampleGenotypesRef (HASH reference) : ex { 'Y' : [sample1id,sample2id,sample3id], 'C' : [sample1id] }
-#@return HASH : in format 'sampleID' => { transition: int, transversion:int, 'siteType1' => { transition: int, transversion:int, siteCode1' => { transition: int, transversion:int}} } 
-#
-sub summarize
-{ 
+
+sub summarize { 
   my $self = shift;
   my ($percentilesHref, $samples, $ratios, $samplesAref, $ratiosAref, $destHref);
 
@@ -91,28 +75,26 @@ sub summarize
     return;
   }
 
-  for my $kv ($self->allRatiosKv)
-  {
+  $destHref = $self->setStat($self->statsKey, {} ); #init statKey at top of href;
+
+  for my $kv ($self->allRatiosKv) {
     if(!defined $kv->[1] ) {next;} #not certain this needed
 
     $percentilesHref = Seq::Statistics::Percentiles->new(
       ratioName => $kv->[0],
       ratios => $kv->[1],
       qcFailKey => $self->qcFailKey,
+      target => $destHref,
     );
 
-    $percentilesHref->makePercentiles;
-
-    if($percentilesHref->hasNoPercentiles) {next;}
+    if(!$percentilesHref->hasPercentiles) {next;}
    
-    $destHref = $self->getStat($self->statsKey);
+    $percentilesHref->storeAndQc;
 
-    $percentilesHref->storePercentiles($destHref);
-
-    #order of sample keys must match ratio values
-    $percentilesHref->qc(
-      $self->oneRatioKeys($kv->[0] ), $self->oneRatioVals($kv->[0] ), $destHref
-    )
+    if($self->debug) {
+      say "after qc, destHref has";
+      p $destHref;
+    }
   }
 }
 __PACKAGE__->meta->make_immutable;
