@@ -106,7 +106,7 @@ has statisticsCalculator => (
 
 sub _buildStatistics
 {
-  return Seq::Statistics->new(debug => 1);
+  return Seq::Statistics->new(debug => $self->debug);
 }
 
 has _genome => (

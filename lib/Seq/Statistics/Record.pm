@@ -122,7 +122,7 @@ sub storeCount {
   #it == last featureAref index, and beyond that could store annotationType sep
   if(!@$featuresAref) { return };
   my $feature = shift @$featuresAref;
-  if($self->debu) {
+  if($self->debug) {
     say "in store count for feature $feature";
   }
   
