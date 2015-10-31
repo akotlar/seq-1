@@ -20,6 +20,8 @@ use 5.10.0;
 use Moose;
 use namespace::autoclean;#remove moose keywords after compilation
 
+with 'Seq::Role::Genotypes';
+
 #############################################################################
 # Non required vars passable to constructor during new 
 # All can be passed either by new( {varName1:value,...} ) or new( {configfile=>'path/to/yamlfile.yaml'} ) 
@@ -38,21 +40,6 @@ has statsRecord => (
   init_arg => undef,
   default => sub { return {} },
 );
-
-has disallowedGeno => (
-  is      => 'ro',
-  traits  => ['Array'],
-  isa     => 'ArrayRef[Str]',
-  handles => {
-    isBadGeno => 'first_index',
-  },
-  builder => '_buildDisallowedGeno',
-);
-
-around 'isBadGeno' => sub {
-  my ($orig, $self, $value) = @_;
-  return $self->$orig( sub { $_ eq $value } ) > -1;
-};
 
 has disallowedFeatures => (
   is      => 'ro',
@@ -90,32 +77,16 @@ sub _buildDisallowedFeatures {
   return ['NA'];
 }
 
-#SNP, Indel codes; only SNP are true IUPAC.
-#differences from rest of Seq codes: het indels are given a * as 2nd character
-#this is so that we can check whether it's a het or not without relying on a
-#separate hash
-sub _buildIUPAC {
-  return {A => 'A',C => 'C',G => 'G',T => 'T',R => 'AG',Y => 'CT', S => 'GC',
-    W => 'AT', K => 'GT', M => 'AC', B => 'CGT', D => 'AGT', H => 'ACT',
-    V => 'ACG', D => '-', I => '+', E => '-*', H => '+*'};  
-}
-
-sub _buildDisallowedGeno {
-  return ['N'];
-}
-
 #############Public##############
 # if it's a het; currently supports only diploid organisms
-sub deconvAlleleCount {
-  my ($self, $deconvolutedAllele) = @_;
-  if(length($deconvolutedAllele) == 1) { return 2; }
-  return 1;
+# 2nd if isn't strictly necessary, but safer, and allows this to be used
+# as an alternative to isHet, isHomo
+sub getAlleleCount {
+  my ($self, $iupacAllele) = @_;
+  if($self->isHomo($iupacAllele) ) {return 2;}
+  if($self->isHet($iupacAllele) ) {return 1;}
+  return undef;
 }
-
-# sub hasGeno {
-#   my ($self, $geno1, $geno2) = @_;
-  
-# }
 
 __PACKAGE__->meta->make_immutable;
 

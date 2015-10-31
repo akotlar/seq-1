@@ -11,8 +11,8 @@ use syntax 'junction';
 
 use DDP;
 
-requires 'deconvoluteIUPAC';
-requires 'deconvAlleleCount';
+requires 'deconvoluteGeno';
+requires 'getAlleleCount';
 requires 'isBadGeno';
 requires 'isBadFeature';
 requires 'statsKey';
@@ -60,48 +60,40 @@ sub record {
   if(!(keys %$sampleIDgenoHref && @$annotationsAref 
   && defined $refAllele && defined $varType && defined $genomicType) ) { return; }
 
-  my ($geno, $deconvolutedGeno, @countedCombos, $combo,
-    $annotationType, $sampleStats, $trTvKey, $aCount);
+  my ($geno, $dGeno, $annotationType, $sampleStats, $trTvKey, 
+    $targetHref, $minorAllele, $aCount);
 
   #for now, analyze only 
   for my $sampleID (keys %$sampleIDgenoHref) {
     $geno = $sampleIDgenoHref->{$sampleID};
+    $dGeno = $self->deconvoluteGeno($geno);
+    if($geno eq $refAllele || !$dGeno) {next;} #require IUPAC geno, or D,I,E,H
 
-    #in case not passed carriers/hom mut's
-    if($geno eq $refAllele || $self->isBadGeno($geno) ) {next;} 
-    
-    $deconvolutedGeno = $self->deconvoluteIUPAC($geno);
+    if(!$self->hasStat($sampleID) ) {$self->setStat($sampleID, {} ); }
+    $targetHref = $self->getStat($sampleID);
 
-    $aCount = $self->deconvAlleleCount($deconvolutedGeno);
+    #transitions & transversion counter;
+    $self->storeTrTv($targetHref, $refAllele, $geno);
 
-    @countedCombos = ();
+    #aCount should be 2 for a diploid homozygote
+    $aCount = $self->getAlleleCount($dGeno);
 
+    if(@$annotationsAref > 1) { next; } #for now we omit multiple transcript sites
     for my $annotationHref (@$annotationsAref) {
+      $minorAllele = $annotationHref->minor_allele;
       # if it's an ins or del, there will be no deconvolutedGeno
       # taking this check out, because handling of del alleles does not work,
-      # Annotate.pm sets the allele as the length of the del, rather than a letter
-      if($geno ne $minorAllele && !$self->hasDeconvGeno($deconvolutedGeno, $minorAllele) ) {next;}
+      # Annotate.pm sets the allele as the neegative length of the del, rather than D or E
+      if(!$self->hasGeno($dGeno, $minorAllele) ) {
+        next;
+      }
      
       $annotationType = $annotationHref->annotation_type;
-      $combo = $annotationHref->minor_allele . $annotationType;
 
       if($self->debug) {
         say "annotation type is $annotationType";
-        say "combo is $combo"; say "countedCombos are"; p @countedCombos;
       } 
-
-      #count each allele/feature combo one to fairly attribute multi-allelic variants
-      #to samples that have one of the minor alleles but not the other (when both represented)
-      if(any(@countedCombos) eq $combo) {next;}
-
-      push @countedCombos, $combo;
-
-      if(!$self->hasStat($sampleID) ) {  $self->setStat($sampleID, {}); }
-
-      # if deconvolutedGeno falsy, it's not a SNP, can't have a tr or tv
-      $trTvKey = $deconvolutedGeno ? $self->_getTr($refAllele, $geno) : undef;
-
-      $self->storeTrTvAndCount([$varType, $genomicType, $annotationType],
+      $self->storeCount([$varType, $genomicType, $annotationType],
         $self->getStat($sampleID), $trTvKey, $aCount);
     }
   }
@@ -114,25 +106,26 @@ sub record {
 #topTargetHref remains the top level hash, always gets transitions/transversion record
 #because we want genome-wide tr:tv
 #insertions and deletions don't have transitions and transversions, so check for that
-sub storeTrTvAndCount {
-  my ($self, $featuresAref, $topTargetHref, $trTvKey, $aCount, $targetHref) = @_;
+sub storeCount {
+  my ($self, $featuresAref, $targetHref, $trTvKey, $aCount) = @_;
   if(!@$featuresAref) { return };
 
   my $feature = shift @$featuresAref;
-  if(!$self->isBadFeature($feature) ) {
-    $targetHref = defined $targetHref ? \%{$targetHref->{$feature} } : $topTargetHref;
-    
-    #transitions are unique, they are the only StatsCalculator created feature
-    #they should only be inserted in a single locaiton, else they'll be counted
-    #by sum(n*tr_i)
-    #by definition there can only be one tr or tv per site
-    if(defined $trTvKey) {
-      $topTargetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
-    }
-    #but there can be > 1 replacement or silent site
-    $targetHref->{$self->statsKey}{$self->countKey} += $aCount;
-  }
-  $self->storeTrTvAndCount($featuresAref, $topTargetHref, $trTvKey, $aCount, $targetHref);
+  if($self->isBadFeature($feature) ) { return; }
+  $targetHref = \%{$targetHref->{$feature} };
+  $targetHref->{$self->statsKey}{$self->countKey} += $aCount;
+
+  $self->storeCount($featuresAref, $targetHref, $trTvKey, $aCount);
+}
+
+#transitions are unique, they are the only StatsCalculator created feature
+# they should only be inserted in a single locaiton, else they'll be counted
+# by sum(n*tr_i)
+# by definition there can only be one tr or tv per site
+sub storeTrTv {
+  my ($self, $targetHref, $refAllele, $geno) = @_;
+  my $trTvKey = $self->_getTr($refAllele, $geno);
+  $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
 }
 
 sub _getTr {
