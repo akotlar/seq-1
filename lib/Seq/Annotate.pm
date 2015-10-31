@@ -784,7 +784,8 @@ sub annotate_snp_site {
       }
     }
     $self->recordStat(
-      $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+      $id_genos_href, \@gene_data, [$record{var_type}, $record{genomic_type}],
+      $record{ref_base},
     );
   }
   $record{gene_data} = \@gene_data;
@@ -1015,7 +1016,8 @@ sub annotate_ins_site {
     push @gene_data, Seq::Site::Indel->new($gene_href);
   }
   $self->recordStat(
-    $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+    $id_genos_href, \@gene_data, [$record{var_type}, $record{genomic_type}],
+    $record{ref_base},
   );
   $record{gene_data} = \@gene_data;
 
@@ -1190,7 +1192,8 @@ sub annotate_del_sites {
       }
     }
     $self->recordStat(
-      $id_genos_href_contig, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+      $id_genos_href_contig, \@gene_data,
+      [$record{var_type}, $record{genomic_type}], $record{ref_base},
     );
     $record{gene_data} = \@gene_data;
     # say "gene_data";

@@ -34,7 +34,7 @@ has _transitionTypesHref => (
   handles => {
     isTr => 'get',
   },
-  default => sub { return {AG => 1,GA => 1,CT => 1,TC => 1,R => 1,Y => 1} },
+  default => sub {return {AG => 1,GA => 1,CT => 1,TC => 1,R => 1,Y => 1} },
   lazy => 1,
   init_arg => undef 
 );
@@ -54,14 +54,15 @@ has _transitionTransversionKeysAref => (
 # at every level in the has, record whether transition or transversion
 # assumes that only non-reference alleles are passed, hence it is a role
 sub record {
-  my ($self, $sampleIDgenoHref, $annotationsAref, $refAllele,
-    $varType, $genomicType) = @_;
+  my ($self, $sampleIDgenoHref, $annotationsAref, $featuresAref, $refAllele) = @_;
 
   if(!(keys %$sampleIDgenoHref && @$annotationsAref 
-  && defined $refAllele && defined $varType && defined $genomicType) ) { return; }
+  && @$featuresAref && defined $refAllele) ) {
+    return; 
+  }
 
   my ($geno, $dGeno, $annotationType, $sampleStats, $trTvKey, 
-    $targetHref, $minorAllele, $aCount);
+    $targetHref, $minorAllele, $aCount, @featuresMerged);
 
   #for now, analyze only 
   for my $sampleID (keys %$sampleIDgenoHref) {
@@ -74,10 +75,9 @@ sub record {
     #transitions & transversion counter;
     $self->storeTrTv($targetHref, $refAllele, $geno);
 
-    if(@$annotationsAref > 1) { next; } #for now we omit multiple transcript sites
+    if(@$annotationsAref > 1) {next; } #for now we omit multiple transcript sites
     
-    $aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote
-    
+    $aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote    
     if(!$aCount) {
       $self->tee_logger('warn', 'No allele count found for genotype $geno');
       next;
@@ -92,14 +92,18 @@ sub record {
         next;
       }
       
-      say "we have the geno $geno";
       $annotationType = $annotationHref->annotation_type;
 
       if($self->debug) {
+        say "we have the geno $geno";
         say "annotation type is $annotationType";
       } 
-      $self->storeCount([$varType, $genomicType, $annotationType],
-        $targetHref, $aCount);
+      #there is a more efficient option: just passing annotatypeType separately
+      #I think this is cleaner (see use of shit in storeCount), and probably fast enough
+      @featuresMerged = @{$featuresAref};
+      push @featuresMerged, $annotationType;
+
+      $self->storeCount(\@featuresMerged, $targetHref, $aCount);
     }
   }
   if($self->debug) {
@@ -114,11 +118,15 @@ sub record {
 sub storeCount {
   my ($self, $featuresAref, $targetHref, $aCount) = @_;
   
+  #to be more efficient we could track a feature index, and return when 
+  #it == last featureAref index, and beyond that could store annotationType sep
   if(!@$featuresAref) { return };
   my $feature = shift @$featuresAref;
-  say "in store count for feature $feature";
-
-  if($self->isBadFeature($feature) ) { return; }
+  if($self->debu) {
+    say "in store count for feature $feature";
+  }
+  
+  if($self->isBadFeature($feature) ) {return; }
   $targetHref = \%{$targetHref->{$feature} };
   $targetHref->{$self->statsKey}{$self->countKey} += $aCount;
 
