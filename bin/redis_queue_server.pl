@@ -30,9 +30,7 @@ use Thread::Queue;
 use IO::Socket;
 #use Sys::Info;
 #use Sys::Info::Constants qw( :device_cpu )
-  ; #for choosing max connections based on available resources
-
-use Data::Dumper;
+#for choosing max connections based on available resources
 
 use Redis;
 
@@ -101,7 +99,7 @@ my $verbose : shared = 1;
 sub handleJobStart {
   my ($jobID, $documentKey, $submittedJob, $redis) = @_;
   say "Handle job start submittedJob:";
-  print Dumper($submittedJob);
+
   try {
     $submittedJob->{$jobKeys->{started} } = 1;
     my $jobJSON =  encode_json($submittedJob);
@@ -113,9 +111,9 @@ sub handleJobStart {
     my @replies = $redis->exec();
   #  $redis->unwatch;
     say "Replies are in handleJobStart";
-    print Dumper(@replies);
+    p @replies;
   } catch {
-    print "Error in handleJobSuccess: $_";
+    say "Error in handleJobSuccess: $_";
     $submittedJob->{$jobKeys->{started} } = 0;
     handleJobFailure($jobID, $documentKey, $submittedJob, $redis);
   }
@@ -242,8 +240,6 @@ sub coerceInputs {
   my $messangerHref = $jobDetailsHref->
     {$jobKeys->{comm} }->{$jobKeys->{clientComm} };
 
-  print Dumper($messangerHref);
-
   return {
     snpfile            => $inputFilePath,
     out_file           => $outputFilePath,
@@ -252,14 +248,8 @@ sub coerceInputs {
     overwrite          => 1,
     debug              => $debug,
     messangerHref      => $messangerHref,
-    redisAddress       => "$redisHost:$redisPort",
+    publishServerAddress       => "$redisHost:$redisPort",
   }
-
-    # snpfile    => $jobDetailsHref->{'file'},
-    #       configfile => $yaml_config,
-    #       out_file   => $out_file,
-    #       debug      => $debug,
-    #       redisChannelDetailsHref => $redisChannelDetailsHref
 }
 
 sub getConfigFilePath {

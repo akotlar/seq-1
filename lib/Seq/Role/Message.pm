@@ -10,16 +10,10 @@ with 'MooX::Role::Logger';
 
 use Coro;
 
-has redisHost => (
+has publishServerAddress => (
   is => 'ro',
   isa => 'Str',
-  default => 'genome.local',
-);
-
-has redisPort => (
-  is => 'ro',
-  isa => 'Str',
-  default => '6379',
+  default => 'genome.local:6379',
 );
 
 has messageChannelHref => (
@@ -27,31 +21,34 @@ has messageChannelHref => (
   isa       => 'HashRef',
   traits    => ['Hash'],
   required  => 0,
-  predicate => 'wants_to_publish_messages',
+  predicate => 'hasPublisher',
   handles   => { channelInfo => 'get' }
 );
 
+# later we can brek this out into separate role, 
+# and this publisher will be located in Message.pm, with a separate role
+# handling implementation
 has _message_publisher => (
   is       => 'ro',
   required => 0,
   lazy     => 1,
   init_arg => undef,
-  builder  => '_build_message_publisher',
-  handles  => { _publishMessage => 'publish' }
+  builder  => '_buildMessagePublisher',
+  handles  => { publishMessage => 'publishMessage' }
 );
 
-sub _build_message_publisher {
+sub _buildMessagePublisher {
   my $self = shift;
 
-  return Redis->new( host => $self->redisHost, port => $self->redisPort );
+  return Redis->new(server => $self->publishServerAddress);
 }
 
 sub tee_logger {
   my ( $self, $log_method, $msg ) = @_;
 
   async {
-    if ( $self->wants_to_publish_messages ) {
-      $self->_publish_message($_[0]);
+    if ($self->hasPublisher) {
+      $self->publishMessage($_[0]);
     }
     cede;
   } $msg;
@@ -63,12 +60,16 @@ sub tee_logger {
   }
 }
 
-sub _publish_message {
+sub publishMessage {
   my ( $self, $message ) = @_;
 
   # TODO: check performance of the array merge benefit is indirection, cost may be too high?
-  $self->publish( $self->channelInfo('messageChannel'),
-    encode_json( { %{ $self->channelInfo('recordLocator') }, message => $message } ) );
+  $self->publish(
+    $self->channelInfo('messageChannel'),
+    encode_json( 
+      { %{ $self->channelInfo('recordLocator') }, message => $message } 
+    )
+  );
 }
 
 no Moose::Role;
