@@ -12,7 +12,9 @@ use syntax 'junction';
 use DDP;
 
 requires 'deconvoluteIUPAC';
-requires 'badGenos';
+requires 'deconvAlleleCount';
+requires 'isBadGeno';
+requires 'isBadFeature';
 requires 'statsKey';
 requires 'statsRecord';
 requires 'debug';
@@ -55,25 +57,33 @@ sub record {
   my ($self, $sampleIDgenoHref, $annotationsAref, $refAllele,
     $varType, $genomicType) = @_;
 
-  my ($geno, $deconvolutedGeno, @countedCombos, $combo, $minorAllele,
-    $annotationType, $sampleStats, $trTvKey);
+  if(!(keys %$sampleIDgenoHref && @$annotationsAref 
+  && defined $refAllele && defined $varType && defined $genomicType) ) { return; }
 
+  my ($geno, $deconvolutedGeno, @countedCombos, $combo,
+    $annotationType, $sampleStats, $trTvKey, $aCount);
+
+  #for now, analyze only 
   for my $sampleID (keys %$sampleIDgenoHref) {
     $geno = $sampleIDgenoHref->{$sampleID};
 
     #in case not passed carriers/hom mut's
-    if($geno eq $refAllele|| $self->badGenos(sub{$_ eq $geno} ) > -1 ) {next;} 
+    if($geno eq $refAllele || $self->isBadGeno($geno) ) {next;} 
     
     $deconvolutedGeno = $self->deconvoluteIUPAC($geno);
 
-    for my $annotationHref (@$annotationsAref) {
-      $minorAllele = $annotationHref->minor_allele;
+    $aCount = $self->deconvAlleleCount($deconvolutedGeno);
 
+    @countedCombos = ();
+
+    for my $annotationHref (@$annotationsAref) {
       # if it's an ins or del, there will be no deconvolutedGeno
-      if($geno ne $minorAllele && index($deconvolutedGeno, $minorAllele) == -1) {next;}
+      # taking this check out, because handling of del alleles does not work,
+      # Annotate.pm sets the allele as the length of the del, rather than a letter
+      if($geno ne $minorAllele && !$self->hasDeconvGeno($deconvolutedGeno, $minorAllele) ) {next;}
      
       $annotationType = $annotationHref->annotation_type;
-      $combo = $minorAllele. $annotationHref->annotation_type;
+      $combo = $annotationHref->minor_allele . $annotationType;
 
       if($self->debug) {
         say "annotation type is $annotationType";
@@ -92,7 +102,7 @@ sub record {
       $trTvKey = $deconvolutedGeno ? $self->_getTr($refAllele, $geno) : undef;
 
       $self->storeTrTvAndCount([$varType, $genomicType, $annotationType],
-        $self->getStat($sampleID), $trTvKey);
+        $self->getStat($sampleID), $trTvKey, $aCount);
     }
   }
   if($self->debug) {
@@ -105,21 +115,24 @@ sub record {
 #because we want genome-wide tr:tv
 #insertions and deletions don't have transitions and transversions, so check for that
 sub storeTrTvAndCount {
-  my ($self, $featuresAref, $topTargetHref, $trTvKey, $targetHref) = @_;
+  my ($self, $featuresAref, $topTargetHref, $trTvKey, $aCount, $targetHref) = @_;
   if(!@$featuresAref) { return };
 
   my $feature = shift @$featuresAref;
-  $targetHref = defined $targetHref ? \%{$targetHref->{$feature} } : $topTargetHref;
-  
-  #transitions are unique, they are the only StatsCalculator created feature
-  #they should only be inserted in a single locaiton, else they'll be counted
-  #by sum(n*tr_i)
-  if(defined $trTvKey) {
-    $topTargetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
+  if(!$self->isBadFeature($feature) ) {
+    $targetHref = defined $targetHref ? \%{$targetHref->{$feature} } : $topTargetHref;
+    
+    #transitions are unique, they are the only StatsCalculator created feature
+    #they should only be inserted in a single locaiton, else they'll be counted
+    #by sum(n*tr_i)
+    #by definition there can only be one tr or tv per site
+    if(defined $trTvKey) {
+      $topTargetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
+    }
+    #but there can be > 1 replacement or silent site
+    $targetHref->{$self->statsKey}{$self->countKey} += $aCount;
   }
-  $targetHref->{$self->statsKey}{$self->countKey} += 1;
-
-  $self->storeTrTvAndCount($featuresAref, $topTargetHref, $trTvKey, $targetHref);
+  $self->storeTrTvAndCount($featuresAref, $topTargetHref, $trTvKey, $aCount, $targetHref);
 }
 
 sub _getTr {

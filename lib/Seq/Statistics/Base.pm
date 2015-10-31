@@ -16,6 +16,7 @@ SNP, MESS, LOW
 
 package Seq::Statistics::Base;
 
+use 5.10.0;
 use Moose;
 use namespace::autoclean;#remove moose keywords after compilation
 
@@ -43,10 +44,30 @@ has disallowedGeno => (
   traits  => ['Array'],
   isa     => 'ArrayRef[Str]',
   handles => {
-    badGenos => 'first_index',
+    isBadGeno => 'first_index',
   },
   builder => '_buildDisallowedGeno',
 );
+
+around 'isBadGeno' => sub {
+  my ($orig, $self, $value) = @_;
+  return $self->$orig( sub { $_ eq $value } ) > -1;
+};
+
+has disallowedFeatures => (
+  is      => 'ro',
+  traits  => ['Array'],
+  isa     => 'ArrayRef[Str]',
+  handles => {
+    isBadFeature => 'first_index',
+  },
+  builder => '_buildDisallowedFeatures',
+);
+
+around 'isBadFeature' => sub {
+  my ($orig, $self, $value) = @_;
+  return $self->$orig( sub { $_ eq $value } ) > -1;
+};
 
 #############################################################################
 # Vars not passable to constructor (private vars)
@@ -59,7 +80,6 @@ has iupac => (
   init_arg => undef,
   handles => {
     deconvoluteIUPAC => 'get',
-    mapIUPAC => 'kv',
   }
 );
 
@@ -67,19 +87,35 @@ has iupac => (
 # Default value builder functions
 #############################################################################
 sub _buildDisallowedFeatures {
-  return []
+  return ['NA'];
 }
 
-#only SNP IUPAC codes, I, D, and other Indel codes don't belong here
+#SNP, Indel codes; only SNP are true IUPAC.
+#differences from rest of Seq codes: het indels are given a * as 2nd character
+#this is so that we can check whether it's a het or not without relying on a
+#separate hash
 sub _buildIUPAC {
   return {A => 'A',C => 'C',G => 'G',T => 'T',R => 'AG',Y => 'CT', S => 'GC',
     W => 'AT', K => 'GT', M => 'AC', B => 'CGT', D => 'AGT', H => 'ACT',
-    V => 'ACG', N => 'N'};  
+    V => 'ACG', D => '-', I => '+', E => '-*', H => '+*'};  
 }
 
 sub _buildDisallowedGeno {
   return ['N'];
 }
+
+#############Public##############
+# if it's a het; currently supports only diploid organisms
+sub deconvAlleleCount {
+  my ($self, $deconvolutedAllele) = @_;
+  if(length($deconvolutedAllele) == 1) { return 2; }
+  return 1;
+}
+
+# sub hasGeno {
+#   my ($self, $geno1, $geno2) = @_;
+  
+# }
 
 __PACKAGE__->meta->make_immutable;
 

@@ -440,7 +440,8 @@ sub annotate_snpfile {
     elsif ( $var_type eq 'DEL' ) {
       # deletions are saved so they can be aggregated and annotated en block later
       $self->set_del_site( $abs_pos =>
-          [ $chr, $pos, $ref_allele, $all_allele_str, $allele_count, $het_ids, $hom_ids ] );
+          [ $chr, $pos, $ref_allele, $all_allele_str, $allele_count, $het_ids,
+            $hom_ids, $id_genos_href ] );
     }
     else {
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );

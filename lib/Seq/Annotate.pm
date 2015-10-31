@@ -691,8 +691,6 @@ sub annotate_snp_site {
     $allele_count, $het_ids,    $hom_ids, $id_genos_href, $return_obj
   ) = @_;
 
-  # say "id_geno_href";
-  # p $id_genos_href;
   my %record;
 
   my $site_code = $self->get_base($abs_pos);
@@ -719,8 +717,6 @@ sub annotate_snp_site {
   # my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $base );
   my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
 
-  # say "var_alleles";
-  # p @var_alleles;
   if ( !@var_alleles ) {
     async {
       my $msg = sprintf("Error: No alleles to annotate at site %s:%d;", $chr, $rel_pos);
@@ -759,9 +755,6 @@ sub annotate_snp_site {
     $record{scores}{ $gs->name } = $gs->get_score($abs_pos);
   }
 
-  # say "record";
-  # p %record;
-
   # add cadd score
   if ( $self->has_cadd_track ) {
     for my $var_allele (@var_alleles) {
@@ -775,14 +768,12 @@ sub annotate_snp_site {
   if ($gan) {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
-      #p $kch;
       # if there's no file for the track then it will be undef
       next unless defined $kch;
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
-      # say 'record aref';
-      # p $rec_aref;
+
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           for my $allele (@var_alleles) {
@@ -792,8 +783,6 @@ sub annotate_snp_site {
         }
       }
     }
-    # say "gene_data";
-    # p @gene_data;
     $self->recordStat(
       $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
     );
@@ -1024,13 +1013,10 @@ sub annotate_ins_site {
       $gene_href->{annotation_type} = 'NA';
     }
     push @gene_data, Seq::Site::Indel->new($gene_href);
-
-    # say "gene_data";
-    # p @gene_data;
-    $self->recordStat(
-      $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
-    );
   }
+  $self->recordStat(
+    $id_genos_href, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+  );
   $record{gene_data} = \@gene_data;
 
   my $obj = Seq::Annotate::Indel->new( \%record );
@@ -1102,14 +1088,16 @@ sub annotate_del_sites {
   for my $region_aref (@$contiguous_sites_aref) {
 
     # region_aref => [ start, stop ]
-    my ( %data, %record, @snp_data );
+    my ( %data, %record, @snp_data, $id_genos_href_contig );
 
     for ( my $i = $region_aref->[0]; $i <= $region_aref->[1]; $i++ ) {
-      my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, $het_ids, $hom_ids )
-        = @{ $sites_href->{$i} };
+      my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, 
+        $het_ids, $hom_ids, $id_genos_href ) = @{ $sites_href->{$i} };
       my $chr_index = $chr_index_href->{$chr};
       my $ref_obj =
         $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $i, $ref_allele, 1 );
+
+      if ( !$id_genos_href_contig ) { $id_genos_href_contig = $id_genos_href};
 
       if ( !%record ) {
         $record{abs_pos}      = $i;
@@ -1176,6 +1164,7 @@ sub annotate_del_sites {
               for my $gene_obj ( @{ $data{$coding_type}{ $pos[0] } } ) {
                 my $gene_href = $gene_obj->as_href;
                 $gene_href->{minor_allele}    = '-' . scalar @pos;
+                say "minor allele in del is " . $gene_href->{minor_allele};
                 $gene_href->{annotation_type} = "Del-$frame";
                 if ($coding_type eq 'Start' || $coding_type eq 'Stop' ){
                   $gene_href->{annotation_type} .= ",$coding_type\_Loss";
@@ -1192,6 +1181,7 @@ sub annotate_del_sites {
           for my $gene_obj ( @{ $data{$type}{ $pos[0] } } ) {
             my $gene_href = $gene_obj->as_href;
             $gene_href->{minor_allele}    = '-' . scalar @pos;
+            say "minor allele in del is " . $gene_href->{minor_allele};
             $gene_href->{annotation_type} = "Del-$type";
             push @gene_data, Seq::Site::Indel->new($gene_href);
           }
@@ -1199,6 +1189,9 @@ sub annotate_del_sites {
         }
       }
     }
+    $self->recordStat(
+      $id_genos_href_contig, \@gene_data, $record{ref_base}, $record{var_type}, $record{genomic_type}
+    );
     $record{gene_data} = \@gene_data;
     # say "gene_data";
     # p @gene_data;
