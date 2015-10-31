@@ -106,7 +106,7 @@ has statisticsCalculator => (
 
 sub _buildStatistics
 {
-  return Seq::Statistics->new(debug => 0);
+  return Seq::Statistics->new(debug => 1);
 }
 
 has _genome => (
@@ -873,8 +873,6 @@ sub annotate_ref_site {
   # get gene annotations at site
   if ($gan) {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
-      say "gene_dbs are";
-      p $gene_dbs;
       my $kch = $gene_dbs->[$chr_index];
 
       # if there's no file for the track then it will be undef

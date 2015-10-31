@@ -2,7 +2,7 @@ package Seq::Role::Genotypes;
 use strict;
 use warnings;
 use Moose::Role;
-use namespace::autoclean
+use namespace::autoclean;
 # the genotype codes below are based on the IUPAC ambiguity codes with the notable
 #   exception of the indel codes that are specified in the snpfile specifications
 
@@ -16,7 +16,7 @@ has iupac => (
     getGeno => 'get', #fallback, in case semantic interpretation different
   },
   init_arg => undef,
-  buidler => '_buildIUPAC',
+  builder => '_buildIUPAC',
 );
 
 #IUPAC also includes D => 'AGT', H => 'ACT', # may want to think about renaming D,H
@@ -69,8 +69,8 @@ has homGenos => (
 #   return 1;
 # }
 
-#@param {Str} $geno1;
-#@param {Str} $geno2;
+#@param {Str} $geno1 : deconvoluted genotype
+#@param {Str} $geno2 : deconvoluted genotype;
 sub hasGeno {
   my ($self, $geno1, $geno2) = @_;
   if($geno1 eq $geno2) {return 1; } #both are IUPAC codes

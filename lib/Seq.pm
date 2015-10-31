@@ -165,7 +165,7 @@ my %site_2_set_method = (
 );
 
 #come after all attributes to meet "requires '<attribute>'"
-with 'Seq::Role::Genotypes', 'Seq::Role::Message';
+with 'Seq::Role::ProcessFile', 'Seq::Role::Genotypes', 'Seq::Role::Message';
 
 =head2 annotation_snpfile
 

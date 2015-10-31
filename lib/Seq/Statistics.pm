@@ -54,6 +54,7 @@ has debug => (
 
 with 'Seq::Statistics::Record';
 with 'Seq::Statistics::Ratios';
+with 'Seq::Role::Message';
 
 #############################################################################
 # Public Methods
@@ -95,6 +96,8 @@ sub summarize {
       say "after qc, stats record has";
       p $self->statsRecord;
     }
+
+    $self->tee_logger('info', 'Finished calculating statistics');
   }
 }
 __PACKAGE__->meta->make_immutable;

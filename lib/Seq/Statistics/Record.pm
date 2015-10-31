@@ -11,9 +11,9 @@ use syntax 'junction';
 
 use DDP;
 
-requires 'deconvoluteGeno';
-requires 'getAlleleCount';
-requires 'isBadGeno';
+#provides deconvoluteGeno, hasGeno, isHomo, isHet
+with 'Seq::Role::Genotypes', 'Seq::Role::Message';
+
 requires 'isBadFeature';
 requires 'statsKey';
 requires 'statsRecord';
@@ -66,8 +66,7 @@ sub record {
   #for now, analyze only 
   for my $sampleID (keys %$sampleIDgenoHref) {
     $geno = $sampleIDgenoHref->{$sampleID};
-    $dGeno = $self->deconvoluteGeno($geno);
-    if($geno eq $refAllele || !$dGeno) {next;} #require IUPAC geno, or D,I,E,H
+    if($self->hasGeno($geno, $refAllele) ) {next;} #require IUPAC geno, or D,I,E,H
 
     if(!$self->hasStat($sampleID) ) {$self->setStat($sampleID, {} ); }
     $targetHref = $self->getStat($sampleID);
@@ -75,26 +74,32 @@ sub record {
     #transitions & transversion counter;
     $self->storeTrTv($targetHref, $refAllele, $geno);
 
-    #aCount should be 2 for a diploid homozygote
-    $aCount = $self->getAlleleCount($dGeno);
-
     if(@$annotationsAref > 1) { next; } #for now we omit multiple transcript sites
+    
+    $aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote
+    
+    if(!$aCount) {
+      $self->tee_logger('warn', 'No allele count found for genotype $geno');
+      next;
+    }
+
     for my $annotationHref (@$annotationsAref) {
       $minorAllele = $annotationHref->minor_allele;
       # if it's an ins or del, there will be no deconvolutedGeno
       # taking this check out, because handling of del alleles does not work,
       # Annotate.pm sets the allele as the neegative length of the del, rather than D or E
-      if(!$self->hasGeno($dGeno, $minorAllele) ) {
+      if(!$self->hasGeno($self->deconvoluteGeno($geno), $minorAllele) ) {
         next;
       }
-     
+      
+      say "we have the geno $geno";
       $annotationType = $annotationHref->annotation_type;
 
       if($self->debug) {
         say "annotation type is $annotationType";
       } 
       $self->storeCount([$varType, $genomicType, $annotationType],
-        $self->getStat($sampleID), $trTvKey, $aCount);
+        $targetHref, $aCount);
     }
   }
   if($self->debug) {
@@ -107,15 +112,17 @@ sub record {
 #because we want genome-wide tr:tv
 #insertions and deletions don't have transitions and transversions, so check for that
 sub storeCount {
-  my ($self, $featuresAref, $targetHref, $trTvKey, $aCount) = @_;
+  my ($self, $featuresAref, $targetHref, $aCount) = @_;
+  
   if(!@$featuresAref) { return };
-
   my $feature = shift @$featuresAref;
+  say "in store count for feature $feature";
+
   if($self->isBadFeature($feature) ) { return; }
   $targetHref = \%{$targetHref->{$feature} };
   $targetHref->{$self->statsKey}{$self->countKey} += $aCount;
 
-  $self->storeCount($featuresAref, $targetHref, $trTvKey, $aCount);
+  $self->storeCount($featuresAref, $targetHref, $aCount);
 }
 
 #transitions are unique, they are the only StatsCalculator created feature
@@ -131,6 +138,16 @@ sub storeTrTv {
 sub _getTr {
   my ($self, $refAllele, $geno) = @_;
   return $self->trTvKey(int(!!($self->isTr($geno) || $self->isTr($refAllele.$geno) ) ) );
+}
+
+# if it's a het; currently supports only diploid organisms
+# 2nd if isn't strictly necessary, but safer, and allows this to be used
+# as an alternative to isHet, isHomo
+sub getAlleleCount {
+  my ($self, $iupacAllele) = @_;
+  if($self->isHomo($iupacAllele) ) {return 2;}
+  if($self->isHet($iupacAllele) ) {return 1;}
+  return undef;
 }
 
 no Moose::Role;

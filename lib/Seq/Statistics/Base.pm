@@ -20,8 +20,6 @@ use 5.10.0;
 use Moose;
 use namespace::autoclean;#remove moose keywords after compilation
 
-with 'Seq::Role::Genotypes';
-
 #############################################################################
 # Non required vars passable to constructor during new 
 # All can be passed either by new( {varName1:value,...} ) or new( {configfile=>'path/to/yamlfile.yaml'} ) 
@@ -56,19 +54,11 @@ around 'isBadFeature' => sub {
   return $self->$orig( sub { $_ eq $value } ) > -1;
 };
 
-#############################################################################
-# Vars not passable to constructor (private vars)
-#############################################################################
-has iupac => (
-  is  => 'rw',
-  isa => 'HashRef[Str]',
-  traits => ['Hash'],
-  builder => '_buildIUPAC',
-  init_arg => undef,
-  handles => {
-    deconvoluteIUPAC => 'get',
-  }
-);
+# has stuff => (
+#   is => 'ro',
+#   does => 'Seq::Role::Genotypes',
+#   handles => [qw(validGeno deconvoluteGeno getGeno isHet isHomo hasGeno)]
+# );
 
 #############################################################################
 # Default value builder functions
@@ -78,15 +68,6 @@ sub _buildDisallowedFeatures {
 }
 
 #############Public##############
-# if it's a het; currently supports only diploid organisms
-# 2nd if isn't strictly necessary, but safer, and allows this to be used
-# as an alternative to isHet, isHomo
-sub getAlleleCount {
-  my ($self, $iupacAllele) = @_;
-  if($self->isHomo($iupacAllele) ) {return 2;}
-  if($self->isHet($iupacAllele) ) {return 1;}
-  return undef;
-}
 
 __PACKAGE__->meta->make_immutable;
 

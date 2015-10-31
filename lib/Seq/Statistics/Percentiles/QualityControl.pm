@@ -29,7 +29,8 @@ has preScreened => (
   handles => {
     blacklistID => 'push',
     blacklistedIDs => 'elements',
-  }
+  },
+  default => sub{ [] }
 );
 
 #could also do this by checking ratioID position in ratios
@@ -53,7 +54,8 @@ sub qc {
       push @{$self->target->{$failKey}{$id} }, "$ratioName $mesage";
     }
   }
-  
+    
+  if(!$self->blacklistedIDs){return; }
   for my $id ($self->blacklistedIDs) {
     push @{$self->target->{$failKey}{$id} }, "$ratioName $mesage";
   }
