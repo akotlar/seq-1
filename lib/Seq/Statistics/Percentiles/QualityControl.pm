@@ -21,7 +21,7 @@ has failMessage => (
   default => 'outside 95th percentile'
 );
 
-# any values that didn't have numerical values
+# any id's that didn't have valid ratios
 has preScreened => (
   is => 'rw',
   isa => 'ArrayRef[Str|Num]',
@@ -33,7 +33,7 @@ has preScreened => (
   default => sub{ [] }
 );
 
-#could also do this by checking ratioID position in ratios
+#could also do this by checking index in ratios array
 #but wouldn't work for interpolated values
 sub qc {
   my $self = shift; 
