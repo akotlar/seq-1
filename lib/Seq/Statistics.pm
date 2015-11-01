@@ -48,8 +48,8 @@ has qcFailKey => (
 );
 has debug => (
   is      => 'ro',
-  isa     => 'Int',
-  default => '0'
+  isa     => 'Bool',
+  default => 0,
 );
 
 with 'Seq::Statistics::Record';

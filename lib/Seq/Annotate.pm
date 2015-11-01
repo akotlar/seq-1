@@ -106,6 +106,7 @@ has statisticsCalculator => (
 
 sub _buildStatistics
 {
+  my $self = shift;
   return Seq::Statistics->new(debug => $self->debug);
 }
 
@@ -1166,7 +1167,6 @@ sub annotate_del_sites {
               for my $gene_obj ( @{ $data{$coding_type}{ $pos[0] } } ) {
                 my $gene_href = $gene_obj->as_href;
                 $gene_href->{minor_allele}    = '-' . scalar @pos;
-                say "minor allele in del is " . $gene_href->{minor_allele};
                 $gene_href->{annotation_type} = "Del-$frame";
                 if ($coding_type eq 'Start' || $coding_type eq 'Stop' ){
                   $gene_href->{annotation_type} .= ",$coding_type\_Loss";
@@ -1183,7 +1183,6 @@ sub annotate_del_sites {
           for my $gene_obj ( @{ $data{$type}{ $pos[0] } } ) {
             my $gene_href = $gene_obj->as_href;
             $gene_href->{minor_allele}    = '-' . scalar @pos;
-            say "minor allele in del is " . $gene_href->{minor_allele};
             $gene_href->{annotation_type} = "Del-$type";
             push @gene_data, Seq::Site::Indel->new($gene_href);
           }
