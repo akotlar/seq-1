@@ -77,6 +77,9 @@ use Seq::Site::Snp;
 use Seq::Annotate::Indel;
 use Seq::Annotate::Site;
 use Seq::Annotate::Snp;
+use Seq::Statistics;
+
+use Coro;
 
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
@@ -87,6 +90,25 @@ with 'Seq::Role::IO';
 
 @see @class Seq::GenomeSizedTrackChar
 =cut
+
+has statisticsCalculator => (
+  is => 'ro',
+  isa => 'Seq::Statistics',
+  handles => {
+    recordStat => 'record',
+    summarizeStats => 'summarize',
+    statsRecord => 'statsRecord',
+  },
+  lazy => 1,
+  required => 1,
+  builder => '_buildStatistics',
+);
+
+sub _buildStatistics
+{
+  my $self = shift;
+  return Seq::Statistics->new(debug => $self->debug);
+}
 
 has _genome => (
   is       => 'ro',
@@ -667,7 +689,7 @@ sub annotate_snp_site {
   my (
     $self,         $chr,        $chr_index, $rel_pos,
     $abs_pos,      $ref_allele, $var_type,  $all_allele_str,
-    $allele_count, $het_ids,    $hom_ids,   $return_obj
+    $allele_count, $het_ids,    $hom_ids, $id_genos_href, $return_obj
   ) = @_;
 
   my %record;
@@ -681,11 +703,13 @@ sub annotate_snp_site {
 
   # check reference base in assembly is the same as the one suppiled by the user
   if ( $base ne $ref_allele ) {
-    my $msg = sprintf(
+    async {
+      my $msg = sprintf(
       "Error: Discordant ref base at SNP/MULTIALLELIC site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
       $chr, $rel_pos, $abs_pos, $base, $ref_allele );
-    $self->_logger->warn($msg);
-    $record{warning} = $msg;
+      $self->_logger->warn($msg);
+      $record{warning} = $msg;
+    }
   }
 
   # purposely filtering away indels, which can happen for multiallelelic sites
@@ -695,10 +719,12 @@ sub annotate_snp_site {
   my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
 
   if ( !@var_alleles ) {
-    my $msg = sprintf("Error: No alleles to annotate at site %s:%d;", $chr, $rel_pos);
-    $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
-      $all_allele_str, $ref_allele, $ref_allele );
-    $self->_logger->warn($msg);
+    async {
+      my $msg = sprintf("Error: No alleles to annotate at site %s:%d;", $chr, $rel_pos);
+      $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
+        $all_allele_str, $ref_allele, $ref_allele );
+      $self->_logger->warn($msg);
+    }   
     return;
   }
 
@@ -743,7 +769,6 @@ sub annotate_snp_site {
   if ($gan) {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
-
       # if there's no file for the track then it will be undef
       next unless defined $kch;
 
@@ -759,6 +784,10 @@ sub annotate_snp_site {
         }
       }
     }
+    $self->recordStat(
+      $id_genos_href, \@gene_data, [$record{var_type}, $record{genomic_type}],
+      $record{ref_base},
+    );
   }
   $record{gene_data} = \@gene_data;
 
@@ -772,9 +801,11 @@ sub annotate_snp_site {
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
+      # p $rec_aref;
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           push @snp_data, Seq::Site::Snp->new($rec_href);
+          #p $rec_href;
         }
       }
     }
@@ -898,7 +929,7 @@ sub annotate_ins_site {
   my (
     $self,         $chr,        $chr_index, $rel_pos,
     $abs_pos,      $ref_allele, $var_type,  $all_allele_str,
-    $allele_count, $het_ids,    $hom_ids,   $return_obj
+    $allele_count, $het_ids,    $hom_ids, $id_genos_href, $return_obj
   ) = @_;
 
   my %record;
@@ -985,6 +1016,10 @@ sub annotate_ins_site {
     }
     push @gene_data, Seq::Site::Indel->new($gene_href);
   }
+  $self->recordStat(
+    $id_genos_href, \@gene_data, [$record{var_type}, $record{genomic_type}],
+    $record{ref_base},
+  );
   $record{gene_data} = \@gene_data;
 
   my $obj = Seq::Annotate::Indel->new( \%record );
@@ -1056,14 +1091,16 @@ sub annotate_del_sites {
   for my $region_aref (@$contiguous_sites_aref) {
 
     # region_aref => [ start, stop ]
-    my ( %data, %record, @snp_data );
+    my ( %data, %record, @snp_data, $id_genos_href_contig );
 
     for ( my $i = $region_aref->[0]; $i <= $region_aref->[1]; $i++ ) {
-      my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, $het_ids, $hom_ids )
-        = @{ $sites_href->{$i} };
+      my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, 
+        $het_ids, $hom_ids, $id_genos_href ) = @{ $sites_href->{$i} };
       my $chr_index = $chr_index_href->{$chr};
       my $ref_obj =
         $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $i, $ref_allele, 1 );
+
+      if ( !$id_genos_href_contig ) { $id_genos_href_contig = $id_genos_href};
 
       if ( !%record ) {
         $record{abs_pos}      = $i;
@@ -1153,7 +1190,16 @@ sub annotate_del_sites {
         }
       }
     }
+    $self->recordStat(
+      $id_genos_href_contig, \@gene_data,
+      [$record{var_type}, $record{genomic_type}], $record{ref_base},
+    );
     $record{gene_data} = \@gene_data;
+    # say "gene_data";
+    # p @gene_data;
+    # $self->recordStat(
+    #   $id_geno_href, \@gene_data, $ref_allele, $var_type, $record{genomic_type}
+    # );
 
     my $obj = Seq::Annotate::Indel->new( \%record );
     push @del_annotations, $obj->as_href;

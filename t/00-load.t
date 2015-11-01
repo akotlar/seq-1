@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::More;
 
-plan tests => 27;
+plan tests => 29;
 
 BEGIN {
   use_ok('Seq::Assembly')                   || print "Bail out!\n";
@@ -18,6 +18,8 @@ BEGIN {
   use_ok('Seq::Role::ConfigFromFile')       || print "Bail out!\n";
   use_ok('Seq::Role::Genome')               || print "Bail out!\n";
   use_ok('Seq::Role::IO')                   || print "Bail out!\n";
+  use_ok('Seq::Role::Message')              || print "Bail out!\n";
+  use_ok('Seq::Role::ProcessFile')          || print "Bail out!\n";
   use_ok('Seq::Role::Serialize')            || print "Bail out!\n";
   use_ok('Seq::Site')                       || print "Bail out!\n";
   use_ok('Seq::Site::Gene')                 || print "Bail out!\n";

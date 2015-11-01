@@ -67,7 +67,7 @@ try {
   say pp($config_href) if $debug;
 
   # set log file
-  my $log_name = join '.', 'annotation', $config_href->{genome_name}, 'log';
+  my $log_name = join '.', $out_file, 'annotation', $config_href->{genome_name}, 'log';
   my $log_file = File::Spec->rel2abs( ".", $log_name );
   say "writing log file here: $log_file" if $verbose;
   Log::Any::Adapter->set( 'File', $log_file );
@@ -79,7 +79,7 @@ try {
       config_file       => $yaml_config,
       debug             => $debug,
       overwrite         => $overwrite,
-      ignore_unkown_chr => ( !$no_skip_chr ),
+      ignore_unknown_chr => ( !$no_skip_chr ),
       out_file          => $out_file,
       snpfile           => $snpfile,
     }

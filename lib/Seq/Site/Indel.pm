@@ -45,6 +45,7 @@ has annotation_type => (
   required => 1,
 );
 
+#I think these should use Seq::Role::Genotypes to get the codon seq
 sub _set_new_codon_seq {
   my $self = shift;
 
