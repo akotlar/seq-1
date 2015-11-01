@@ -34,8 +34,9 @@ sub _buildRatioFeaturesRef {
     Transitions => ['Transversions', 'Transitions:Transversions'],
   };   
 }
-# each key should be the ratio name, each value all ratios for that name
-# one ratio per sample
+# {RatioFeatureName => [sampleID, ratio]} where sampleID is any identifer of the 
+# record owner ; one ratio expected per ratiofeaturename and id.
+# TODO: check that no duplicate sampleIDs exist
 has ratiosHref => (
   is => 'rw',
   isa => 'HashRef[ArrayRef]',
@@ -49,7 +50,6 @@ has ratiosHref => (
     hasNoRatios => 'is_empty',
   }
 );
-# numeratorKey=>[denominatorKey,ratioKey] 
 
 sub makeRatios {
   my $self= shift;
@@ -82,10 +82,6 @@ sub makeRatios {
   }
 }
 
-#@param $statsHref; the hash ref that holds the numerator & denominator,
-#and where the ratio is stored
-#this does not recurse
-#@return void
 sub _recursiveCalc {
   my ($self, $numKey, $denomKey, $statsHref, $nCount, $dCount) = @_;
   
@@ -103,7 +99,6 @@ sub _recursiveCalc {
       p $statVal;
     }
     
-    #less than 2 because need at least a statKey => {countKey => val}
     if(ref $statVal ne 'HASH'){return ($nCount, $dCount); }
 
     if($self->debug) {
@@ -138,12 +133,11 @@ sub _recursiveCalc {
 
 ###########Private#####################
 # requires non-0 value for denominator
-# 9999 is inf; case when no transversions; actual 'Infinity' is platform-specific
+# -9 is inf; case when no denom; actual 'Infinity' is platform-specific
 sub _calcRatio {
   my ($numerator, $denominator) = @_;
   if(!($numerator || $denominator) ) {return undef; }
-  #handle infinity by any string that doesn't cast to a number
-  #since infinity handling is platform specific, and we won't be using math
+  #handle infinity by something obviously not real; actual '+-inf' is platform dependent
   elsif($numerator && !$denominator) {return -9; } 
   elsif(!$numerator) {return 0; }
   return $numerator/$denominator;
@@ -168,7 +162,6 @@ sub _nestedVal {
 
   my $key = shift @$keysAref;
   if(!defined $mRef->{$key} ) {return undef;}
-  # say "mref has key $key, next loop";
 
   $self->_nestedVal($mRef->{$key}, $keysAref);
 }
