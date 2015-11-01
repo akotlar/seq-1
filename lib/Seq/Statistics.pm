@@ -62,7 +62,7 @@ with 'Seq::Role::Message';
 
 sub summarize { 
   my $self = shift;
-  my ($percentilesHref, $samples, $ratios, $samplesAref, $ratiosAref, $destHref);
+  my ($percentilesHref, $destHref);
 
   $self->makeRatios;
 
