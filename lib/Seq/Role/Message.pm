@@ -42,6 +42,7 @@ has _message_publisher => (
 around 'publishMessage' => sub {
   my ($orig, $self, $message ) = @_;
 
+  say "publishMessage run with $message";
   if(!$self->hasPublisher) {
     $self->log('warn', 'Attempted to publish message with no publisher');
   }

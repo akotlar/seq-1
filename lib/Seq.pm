@@ -337,7 +337,7 @@ sub annotate_snpfile {
             $hom_ids, $id_genos_href ] );
     }
     else {
-      my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
+      my $msg = sprintf( "Warning: unrecognized variant var_type: '%s'", $var_type );
       $self->tee_logger( 'warn', $msg );
     }
 
@@ -346,9 +346,7 @@ sub annotate_snpfile {
       $self->print_annotations( \@snp_annotations, $self->header );
       @snp_annotations = ();
       $self->reset_counter;
-      if ( $self->wants_to_publish_messages ) {
-        $self->_publish_message("annotated $chr:$pos");
-      }
+      $self->publishMessage("annotated $chr:$pos");
       cede;
     }
   }
@@ -377,6 +375,9 @@ sub annotate_snpfile {
     say "The stats record after summarize is:";
     p $annotator->statsRecord;
   }
+
+  say "The stats record after summarize is:";
+    p $annotator->statsRecord;
   
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do
