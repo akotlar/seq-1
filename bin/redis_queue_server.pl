@@ -246,6 +246,7 @@ sub coerceInputs {
     config_file        => $configFilePath,
     ignore_unknown_chr => 1,
     overwrite          => 1,
+    force              => 1,
     debug              => $debug,
     messangerHref      => $messangerHref,
     publishServerAddress       => "$redisHost:$redisPort",

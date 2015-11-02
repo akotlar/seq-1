@@ -21,9 +21,14 @@ has iupac => (
 
 #IUPAC also includes D => 'AGT', H => 'ACT', # may want to think about renaming D,H
 #also includes V => 'ACG', B => 'CGT', do we want to include these?
+#could remove * from E & H, but then we lose information on het vs homozygote
+#shold we chose to check by length of genotype
+#also thinking about benefit of including AA => A, CC => C, etc in _buildIUPAC
 sub _buildIUPAC {
-  return {A => 'A',C => 'C',G => 'G',T => 'T',R => 'AG',Y => 'CT',S => 'GC',
-    W => 'AT', K => 'GT', M => 'AC', D => '-', I => '+', E => '-*', H => '+*'};  
+  return {
+    A => 'A', C => 'C', G => 'G', T => 'T', D => '-', I => '+',
+    R => 'AG', Y => 'CT', S => 'GC', W => 'AT', K => 'GT', M => 'AC',
+    E => '-*', H => '+*'};  
 }
 
 #can also do this with ArrayRef and first_index, not sure which is faster
@@ -69,19 +74,50 @@ has homGenos => (
 #   return 1;
 # }
 
-#@param {Str} $geno1 : deconvoluted genotype
-#@param {Str} $geno2 : deconvoluted genotype;
+#@param {Str} $geno1 : deconvoluted genotype, iupac geno, or another genotype-like string
+#@param {Str} $geno2 : ""
 sub hasGeno {
   my ($self, $geno1, $geno2) = @_;
-  if($geno1 eq $geno2) {return 1; } #both are IUPAC codes
-  if(index($geno1, $geno2) > -1 ) {return 1; } #geno1 is iupac
-  if(index($geno2, $geno1) > -1 ) {return 1; } #geno2 is iupac or het
+  
+  $self->genosEqual($geno1, $geno2);
+  
+  $self->genosContained($geno1, $geno2);
+}
+
+#extended equality check
+sub genosEqual {
+  my ($self, $geno1, $geno2) = @_;
+
+  if($geno1 eq $geno2) {return 1; }
+
+  my $geno1deconv = $self->deconvoluteGeno($geno1);
+  my $geno2deconv = $self->deconvoluteGeno($geno2);
+  $geno1 = defined $geno1deconv ? $geno1deconv : $geno1;
+  $geno2 = defined $geno2deconv ? $geno2deconv : $geno2;
+
+  if($geno1 eq $geno2) {return 1; } # one could have been deconvoluted, and not the other
+
+  #if the strings aren't equal, perhaps they're out of order
+  my $matches = 0;
+  for my $idx (0...length($geno1) - 1) {
+    $matches += index($geno2, substr($geno1, $idx, 1) ) > -1;
+  }
+  if($matches == length($geno1) && $matches == length($geno2) ) {return 1; }
+  return 0;
+}
+
+sub genosContained {
+  my ($self, $geno1, $geno2) = @_;
+  #geno1 is iupac or het, $geno2 is iupac or homozygote
+  if(index($geno1, $geno2) > -1 ) {return 1; }
+  #geno2 ""
+  if(index($geno2, $geno1) > -1 ) {return 1; }
+
   #in the case of E, and later maybe H, we may have -{Num} or +{Num}
   #leaving more flexible in case we later do {Num}- or {Num}+, say for neg strand
   #this could be abused however
   if(index($geno1, '-') > -1 && index($geno2, '-') > -1) {return 1; }
   if(index($geno1, '+') > -1 && index($geno2, '+') > -1) {return 1; }
 }
-
 no Moose::Role;
-1;
+1; 

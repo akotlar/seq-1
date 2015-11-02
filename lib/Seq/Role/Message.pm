@@ -1,6 +1,7 @@
 # vars that are not initialized at construction
 package Seq::Role::Message;
 
+use 5.10.0;
 use Moose::Role;
 use Redis;
 use strict;
@@ -8,6 +9,7 @@ use warnings;
 use namespace::autoclean;
 with 'MooX::Role::Logger';
 
+use Cpanel::JSON::XS;
 use Coro;
 
 has publishServerAddress => (
@@ -16,13 +18,13 @@ has publishServerAddress => (
   default => 'genome.local:6379',
 );
 
-has messageChannelHref => (
+has messangerHref => (
   is        => 'ro',
   isa       => 'HashRef',
   traits    => ['Hash'],
   required  => 0,
   predicate => 'hasPublisher',
-  handles   => { channelInfo => 'get' }
+  handles   => { messanger => 'get' }
 );
 
 # later we can brek this out into separate role, 
@@ -34,8 +36,19 @@ has _message_publisher => (
   lazy     => 1,
   init_arg => undef,
   builder  => '_buildMessagePublisher',
-  handles  => { publishMessage => 'publishMessage' }
+  handles  => { publishMessage => 'publish' }
 );
+
+around 'publishMessage' => sub {
+  my ($orig, $self, $message ) = @_;
+
+  if(!$self->hasPublisher) {
+    $self->log('warn', 'Attempted to publish message with no publisher');
+  }
+
+  $self->messanger('message')->{data} = $message;
+  $self->$orig($self->messanger('channel'), encode_json($self->messangerHref) );
+};
 
 sub _buildMessagePublisher {
   my $self = shift;
@@ -45,31 +58,31 @@ sub _buildMessagePublisher {
 
 sub tee_logger {
   my ( $self, $log_method, $msg ) = @_;
-
+  
+  $self->publishMessage($msg);
   async {
-    if ($self->hasPublisher) {
-      $self->publishMessage($_[0]);
-    }
+    $_[0]->_logger->${$_[1]}($_[2]);
     cede;
-  } $msg;
-
-  $self->_logger->$log_method($msg);
+  } $self, $log_method, $msg;
 
   if ( $log_method eq 'error' ) {
+    cede; #write messages to disc
     confess $msg . "\n";
   }
 }
 
-sub publishMessage {
-  my ( $self, $message ) = @_;
+sub log {
+  my ($self, $log_method, $msg) = @_;
+  
+  async {
+    $_[0]->_logger->${$_[1]}($_[2]);
+    cede;
+  } $self, $log_method, $msg;
 
-  # TODO: check performance of the array merge benefit is indirection, cost may be too high?
-  $self->publish(
-    $self->channelInfo('messageChannel'),
-    encode_json( 
-      { %{ $self->channelInfo('recordLocator') }, message => $message } 
-    )
-  );
+  if ( $log_method eq 'error' ) {
+    cede; #write messages to disc
+    confess $msg . "\n";
+  }
 }
 
 no Moose::Role;
