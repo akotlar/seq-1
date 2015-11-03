@@ -2,7 +2,7 @@ use 5.10.0;
 use strict;
 use warnings;
 
-package Seq::GenomeSizedTrackChar;
+package Seq::GenomeBin;
 
 our $VERSION = '0.001';
 
@@ -11,7 +11,7 @@ our $VERSION = '0.001';
 
 =head1 DESCRIPTION
 
-  @class B<Seq::GenomeSizedTrackChar>
+  @class B<Seq::GenomeBin>
 
   The class that stores the complete reference genome
 
@@ -28,12 +28,13 @@ Extended in:
 
 =for :list
 * @class Seq::Build::GenomeSizedTrackStr
-* @class Seq::GenomeSizedTrackChar
+* @class Seq::GenomeBin
 * @class Seq::Fetch::Sql
 
 =cut
 
 use Moose 2;
+use Moose::Util::TypeConstraints;
 
 use Carp qw/ confess croak /;
 use File::Path;
@@ -41,6 +42,7 @@ use File::Spec;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
+enum BinType => [ 'C', 'S', 'n' ];
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome';
 
@@ -68,7 +70,7 @@ Used in:
 =for :list
 * @class Seq::Annotate
     Seq::Annotate sets the char_seq values on line 286
-* @class Seq:::GenomeSizedTrackChar
+* @class Seq:::GenomeBin
 
 @example from @class Seq::Annotate _load_cadd_score:
 
@@ -86,6 +88,13 @@ has char_seq => (
   isa      => 'ScalarRef',
   required => 1,
   builder  => '_build_char_seq',
+);
+
+has bin => (
+  is => 'ro',
+  isa => 'BinType',
+  required => 1,
+  default => 'C',
 );
 
 has genome_length => (
@@ -124,7 +133,7 @@ sub get_base {
 
   # position here is not adjusted for the Zero versus 1 index issue
   # this means that we need to a 0 indexed geno
-  return unpack( 'C', substr( ${ $self->char_seq }, $pos, 1 ) );
+  return unpack( $self->bin, substr( ${ $self->char_seq }, $pos, 1 ) );
 }
 
 =method @public get_score

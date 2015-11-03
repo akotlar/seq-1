@@ -24,7 +24,7 @@ Used in:
 * Seq/Build/TxTrack.pm
 * Seq/Build.pm
 * Seq/Fetch/Sql.pm
-* Seq/GenomeSizedTrackChar.pm
+* Seq/GenomeBin.pm
 * Seq/KCManager.pm
 * Seq/Role/ConfigFromFile.pm
 * Seq

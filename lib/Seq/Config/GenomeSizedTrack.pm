@@ -36,7 +36,7 @@ Extended in:
 
 =for :list
 * @class Seq::Build::GenomeSizedTrackStr
-* @class Seq::GenomeSizedTrackChar
+* @class Seq::GenomeBin
 * @class Seq::Fetch::Sql
 
 =cut

@@ -12,9 +12,9 @@ use YAML qw/ LoadFile /;
 plan tests => 51;
 
 my %attr_2_type = (
-  _genome        => 'Seq::GenomeSizedTrackChar',
-  _genome_scores => 'ArrayRef[Maybe[Seq::GenomeSizedTrackChar]]',
-  _genome_cadd   => 'ArrayRef[Maybe[Seq::GenomeSizedTrackChar]]',
+  _genome        => 'Seq::GenomeBin',
+  _genome_scores => 'ArrayRef[Maybe[Seq::GenomeBin]]',
+  _genome_cadd   => 'ArrayRef[Maybe[Seq::GenomeBin]]',
   _cadd_lookup   => 'HashRef',
   dbm_gene       => 'ArrayRef[ArrayRef[Maybe[Seq::KCManager]]]',
   dbm_snp        => 'ArrayRef[ArrayRef[Maybe[Seq::KCManager]]]',

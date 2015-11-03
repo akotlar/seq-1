@@ -26,7 +26,7 @@ BEGIN {
   use_ok('Seq::Site::Annotation')           || print "Bail out!\n";
   use_ok('Seq::Site::Snp')                  || print "Bail out!\n";
   use_ok('Seq::Gene')                       || print "Bail out!\n";
-  use_ok('Seq::GenomeSizedTrackChar')       || print "Bail out!\n";
+  use_ok('Seq::GenomeBin')       || print "Bail out!\n";
   use_ok('Seq::Build::GenomeSizedTrackStr') || print "Bail out!\n";
   use_ok('Seq::Build::GeneTrack')           || print "Bail out!\n";
   use_ok('Seq::Build::SnpTrack')            || print "Bail out!\n";

@@ -20,7 +20,7 @@ my $ga_config   = path('./t/hg38_test.yml')->absolute->stringify;
 my $config_href = LoadFile($ga_config);
 
 # test the package's attributes and type constraints
-my $package = "Seq::GenomeSizedTrackChar";
+my $package = "Seq::GenomeBin";
 
 # load package
 use_ok($package) || die "$package cannot be loaded";
