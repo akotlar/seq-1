@@ -41,7 +41,7 @@ use Path::Tiny qw/ path /;
 use Seq::Config::GenomeSizedTrack;
 use Seq::Config::SparseTrack;
 
-with 'Seq::Role::ConfigFromFile', 'MooX::Role::Logger';
+with 'Seq::Role::ConfigFromFile'; #leaving Logger for now, for compat
 
 my @_attributes = qw/ genome_name genome_description genome_chrs genome_index_dir
   genome_cadd genome_hasher genome_scorer debug wanted_chr debug force act/;

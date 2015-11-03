@@ -102,8 +102,7 @@ sub genosEqual {
   for my $idx (0...length($geno1) - 1) {
     $matches += index($geno2, substr($geno1, $idx, 1) ) > -1;
   }
-  if($matches == length($geno1) && $matches == length($geno2) ) {return 1; }
-  return 0;
+  return $matches == length($geno1) && $matches == length($geno2);
 }
 
 sub genosContained {

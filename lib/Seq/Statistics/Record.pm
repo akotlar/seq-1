@@ -1,3 +1,4 @@
+
 package Seq::Statistics::Record;
 
 use 5.10.0;
@@ -88,6 +89,8 @@ sub record {
       # if it's an ins or del, there will be no deconvolutedGeno
       # taking this check out, because handling of del alleles does not work,
       # Annotate.pm sets the allele as the neegative length of the del, rather than D or E
+      # not checking now; since we skip any case where > 1 annotation,
+      # which covers multi-allelic sites
       if(!$self->hasGeno($self->deconvoluteGeno($geno), $minorAllele) ) {
         next;
       }
@@ -95,8 +98,7 @@ sub record {
       $annotationType = $annotationHref->annotation_type;
 
       if($self->debug) {
-        say "we have the geno $geno";
-        say "annotation type is $annotationType";
+        say "recording statistics for geno $geno, minorAllele $minorAllele, annotation_type $annotationType";
       } 
       #there is a more efficient option: just passing annotatypeType separately
       #I think this is cleaner (see use of shit in storeCount), and probably fast enough
@@ -105,10 +107,6 @@ sub record {
 
       $self->storeCount(\@featuresMerged, $targetHref, $aCount);
     }
-  }
-  if($self->debug) {
-    say "Stat record is";
-    p $self->statsRecord;
   }
 }
 
@@ -122,9 +120,6 @@ sub storeCount {
   #it == last featureAref index, and beyond that could store annotationType sep
   if(!@$featuresAref) { return };
   my $feature = shift @$featuresAref;
-  if($self->debug) {
-    say "in store count for feature $feature";
-  }
   
   if($self->isBadFeature($feature) ) {return; }
   $targetHref = \%{$targetHref->{$feature} };
@@ -155,7 +150,7 @@ sub getAlleleCount {
   my ($self, $iupacAllele) = @_;
   if($self->isHomo($iupacAllele) ) {return 2;}
   if($self->isHet($iupacAllele) ) {return 1;}
-  return undef;
+  return;
 }
 
 no Moose::Role;

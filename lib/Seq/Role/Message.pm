@@ -8,9 +8,32 @@ use strict;
 use warnings;
 use namespace::autoclean;
 with 'MooX::Role::Logger';
+use IO::AIO; #AnyEvent logger will use this
+use Carp 'croak';
 
 use Cpanel::JSON::XS;
 use Coro;
+use DDP;
+
+# my $singleton;
+
+# sub instance {
+#   return $singleton //= Seq::Role::Message->new();
+# }
+
+# # to protect against people using new() instead of instance()
+# around 'new' => sub {
+#     my $orig = shift;
+#     my $self = shift;
+#     return $singleton //= $self->$orig(@_);
+# };
+
+# sub initialize {
+#     defined $singleton
+#       and croak __PACKAGE__ . ' singleton has already been instanciated'; 
+#     shift;
+#     return __PACKAGE__->new(@_);
+# }
 
 has publishServerAddress => (
   is => 'ro',
@@ -19,36 +42,28 @@ has publishServerAddress => (
 );
 
 has messangerHref => (
-  is        => 'ro',
+  is        => 'rw',
   isa       => 'HashRef',
   traits    => ['Hash'],
   required  => 0,
   predicate => 'hasPublisher',
-  handles   => { messanger => 'get' }
+  handles   => { getMsg => 'get' }
 );
 
-# later we can brek this out into separate role, 
-# and this publisher will be located in Message.pm, with a separate role
-# handling implementation
-has _message_publisher => (
-  is       => 'ro',
+has messagePublisher => (
+  is       => 'rw',
   required => 0,
   lazy     => 1,
   init_arg => undef,
   builder  => '_buildMessagePublisher',
-  handles  => { publishMessage => 'publish' }
+  handles  => { _publish => 'publish' }
 );
 
-around 'publishMessage' => sub {
-  my ($orig, $self, $message ) = @_;
-
-  say "publishMessage run with $message";
-  if(!$self->hasPublisher) {
-    $self->log('warn', 'Attempted to publish message with no publisher');
-  }
-
-  $self->messanger('message')->{data} = $message;
-  $self->$orig($self->messanger('channel'), encode_json($self->messangerHref) );
+sub publishMessage {
+  my ($self, $msg) = @_;
+  if(!$self->hasPublisher) {return; }
+  $self->getMsg('message')->{data} = $msg;
+  $self->_publish($self->getMsg('channel'), encode_json($self->messangerHref) );
 };
 
 sub _buildMessagePublisher {
@@ -58,32 +73,13 @@ sub _buildMessagePublisher {
 }
 
 sub tee_logger {
-  my ( $self, $log_method, $msg ) = @_;
-  
-  $self->publishMessage($msg);
-  async {
-    $_[0]->_logger->${$_[1]}($_[2]);
-    cede;
-  } $self, $log_method, $msg;
-
-  if ( $log_method eq 'error' ) {
-    cede; #write messages to disc
-    confess $msg . "\n";
-  }
-}
-
-sub log {
   my ($self, $log_method, $msg) = @_;
-  
-  async {
-    $_[0]->_logger->${$_[1]}($_[2]);
-    cede;
-  } $self, $log_method, $msg;
+  $self->_logger->$log_method($msg);
+  $self->publishMessage($msg) if $self->hasPublisher;
 
   if ( $log_method eq 'error' ) {
-    cede; #write messages to disc
     confess $msg . "\n";
-  }
+  } 
 }
 
 no Moose::Role;
