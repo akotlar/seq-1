@@ -124,7 +124,11 @@ sub build_transcript_db {
 
     # add additional keys to the hashref for Seq::Build::TxTrack
     my $gene_db = Seq::Build::GeneTrack->new($record);
-    $gene_db->build_tx_db_for_genome;
+
+    # make chromosome start offsets for binary genome
+    my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
+
+    $gene_db->build_tx_db_for_genome( $self->genome_length, \%chr_len, [ $self->all_genome_chrs ] );
 
     $msg = sprintf( "finished gene tx db, '%s'", $gene_track->name );
     $self->_logger->info($msg) if $self->debug;
