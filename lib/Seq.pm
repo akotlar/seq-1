@@ -26,6 +26,7 @@ Extended by: None
 use Moose 2;
 use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 use Path::Tiny;
+use IO::AIO;
 
 use Carp qw/ croak /;
 use Cpanel::JSON::XS;
@@ -142,7 +143,7 @@ has genes_annotated => (
 has write_batch => (
   is      => 'ro',
   isa     => 'Int',
-  default => 1000000,
+  default => 100000,
 );
 
 has counter => (
@@ -164,7 +165,6 @@ my %site_2_set_method = (
   SNP          => 'set_snp_site',
 );
 
-
 #come after all attributes to meet "requires '<attribute>'"
 with 'Seq::Role::ProcessFile', 'Seq::Role::Genotypes', 'Seq::Role::Message';
 
@@ -179,10 +179,6 @@ sub annotate_snpfile {
 
   $self->tee_logger('info', 'about to load annotation data');
 
-  # Seq::Role::Message->meta->apply(Seq::Annotate);
-
-  #passing messanger stuff, so that Annotate.pm can connect to messaging service for logs
-  #tried briefly using Seq::Role::Message->meta->apply, no luck yet
   my $annotator = Seq::Annotate->new_with_config(
     {
       configfile => $self->config_file_path,
@@ -210,8 +206,7 @@ sub annotate_snpfile {
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
 
-  # let the annotation begin
-  my $snpfile_fh = $self->get_read_fh( $self->snpfile_path );
+  my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
   while ( my $line = $snpfile_fh->getline ) {
     chomp $line;
 
@@ -341,17 +336,19 @@ sub annotate_snpfile {
           [ $chr, $pos, $ref_allele, $all_allele_str, $allele_count, $het_ids,
             $hom_ids, $id_genos_href ] );
     }
-    else {
-      my $msg = sprintf( "Warning: unrecognized variant type $var_type at position chr$chr:$pos");
+    elsif ($var_type ne 'MESS' && $var_type ne 'LOW') {
+      my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
       $self->tee_logger( 'warn', $msg );
     }
 
     # write data in batches
-    if ( $self->counter >= $self->write_batch ) {
+    if ( $self->counter > $self->write_batch ) {
       $self->print_annotations( \@snp_annotations, $self->header );
       @snp_annotations = ();
-      $self->publishMessage("Wrote ".$self->counter." records. Last annotated $chr:$pos");
-      $self->reset_counter;
+      $self->reset_counter; 
+    }
+    if($self->hasPublisher) {
+      $self->publishMessage("annotated $chr:$pos");
     }
   }
 
@@ -360,6 +357,7 @@ sub annotate_snpfile {
     $self->print_annotations( \@snp_annotations, $self->header );
     @snp_annotations = ();
   }
+
   # print deletion sites
   #   - indel annotations come back as an array reference of hash references
   #   - the print_annotations function flattens the hash reference and
@@ -370,15 +368,14 @@ sub annotate_snpfile {
     $self->print_annotations( $del_annotations_aref, $self->header );
   }
 
+  cede; #give back control to coro threads
+
   $annotator->summarizeStats;
 
   if($self->debug) {
     say "The stats record after summarize is:";
     p $annotator->statsRecord;
   }
-
-  # say "The stats record after summarize is:";
-  # p $annotator->statsRecord;
   
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do

@@ -78,7 +78,8 @@ sub record {
 
     if(@$annotationsAref > 1) {next; } #for now we omit multiple transcript sites
     
-    $aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote    
+    $aCount = $self->isHomo($geno) ? 2 : 1;
+    #$aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote    
     if(!$aCount) {
       $self->tee_logger('warn', 'No allele count found for genotype $geno');
       next;
@@ -91,9 +92,9 @@ sub record {
       # Annotate.pm sets the allele as the neegative length of the del, rather than D or E
       # not checking now; since we skip any case where > 1 annotation,
       # which covers multi-allelic sites
-      if(!$self->hasGeno($self->deconvoluteGeno($geno), $minorAllele) ) {
-        next;
-      }
+      # if(!$self->hasGeno($self->deconvoluteGeno($geno), $minorAllele) ) {
+      #   next;
+      # }
       
       $annotationType = $annotationHref->annotation_type;
 
@@ -146,12 +147,12 @@ sub _getTr {
 # if it's a het; currently supports only diploid organisms
 # 2nd if isn't strictly necessary, but safer, and allows this to be used
 # as an alternative to isHet, isHomo
-sub getAlleleCount {
-  my ($self, $iupacAllele) = @_;
-  if($self->isHomo($iupacAllele) ) {return 2;}
-  if($self->isHet($iupacAllele) ) {return 1;}
-  return;
-}
+# sub getAlleleCount {
+#   my ($self, $iupacAllele) = @_;
+#   if($self->isHomo($iupacAllele) ) {return 2;}
+#   if($self->isHet($iupacAllele) ) {return 1;}
+#   return;
+# }
 
 no Moose::Role;
 1;

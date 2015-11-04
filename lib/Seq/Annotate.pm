@@ -79,8 +79,6 @@ use Seq::Annotate::Site;
 use Seq::Annotate::Snp;
 use Seq::Statistics;
 
-use Coro;
-
 extends 'Seq::Assembly';
 with 'Seq::Role::IO', 'Seq::Role::Message';
 
@@ -90,6 +88,16 @@ with 'Seq::Role::IO', 'Seq::Role::Message';
 
 @see @class Seq::GenomeSizedTrackChar
 =cut
+# has messangerHref => (
+#   is => 'ro',
+#   required => 1,
+# );
+# has logger => (
+#   is => 'ro',
+#   isa => 'Seq::Message',
+#   handles => ['tee_logger','publishMessage'],
+#   required => 1,
+# );
 
 has statisticsCalculator => (
   is => 'ro',

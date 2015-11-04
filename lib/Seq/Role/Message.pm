@@ -3,7 +3,7 @@ package Seq::Role::Message;
 
 use 5.10.0;
 use Moose::Role;
-use Redis;
+use Redis::hiredis;
 use strict;
 use warnings;
 use namespace::autoclean;
@@ -12,7 +12,6 @@ use IO::AIO; #AnyEvent logger will use this
 use Carp 'croak';
 
 use Cpanel::JSON::XS;
-use Coro;
 use DDP;
 
 # my $singleton;
@@ -37,8 +36,8 @@ use DDP;
 
 has publishServerAddress => (
   is => 'ro',
-  isa => 'Str',
-  default => 'genome.local:6379',
+  isa => 'ArrayRef',
+  default => sub{ ['genome.local','6379'] }
 );
 
 has messangerHref => (
@@ -47,30 +46,37 @@ has messangerHref => (
   traits    => ['Hash'],
   required  => 0,
   predicate => 'hasPublisher',
+  default => sub {{}},
+  lazy => 1,
   handles   => { getMsg => 'get' }
 );
 
-has messagePublisher => (
+has publisher => (
   is       => 'rw',
   required => 0,
   lazy     => 1,
   init_arg => undef,
   builder  => '_buildMessagePublisher',
-  handles  => { _publish => 'publish' }
+  lazy => 1,
+  handles => {
+    notify => 'command'
+  },
 );
+
+sub _buildMessagePublisher {
+  my $self = shift;
+  return Redis::hiredis->new(
+    host => $self->publishServerAddress->[0],
+    port => $self->publishServerAddress->[1],
+  );
+}
 
 sub publishMessage {
   my ($self, $msg) = @_;
   if(!$self->hasPublisher) {return; }
   $self->getMsg('message')->{data} = $msg;
-  $self->_publish($self->getMsg('channel'), encode_json($self->messangerHref) );
+  $self->notify(['publish', $self->getMsg('channel'), encode_json($self->messangerHref) ] );
 };
-
-sub _buildMessagePublisher {
-  my $self = shift;
-
-  return Redis->new(server => $self->publishServerAddress);
-}
 
 sub tee_logger {
   my ($self, $log_method, $msg) = @_;

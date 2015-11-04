@@ -25,6 +25,7 @@ use Log::Any::Adapter;
 use File::Basename;
 use DDP;
 use Seq;
+use Seq::Message;
 
 use Thread::Queue;
 use IO::Socket;
@@ -247,8 +248,9 @@ sub coerceInputs {
     ignore_unknown_chr => 1,
     overwrite          => 1,
     debug              => $debug,
+    logger => Seq::Message->new(messangerHref => $messangerHref, publishServerAddress => [$redisHost,$redisPort]),
     messangerHref      => $messangerHref,
-    publishServerAddress       => "$redisHost:$redisPort",
+    publishServerAddress       => [$redisHost,$redisPort],
   }
 }
 

@@ -5,10 +5,9 @@ use Moose::Role;
 use namespace::autoclean;
 # the genotype codes below are based on the IUPAC ambiguity codes with the notable
 #   exception of the indel codes that are specified in the snpfile specifications
-
+# no type checks to avoid constraint checks at inclusion time
 has iupac => (
   is => 'ro',
-  isa => 'HashRef',
   traits => ['Hash'],
   handles => {
     validGeno => 'exists',
@@ -16,6 +15,7 @@ has iupac => (
     getGeno => 'get', #fallback, in case semantic interpretation different
   },
   init_arg => undef,
+  lazy => 1,
   builder => '_buildIUPAC',
 );
 
@@ -34,11 +34,11 @@ sub _buildIUPAC {
 #can also do this with ArrayRef and first_index, not sure which is faster
 has hetGenos => (
   is => 'ro',
-  isa => 'HashRef',
   traits => ['Hash'],
   handles => {
     isHet => 'get'
   },
+  lazy => 1,
   default => sub { {
     K => 1,
     M => 1,
@@ -48,16 +48,17 @@ has hetGenos => (
     Y => 1,
     E => 1,
     H => 1,
-  } }
+  } },
+  init_arg => undef,
 );
 
 has homGenos => (
   is => 'ro',
-  isa => 'HashRef',
   traits => ['Hash'],
   handles => {
     isHomo => 'get',
   },
+  lazy => 1,
   default => sub { {
     A => 1,
     C => 1,
@@ -65,7 +66,8 @@ has homGenos => (
     T => 1,
     D => 1,
     I => 1,
-  } }
+  } }, 
+  init_arg => undef,
 );
 #an alternative way to look for homozygote vs heterozygote:
 # sub deconvAlleleCount {
