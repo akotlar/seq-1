@@ -368,8 +368,6 @@ sub annotate_snpfile {
     $self->print_annotations( $del_annotations_aref, $self->header );
   }
 
-  cede; #give back control to coro threads
-
   $annotator->summarizeStats;
 
   if($self->debug) {
@@ -395,11 +393,10 @@ sub _minor_allele_carriers {
     # skip reference && N's
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
-    if ( $self->isHet($id_geno) ) {
-      push @het_ids, $id;
-    }
-    elsif ( $self->isHomo($id_geno) ) {
+    if ( $self->isHomo($id_geno) ) {
       push @hom_ids, $id;
+    } else {
+      push @het_ids, $id;
     }
 
     if (@het_ids) {

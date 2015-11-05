@@ -36,7 +36,7 @@ has hetGenos => (
   is => 'ro',
   traits => ['Hash'],
   handles => {
-    isHet => 'get'
+    isHet => 'exists'
   },
   lazy => 1,
   default => sub { {
@@ -56,7 +56,7 @@ has homGenos => (
   is => 'ro',
   traits => ['Hash'],
   handles => {
-    isHomo => 'get',
+    isHomo => 'exists',
   },
   lazy => 1,
   default => sub { {
