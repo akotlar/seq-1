@@ -114,6 +114,35 @@ sub _build_db {
   }
 }
 
+# db_put_string writes an entry for the key-value pair, which will overwrite
+#   existing data and write the string
+#   -> retrieve this data using db_get_string
+sub db_put_string {
+  my ($self, $key, $string) = @_;
+  return $self->_db->set( $key, $string);
+}
+
+# db_get_string retireves the string for the given key
+sub db_get_string { 
+  my ($self, $key) = @_;
+  
+  my $dbm = $self->_db;
+
+  if ( defined $dbm ) {
+    my $string = $dbm->get($key);
+
+    if ( defined $string ) {
+      return $string;
+    }
+    else {
+      return;
+    }
+  }
+  else {
+    return;
+  }
+}
+
 # rationale - hashes cannot really have duplicate keys; so, to circumvent this
 # issue we'll check to see if there's data there at they key first, unpack it
 # and add our new data to it and then store the merged data
@@ -125,10 +154,10 @@ sub db_put {
   if ( defined $existing_aref ) {
     my @data = @$existing_aref;
     push @data, $href;
-    $self->_db->set( $key, encode_json( \@data ) );
+    return $self->_db->set( $key, encode_json( \@data ) );
   }
   else {
-    $self->_db->set( $key, encode_json( [$href] ) );
+    return $self->_db->set( $key, encode_json( [$href] ) );
   }
 }
 

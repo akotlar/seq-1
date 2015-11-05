@@ -1,6 +1,7 @@
 #!/usr/bin/env perl
 
 use 5.10.0;
+use lib '/mnt/q22FSS/data/adsp/software/seq/lib'; 
 use strict;
 use warnings;
 use Carp qw/ croak /;

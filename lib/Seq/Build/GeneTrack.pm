@@ -37,6 +37,8 @@ use namespace::autoclean;
 use Seq::Gene;
 use Seq::KCManager;
 
+use Data::Dump qw/dump/;
+
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
@@ -146,8 +148,18 @@ sub build_tx_db_for_genome {
   $self->_logger->info($msg);
 
   # nearest neighbor dbm file
-  my $nn_dbm_file = $self->get_kch_file( 'genome', 'nn' );
+  my $nn_dbm_file = $self->get_kch_file( 'genome', 'gene' );
   $msg = sprintf( "writing to: '%s'", $nn_dbm_file );
+  $self->_logger->info($msg);
+
+  # nearest neighbor bin file
+  my $nn_bin_file = $self->get_dat_file( 'genome', 'gene' );
+  $msg = sprintf( "writing to: '%s'", $nn_bin_file );
+  $self->_logger->info($msg);
+
+  # nearest neighbor test file
+  my $nn_test_file = $self->get_dat_file( 'genome', 'test' );
+  $msg = sprintf( "writing to: '%s'", $nn_test_file );
   $self->_logger->info($msg);
 
   # check if we've already build site range files unless forced to overwrite
@@ -180,9 +192,8 @@ sub build_tx_db_for_genome {
     msiz => 512_000_000,
   );
 
-  my $gene_number = 0;
-  my (%txStartStop, %txName);
-  my $nn_string = '';
+  my $gene_number = 1;
+  my (%txStartStop, %txGeneToNum);
 
   for my $gene_href (@$chr_data_aref) {
     my $gene = Seq::Gene->new($gene_href);
@@ -202,50 +213,74 @@ sub build_tx_db_for_genome {
       transcript_abs_position => $gene->transcript_abs_position,
     };
 
+    # save gene attr in dbm
+    $db_tx->db_put( $record_href->{transcript_id}, $record_href );
+
+    # save tx start/stop for gene
+    say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
+
     # prefer to keep the geneSymbol since there are < 30K (in humans); for
-    # organisms without geneSymbol we'll store transcript_id
+    #   organisms without geneSymbol we'll store transcript_id
     my $gene_name = $gene_href->{_alt_names}{geneSymbol} or $gene->transcript_id;
 
-    my @tx_abs_pos = @{ $gene->transcript_abs_position };
+    # if there's no gene symbol it will default to 'NA'
+    #   this usually implies a non-coding or otherwise more tentitve gene, 
+    #   which we'll skip
+    if ($gene_name eq "NA") {
+      next;
+    }
 
     if ( exists $txStartStop{ $gene_name } ) {
-      my ($start, $end ) = @{ $txStartStop{$gene_name} };
-      if ($start > $tx_abs_pos[0] ) {
-        $start = $tx_abs_pos[0];
+      my ( $start, $end ) = @{ $txStartStop{$gene_name} };
+      if ( $gene->transcript_start < $start ) {
+        $start = $gene->transcript_start;
       }
-      if ( $end < $tx_abs_pos[$#tx_abs_pos] ) {
-        $end =  $tx_abs_pos[$#tx_abs_pos];
+      if ( $gene->transcript_end > $end ) {
+        $end = $gene->transcript_end;
       }
       $txStartStop{$gene_name} = [ $start, $end ];
     }
     else {
-      $txStartStop{$gene_name} = [ $tx_abs_pos[0], $tx_abs_pos[$#tx_abs_pos] ];
-      $txName{$gene_name} = $gene_number;
+      $txStartStop{$gene_name} = [ $gene->transcript_start, $gene->transcript_end ];
+      $txGeneToNum{$gene_name} = $gene_number;
       $gene_number++;
     }
 
-    # save gene attr in dbm
-    $db_tx->db_put( $record_href->{transcript_id}, $record_href );
+    $msg = sprintf("gene: %s (%d), start: %s, stop %s", 
+      $gene_name, $txGeneToNum{$gene_name}, $txStartStop{$gene_name}[0],
+      $txStartStop{$gene_name}[1]);
+    $self->_logger->info($msg);
 
     # save gene number and name
-    $db_nn->db_put( $gene_number, $gene_name );
-
-    # save tx start/stop for gene
-    say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
+    $db_nn->db_put_string( $gene_number, $gene_name );
   }
+
   my @sorted_genes = map { $_->[0] }
     sort { $a->[1] <=> $b->[1] }
     map { [ $_, $txStartStop{$_}->[0] ] } (keys %txStartStop);
 
-  $msg = sprintf("first: %d, last %d", $sorted_genes[0], $sorted_genes[$#sorted_genes]);
+  # for testing / debugging
+  my $testFh = IO::File->new( $nn_test_file, 'w') || die "$!";
+  say { $testFh } $genome_length;
+  for my $gene ( @sorted_genes ) {
+    say { $testFh } join "\t", $gene, $txGeneToNum{$gene}, @{ $txStartStop{$gene} };
+  }
+  close ($testFh);
+
+  $msg = sprintf("genes: %d; first gene: %s, last gene: %s", 
+    (scalar @sorted_genes), $sorted_genes[0], $sorted_genes[$#sorted_genes]);
   $self->_logger->info($msg);
 
   my $last_stop = 0;
+  # my $nn_string = pack('n', 0) x $genome_length;
+  my $nn_string = '';
   for (my $i=0; $i <@sorted_genes; $i++ ) {
     my $gene = $sorted_genes[$i];
-    my $gene_number = $txName{$gene};
+    my $gene_number = $txGeneToNum{$gene};
     my $next_gene = $sorted_genes[$i+1] || "NA";
     my $start = $last_stop;
+
+    say join("\t", $gene, $gene_number, $next_gene, "start:", $start);
 
     # determine stop
     my $stop = 0;
@@ -257,6 +292,8 @@ sub build_tx_db_for_genome {
       my $next_gene_start = $txStartStop{$next_gene}->[0];
       $stop = int( ($next_gene_start - $this_gene_stop ) / 2);
     }
+
+    say join("\t", "stop:", $stop);
 
     # determine whether we're at the end of the chromosome and make that the stop
     # instead of the midpoint between the last gene stop and the next gene start
@@ -272,12 +309,9 @@ sub build_tx_db_for_genome {
     }
     $last_stop = $stop;
   }
-  # nearest neighbor dbm file
-  my $nn_bin_file = $self->get_dat_file( 'genome', 'nn' );
-  $msg = sprintf( "writing to: '%s'", $nn_bin_file );
-  $self->_logger->info($msg);
   my $fh = IO::File->new( $nn_bin_file, 'w') || die "$!";
   print {$fh} $nn_string;
+  close($fh);
 }
 
 sub build_gene_db_for_chr {

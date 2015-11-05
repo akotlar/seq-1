@@ -11,7 +11,7 @@ use Pod::Usage;
 use Type::Params qw/ compile /;
 use Types::Standard qw/ :type /;
 use Log::Any::Adapter;
-use YAML::XS qw/ LoadFile /;
+use YAML::XS qw/ Dump LoadFile /;
 use Try::Tiny;
 
 use Data::Dump qw/ dump pp /;
@@ -84,7 +84,10 @@ try {
       snpfile           => $snpfile,
     }
   );
-  $annotate_instance->annotate_snpfile;
+
+  my $href = $annotate_instance->annotate_snpfile;
+  my $fh = IO::File->new( "$out_file.stats.txt", 'w') || die "$!";
+  print {$fh} Dump ($href);
 }
 catch {
   say $_;
