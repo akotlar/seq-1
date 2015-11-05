@@ -34,7 +34,7 @@ has _transitionTypesHref => (
   isa     => 'HashRef[Int]',
   traits  => ['Hash'],
   handles => {
-    isTr => 'get',
+    isTr => 'exists',
   },
   default => sub {return {AG => 1,GA => 1,CT => 1,TC => 1,R => 1,Y => 1} },
   lazy => 1,
@@ -155,7 +155,7 @@ sub storeCount {
 # by definition there can only be one tr or tv per site
 sub storeTrTv {
   my ($self, $targetHref, $refAllele, $geno) = @_;
-  my $trTvKey = $self->_getTr($refAllele, $geno);
+  my $trTvKey = ($self->isTr($geno) || $self->isTr($refAllele.$geno) ) ? 1 :0;
   $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
 }
 
@@ -166,14 +166,14 @@ sub storeTrTv {
 sub storeSNPdata {
   my ($self, $targetHref, $snpDataAref) = @_;
   return if !defined $snpDataAref;
-  my $snpKey = $self->snpKey(int(!!@$snpDataAref) );
+  my $snpKey = @$snpDataAref > 0 ? $self->snpKey(1) : $self->snpKey(0);
   $targetHref->{$snpKey}{$self->statsKey}{$self->countKey} += 1;
 }
 
-sub _getTr {
-  my ($self, $refAllele, $geno) = @_;
-  return $self->trTvKey(int(!!($self->isTr($geno) || $self->isTr($refAllele.$geno) ) ) );
-}
+# sub _getTr {
+#   my ($self, $refAllele, $geno) = @_;
+#   return $self->trTvKey(int(!!($self->isTr($geno) || $self->isTr($refAllele.$geno) ) ) );
+# }
 
 # if it's a het; currently supports only diploid organisms
 # 2nd if isn't strictly necessary, but safer, and allows this to be used
