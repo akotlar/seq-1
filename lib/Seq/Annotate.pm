@@ -65,7 +65,6 @@ use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
 use DDP;                   # for debugging
-use Data::Dump qw/ dump /; # for debugging
 use Cpanel::JSON::XS;
 
 use Seq::GenomeSizedTrackChar;
@@ -316,9 +315,7 @@ sub get_cadd_score {
 
   my $key = join ":", $ref, $allele;
   my $i = $self->get_cadd_index($key);
-  if ( $self->debug ) {
-    say dump( { "cadd score key:" => $key, "cadd score index:" => $i } );
-  }
+  say "cadd score key: $key; cadd score index: $i" if $self->debug;
   if ( defined $i ) {
     my $cadd_track = $self->_get_cadd_track($i);
     return $cadd_track->get_score($abs_pos);
@@ -786,10 +783,7 @@ sub annotate_snp_site {
           }
         }
       }
-    }
-  
-    $self->recordStat($id_genos_href, \@gene_data, [$record{var_type}, $record{genomic_type}],
-    $record{ref_base}); 
+    } 
   }
   $record{gene_data} = \@gene_data;
 
@@ -814,6 +808,8 @@ sub annotate_snp_site {
   }
   $record{snp_data} = \@snp_data;
 
+  $self->recordStat($id_genos_href, [$record{var_type}, $record{genomic_type}], 
+    $record{ref_base}, \@gene_data, \@snp_data);
   # create object for href export
   my $obj = Seq::Annotate::Snp->new( \%record );
 
@@ -1018,8 +1014,8 @@ sub annotate_ins_site {
     }
     push @gene_data, Seq::Site::Indel->new($gene_href);
   }
-  $self->recordStat($id_genos_href, \@gene_data, [$record{var_type}, $record{genomic_type}],
-    $record{ref_base});
+  $self->recordStat($id_genos_href, [$record{var_type}, $record{genomic_type}], 
+      $record{ref_base}, \@gene_data, \@snp_data);
 
   $record{gene_data} = \@gene_data;
 
@@ -1191,15 +1187,10 @@ sub annotate_del_sites {
         }
       }
     }
-    $self->recordStat($id_genos_href_contig, \@gene_data, 
-      [$record{var_type}, $record{genomic_type}], $record{ref_base});
+    $self->recordStat($id_genos_href_contig, [$record{var_type}, $record{genomic_type}], 
+      $record{ref_base}, \@gene_data, \@snp_data);
     
     $record{gene_data} = \@gene_data;
-    # say "gene_data";
-    # p @gene_data;
-    # $self->recordStat(
-    #   $id_geno_href, \@gene_data, $ref_allele, $var_type, $record{genomic_type}
-    # );
 
     my $obj = Seq::Annotate::Indel->new( \%record );
     push @del_annotations, $obj->as_href;

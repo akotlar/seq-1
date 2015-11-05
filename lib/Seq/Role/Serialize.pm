@@ -59,18 +59,23 @@ sub header_attr {
 sub as_href_with_NAs {
   my $self = shift;
   my %obj  = ();
+  my $name;
+  my $selfAttr; #declared here to easy garbage collection
   for my $attr ( $self->meta->get_all_attributes ) {
-    my $name            = $attr->name;
-    my $type_constraint = $attr->type_constraint;
-    if ( defined $self->$name ) {
-      if ( $type_constraint eq 'HashRef' ) {
-        map { $obj{"$name.$_"} = $self->$name->{$_} } keys %{ $self->$name };
+    $name            = $attr->name;
+    $selfAttr        = $self->$name;
+    # Attempting optimization; this is a bottleneck; 
+    # At this point, all attrs sohuld have been populated, so ref HASH / ARRAY should be safe
+    # my $type_constraint = $attr->type_constraint;
+    if ( defined $selfAttr ) {
+      if ( ref $selfAttr eq 'HASH' ) { #if ( ref $type_constraint eq 'HashRef' ) {
+        map { $obj{"$name.$_"} = $selfAttr->{$_} } keys %{ $selfAttr };
       }
-      elsif ( $type_constraint eq 'ArrayRef' ) {
-        $obj{$name} = join( ";", @{ $self->$name } );
+      elsif ( ref $selfAttr eq 'ARRAY' ) {
+        $obj{$name} = join( ";", @{ $selfAttr } );
       }
       else {
-        $obj{$name} = $self->$name;
+        $obj{$name} = $selfAttr;
       }
     }
     else {

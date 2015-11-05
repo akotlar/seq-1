@@ -376,7 +376,7 @@ sub annotate_snpfile {
     say "The stats record after summarize is:";
     p $annotator->statsRecord;
   }
-  
+
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do
   #       interesting things.

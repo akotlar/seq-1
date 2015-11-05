@@ -1,4 +1,5 @@
-
+# This package essentially expects good inputs
+# Meaning non-reference alleles at the least
 package Seq::Statistics::Record;
 
 use 5.10.0;
@@ -52,12 +53,24 @@ has _transitionTransversionKeysAref => (
   init_arg => undef,
 );
 
+has _snpAnnotationsAref => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Str]',
+  traits  => ['Array'],
+  handles => {
+    snpKey => 'get',
+  },
+  default => sub{ ['noRs', 'rs'] },
+  lazy => 1,
+  init_arg => undef,
+);
+
 # at every level in the has, record whether transition or transversion
 # assumes that only non-reference alleles are passed, hence it is a role
 sub record {
-  my ($self, $sampleIDgenoHref, $annotationsAref, $featuresAref, $refAllele) = @_;
+  my ($self, $sampleIDgenoHref, $featuresAref, $refAllele, $geneDataAref, $snpDataAref) = @_;
 
-  if(!(keys %$sampleIDgenoHref && @$annotationsAref 
+  if(!(keys %$sampleIDgenoHref && @$geneDataAref 
   && @$featuresAref && defined $refAllele) ) {
     return; 
   }
@@ -68,15 +81,21 @@ sub record {
   #for now, analyze only 
   for my $sampleID (keys %$sampleIDgenoHref) {
     $geno = $sampleIDgenoHref->{$sampleID};
-    if($self->hasGeno($geno, $refAllele) ) {next;} #require IUPAC geno, or D,I,E,H
+    #this isn't as safe as $hasGeno, but saves ~1s per 20k lines over 100samples
+    #but, should be ok, if we stick to conceit that homozygotes are 1 letter
+    if($geno eq $refAllele) {next;} #require IUPAC geno, or D,I,E,H
 
     if(!$self->hasStat($sampleID) ) {$self->setStat($sampleID, {} ); }
     $targetHref = $self->getStat($sampleID);
 
+    #we do this to avoid having to check against a string
+    #because loose coupling good
+    $self->storeSNPdata($targetHref, $snpDataAref);
+    
     #transitions & transversion counter;
     $self->storeTrTv($targetHref, $refAllele, $geno);
 
-    if(@$annotationsAref > 1) {next; } #for now we omit multiple transcript sites
+    if(@$geneDataAref > 1) {next; } #for now we omit multiple transcript sites
     
     $aCount = $self->isHomo($geno) ? 2 : 1;
     #$aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote    
@@ -85,7 +104,7 @@ sub record {
       next;
     }
 
-    for my $annotationHref (@$annotationsAref) {
+    for my $annotationHref (@$geneDataAref) {
       $minorAllele = $annotationHref->minor_allele;
       # if it's an ins or del, there will be no deconvolutedGeno
       # taking this check out, because handling of del alleles does not work,
@@ -129,7 +148,8 @@ sub storeCount {
   $self->storeCount($featuresAref, $targetHref, $aCount);
 }
 
-#transitions are unique, they are the only StatsCalculator created feature
+# transitions are dependent only on the reference base and sample allele,
+# they are, unlike geneDataAref features, a StatsCalculator created feature
 # they should only be inserted in a single locaiton, else they'll be counted
 # by sum(n*tr_i)
 # by definition there can only be one tr or tv per site
@@ -137,6 +157,17 @@ sub storeTrTv {
   my ($self, $targetHref, $refAllele, $geno) = @_;
   my $trTvKey = $self->_getTr($refAllele, $geno);
   $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
+}
+
+# rs numbers are just like transitions and transversion
+#we use defined check to find out whether anything exists; encapsulate here
+#if it doesn't, presume the caller intended this not to be recorded as a non-snp site
+#as a non-snp site
+sub storeSNPdata {
+  my ($self, $targetHref, $snpDataAref) = @_;
+  return if !defined $snpDataAref;
+  my $snpKey = $self->snpKey(int(!!@$snpDataAref) );
+  $targetHref->{$snpKey}{$self->statsKey}{$self->countKey} += 1;
 }
 
 sub _getTr {
