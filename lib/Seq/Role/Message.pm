@@ -40,7 +40,6 @@ has publisherAddress => (
   isa => 'Maybe[ArrayRef]',
   required  => 0,
   lazy => 1,
-  predicate => 'hasPublisherAddress',
   default => undef,
 );
 
@@ -51,7 +50,6 @@ has messanger => (
   required  => 0,
   lazy => 1,
   default => undef,
-  predicate => 'hasMessanger',
 );
 
 has publisher => (
@@ -69,7 +67,7 @@ has publisher => (
 
 sub _buildMessagePublisher {
   my $self = shift;
-  return unless $self->hasPublisherAddress;
+  return unless $self->publisherAddress;
   #delegation doesn't work for Maybe attrs
   return Redis::hiredis->new(
     host => $self->publisherAddress->[0],
@@ -81,7 +79,7 @@ sub _buildMessagePublisher {
 sub publishMessage {
   my ($self, $msg) = @_;
   #because predicates don't trigger builders, need to check hasPublisherAddress
-  return unless $self->hasMessanger && $self->hasPublisherAddress;
+  return unless $self->messanger && $self->publisherAddress;
   $self->messanger->{message}{data} = $msg;
   $self->notify(['publish', $self->messanger->{event},
     encode_json($self->messanger) ] );
