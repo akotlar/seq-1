@@ -183,6 +183,7 @@ sub annotate_snpfile {
     {
       configfile => $self->config_file_path,
       debug      => $self->debug,
+      messangerHref => $self->messangerHref,
     }
   );
 
@@ -374,6 +375,8 @@ sub annotate_snpfile {
     say "The stats record after summarize is:";
     p $annotator->statsRecord;
   }
+
+  $annotator->storeStats;
 
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do

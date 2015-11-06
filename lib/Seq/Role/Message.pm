@@ -34,10 +34,13 @@ use DDP;
 #     return __PACKAGE__->new(@_);
 # }
 
+#state variables are closed over
 has publishServerAddress => (
   is => 'ro',
   isa => 'ArrayRef',
-  default => sub{ ['genome.local','6379'] }
+  required  => 0,
+  lazy => 1,
+  default => sub{return ['genome.local','6379'] },
 );
 
 has messangerHref => (
@@ -46,13 +49,11 @@ has messangerHref => (
   traits    => ['Hash'],
   required  => 0,
   predicate => 'hasPublisher',
-  default => sub {{}},
-  lazy => 1,
   handles   => { getMsg => 'get' }
 );
 
 has publisher => (
-  is       => 'rw',
+  is       => 'ro',
   required => 0,
   lazy     => 1,
   init_arg => undef,
@@ -65,6 +66,7 @@ has publisher => (
 
 sub _buildMessagePublisher {
   my $self = shift;
+  return unless $self->hasPublisher;
   return Redis::hiredis->new(
     host => $self->publishServerAddress->[0],
     port => $self->publishServerAddress->[1],
@@ -73,7 +75,7 @@ sub _buildMessagePublisher {
 
 sub publishMessage {
   my ($self, $msg) = @_;
-  if(!$self->hasPublisher) {return; }
+  return unless $self->hasPublisher;
   $self->getMsg('message')->{data} = $msg;
   $self->notify(['publish', $self->getMsg('channel'), encode_json($self->messangerHref) ] );
 };
@@ -81,7 +83,7 @@ sub publishMessage {
 sub tee_logger {
   my ($self, $log_method, $msg) = @_;
   $self->_logger->$log_method($msg);
-  $self->publishMessage($msg) if $self->hasPublisher;
+  $self->publishMessage($msg);
 
   if ( $log_method eq 'error' ) {
     confess $msg . "\n";
