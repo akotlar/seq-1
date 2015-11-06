@@ -388,7 +388,7 @@ sub annotate_snpfile {
 sub _minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
-  my %id_genos_href = {};
+  my %id_genos_href = ();
   my $het_ids_str = '';
   my $hom_ids_str = '';
   for my $id (@$id_names_aref) {
