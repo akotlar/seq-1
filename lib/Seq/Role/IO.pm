@@ -39,6 +39,7 @@ use Carp qw/ confess /;
 use IO::File;
 use IO::Compress::Gzip qw/ $GzipError /;
 use IO::Uncompress::Gunzip qw/ $GunzipError /;
+use Path::Tiny;
 use Scalar::Util qw/ reftype /;
 
 # tried various ways of assigning this to an attrib, with the intention that
@@ -56,7 +57,7 @@ sub get_read_fh {
   if ( defined $reftype ) {
     $file = $file->absolute->stringify;
     if ( !-f $file ) {
-      my $msg = sprintf( "ERROR: file does not exist for reading: %s", $file );
+      confess sprintf( "ERROR: file does not exist for reading: %s", $file );
     }
   }
 
@@ -69,6 +70,14 @@ sub get_read_fh {
       || confess "\nError: unable to open file ($file) for reading: $!\n";
   }
   return $fh;
+}
+
+sub slurp_file {
+  my ($self, $filePath) = @_;
+  if ( !-f $filePath ) {
+    confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
+  }
+  return path($filePath)->lines({chomp => 1} );
 }
 
 sub get_write_fh {

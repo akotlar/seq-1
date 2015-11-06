@@ -208,10 +208,8 @@ sub annotate_snpfile {
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
 
-  my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
-  while ( my $line = $snpfile_fh->getline ) {
-    chomp $line;
-
+  #my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
+  for my $line ($self->slurp_file($self->output_path) ) {
     # taint check the snpfile's data
     my $clean_line = $self->clean_line($line);
 
