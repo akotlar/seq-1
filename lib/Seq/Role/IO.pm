@@ -77,8 +77,7 @@ sub slurp_file {
   if ( !-f $filePath ) {
     confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
   }
-  my @lines = path($filePath)->lines({chomp => 1} );
-  return \@lines;
+  return path($filePath)->lines; #returns array
 }
 
 sub get_write_fh {
