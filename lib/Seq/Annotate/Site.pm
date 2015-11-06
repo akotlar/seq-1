@@ -117,8 +117,10 @@ sub _join_href {
     if ( defined $old_val and defined $new_val ) {
 
       # assuming if one is a hashref then they both are.
+      # "tail" recursive optimization
       if ( ref $old_val eq 'HASH' ) {
-        $merge{$attr} = $self->_join_href( $old_val, $new_val );
+        @_ = ($self, $old_val, $new_val);
+        $merge{$attr} = goto &_join_href($self, $old_val, $new_val);
       }
       elsif ( $old_val eq $new_val ) {
         $merge{$attr} = join ";", $old_val, $new_val;
