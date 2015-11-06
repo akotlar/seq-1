@@ -125,8 +125,9 @@ sub _get_gene_data {
   return \@gene_data;
 }
 
+# build_tx_db_for_genome takes the genome length, the 
 sub build_tx_db_for_genome {
-  my ($self, $genome_length, $chr_len_href, $chrs_aref) = @_;
+  my ($self, $genome_length ) = @_;
 
   # read gene data for the chromosome
   #   if there is no usable data then we will bail out and no blank files
@@ -152,19 +153,16 @@ sub build_tx_db_for_genome {
   $msg = sprintf( "writing to: '%s'", $nn_dbm_file );
   $self->_logger->info($msg);
 
-  # nearest neighbor bin file
-  my $nn_bin_file = $self->get_dat_file( 'genome', 'gene' );
-  $msg = sprintf( "writing to: '%s'", $nn_bin_file );
-  $self->_logger->info($msg);
-
-  # nearest neighbor test file
-  my $nn_test_file = $self->get_dat_file( 'genome', 'test' );
-  $msg = sprintf( "writing to: '%s'", $nn_test_file );
+  # nearest neighbor region file
+  my $nn_region_file = $self->get_dat_file( 'genome', 'gene' );
+  $msg = sprintf( "writing to: '%s'", $nn_region_file );
   $self->_logger->info($msg);
 
   # check if we've already build site range files unless forced to overwrite
   unless ( $self->force ) {
-    return if $self->_has_site_range_file($gene_region_file);
+    if ( $self->_has_site_range_file($gene_region_file) ) {
+      return $nn_region_file;
+    }
   }
 
   # write header for region file
@@ -254,64 +252,22 @@ sub build_tx_db_for_genome {
     # save gene number and name
     $db_nn->db_put_string( $gene_number, $gene_name );
   }
-
   my @sorted_genes = map { $_->[0] }
     sort { $a->[1] <=> $b->[1] }
     map { [ $_, $txStartStop{$_}->[0] ] } (keys %txStartStop);
 
   # for testing / debugging
-  my $testFh = IO::File->new( $nn_test_file, 'w') || die "$!";
-  say { $testFh } $genome_length;
+  my $regionFh = IO::File->new( $nn_region_file, 'w') || die "$!";
+  say { $regionFh } $genome_length;
   for my $gene ( @sorted_genes ) {
-    say { $testFh } join "\t", $gene, $txGeneToNum{$gene}, @{ $txStartStop{$gene} };
+    say { $regionFh } join "\t", $gene, $txGeneToNum{$gene}, @{ $txStartStop{$gene} };
   }
-  close ($testFh);
+  close ($regionFh);
 
   $msg = sprintf("genes: %d; first gene: %s, last gene: %s", 
     (scalar @sorted_genes), $sorted_genes[0], $sorted_genes[$#sorted_genes]);
   $self->_logger->info($msg);
-
-  my $last_stop = 0;
-  # my $nn_string = pack('n', 0) x $genome_length;
-  my $nn_string = '';
-  for (my $i=0; $i <@sorted_genes; $i++ ) {
-    my $gene = $sorted_genes[$i];
-    my $gene_number = $txGeneToNum{$gene};
-    my $next_gene = $sorted_genes[$i+1] || "NA";
-    my $start = $last_stop;
-
-    say join("\t", $gene, $gene_number, $next_gene, "start:", $start);
-
-    # determine stop
-    my $stop = 0;
-    if ( $next_gene eq "NA") {
-      $stop = $genome_length;
-    }
-    else {
-      my $this_gene_stop = $txStartStop{$gene}->[1];
-      my $next_gene_start = $txStartStop{$next_gene}->[0];
-      $stop = int( ($next_gene_start - $this_gene_stop ) / 2);
-    }
-
-    say join("\t", "stop:", $stop);
-
-    # determine whether we're at the end of the chromosome and make that the stop
-    # instead of the midpoint between the last gene stop and the next gene start
-    for (my $j = 0; $i < @$chrs_aref; $i++) {
-      my $chr = $chrs_aref->[$i];
-      my $next_chr = $chrs_aref->[$i+1] || 'NA';
-      if ($start > $chr_len_href->{$chr} && $stop > $chr_len_href->{$next_chr} ) {
-        $stop = $chr_len_href->{$next_chr};
-      }
-    }
-    for (my $j = $start; $j < $stop; $j++) {
-      $nn_string .= pack('n', $gene_number);
-    }
-    $last_stop = $stop;
-  }
-  my $fh = IO::File->new( $nn_bin_file, 'w') || die "$!";
-  print {$fh} $nn_string;
-  close($fh);
+  return $nn_region_file;
 }
 
 sub build_gene_db_for_chr {

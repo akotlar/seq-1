@@ -79,6 +79,12 @@ has genome_cadd => (
   coerce => 1,
 );
 
+has ngene_bin => (
+  is => 'ro',
+  isa => AbsFile,
+  coerce => 1,
+);
+
 has wanted_chr => (
   is      => 'ro',
   isa     => 'Str',
@@ -91,6 +97,7 @@ sub BUILD {
   $self->_logger->info( "genome_hasher: " . ( $self->genome_hasher || 'NA' ) );
   $self->_logger->info( "genome_scorer: " . ( $self->genome_scorer || 'NA' ) );
   $self->_logger->info( "genome_cadd: " .   ( $self->genome_cadd   || 'NA' ) );
+  $self->_logger->info( "ngene_bin " .   ( $self->ngene_bin   || 'NA' ) );
   $self->_logger->info( "wanted_chr: " .    ( $self->wanted_chr    || 'all' ) );
 }
 
@@ -125,13 +132,58 @@ sub build_transcript_db {
     # add additional keys to the hashref for Seq::Build::TxTrack
     my $gene_db = Seq::Build::GeneTrack->new($record);
 
-    # make chromosome start offsets for binary genome
-    my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
-
-    $gene_db->build_tx_db_for_genome( $self->genome_length, \%chr_len, [ $self->all_genome_chrs ] );
+    my $region_file = $gene_db->build_tx_db_for_genome( $self->genome_length );
 
     $msg = sprintf( "finished gene tx db, '%s'", $gene_track->name );
     $self->_logger->info($msg) if $self->debug;
+
+    # prepare index dir
+    my $index_dir = $self->genome_index_dir->absolute->stringify;
+    $self->genome_index_dir->mkpath unless -f $index_dir;
+
+    # get genome configuration object
+    #   NOTE: needed for genome_offset_file(), genome_bin_file(), and
+    #         genome_str_file() methods
+    my $ngene_obj;
+    foreach my $gst ( $self->all_genome_sized_tracks ) {
+      if ( $gst->type eq 'ngene' ) {
+        if ( $gene_track->name eq $gst->name) {
+          $ngene_obj = $gst;
+        }
+      }
+    }
+
+    # skip if we don't find gene track that has the same name as the ngene 
+    #   genome-sized track
+    next unless $ngene_obj;
+
+    # make chromosome start offsets for binary genome
+    my %chr_len = map { $_ => $self->get_abs_pos( $_, 1 ) } ( $self->all_genome_chrs );
+
+    # write chromosome offsets
+    my $chr_offset_file = $ngene_obj->genome_offset_file;
+    my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
+    print {$chr_offset_fh} Dump( \%chr_len );
+
+    my $cmd = sprintf("%s -chr %s -gene %s -out %s\n", $self->ngene_bin,
+      $chr_offset_file, $region_file, $ngene_obj->genome_bin_file );
+
+    $self->_logger->info("running command: $cmd");
+
+    my $exit_code = system $cmd;
+
+    if ($exit_code) {
+      my $msg =
+        sprintf( "error encoding genome with %s: %d", $self->ngene_bin, $exit_code );
+      $self->_logger->error($msg);
+      croak $msg;
+    }
+    elsif ( !-f $ngene_obj->genome_bin_file ) {
+      my $msg =
+        sprintf( "ERROR: did not find expected output '%s'", $ngene_obj->genome_bin_file );
+      $self->_logger->error($msg);
+      croak $msg;
+    }
   }
   $self->_logger->info('build transcripts: done');
 }

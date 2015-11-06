@@ -30,13 +30,13 @@ check_isa( $package,
   [ 'Seq::Config::GenomeSizedTrack', 'Seq::Config::Track', 'Moose::Object' ] );
 
 # Attribute tests for class
-my @ro_attrs = qw/ char_seq chr_len /;
+my @ro_attrs = qw/ bin_seq chr_len /;
 for my $attr (@ro_attrs) {
   has_ro_attr( $package, $attr );
 }
 
-# check type constraint: char_seq => ScalarRef
-for my $attr_name (qw( char_seq )) {
+# check type constraint: bin_seq => ScalarRef
+for my $attr_name (qw( bin_seq )) {
   my $attr = $package->meta->get_attribute($attr_name);
   ok( $attr->has_type_constraint, "$package $attr_name has a type constraint" );
   is( $attr->type_constraint->name, 'ScalarRef', "$attr_name type is ScalarRef" );
@@ -55,12 +55,12 @@ for my $attr_name (qw( chr_len )) {
   my $seq = '';
   my %chr_len;
   for my $chr ( @{ $config_href->{genome_chrs} } ) {
-    my $char_seq = pack( 'C', int( rand(4) ) ) x int( rand(10) + 1 );
-    $seq .= $char_seq;
-    $chr_len{$chr} = length $char_seq;
+    my $bin_seq = pack( 'C', int( rand(4) ) ) x int( rand(10) + 1 );
+    $seq .= $bin_seq;
+    $chr_len{$chr} = length $bin_seq;
   }
   my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
-  $href->{char_seq} = \$seq;
+  $href->{bin_seq} = \$seq;
   $href->{chr_len}  = \%chr_len;
   my $obj = $package->new($href);
   ok( $obj, 'object creation' );
@@ -73,7 +73,7 @@ for my $attr_name (qw( chr_len )) {
   for ( my $i = -60; $i < 61; $i++ ) {
     push @test_scores, $i / 2;
   }
-  my $char_seq;
+  my $bin_seq;
   my $score2char_phyloP = sub {
     my ($score) = @_;
     int( $score * ( 127 / 30 ) ) + 128;
@@ -89,7 +89,7 @@ for my $attr_name (qw( chr_len )) {
   my ( @exp_scores, @obs_scores );
   for my $i (@test_scores) {
     my $char = $score2char_phyloP->($i);
-    $char_seq .= pack( 'C', $char );
+    $bin_seq .= pack( 'C', $char );
     push @exp_scores, sprintf( "%0.3f", $char2score_phyloP->($char) );
   }
   my $char_genome_track = $package->new(
@@ -97,7 +97,7 @@ for my $attr_name (qw( chr_len )) {
       name        => $track_name,
       char2score  => $char2score_phyloP,
       score2char  => $score2char_phyloP,
-      char_seq    => \$char_seq,
+      bin_seq    => \$bin_seq,
       chr_len     => {},
       genome_chrs => [],
       type        => 'score',

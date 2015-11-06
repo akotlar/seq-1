@@ -222,9 +222,9 @@ sub annotate_snpfile {
     if ( !%header ) {
       my $transition_column;
       if ( $self->file_type eq 'snp_1' ) {
-        $transition_column = 3;
+        $transition_column = 4;
       }
-      if ( $self->file_type eq 'snp_2' ) {
+      elsif ( $self->file_type eq 'snp_2' ) {
         $transition_column = 5;
       }
       else {

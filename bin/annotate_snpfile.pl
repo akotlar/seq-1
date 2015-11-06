@@ -4,6 +4,7 @@ use 5.10.0;
 use strict;
 use warnings;
 
+use lib '/mnt/q22FSS/data/adsp/software/seq/lib';
 use Carp;
 use Getopt::Long;
 use File::Spec;
@@ -75,7 +76,7 @@ try {
   # create the annotator
   my $annotate_instance = Seq->new(
     {
-      file_type         => 'snp_2',
+      file_type         => 'snp_1',
       config_file       => $yaml_config,
       debug             => $debug,
       overwrite         => $overwrite,

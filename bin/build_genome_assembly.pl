@@ -32,9 +32,10 @@ my %cmd_2_method = (
 );
 
 my %bin_2_default = (
-  genome_cadd_bin   => "./bin/genome_cadd",
-  genome_hasher_bin => "./bin/genome_hasher",
-  genome_scorer_bin => "./bin/genome_scorer",
+  genome_cadd_bin   => "bin/genome_cadd",
+  genome_hasher_bin => "bin/genome_hasher",
+  genome_scorer_bin => "bin/genome_scorer",
+  ngene_bin => "bin/ngene",
 );
 my %bin_2_path = map { $_ => undef } ( keys %bin_2_default );
 
@@ -49,6 +50,7 @@ GetOptions(
   'hasher=s'     => \$bin_2_path{genome_hasher_bin},
   'scorer=s'     => \$bin_2_path{genome_scorer_bin},
   'cadd=s'       => \$bin_2_path{genome_cadd_bin},
+  'ngene=s'      => \$bin_2_path{ngene_bin},
   'wanted_chr=s' => \$wanted_chr,
 );
 
@@ -97,6 +99,7 @@ my $builder_options_href = {
   genome_scorer => $bin_2_path{genome_scorer_bin},
   genome_hasher => $bin_2_path{genome_hasher_bin},
   genome_cadd   => $bin_2_path{genome_cadd_bin},
+  ngene_bin     => $bin_2_path{ngene_bin},
   wanted_chr    => $wanted_chr,
   force         => $force,
   debug         => $debug,

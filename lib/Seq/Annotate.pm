@@ -110,6 +110,26 @@ sub _buildStatistics
   return Seq::Statistics->new(debug => $self->debug);
 }
 
+has _ngene => (
+  is => 'ro',
+  isa => 'Maybe[Seq::GenomeBin]',
+  builder => '_load_ngene',
+  laze => 1,
+  handles => [ 'get_nearest_gene',],
+);
+
+sub _load_ngene {
+
+  my $self = shift;
+
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'ngene' ) {
+      return $self->_load_genome_sized_track($gst);
+    }
+  }
+  return;
+}
+
 has _genome => (
   is       => 'ro',
   isa      => 'Seq::GenomeBin',
@@ -390,14 +410,26 @@ has dbm_snp => (
   lazy    => 1,
 );
 
-has dbm_tx => (
+has dbm_ngene => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::KCManager]',
-  builder => '_build_dbm_tx',
-  traits  => ['Array'],
-  handles => { _all_dbm_tx => 'elements', },
+  isa     => 'Maybe[Seq::KCManager]',
+  builder => '_build_dbm_ngene',
   lazy    => 1,
+  handles => {
+    gene_num_2_str => 'db_get_string',
+  },
 );
+
+# NOTE: this is not being used presently;
+#   originally thought it might be needed for indel annotations
+#has dbm_tx => (
+#  is      => 'ro',
+#  isa     => 'ArrayRef[Seq::KCManager]',
+#  builder => '_build_dbm_tx',
+#  traits  => ['Array'],
+#  handles => { _all_dbm_tx => 'elements', },
+#  lazy    => 1,
+#);
 
 has _header => (
   is      => 'ro',
@@ -478,20 +510,33 @@ sub _build_dbm_gene {
   return \@array;
 }
 
-sub _build_dbm_tx {
+sub _build_dbm_ngene {
   my $self = shift;
-  my @array;
-  for my $gene_track ( $self->all_gene_tracks ) {
-    my $dbm = $gene_track->get_kch_file( 'genome', 'tx' );
-    if ( -f $dbm ) {
-      push @array, Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
-    }
-    else {
-      push @array, undef;
+  for my $gene_track ($self->all_gene_tracks ) {
+    my $dbm = $gene_track->get_kch_file( 'genome', 'ngene');
+    if (-f $dbm) {
+      return Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
     }
   }
-  return \@array;
+  return;
 }
+
+# NOTE: this is not being used presently;
+#   originally thought it might be needed for indel annotations
+#sub _build_dbm_tx {
+#  my $self = shift;
+#  my @array;
+#  for my $gene_track ( $self->all_gene_tracks ) {
+#    my $dbm = $gene_track->get_kch_file( 'genome', 'tx' );
+#    if ( -f $dbm ) {
+#      push @array, Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
+#    }
+#    else {
+#      push @array, undef;
+#    }
+#  }
+#  return \@array;
+#}
 
 sub _build_header {
   my $self = shift;
@@ -645,12 +690,12 @@ sub BUILD {
       $self->_logger->info($msg);
     }
   }
-  for my $dbm_aref ( $self->_all_dbm_tx ) {
-    my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
-    my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
-    say $msg if $self->debug;
-    $self->_logger->info($msg);
-  }
+#  for my $dbm_aref ( $self->_all_dbm_tx ) {
+#    my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
+#    my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
+#    say $msg if $self->debug;
+#    $self->_logger->info($msg);
+#  }
 }
 
 sub _var_alleles {

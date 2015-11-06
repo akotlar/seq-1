@@ -89,7 +89,7 @@ sub check_header {
   my $req_field_count = 0;
 
   if ( $self->file_type eq 'snp_1' ) {
-    @req_fields = qw/ Fragment Position Reference Allele Type /;
+    @req_fields = qw/ Fragment Position Reference Minor_allele Type /;
   }
   elsif ( $self->file_type eq 'snp_2' ) {
     @req_fields = qw/ Fragment Position Reference Alleles Allele_Counts Type /;
@@ -127,7 +127,7 @@ sub proc_line {
     my $pos         = $fields_aref->[ $header_href->{Position} ];
     my $ref_allele  = $fields_aref->[ $header_href->{Reference} ];
     my $var_type    = $fields_aref->[ $header_href->{Type} ];
-    my $all_alleles = $fields_aref->[ $header_href->{Minor_Allele} ];
+    my $all_alleles = $fields_aref->[ $header_href->{Minor_allele} ];
     return ( $chr, $pos, $ref_allele, $var_type, $all_alleles, '' );
   }
   elsif ( $self->file_type eq 'snp_2' ) {
