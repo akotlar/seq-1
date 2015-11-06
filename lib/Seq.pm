@@ -349,7 +349,7 @@ sub annotate_snpfile {
       @snp_annotations = ();
       $self->reset_counter; 
     }
-    if($self->hasMessanger) {
+    if($self->hasPublisher) {
       $self->publishMessage("annotated $chr:$pos");
     }
   }
@@ -388,8 +388,9 @@ sub annotate_snpfile {
 sub _minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
-  my ($het_ids_str, $hom_ids_str, %id_genos_href);
-
+  my %id_genos_href = {};
+  my $het_ids_str = '';
+  my $hom_ids_str = '';
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
     my $id_prob = $fields_aref->[ $ids_href->{$id} + 1 ];
