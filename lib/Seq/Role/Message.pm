@@ -34,22 +34,24 @@ use DDP;
 #     return __PACKAGE__->new(@_);
 # }
 
-#state variables are closed over
-has publishServerAddress => (
+#note: not using native traits because they don't support Maybe attrs
+has publisherAddress => (
   is => 'ro',
-  isa => 'ArrayRef',
+  isa => 'Maybe[ArrayRef]',
   required  => 0,
   lazy => 1,
-  default => sub{return ['genome.local','6379'] },
+  predicate => 'hasPublisherAddress',
+  default => undef,
 );
 
-has messangerHref => (
+#note: not using native traits because they don't support Maybe attrs
+has messanger => (
   is        => 'rw',
-  isa       => 'HashRef',
-  traits    => ['Hash'],
+  isa       => 'Maybe[HashRef]',
   required  => 0,
-  predicate => 'hasPublisher',
-  handles   => { getMsg => 'get' }
+  lazy => 1,
+  default => undef,
+  predicate => 'hasMessanger',
 );
 
 has publisher => (
@@ -59,6 +61,7 @@ has publisher => (
   init_arg => undef,
   builder  => '_buildMessagePublisher',
   lazy => 1,
+  predicate => 'hasPublisher',
   handles => {
     notify => 'command'
   },
@@ -66,28 +69,33 @@ has publisher => (
 
 sub _buildMessagePublisher {
   my $self = shift;
-  return unless $self->hasPublisher;
+  return unless $self->hasPublisherAddress;
+  #delegation doesn't work for Maybe attrs
   return Redis::hiredis->new(
-    host => $self->publishServerAddress->[0],
-    port => $self->publishServerAddress->[1],
+    host => $self->publisherAddress->[0],
+    port => $self->publisherAddress->[1],
   );
 }
 
+#note, accessing hash directly because traits don't work with Maybe types
 sub publishMessage {
   my ($self, $msg) = @_;
-  return unless $self->hasPublisher;
-  $self->getMsg('message')->{data} = $msg;
-  $self->notify(['publish', $self->getMsg('channel'), encode_json($self->messangerHref) ] );
+  #because predicates don't trigger builders, need to check hasPublisherAddress
+  return unless $self->hasMessanger && $self->hasPublisherAddress;
+  $self->messanger->{message}{data} = $msg;
+  $self->notify(['publish', $self->messanger->{event},
+    encode_json($self->messanger) ] );
 };
 
 sub tee_logger {
   my ($self, $log_method, $msg) = @_;
-  $self->_logger->$log_method($msg);
   $self->publishMessage($msg);
+  $self->_logger->$log_method($msg);
 
-  if ( $log_method eq 'error' ) {
-    confess $msg . "\n";
-  } 
+  # redundant, _logger should handle exceptions
+  # if ( $log_method eq 'error' ) {
+  #   confess $msg . "\n";
+  # } 
 }
 
 no Moose::Role;

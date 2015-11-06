@@ -183,7 +183,8 @@ sub annotate_snpfile {
     {
       configfile => $self->config_file_path,
       debug      => $self->debug,
-      messangerHref => $self->messangerHref,
+      messanger  => $self->messanger,
+      publisherAddress => $self->publisherAddress,
     }
   );
 
@@ -348,7 +349,7 @@ sub annotate_snpfile {
       @snp_annotations = ();
       $self->reset_counter; 
     }
-    if($self->hasPublisher) {
+    if($self->hasMessanger) {
       $self->publishMessage("annotated $chr:$pos");
     }
   }
@@ -376,7 +377,7 @@ sub annotate_snpfile {
     p $annotator->statsRecord;
   }
 
-  $annotator->storeStats;
+  $annotator->storeStats($self->output_path);
 
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do

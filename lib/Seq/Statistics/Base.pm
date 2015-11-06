@@ -34,6 +34,7 @@ has statsRecord => (
     hasStat => 'exists',
     statsKv => 'kv',
     statSamples => 'keys',
+    hasStats => 'keys',
   },
   init_arg => undef,
   default => sub { return {} },

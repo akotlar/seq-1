@@ -105,6 +105,7 @@ has statisticsCalculator => (
     recordStat => 'record',
     summarizeStats => 'summarize',
     statsRecord => 'statsRecord',
+    storeStats => 'storeStats',
   },
   lazy => 1,
   required => 1,

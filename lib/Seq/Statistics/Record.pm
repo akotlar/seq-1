@@ -68,22 +68,22 @@ has _snpAnnotationsAref => (
 # at every level in the has, record whether transition or transversion
 # assumes that only non-reference alleles are passed, hence it is a role
 sub record {
-  my ($self, $sampleIDgenoHref, $featuresAref, $refAllele, $geneDataAref, $snpDataAref) = @_;
+  my ($self, $idGenoHref, $featuresAref, $refAllele, $geneDataAref, $snpDataAref) = @_;
+  #by order of complexity of left operand
+  return unless defined $refAllele && @$featuresAref && @$geneDataAref;
 
-  if(!(keys %$sampleIDgenoHref && @$geneDataAref 
-  && @$featuresAref && defined $refAllele) ) {
-    return; 
-  }
+  my @genoKeys = keys %$idGenoHref; #sampleIDs
+  return unless @genoKeys;
 
   my ($geno, $dGeno, $annotationType, $sampleStats, $trTvKey, 
     $targetHref, $minorAllele, $aCount, @featuresMerged);
 
   #for now, analyze only 
-  for my $sampleID (keys %$sampleIDgenoHref) {
-    $geno = $sampleIDgenoHref->{$sampleID};
+  for my $sampleID (@genoKeys) {
+    $geno = $idGenoHref->{$sampleID};
     #this isn't as safe as $hasGeno, but saves ~1s per 20k lines over 100samples
     #but, should be ok, if we stick to conceit that homozygotes are 1 letter
-    if($geno eq $refAllele) {next;} #require IUPAC geno, or D,I,E,H
+    next unless $geno ne $refAllele; #require IUPAC geno, or D,I,E,H
 
     if(!$self->hasStat($sampleID) ) {$self->setStat($sampleID, {} ); }
     $targetHref = $self->getStat($sampleID);
@@ -95,7 +95,7 @@ sub record {
     #transitions & transversion counter;
     $self->storeTrTv($targetHref, $refAllele, $geno);
 
-    if(@$geneDataAref > 1) {next; } #for now we omit multiple transcript sites
+    next unless @$geneDataAref == 1; #for now we omit multiple transcript sites
     
     $aCount = $self->isHomo($geno) ? 2 : 1;
     #$aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote    
@@ -118,7 +118,8 @@ sub record {
       $annotationType = $annotationHref->annotation_type;
 
       if($self->debug) {
-        say "recording statistics for geno $geno, minorAllele $minorAllele, annotation_type $annotationType";
+        say "recording statistics for geno $geno, minorAllele $minorAllele, 
+          annotation_type $annotationType";
       } 
       #there is a more efficient option: just passing annotatypeType separately
       #I think this is cleaner (see use of shit in storeCount), and probably fast enough
@@ -145,7 +146,8 @@ sub storeCount {
   $targetHref = \%{$targetHref->{$feature} };
   $targetHref->{$self->statsKey}{$self->countKey} += $aCount;
 
-  $self->storeCount($featuresAref, $targetHref, $aCount);
+  @_ = ($self, $featuresAref, $targetHref, $aCount);
+  goto &storeCount; #tail call opt
 }
 
 # transitions are dependent only on the reference base and sample allele,
@@ -165,7 +167,7 @@ sub storeTrTv {
 #as a non-snp site
 sub storeSNPdata {
   my ($self, $targetHref, $snpDataAref) = @_;
-  return if !defined $snpDataAref;
+  return unless defined $snpDataAref;
   my $snpKey = @$snpDataAref > 0 ? $self->snpKey(1) : $self->snpKey(0);
   $targetHref->{$snpKey}{$self->statsKey}{$self->countKey} += 1;
 }
