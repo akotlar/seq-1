@@ -139,7 +139,7 @@ sub storeCount {
   
   #to be more efficient we could track a feature index, and return when 
   #it == last featureAref index, and beyond that could store annotationType sep
-  if(!@$featuresAref) { return };
+  if(!@$featuresAref) {return; };
   my $feature = shift @$featuresAref;
   
   if($self->isBadFeature($feature) ) {return; }
