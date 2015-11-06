@@ -32,8 +32,8 @@ enum SnpType => [ 'SNP', 'MULTIALLELIC', ];
 
 has alleles      => ( is => 'ro', isa => 'Str',     required => 1, );
 has allele_count => ( is => 'ro', isa => 'Str',     required => 1, );
-has het_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', );
-has hom_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', );
+has het_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', lazy=> 1,);
+has hom_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', lazy=> 1,);
 has var_allele   => ( is => 'ro', isa => 'Str',     required => 1, );
 has var_type     => ( is => 'ro', isa => 'SnpType', required => 1, );
 
@@ -46,10 +46,18 @@ has '+gene_data' => (
 );
 
 # these are the attributes to export
+# has attrs => (
+#   is => 'ro',
+#   isa => 'ArrayRef',
+#   default => qw/ chr pos allele_count alleles var_type ref_base genomic_type
+#     het_ids hom_ids warning /,
+#   lazy => 1,
+#   init_arg => undef,
+# );
 override attrs => sub {
-  my @attrs = qw/ chr pos allele_count alleles var_type ref_base genomic_type
-    het_ids hom_ids warning /;
-  return \@attrs;
+  state $attrs = ['chr', 'pos', 'allele_count', 'alleles', 'var_type', 
+  'ref_base', 'genomic_type', 'het_ids', 'hom_ids', 'warning'];
+  return $attrs;
 };
 
 __PACKAGE__->meta->make_immutable;
