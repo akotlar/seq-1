@@ -388,7 +388,7 @@ sub annotate_snpfile {
 sub _minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
-  my ( @het_ids, @hom_ids, $het_ids_str, $hom_ids_str, %id_genos_href);
+  my ($het_ids_str, $hom_ids_str, %id_genos_href);
 
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
@@ -398,23 +398,28 @@ sub _minor_allele_carriers {
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
     if ( $self->isHomo($id_geno) ) {
-      push @hom_ids, $id;
+      #push @hom_ids, $id;
+      $hom_ids_str .= "$id;";
     } else {
-      push @het_ids, $id;
+      #push @het_ids, $id;
+      $het_ids_str .= "$id;";
     }
-
-    if (@het_ids) {
-      $het_ids_str = join ";", @het_ids;
-    }
-    else {
-      $het_ids_str = 'NA';
-    }
-    if (@hom_ids) {
-      $hom_ids_str = join ";", @hom_ids;
-    }
-    else {
-      $hom_ids_str = 'NA';
-    }
+    chop $hom_ids_str;
+    chop $het_ids_str;
+    $hom_ids_str = 'NA' unless $hom_ids_str;
+    $het_ids_str = 'NA' unless $het_ids_str;
+    # if (@het_ids) {
+    #   $het_ids_str = join ";", @het_ids;
+    # }
+    # else {
+    #   $het_ids_str = 'NA';
+    # }
+    # if (@hom_ids) {
+    #   $hom_ids_str = join ";", @hom_ids;
+    # }
+    # else {
+    #   $hom_ids_str = 'NA';
+    # }
     $id_genos_href{$id} = $id_geno;
   }
 
