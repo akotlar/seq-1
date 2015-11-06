@@ -136,8 +136,8 @@ sub _recursiveCalc {
 # -9 is inf; case when no denom; actual 'Infinity' is platform-specific
 sub _calcRatio {
   my ($numerator, $denominator) = @_;
-  if(!($numerator || $denominator) ) {return undef; }
-  #handle infinity by something obviously not real; actual '+-inf' is platform dependent
+  if(!($numerator || $denominator) ) {return; }
+  #handle inf by an obviously imposs ratio; actual '+-inf' is platform dependent
   elsif($numerator && !$denominator) {return -9; } 
   elsif(!$numerator) {return 0; }
   return $numerator/$denominator;
@@ -155,15 +155,14 @@ sub _nestedVal {
     say "and num keys left is" . scalar @$keysAref;
   }
   
-  if(@$keysAref == 0) {
-    return $mRef;
-  }
-  if(ref $mRef ne 'HASH'){ return undef;}
+  return $mRef unless @$keysAref > 0;
+  return unless ref $mRef eq 'HASH';
 
   my $key = shift @$keysAref;
-  if(!defined $mRef->{$key} ) {return undef;}
+  return unless defined $mRef->{$key};
 
-  $self->_nestedVal($mRef->{$key}, $keysAref);
+  @_ = ($self, $mRef->{$key}, $keysAref);
+  goto &_nestedVal; #tail call opt
 }
 
 no Moose::Role;

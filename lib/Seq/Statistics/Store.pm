@@ -7,6 +7,7 @@ use Cpanel::JSON::XS;
 with 'Seq::Role::IO';
 
 requires 'statsRecord';
+requires 'hasStats';
 
 use namespace::autoclean;
 
@@ -24,17 +25,17 @@ has statsFH => (
 );
 
 sub storeStats {
-  my ($self, $outBasePath) = shift;
-  if(!@{keys %{$self->statsRecord} } ) {
-    $self->tee_logger('warn', 'Trying to save empty stats record');
-    return;
+  my ($self, $outBasePath) = @_;
+  if(!$self->hasStats) {
+    $self->tee_logger('warn', 'No stats to store');
+  } else {
+    my $fh = $self->_buildFh($outBasePath.'.'.$self->statsExtension);
+    print $fh encode_json($self->statsRecord);
   }
-  my $fh = $self->_buildFh($outBasePath.'.'.$self->statsExtension);
-  print $fh encode_json($self->statsRecord);
 }
-
+  
 sub _buildFh {
-  my ($self, $outPath) = shift;
+  my ($self, $outPath) = @_;
 
   if(!defined $outPath) {
     $self->tee_logger('error', 'no path provided to storeStats'); #programmer error
