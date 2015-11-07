@@ -34,7 +34,7 @@ has _transitionTypesHref => (
   isa     => 'HashRef[Int]',
   traits  => ['Hash'],
   handles => {
-    isTr => 'exists',
+    isTr => 'get',
   },
   default => sub {return {AG => 1,GA => 1,CT => 1,TC => 1,R => 1,Y => 1} },
   lazy => 1,
@@ -159,8 +159,9 @@ sub storeCount {
 #as a non-snp site
 sub countCustomFeatures {
   my ($self, $targetHref, $refAllele, $geno, $snpDataAref) = @_;
-  my $trTvKey = $self->trTvKey(int(!!($self->isTr($geno) 
-    || $self->isTr($refAllele.$geno) ) ) );
+  my $trTvKey = $self->trTvKey(
+    $self->isTr($geno) || $self->isTr($refAllele.$geno) || 0
+  );
   $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
 
   return unless defined $snpDataAref;
