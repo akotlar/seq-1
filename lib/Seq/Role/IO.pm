@@ -40,6 +40,7 @@ use IO::File;
 use IO::Compress::Gzip qw/ $GzipError /;
 use IO::Uncompress::Gunzip qw/ $GunzipError /;
 use Path::Tiny;
+use File::Slurper;
 use Scalar::Util qw/ reftype /;
 
 # tried various ways of assigning this to an attrib, with the intention that
@@ -78,6 +79,14 @@ sub slurp_file {
     confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
   }
   return path($filePath)->lines; #returns array
+}
+
+sub slurpier_file {
+  my ($self, $filePath) = @_;
+  if ( !-f $filePath ) {
+    confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
+  }
+  return File::Slurper::read_lines($filePath,'utf-8',{chomp => 1}); #returns array
 }
 
 sub get_write_fh {

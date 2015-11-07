@@ -210,8 +210,8 @@ sub annotate_snpfile {
 
   #my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
   for my $line ( $self->slurp_file($self->snpfile_path) ) {
+    #slurpier_file: expects to be chomped: chomp $line
     chomp $line;
-
     # taint check the snpfile's data
     my $clean_line = $self->clean_line($line);
 
@@ -405,10 +405,16 @@ sub _minor_allele_carriers {
       #push @het_ids, $id;
       $het_ids_str .= "$id;";
     }
-    chop $hom_ids_str;
-    chop $het_ids_str;
-    $hom_ids_str = 'NA' unless $hom_ids_str;
-    $het_ids_str = 'NA' unless $het_ids_str;
+    if($hom_ids_str) {
+      chop $hom_ids_str;
+    } else {
+      $hom_ids_str = 'NA';
+    }
+    if($het_ids_str) {
+      chop $het_ids_str;
+    } else {
+      $het_ids_str = 'NA';
+    }
     # if (@het_ids) {
     #   $het_ids_str = join ";", @het_ids;
     # }
