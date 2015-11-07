@@ -78,6 +78,10 @@ sub record {
   my ($geno, $dGeno, $annotationType, $sampleStats, $trTvKey, 
     $targetHref, $minorAllele, $aCount, @featuresMerged);
 
+  #here we define anything that needn't be calculated per sample
+  #if n+1 features we can put into sub
+  my $snpKey;
+  $snpKey = $self->snpKey(int(!!@$snpDataAref) ) if defined $snpDataAref;
   #for now, analyze only 
   for my $sampleID (@genoKeys) {
     $geno = $idGenoHref->{$sampleID};
@@ -91,7 +95,7 @@ sub record {
     #we do this to avoid having to check against a string
     #because loose coupling good
     #stores tr, tv, and any other features
-    $self->countCustomFeatures($targetHref, $refAllele, $geno, $snpDataAref);
+    $self->countCustomFeatures($targetHref, $refAllele, $geno, $snpKey);
 
     next unless @$geneDataAref == 1; #for now we omit multiple transcript sites
     
@@ -158,14 +162,13 @@ sub storeCount {
 #if it doesn't, presume the caller intended this not to be recorded as a non-snp site
 #as a non-snp site
 sub countCustomFeatures {
-  my ($self, $targetHref, $refAllele, $geno, $snpDataAref) = @_;
+  my ($self, $targetHref, $refAllele, $geno, $snpKey) = @_;
   my $trTvKey = $self->trTvKey(
     $self->isTr($geno) || $self->isTr($refAllele.$geno) || 0
   );
   $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
 
-  return unless defined $snpDataAref;
-  my $snpKey = $self->snpKey(int(!!@$snpDataAref) );
+  return unless defined $snpKey;
   $targetHref->{$snpKey}{$self->statsKey}{$self->countKey} += 1;
 }
 
