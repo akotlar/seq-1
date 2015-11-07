@@ -393,9 +393,8 @@ sub _minor_allele_carriers {
   my $hom_ids_str = '';
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
-    my $id_prob = $fields_aref->[ $ids_href->{$id} + 1 ];
 
-    # skip reference && N's
+     # skip reference && N's
     next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
     if ( $self->isHomo($id_geno) ) {

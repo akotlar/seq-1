@@ -90,10 +90,8 @@ sub record {
 
     #we do this to avoid having to check against a string
     #because loose coupling good
-    $self->storeSNPdata($targetHref, $snpDataAref);
-    
-    #transitions & transversion counter;
-    $self->storeTrTv($targetHref, $refAllele, $geno);
+    #stores tr, tv, and any other features
+    $self->countCustomFeatures($targetHref, $refAllele, $geno, $snpDataAref);
 
     next unless @$geneDataAref == 1; #for now we omit multiple transcript sites
     
@@ -155,27 +153,20 @@ sub storeCount {
 # they should only be inserted in a single locaiton, else they'll be counted
 # by sum(n*tr_i)
 # by definition there can only be one tr or tv per site
-sub storeTrTv {
-  my ($self, $targetHref, $refAllele, $geno) = @_;
-  my $trTvKey = ($self->isTr($geno) || $self->isTr($refAllele.$geno) ) ? 1 :0;
-  $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
-}
-
 # rs numbers are just like transitions and transversion
 #we use defined check to find out whether anything exists; encapsulate here
 #if it doesn't, presume the caller intended this not to be recorded as a non-snp site
 #as a non-snp site
-sub storeSNPdata {
-  my ($self, $targetHref, $snpDataAref) = @_;
+sub countCustomFeatures {
+  my ($self, $targetHref, $refAllele, $geno, $snpDataAref) = @_;
+  my $trTvKey = $self->trTvKey(int(!!($self->isTr($geno) 
+    || $self->isTr($refAllele.$geno) ) ) );
+  $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
+
   return unless defined $snpDataAref;
-  my $snpKey = @$snpDataAref > 0 ? $self->snpKey(1) : $self->snpKey(0);
+  my $snpKey = $self->snpKey(int(!!@$snpDataAref) );
   $targetHref->{$snpKey}{$self->statsKey}{$self->countKey} += 1;
 }
-
-# sub _getTr {
-#   my ($self, $refAllele, $geno) = @_;
-#   return $self->trTvKey(int(!!($self->isTr($geno) || $self->isTr($refAllele.$geno) ) ) );
-# }
 
 # if it's a het; currently supports only diploid organisms
 # 2nd if isn't strictly necessary, but safer, and allows this to be used
