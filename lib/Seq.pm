@@ -209,9 +209,9 @@ sub annotate_snpfile {
     ( -9, -9, -9, -9, -9 );
 
   #my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
-  for my $line ( $self->slurp_file($self->snpfile_path) ) {
+  for my $line ( $self->slurpier_file($self->snpfile_path) ) {
     #slurpier_file: expects to be chomped: chomp $line
-    chomp $line;
+    #chomp $line;
     # taint check the snpfile's data
     my $clean_line = $self->clean_line($line);
 
