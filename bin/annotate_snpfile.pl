@@ -20,7 +20,7 @@ use Data::Dump qw/ dump pp /;
 use Seq;
 
 my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $overwrite, $no_skip_chr,
-  $debug );
+  $debug, $snp_file_version );
 
 # TODO: read directly from argument_format.json
 
@@ -34,6 +34,7 @@ GetOptions(
   'overwrite'   => \$overwrite,
   'no_skip_chr' => \$no_skip_chr,
   'd|debug'     => \$debug,
+  't|type=s' => \$snp_file_version,
 );
 
 if ($help) {
@@ -43,7 +44,8 @@ if ($help) {
 
 unless ( $yaml_config
   and $snpfile
-  and $out_file )
+  and $out_file 
+  and $snp_file_version)
 {
   Pod::Usage::pod2usage();
 }
@@ -52,6 +54,11 @@ try {
   # sanity checking
   if ( -f $out_file && !$overwrite ) {
     say "ERROR: '$out_file' already exists. Use '--overwrite' switch to over write it.";
+    exit;
+  }
+
+  unless ( $snp_file_version eq 'snp_1' or $snp_file_version eq 'snp_2' ) { 
+    say "ERROR: Expected snp file version to be either snp_1 or snp_2 but found . " . $snp_file_version;
     exit;
   }
 
@@ -76,7 +83,7 @@ try {
   # create the annotator
   my $annotate_instance = Seq->new(
     {
-      file_type         => 'snp_1',
+      file_type         => $snp_file_version,
       config_file       => $yaml_config,
       debug             => $debug,
       overwrite         => $overwrite,
@@ -102,7 +109,7 @@ in a configuration file
 
 =head1 SYNOPSIS
 
-annotate_snpfile.pl --config <assembly config> --snp <snpfile> --out <file_ext>
+annotate_snpfile.pl --config <assembly config> --snp <snpfile> --out <file_ext> --type <snp_1, snp_2>
 
 =head1 DESCRIPTION
 
@@ -116,6 +123,10 @@ the annotations for the sites in the snpfile.
 =item B<-s>, B<--snp>
 
 Snp: snpfile
+
+=item B<-r>, B<--type>
+
+Type: version of snpfile: snp_1 or snp_2
 
 =item B<-c>, B<--config>
 
