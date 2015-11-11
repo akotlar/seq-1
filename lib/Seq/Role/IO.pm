@@ -73,7 +73,7 @@ sub get_read_fh {
   return $fh;
 }
 
-sub slurp_file {
+sub get_file_lines {
   my ($self, $filePath) = @_;
   if ( !-f $filePath ) {
     confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
@@ -81,7 +81,9 @@ sub slurp_file {
   return path($filePath)->lines; #returns array
 }
 
-sub slurpier_file {
+#another version, seems slower in practice
+#if using this no need to chomp each individual line
+sub slurp_file_lines {
   my ($self, $filePath) = @_;
   if ( !-f $filePath ) {
     confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );

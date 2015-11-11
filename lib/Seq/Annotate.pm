@@ -79,7 +79,7 @@ use Seq::Annotate::Snp;
 use Seq::Statistics;
 
 extends 'Seq::Assembly';
-with 'Seq::Role::IO', 'Seq::Role::Message';
+with 'Seq::Role::IO';
 
 =property @private {Seq::GenomeSizedTrackChar<Str>} _genome
 
