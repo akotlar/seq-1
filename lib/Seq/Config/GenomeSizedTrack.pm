@@ -36,7 +36,7 @@ Extended in:
 
 =for :list
 * @class Seq::Build::GenomeSizedTrackStr
-* @class Seq::GenomeSizedTrackChar
+* @class Seq::GenomeBin
 * @class Seq::Fetch::Sql
 
 =cut
@@ -106,7 +106,7 @@ cadd type file format:
 #       chromosome, and that is used for seeking.
 =cut
 
-enum GenomeSizedTrackType => [ 'genome', 'score', 'cadd' ];
+enum GenomeSizedTrackType => [ 'genome', 'score', 'cadd', 'ngene' ];
 
 # TODO: This section that describes the encoding of the base could be a bit
 #       clearer, I think.

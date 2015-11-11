@@ -2,7 +2,7 @@ use 5.10.0;
 use strict;
 use warnings;
 
-package Seq::GenomeSizedTrackChar;
+package Seq::GenomeBin;
 
 our $VERSION = '0.001';
 
@@ -11,7 +11,7 @@ our $VERSION = '0.001';
 
 =head1 DESCRIPTION
 
-  @class B<Seq::GenomeSizedTrackChar>
+  @class B<Seq::GenomeBin>
 
   The class that stores the complete reference genome
 
@@ -28,12 +28,13 @@ Extended in:
 
 =for :list
 * @class Seq::Build::GenomeSizedTrackStr
-* @class Seq::GenomeSizedTrackChar
+* @class Seq::GenomeBin
 * @class Seq::Fetch::Sql
 
 =cut
 
 use Moose 2;
+use Moose::Util::TypeConstraints;
 
 use Carp qw/ confess croak /;
 use File::Path;
@@ -41,6 +42,7 @@ use File::Spec;
 use namespace::autoclean;
 use Scalar::Util qw/ reftype /;
 
+# enum BinType => [ 'C', 'n' ];
 extends 'Seq::Config::GenomeSizedTrack';
 with 'Seq::Role::IO', 'Seq::Role::Genome';
 
@@ -56,7 +58,7 @@ has chr_len => (
   required => 1,
 );
 
-=property @public {StrRef} char_seq
+=property @public {StrRef} bin_seq
 
   Stores one binary genome sized track as a scalar reference (reference to a
   3.2B base string). This can be the reference genome, one of the 3 CADD score
@@ -67,8 +69,8 @@ Used in:
 
 =for :list
 * @class Seq::Annotate
-    Seq::Annotate sets the char_seq values on line 286
-* @class Seq:::GenomeSizedTrackChar
+    Seq::Annotate sets the bin_seq values on line 286
+* @class Seq:::GenomeBin
 
 @example from @class Seq::Annotate _load_cadd_score:
 
@@ -81,12 +83,20 @@ Used in:
 
 =cut
 
-has char_seq => (
+has bin_seq => (
   is       => 'ro',
   isa      => 'ScalarRef',
   required => 1,
-  builder  => '_build_char_seq',
 );
+
+# dropped defining the binary type and just have different methods
+#   that work for differently encoded strings
+#has bin => (
+#  is => 'ro',
+#  isa => 'BinType',
+#  required => 1,
+#  default => 'C',
+#);
 
 has genome_length => (
   is      => 'ro',
@@ -97,18 +107,20 @@ has genome_length => (
 
 sub _get_genome_length {
   my $self = shift;
-  return length ${ $self->char_seq };
+  return length ${ $self->bin_seq };
 }
 
 =method @public get_base
 
-  Returns the 0 indexed
+  Returns the genome index code for the absolute position of the genome supplied; 
+  the absolute position is assumed to be zero indexed
+
 @param $pos
-  The absolute
+  The zero-indexed absolute genomic position
 @requires
 =for :list
 * @property genome_length
-* @property char_seq
+* @property bin_seq
     The full binary genome sized track
 
 @ returns {Str} in the form of a Char representing the value at that position.
@@ -119,12 +131,43 @@ sub get_base {
   my ( $self, $pos ) = @_;
   state $genome_length = $self->_get_genome_length;
 
-  confess "get_base() expects a position between 0 and $genome_length, got $pos."
-    unless $pos >= 0 and $pos < $genome_length;
+  if ( $pos >= 0 and $pos < $genome_length ) {
+    return unpack( 'C', substr( ${ $self->bin_seq }, $pos, 1 ) );
+  }
+  else {
+    confess "get_base() expects a position between 0 and $genome_length, got $pos.";
+  }
+}
 
-  # position here is not adjusted for the Zero versus 1 index issue
-  # this means that we need to a 0 indexed geno
-  return unpack( 'C', substr( ${ $self->char_seq }, $pos, 1 ) );
+
+=method @public get_nearest_gene
+
+  Returns the gene number for the nearest gene to the absolute position;
+  the absolute position is assumed to be zero indexed
+  
+@param $pos
+  The zero-indexed absolute genomic position
+@requires
+=for :list
+* @property genome_length
+* @property bin_seq
+    The full binary genome sized track (16-bit in network order)
+
+@ returns the gene number
+
+=cut
+
+sub get_nearest_gene {
+  my ($self, $pos ) = @_;
+
+  state $genome_length = $self->_get_genome_length;
+
+  if ( $pos >= 0 and $pos < $genome_length ) {
+    return unpack( 'n', substr( ${ $self->bin_seq }, $pos*2, 2 ) );
+  }
+  else {
+    confess "get_base() expects a position between 0 and $genome_length, got $pos.";
+  }
 }
 
 =method @public get_score

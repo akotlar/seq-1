@@ -37,6 +37,8 @@ use namespace::autoclean;
 use Seq::Gene;
 use Seq::KCManager;
 
+use Data::Dump qw/dump/;
+
 extends 'Seq::Build::SparseTrack';
 with 'Seq::Role::IO';
 
@@ -123,8 +125,9 @@ sub _get_gene_data {
   return \@gene_data;
 }
 
+# build_tx_db_for_genome takes the genome length, the 
 sub build_tx_db_for_genome {
-  my $self = shift;
+  my ($self, $genome_length ) = @_;
 
   # read gene data for the chromosome
   #   if there is no usable data then we will bail out and no blank files
@@ -140,23 +143,35 @@ sub build_tx_db_for_genome {
   my $msg = sprintf( "writing to: '%s'", $gene_region_file );
   $self->_logger->info($msg);
 
-  # dbm file
-  my $dbm_file = $self->get_kch_file( 'genome', 'tx' );
-  $msg = sprintf( "writing to: '%s'", $dbm_file );
+  # tx dbm file
+  my $tx_dbm_file = $self->get_kch_file( 'genome', 'tx' );
+  $msg = sprintf( "writing to: '%s'", $tx_dbm_file );
+  $self->_logger->info($msg);
+
+  # nearest neighbor dbm file
+  my $nn_dbm_file = $self->get_kch_file( 'genome', 'gene' );
+  $msg = sprintf( "writing to: '%s'", $nn_dbm_file );
+  $self->_logger->info($msg);
+
+  # nearest neighbor region file
+  my $nn_region_file = $self->get_dat_file( 'genome', 'gene' );
+  $msg = sprintf( "writing to: '%s'", $nn_region_file );
   $self->_logger->info($msg);
 
   # check if we've already build site range files unless forced to overwrite
   unless ( $self->force ) {
-    return if $self->_has_site_range_file($gene_region_file);
+    if ( $self->_has_site_range_file($gene_region_file) ) {
+      return $nn_region_file;
+    }
   }
 
   # write header for region file
   my $gene_region_fh = $self->get_write_fh($gene_region_file);
   say {$gene_region_fh} $self->in_gene_val;
 
-  # create dbm object
-  my $db = Seq::KCManager->new(
-    filename => $dbm_file,
+  # create dbm object for transcripts
+  my $db_tx = Seq::KCManager->new(
+    filename => $tx_dbm_file,
     mode     => 'create',
     # bnum => bucket number => 50-400% of expected items in the hash is optimal
     # annotated sites for hg38 is 22727477 (chr1) to 13222 (chrM) with avg of
@@ -164,6 +179,20 @@ sub build_tx_db_for_genome {
     bnum => 1_000_000,
     msiz => 512_000_000,
   );
+
+  # create dbm object for nearest neighbor gene list
+  my $db_nn = Seq::KCManager->new(
+    filename => $nn_dbm_file,
+    mode     => 'create',
+    # bnum => bucket number => 50-400% of expected items in the hash is optimal
+    # about ~5000 genes per chromosome
+    bnum => 2_500,
+    msiz => 512_000_000,
+  );
+
+  my $gene_number = 1;
+  my (%chr_for_gene, %txStartStop, %txGeneToNum);
+
   for my $gene_href (@$chr_data_aref) {
     my $gene = Seq::Gene->new($gene_href);
     $gene->set_alt_names( %{ $gene_href->{_alt_names} } );
@@ -183,11 +212,85 @@ sub build_tx_db_for_genome {
     };
 
     # save gene attr in dbm
-    $db->db_put( $record_href->{transcript_id}, $record_href );
+    $db_tx->db_put( $record_href->{transcript_id}, $record_href );
 
     # save tx start/stop for gene
     say {$gene_region_fh} join "\t", $gene->transcript_start, $gene->transcript_end;
+
+    # prefer to keep the geneSymbol since there are < 30K (in humans); for
+    #   organisms without geneSymbol we'll store transcript_id
+    my $gene_name = $gene_href->{_alt_names}{geneSymbol} or $gene->transcript_id;
+
+    # there are certain gene symbols, primarily provisional ones, that are re-used
+    #   this causes some problems since they are often on different chromosomes; 
+    #   it should be obvious that we'll only capture the 1st gene symbol for any 
+    #   repeats
+    if ( exists $chr_for_gene{$gene_name} ) {
+      if ($gene->chr ne $chr_for_gene{$gene_name}) {
+        next;
+      }
+    }
+    else {
+      $chr_for_gene{ $gene_name } = $gene->chr;
+    }
+
+    # - skip entries wihout a gene symbol, which will default to 'NA'
+    # - skip entries that are non-coding (many of these have duplicate names,
+    #   often appearing on the same chromosome, which makes things weird).
+    if ($gene_name eq "NA" || ( $gene->coding_start == $gene->coding_end)) {
+      next;
+    }
+
+    if ( exists $txStartStop{ $gene_name } ) {
+      my ( $start, $end ) = @{ $txStartStop{$gene_name} };
+      if ( $gene->transcript_start < $start ) {
+        $start = $gene->transcript_start;
+      }
+      if ( $gene->transcript_end > $end ) {
+        $end = $gene->transcript_end;
+      }
+      $txStartStop{$gene_name} = [ $start, $end ];
+    }
+    else {
+      $txStartStop{$gene_name} = [ $gene->transcript_start, $gene->transcript_end ];
+      $txGeneToNum{$gene_name} = $gene_number;
+      $gene_number++;
+    }
+
+    $msg = sprintf("gene: %s (%d), start: %s, stop %s", 
+      $gene_name, $txGeneToNum{$gene_name}, $txStartStop{$gene_name}[0],
+      $txStartStop{$gene_name}[1]);
+    $self->_logger->info($msg);
+
   }
+
+  # now, the helper program will sort this so it's not strictly necessary to do so here
+  my @sorted_genes = map { $_->[0] }
+    sort { $a->[1] <=> $b->[1] }
+    map { [ $_, $txStartStop{$_}->[0] ] } (keys %txStartStop);
+
+  # write data 
+  #   1) dat file => ngene idx
+  #   2) kch for ngene db lookup
+  my $regionFh = IO::File->new( $nn_region_file, 'w') || die "$!";
+
+  # might just make this a command line argument
+  say { $regionFh } $genome_length;
+
+  for my $gene ( @sorted_genes ) {
+
+    # save in dat file for ngene idx helper program
+    say { $regionFh } join "\t", $gene, $txGeneToNum{$gene}, @{ $txStartStop{$gene} };
+
+    # kch save gene number and name
+    $db_nn->db_put_string( $txGeneToNum{$gene}, $gene );
+  }
+  close ($regionFh);
+
+  $msg = sprintf("genes: %d; first gene: %s, last gene: %s", 
+    (scalar @sorted_genes), $sorted_genes[0], $sorted_genes[$#sorted_genes]);
+  $self->_logger->info($msg);
+  return $nn_region_file;
 }
 
 sub build_gene_db_for_chr {

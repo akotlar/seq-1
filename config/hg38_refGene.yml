@@ -85,6 +85,13 @@ genome_sized_tracks:
   - chrX.fa.gz
   - chrY.fa.gz
   type: genome
+- local_files: 
+  - NA
+  name: refGene
+  remote_dir: NA
+  remote_files:
+    - NA
+  type: ngene
 - local_files:
   - hg38.phastCons7way.wigFix.gz
   name: phastCons

@@ -44,7 +44,7 @@ use Seq::Config::SparseTrack;
 with 'Seq::Role::ConfigFromFile', 'MooX::Role::Logger';
 
 my @_attributes = qw/ genome_name genome_description genome_chrs genome_index_dir
-  genome_cadd genome_hasher genome_scorer debug wanted_chr debug force act/;
+  genome_cadd genome_hasher genome_scorer ngene_bin debug wanted_chr debug force act/;
 
 has genome_name        => ( is => 'ro', isa => 'Str', required => 1, );
 has genome_description => ( is => 'ro', isa => 'Str', required => 1, );
@@ -185,6 +185,7 @@ sub BUILDARGS {
 
       if ( $gst->{type} eq 'genome'
         or $gst->{type} eq 'score'
+        or $gst->{type} eq 'ngene'
         or $gst->{type} eq 'cadd' )
       {
         my $obj = Seq::Config::GenomeSizedTrack->new($gst);

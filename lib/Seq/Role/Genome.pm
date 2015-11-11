@@ -22,7 +22,7 @@ Used in:
 
 =for :list
 * Seq::Build::GenomeSizedTrackStr
-* Seq::GenomeSizedTrackChar
+* Seq::GenomeBin
 
 Extended in: None
 

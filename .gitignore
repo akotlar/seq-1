@@ -73,3 +73,5 @@ big_files/
 Pileup.annotation.txt.gz
 Pileup.annotation.txt
 Pileup.snp
+bin/ngene
+bin/genome*

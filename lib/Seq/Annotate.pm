@@ -41,7 +41,7 @@ Extends: @class Seq::Assembly
 
 Uses:
 =for :list
-* @class Seq::GenomeSizedTrackChar
+* @class Seq::GenomeBin
 * @class Seq::KCManager
 * @class Seq::Site::Annotation
 * @class Seq::Site::Gene
@@ -68,7 +68,7 @@ use DDP;                   # for debugging
 use Data::Dump qw/ dump /; # for debugging
 use Cpanel::JSON::XS;
 
-use Seq::GenomeSizedTrackChar;
+use Seq::GenomeBin;
 use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Gene;
@@ -84,11 +84,11 @@ use Coro;
 extends 'Seq::Assembly';
 with 'Seq::Role::IO';
 
-=property @private {Seq::GenomeSizedTrackChar<Str>} _genome
+=property @private {Seq::GenomeBin<Str>} _genome
 
   Binary-encoded genome string.
 
-@see @class Seq::GenomeSizedTrackChar
+@see @class Seq::GenomeBin
 =cut
 
 has statisticsCalculator => (
@@ -110,9 +110,29 @@ sub _buildStatistics
   return Seq::Statistics->new(debug => $self->debug);
 }
 
+has _ngene => (
+  is => 'ro',
+  isa => 'Maybe[Seq::GenomeBin]',
+  builder => '_load_ngene',
+  lazy => 1,
+  handles => [ 'get_nearest_gene',],
+);
+
+sub _load_ngene {
+
+  my $self = shift;
+
+  for my $gst ( $self->all_genome_sized_tracks ) {
+    if ( $gst->type eq 'ngene' ) {
+      return $self->_load_genome_sized_track($gst);
+    }
+  }
+  return;
+}
+
 has _genome => (
   is       => 'ro',
-  isa      => 'Seq::GenomeSizedTrackChar',
+  isa      => 'Seq::GenomeBin',
   required => 1,
   lazy     => 1,
   builder  => '_load_genome',
@@ -135,7 +155,7 @@ sub _load_genome {
 
 has _genome_scores => (
   is      => 'ro',
-  isa     => 'ArrayRef[Maybe[Seq::GenomeSizedTrackChar]]',
+  isa     => 'ArrayRef[Maybe[Seq::GenomeBin]]',
   traits  => ['Array'],
   handles => {
     _all_genome_scores  => 'elements',
@@ -186,14 +206,14 @@ sub _load_genome_sized_track {
   my $yml_file     = $gst->genome_offset_file;
   my $chr_len_href = LoadFile($yml_file);
 
-  my $obj = Seq::GenomeSizedTrackChar->new(
+  my $obj = Seq::GenomeBin->new(
     {
       name          => $gst->name,
       type          => $gst->type,
       genome_chrs   => $gst->genome_chrs,
       genome_length => $genome_length,
       chr_len       => $chr_len_href,
-      char_seq      => \$seq,
+      bin_seq      => \$seq,
     }
   );
 
@@ -207,7 +227,7 @@ sub _load_genome_sized_track {
 
 has _genome_cadd => (
   is      => 'ro',
-  isa     => 'ArrayRef[Maybe[Seq::GenomeSizedTrackChar]]',
+  isa     => 'ArrayRef[Maybe[Seq::GenomeBin]]',
   traits  => ['Array'],
   handles => {
     _get_cadd_track   => 'get',
@@ -265,14 +285,14 @@ sub _load_cadd_score {
     my $yml_file     = $gst->genome_offset_file;
     my $chr_len_href = LoadFile($yml_file);
 
-    my $obj = Seq::GenomeSizedTrackChar->new(
+    my $obj = Seq::GenomeBin->new(
       {
         name          => $gst->name,
         type          => $gst->type,
         genome_chrs   => $gst->genome_chrs,
         genome_length => $genome_length,
         chr_len       => $chr_len_href,
-        char_seq      => \$seq,
+        bin_seq      => \$seq,
       }
     );
     push @cadd_scores, $obj;
@@ -390,14 +410,26 @@ has dbm_snp => (
   lazy    => 1,
 );
 
-has dbm_tx => (
+has dbm_ngene => (
   is      => 'ro',
-  isa     => 'ArrayRef[Seq::KCManager]',
-  builder => '_build_dbm_tx',
-  traits  => ['Array'],
-  handles => { _all_dbm_tx => 'elements', },
+  isa     => 'Maybe[Seq::KCManager]',
+  builder => '_build_dbm_ngene',
   lazy    => 1,
+  handles => {
+    gene_num_2_str => 'db_get_string',
+  },
 );
+
+# NOTE: this is not being used presently;
+#   originally thought it might be needed for indel annotations
+#has dbm_tx => (
+#  is      => 'ro',
+#  isa     => 'ArrayRef[Seq::KCManager]',
+#  builder => '_build_dbm_tx',
+#  traits  => ['Array'],
+#  handles => { _all_dbm_tx => 'elements', },
+#  lazy    => 1,
+#);
 
 has _header => (
   is      => 'ro',
@@ -478,20 +510,33 @@ sub _build_dbm_gene {
   return \@array;
 }
 
-sub _build_dbm_tx {
+sub _build_dbm_ngene {
   my $self = shift;
-  my @array;
-  for my $gene_track ( $self->all_gene_tracks ) {
-    my $dbm = $gene_track->get_kch_file( 'genome', 'tx' );
-    if ( -f $dbm ) {
-      push @array, Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
-    }
-    else {
-      push @array, undef;
+  for my $gene_track ($self->all_gene_tracks ) {
+    my $dbm = $gene_track->get_kch_file( 'genome', 'ngene');
+    if (-f $dbm) {
+      return Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
     }
   }
-  return \@array;
+  return;
 }
+
+# NOTE: this is not being used presently;
+#   originally thought it might be needed for indel annotations
+#sub _build_dbm_tx {
+#  my $self = shift;
+#  my @array;
+#  for my $gene_track ( $self->all_gene_tracks ) {
+#    my $dbm = $gene_track->get_kch_file( 'genome', 'tx' );
+#    if ( -f $dbm ) {
+#      push @array, Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
+#    }
+#    else {
+#      push @array, undef;
+#    }
+#  }
+#  return \@array;
+#}
 
 sub _build_header {
   my $self = shift;
@@ -562,6 +607,7 @@ sub _build_header {
     het_ids      => '',
     hom_ids      => 'Sample_3',
     genomic_type => 'Exonic',
+    nearest_gene => 'NA',
     scores       => {
       cadd     => 10,
       phyloP   => 3,
@@ -579,9 +625,11 @@ sub _build_header {
   # some features are always expected
   @features =
     qw/ chr pos var_type alleles allele_count genomic_type site_type annotation_type ref_base
-    minor_allele /;
+    minor_allele nearest_gene /;
   my %exp_features = map { $_ => 1 } @features;
 
+  # add expected features from about to the features array to ensure we always have
+  # certain features in our output
   for my $feature ( sort keys %obj_attrs ) {
     if ( !exists $exp_features{$feature} ) {
       push @features, $feature;
@@ -645,12 +693,13 @@ sub BUILD {
       $self->_logger->info($msg);
     }
   }
-  for my $dbm_aref ( $self->_all_dbm_tx ) {
-    my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
-    my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
-    say $msg if $self->debug;
-    $self->_logger->info($msg);
-  }
+
+#  for my $dbm_aref ( $self->_all_dbm_tx ) {
+#    my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
+#    my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
+#    say $msg if $self->debug;
+#    $self->_logger->info($msg);
+#  }
 }
 
 sub _var_alleles {
@@ -724,7 +773,7 @@ sub annotate_snp_site {
       $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
         $all_allele_str, $ref_allele, $ref_allele );
       $self->_logger->warn($msg);
-    }   
+    }
     return;
   }
 
@@ -745,10 +794,20 @@ sub annotate_snp_site {
     }
     else {
       $record{genomic_type} = 'Intronic';
+      my $nearest_gene_code = $self->get_nearest_gene( $abs_pos ) || '-9';
+      if ( $nearest_gene_code != -9 ) {
+        $record{nearest_gene} = $self->gene_num_2_str( $nearest_gene_code );
+      }
+      # say STDERR join "\t", $record{genomic_type}, $nearest_gene_code, $record{nearest_gene};
     }
   }
   else {
     $record{genomic_type} = 'Intergenic';
+    my $nearest_gene_code = $self->get_nearest_gene( $abs_pos ) || '-9';
+    if ( $nearest_gene_code != -9 ) {
+      $record{nearest_gene} = $self->gene_num_2_str( $nearest_gene_code );
+    }
+    # say STDERR join "\t", $record{genomic_type}, $nearest_gene_code, $record{nearest_gene};
   }
 
   # get scores at site
@@ -801,11 +860,9 @@ sub annotate_snp_site {
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
-      # p $rec_aref;
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           push @snp_data, Seq::Site::Snp->new($rec_href);
-          #p $rec_href;
         }
       }
     }
@@ -1094,7 +1151,7 @@ sub annotate_del_sites {
     my ( %data, %record, @snp_data, $id_genos_href_contig );
 
     for ( my $i = $region_aref->[0]; $i <= $region_aref->[1]; $i++ ) {
-      my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count, 
+      my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count,
         $het_ids, $hom_ids, $id_genos_href ) = @{ $sites_href->{$i} };
       my $chr_index = $chr_index_href->{$chr};
       my $ref_obj =
