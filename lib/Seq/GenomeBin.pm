@@ -87,7 +87,6 @@ has bin_seq => (
   is       => 'ro',
   isa      => 'ScalarRef',
   required => 1,
-  builder  => '_build_bin_seq',
 );
 
 # dropped defining the binary type and just have different methods
@@ -113,9 +112,11 @@ sub _get_genome_length {
 
 =method @public get_base
 
-  Returns the 0 indexed
+  Returns the genome index code for the absolute position of the genome supplied; 
+  the absolute position is assumed to be zero indexed
+
 @param $pos
-  The absolute
+  The zero-indexed absolute genomic position
 @requires
 =for :list
 * @property genome_length
@@ -130,20 +131,22 @@ sub get_base {
   my ( $self, $pos ) = @_;
   state $genome_length = $self->_get_genome_length;
 
-  confess "get_base() expects a position between 0 and $genome_length, got $pos."
-    unless $pos >= 0 and $pos < $genome_length;
-
-  # position here is not adjusted for the Zero versus 1 index issue
-  # this means that we need to a 0 indexed geno
-  return unpack( 'C', substr( ${ $self->bin_seq }, $pos, 1 ) );
+  if ( $pos >= 0 and $pos < $genome_length ) {
+    return unpack( 'C', substr( ${ $self->bin_seq }, $pos, 1 ) );
+  }
+  else {
+    confess "get_base() expects a position between 0 and $genome_length, got $pos.";
+  }
 }
 
 
 =method @public get_nearest_gene
 
-  returns the gene number for the nearest gene to the position
+  Returns the gene number for the nearest gene to the absolute position;
+  the absolute position is assumed to be zero indexed
+  
 @param $pos
-  The absolute
+  The zero-indexed absolute genomic position
 @requires
 =for :list
 * @property genome_length
@@ -159,12 +162,12 @@ sub get_nearest_gene {
 
   state $genome_length = $self->_get_genome_length;
 
-  confess "get_base() expects a position between 0 and $genome_length, got $pos."
-    unless $pos >= 0 and $pos < $genome_length;
-
-  # position here is not adjusted for the Zero versus 1 index issue
-  # this means that we need to a 0 indexed geno
-  return unpack( 'n', substr( ${ $self->bin_seq }, ($pos*2), 1 ) );
+  if ( $pos >= 0 and $pos < $genome_length ) {
+    return unpack( 'n', substr( ${ $self->bin_seq }, $pos*2, 2 ) );
+  }
+  else {
+    confess "get_base() expects a position between 0 and $genome_length, got $pos.";
+  }
 }
 
 =method @public get_score

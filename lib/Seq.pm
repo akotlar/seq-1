@@ -346,9 +346,9 @@ sub annotate_snpfile {
       $self->print_annotations( \@snp_annotations, $self->header );
       @snp_annotations = ();
       $self->reset_counter;
-      if ( $self->wants_to_publish_messages ) {
-        $self->_publish_message("annotated $chr:$pos");
-      }
+#      if ( $self->wants_to_publish_messages ) {
+#        $self->_publish_message("annotated $chr:$pos");
+#      }
       cede;
     }
   }

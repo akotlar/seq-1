@@ -191,7 +191,7 @@ sub build_tx_db_for_genome {
   );
 
   my $gene_number = 1;
-  my (%txStartStop, %txGeneToNum);
+  my (%chr_for_gene, %txStartStop, %txGeneToNum);
 
   for my $gene_href (@$chr_data_aref) {
     my $gene = Seq::Gene->new($gene_href);
@@ -221,10 +221,23 @@ sub build_tx_db_for_genome {
     #   organisms without geneSymbol we'll store transcript_id
     my $gene_name = $gene_href->{_alt_names}{geneSymbol} or $gene->transcript_id;
 
-    # if there's no gene symbol it will default to 'NA'
-    #   this usually implies a non-coding or otherwise more tentitve gene, 
-    #   which we'll skip
-    if ($gene_name eq "NA") {
+    # there are certain gene symbols, primarily provisional ones, that are re-used
+    #   this causes some problems since they are often on different chromosomes; 
+    #   it should be obvious that we'll only capture the 1st gene symbol for any 
+    #   repeats
+    if ( exists $chr_for_gene{$gene_name} ) {
+      if ($gene->chr ne $chr_for_gene{$gene_name}) {
+        next;
+      }
+    }
+    else {
+      $chr_for_gene{ $gene_name } = $gene->chr;
+    }
+
+    # - skip entries wihout a gene symbol, which will default to 'NA'
+    # - skip entries that are non-coding (many of these have duplicate names,
+    #   often appearing on the same chromosome, which makes things weird).
+    if ($gene_name eq "NA" || ( $gene->coding_start == $gene->coding_end)) {
       next;
     }
 
@@ -249,18 +262,28 @@ sub build_tx_db_for_genome {
       $txStartStop{$gene_name}[1]);
     $self->_logger->info($msg);
 
-    # save gene number and name
-    $db_nn->db_put_string( $gene_number, $gene_name );
   }
+
+  # now, the helper program will sort this so it's not strictly necessary to do so here
   my @sorted_genes = map { $_->[0] }
     sort { $a->[1] <=> $b->[1] }
     map { [ $_, $txStartStop{$_}->[0] ] } (keys %txStartStop);
 
-  # for testing / debugging
+  # write data 
+  #   1) dat file => ngene idx
+  #   2) kch for ngene db lookup
   my $regionFh = IO::File->new( $nn_region_file, 'w') || die "$!";
+
+  # might just make this a command line argument
   say { $regionFh } $genome_length;
+
   for my $gene ( @sorted_genes ) {
+
+    # save in dat file for ngene idx helper program
     say { $regionFh } join "\t", $gene, $txGeneToNum{$gene}, @{ $txStartStop{$gene} };
+
+    # kch save gene number and name
+    $db_nn->db_put_string( $txGeneToNum{$gene}, $gene );
   }
   close ($regionFh);
 

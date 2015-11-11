@@ -114,7 +114,7 @@ has _ngene => (
   is => 'ro',
   isa => 'Maybe[Seq::GenomeBin]',
   builder => '_load_ngene',
-  laze => 1,
+  lazy => 1,
   handles => [ 'get_nearest_gene',],
 );
 
@@ -213,7 +213,7 @@ sub _load_genome_sized_track {
       genome_chrs   => $gst->genome_chrs,
       genome_length => $genome_length,
       chr_len       => $chr_len_href,
-      char_seq      => \$seq,
+      bin_seq      => \$seq,
     }
   );
 
@@ -292,7 +292,7 @@ sub _load_cadd_score {
         genome_chrs   => $gst->genome_chrs,
         genome_length => $genome_length,
         chr_len       => $chr_len_href,
-        char_seq      => \$seq,
+        bin_seq      => \$seq,
       }
     );
     push @cadd_scores, $obj;
@@ -607,6 +607,7 @@ sub _build_header {
     het_ids      => '',
     hom_ids      => 'Sample_3',
     genomic_type => 'Exonic',
+    nearest_gene => 'NA',
     scores       => {
       cadd     => 10,
       phyloP   => 3,
@@ -624,9 +625,11 @@ sub _build_header {
   # some features are always expected
   @features =
     qw/ chr pos var_type alleles allele_count genomic_type site_type annotation_type ref_base
-    minor_allele /;
+    minor_allele nearest_gene /;
   my %exp_features = map { $_ => 1 } @features;
 
+  # add expected features from about to the features array to ensure we always have
+  # certain features in our output
   for my $feature ( sort keys %obj_attrs ) {
     if ( !exists $exp_features{$feature} ) {
       push @features, $feature;
@@ -690,6 +693,7 @@ sub BUILD {
       $self->_logger->info($msg);
     }
   }
+
 #  for my $dbm_aref ( $self->_all_dbm_tx ) {
 #    my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
 #    my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
@@ -790,10 +794,20 @@ sub annotate_snp_site {
     }
     else {
       $record{genomic_type} = 'Intronic';
+      my $nearest_gene_code = $self->get_nearest_gene( $abs_pos ) || '-9';
+      if ( $nearest_gene_code != -9 ) {
+        $record{nearest_gene} = $self->gene_num_2_str( $nearest_gene_code );
+      }
+      # say STDERR join "\t", $record{genomic_type}, $nearest_gene_code, $record{nearest_gene};
     }
   }
   else {
     $record{genomic_type} = 'Intergenic';
+    my $nearest_gene_code = $self->get_nearest_gene( $abs_pos ) || '-9';
+    if ( $nearest_gene_code != -9 ) {
+      $record{nearest_gene} = $self->gene_num_2_str( $nearest_gene_code );
+    }
+    # say STDERR join "\t", $record{genomic_type}, $nearest_gene_code, $record{nearest_gene};
   }
 
   # get scores at site
@@ -846,11 +860,9 @@ sub annotate_snp_site {
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
-      # p $rec_aref;
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           push @snp_data, Seq::Site::Snp->new($rec_href);
-          #p $rec_href;
         }
       }
     }
