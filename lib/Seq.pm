@@ -327,24 +327,7 @@ sub annotate_snpfile {
         push @snp_annotations, $record_href;
         $self->inc_counter;
       }
-    }
-    # elsif ( $var_type eq 'INS' ) {
-    #   my $record_href = $annotator->annotate_ins_site(
-    #     $chr,      $chr_index,      $pos,          $abs_pos, $ref_allele,
-    #     $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids, $id_genos_href
-    #   );
-    #   if ( defined $record_href ) {
-    #     push @snp_annotations, $record_href;
-    #     $self->inc_counter;
-    #   }
-    # }
-    # elsif ( $var_type eq 'DEL' ) {
-    #   # deletions are saved so they can be aggregated and annotated en block later
-    #   $self->set_del_site( $abs_pos =>
-    #       [ $chr, $pos, $ref_allele, $all_allele_str, $allele_count, $het_ids,
-    #         $hom_ids, $id_genos_href ] );
-    # }
-    elsif ($var_type ne 'MESS' && $var_type ne 'LOW') {
+    } elsif ($var_type ne 'MESS' && $var_type ne 'LOW') {
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
       $self->tee_logger( 'warn', $msg );
     }
@@ -395,6 +378,12 @@ sub annotate_snpfile {
   return $annotator->statsRecord;
 }
 
+# _minor_allele_carriers assumes the following spec for indels:
+# Allele listed in sample column is one of D,E,I,H, or whatever single base
+# codes are defined in Seq::Role::Genotypes
+# However, the alleles listed in the Alleles column will not be these
+# Instead, will indicate the type (- or +) followed by the number of bases created/removed rel.ref
+# So the sample column gives us heterozygosity, while Alleles column gives us nucleotide composition
 sub _minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 

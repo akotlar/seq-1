@@ -816,6 +816,8 @@ sub annotate {
   }
   $record{snp_data} = \@snp_data;
 
+  $self->recordStat($id_genos_href, [$record{var_type}, $record{genomic_type}], 
+    $record{ref_base}, \@gene_data, \@snp_data);
   # create object for href export
   my $obj = Seq::Annotate::All->new( \%record );
 
