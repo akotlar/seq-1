@@ -395,12 +395,14 @@ sub _minor_allele_carriers {
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
      # skip reference && N's
-    next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
+    next if ($id_geno eq $ref_allele || $id_geno eq 'N');
 
-    if ( $self->isHomo($id_geno) ) {
+    if ($self->isHet($id_geno) ) {
+      $het_ids_str .= "$id;";
+    } elsif ($self->isHomo($id_geno) ) {
       $hom_ids_str .= "$id;";
     } else {
-      $het_ids_str .= "$id;";
+      $self->tee_logger('warn', "$id_geno was not recognized, skipping");
     }
     $id_genos_href{$id} = $id_geno;
   }
