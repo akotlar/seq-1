@@ -209,9 +209,10 @@ sub annotate_snpfile {
     ( -9, -9, -9, -9, -9 );
 
   #my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
-  for my $line ( $self->slurpier_file($self->snpfile_path) ) {
-    #slurpier_file: expects to be chomped: chomp $line
-    #chomp $line;
+  #get_file_lines is an abstraction of our file reading functionality,
+  #whether it's line-by-line, or slurping
+  for my $line ( $self->get_file_lines($self->snpfile_path) ) {
+    chomp $line;
     # taint check the snpfile's data
     my $clean_line = $self->clean_line($line);
 
@@ -393,41 +394,20 @@ sub _minor_allele_carriers {
   my $hom_ids_str = '';
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
-
      # skip reference && N's
-    next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
+    next if ($id_geno eq $ref_allele || $id_geno eq 'N');
 
-    if ( $self->isHomo($id_geno) ) {
-      #push @hom_ids, $id;
+    if ($self->isHet($id_geno) ) {
+      $het_ids_str .= "$id;";
+    } elsif ($self->isHomo($id_geno) ) {
       $hom_ids_str .= "$id;";
     } else {
-      #push @het_ids, $id;
-      $het_ids_str .= "$id;";
+      $self->tee_logger('warn', "$id_geno was not recognized, skipping");
     }
-    if($hom_ids_str) {
-      chop $hom_ids_str;
-    } else {
-      $hom_ids_str = 'NA';
-    }
-    if($het_ids_str) {
-      chop $het_ids_str;
-    } else {
-      $het_ids_str = 'NA';
-    }
-    # if (@het_ids) {
-    #   $het_ids_str = join ";", @het_ids;
-    # }
-    # else {
-    #   $het_ids_str = 'NA';
-    # }
-    # if (@hom_ids) {
-    #   $hom_ids_str = join ";", @hom_ids;
-    # }
-    # else {
-    #   $hom_ids_str = 'NA';
-    # }
     $id_genos_href{$id} = $id_geno;
   }
+  if($hom_ids_str) { chop $hom_ids_str; } else { $hom_ids_str = 'NA'; }
+  if($het_ids_str) { chop $het_ids_str; } else { $het_ids_str = 'NA'; }
 
   # return ids for printing
   return ( $het_ids_str, $hom_ids_str, \%id_genos_href);

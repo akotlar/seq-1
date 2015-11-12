@@ -26,8 +26,8 @@ use Moose::Util::TypeConstraints;
 use Carp qw/ confess /;
 use namespace::autoclean;
 
-#use Seq::Site::Snp;
-#use Seq::Site::Annotation;
+use Seq::Site::Snp;
+use Seq::Site::Annotation;
 
 with 'Seq::Role::Serialize';
 
@@ -38,8 +38,8 @@ has chr          => ( is => 'ro', isa => 'Str',          required => 1, );
 has genomic_type => ( is => 'ro', isa => 'GenomicType',  required => 1, );
 has pos          => ( is => 'ro', isa => 'Int',          required => 1, );
 has ref_base     => ( is => 'ro', isa => 'Str',          required => 1, );
-has scores       => ( is => 'ro', isa => 'HashRef[Str]', default  => sub { {} }, lazy=> 1,);
-has warning      => ( is => 'ro', isa => 'Str',          default  => 'NA', lazy=> 1,);
+has scores       => ( is => 'ro', isa => 'HashRef[Str]', default  => sub { {} }, );
+has warning      => ( is => 'ro', isa => 'Str',          default  => 'NA', );
 
 # the objects stored in gene_data really only need to do as_href_with_NAs(),
 # which is a method in Seq::Role::Seralize
@@ -61,18 +61,10 @@ has snp_data => (
   handles  => { all_snp_obj => 'elements', },
 );
 
-#optimization: don't make array for each attrs call, this can get called millions of times
 sub attrs {
   state $attrs = ['chr', 'pos', 'var_type', 'ref_base', 'genomic_type', 'warning'];
   return $attrs;
 }
-# has attrs => (
-#   is => 'ro',
-#   isa => 'ArrayRef',
-#   default => qw/ chr pos var_type ref_base genomic_type warning /,
-#   lazy => 1,
-#   init_arg => undef,
-# );
 
 sub as_href {
   my $self = shift;
@@ -117,13 +109,11 @@ sub _join_href {
     if ( defined $old_val and defined $new_val ) {
 
       # assuming if one is a hashref then they both are.
-      # "tail" recursive optimization
       if ( ref $old_val eq 'HASH' ) {
-        @_ = ($self, $old_val, $new_val);
-        $merge{$attr} = goto &_join_href($self, $old_val, $new_val);
+        $merge{$attr} = $self->_join_href( $old_val, $new_val );
       }
       elsif ( $old_val eq $new_val ) {
-        $merge{$attr} = join ";", $old_val, $new_val;
+        $merge{$attr} = "$old_val;$new_val"; #http://www.perlmonks.org/?node_id=964608
       }
       else {
         my @old_vals = split /\;/, $old_val;
