@@ -17,7 +17,6 @@ use DDP;
 
 extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
-with 'Seq::Role::Message';
 
 #can't use type str, because -1 is a number, could coerce, but why?
 #will fail early if input bad anyway
@@ -108,19 +107,21 @@ state $frames = ['InFrame', 'FrameShift'];
 sub _set_annotation_type {
   my $self = shift;
   my $frame = $frames->[$self->indLength % 3];
-  my $str = $self->indType eq '-' ? 'Del' : 'Ins' ."-$frame-";
+  my $str = $self->indType eq '-' ? 'Del' : 'Ins' ."$frame";
   #first capture gross
   #covers 3UTR, 5UTR, and all other GeneSiteType 's enum'd
-  my $annotation_type = $str . $self->site_type . ";"; #or could interpolate ${}
+  my $annotation_type = $str .'-'. $self->site_type . ";"; #or could interpolate ${}
 
   if($self->site_type eq 'Coding') {
     if($self->codon_number == 1) {
-      $annotation_type .= $str . "StartLoss;"; #or could interpolate
+      $annotation_type .= $str .'-'. "StartLoss;"; #or could interpolate
     }
     if ($self->ref_aa_residue eq '*' ) {
-      $annotation_type .= $str . "StopLoss;";
+      $annotation_type .= $str .'-'. "StopLoss;";
     }
   }
+  say "annotation_type del is";
+  p $annotation_type;
   chop $annotation_type;
   return $annotation_type;
 }
