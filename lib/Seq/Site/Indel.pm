@@ -105,7 +105,7 @@ sub BUILD {
 
 sub _set_annotation_type {
   my $self = shift;
-  my $frame = $self->indLength % 3 ? 'InFrame' : 'FrameShift';
+  my $frame = $self->indLength % 3 ? 'FrameShift' : 'InFrame';
 
   my $str = ($self->indType eq '-' ? 'Del' : 'Ins' ) . "-$frame-";
   #first capture gross
