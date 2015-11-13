@@ -41,18 +41,6 @@ has new_aa_residue => (
   builder => '_set_new_aa_residue',
 );
 
-has indType => (
-  is => 'ro',
-  isa => 'Num',
-  required => 1,
-);
-
-has indLength => (
-  is => 'ro',
-  isa => 'Num',
-  required => 1,
-);
-
 has annotation_type => (
   is       => 'rw',
   isa      => 'Str',
