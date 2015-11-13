@@ -23,9 +23,7 @@ coerce 'Indel',
     Seq::Site::Indel::Definition->new(minor_allele => $_)
   };
 
-subtype 'Indels'
-    => as 'ArrayRef[Indel]'
-    ;
+subtype 'Indels' => as 'ArrayRef[Indel]';
 
 coerce 'Indels',
   from 'Indel',

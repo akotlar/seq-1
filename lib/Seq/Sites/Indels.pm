@@ -8,6 +8,7 @@ use DDP;
 
 use Seq::Site::Indel;
 use Seq::Site::Indel::Type;
+with 'Seq::Site::Gene::Definition'; #for remaking the AA, later
 
 has alleles => (
   is => 'ro',
@@ -20,136 +21,96 @@ has alleles => (
   required => 1,
 );
 
-  # traits => ['Array'],
-  # coerce => 1,
-  # handles => {
-  #   allAlleles => 'elements',
-  # },
-  # required => 1,
-
-has annotations => (
-  is => 'rw',
-  required => 0,
-  default => sub{[]},
-  isa => 'ArrayRef',
-  traits => ['Array'],
-  handles => {
-    allAnnotations => 'elements',
-  },
-  init_arg => undef,
-);
-
 #basePosData is the current base; for a SNP this is fine, and for single
 #base deletions this is fine, for -(1+N) deletions or +N insertions, not fine
-#The whole $basePosDataAref routine, which checked for indLenght > 1, then 
-#appended already fetched one position data...could make things faster, 
-#or could just be a microopt that's fragile.. removed for now
+#Currently assumes that deletions are always numbers and insertions always
+#the actual allele; this is very easy to solve, see below, kept this way for perf.
+##could check if(int($allele->minor_allele) )
 sub findGeneData {
   my ($self, $basePosDataAref, $abs_pos, $db) = @_;
 
   my @data;
+  my @range; #can't pass list to db_get
   my $annotationType;
+  my $reconstitutedAllele = '';
   for my $allele ($self->allAlleles) {
-    
-    say "allele is";
-    p $allele;
-    say "indType is";
-    p $allele->indType;
-    say "indLength is";
-    p $allele->indLength;
-
     if($allele->indType eq '-') {
       #inclusive of current base
-      @data = $db->db_get([$abs_pos - $allele->indLength + 1 .. $abs_pos] );
-    } else {
-      #exclusive of current base
-      @data = $db->get_bulk([$abs_pos + 1 .. $abs_pos + $allele->indLength] );
-    }
-    say "We got for dataAref";
-    
-    $annotationType = $allele->typeName . '-' . $allele->frameType . '[' . 
-      __buildAnnotationStr(\@data).']';
+      @range = ($abs_pos - $allele->indLength + 1 .. $abs_pos);
 
-    
+      @data = $db->db_get(\@range, 1); #last arg is for reversal of order
+
+      $self->_annotateSugar(\@data, $allele, sub {
+        my $posDataAref = shift;
+        $reconstitutedAllele .= $posDataAref->[0]{ref_base};
+      });
+
+      if($reconstitutedAllele) {
+        $allele->renameMinorAllele($reconstitutedAllele);
+        $reconstitutedAllele = '';
+      }
+    } else {
+      #Our decision: current conceit is we consider the leading position
+      #and the next position, in case we were at a boundary and disturbed the adjacent
+      #feature
+      @range = ($abs_pos .. $abs_pos + 1);
+
+      @data = $db->get_bulk(\@range);
+      $self->_annotateSugar(\@data[1..$#data], $allele);
+    }
   }
 }
 
-#TODO: split this off into separate Type, separate file
-#Tracks Thomas' function, gets "worst" kind; in order
-state $site_types = ['Coding', '5UTR', '3UTR', 'Splice Acceptor', 'Splice Donor'];
-state $delim = '|'; #can't be ;
+state $delim = '|'; #can't be ; or will get split, unless we prepend Type-Frame-
 #Thomas, I noticed that we can potentially have many interesting variants
 #Say indels that hit start and stop, so I want to grab them all, in order
 #It seems like a waste not to if we're already 90% of the way there; people can 
 #ignore anything after the first delim if the wish to just see the most serious
-sub __buildAnnotationStr {
-  my $sitesAref = shift;
+sub _annotateSugar {
+  my ($self, $dataAref, $allele, $cb) = @_;
 
-  my $annotationStr = '';
-  my $sugar = '';
-  my $index;
-  for my $siteType (@$siteTypes) {
-    for my $geneRecordAref (@sitesAref) {
-      for my $transcriptHref (@$geneRecordAref) {
-        if($index == 0) { 
-          if(defined $transcriptHref->ref_aa_residue && $transcriptHref->ref_aa_residue eq '*' ) {
-            $sugar = 'StopLoss';
-          } elsif (defined $transcriptHref->codon_number && $transcriptHref->codon_number == 1) {
-            $sugar = 'StartLoss';
-          }
-        } else {
-          $sugar = $transcriptHref->site_type;
+  my %sugar;
+  my $siteType = '';
+  my $frame = '';
+  state $codingName = $self->getSiteType(0); #for API: Coding type always first
+  state $allowedSitesHref = { map { $_ => 1 } $self->allSiteTypes };
+
+  for my $geneRecordAref (@$dataAref) {
+    for my $transcriptHref (@$geneRecordAref) {
+      $siteType = $transcriptHref->{site_type};
+      next if !$allowedSitesHref->{$siteType};
+      if($siteType eq $codingName) { 
+        if (defined $transcriptHref->{codon_number} 
+        && $transcriptHref->{codon_number} == 1) {
+          $sugar{StartLoss} = 1;
         }
-        $annotationStr .= "$sugar|"; # a bit like fasta
+        if(defined $transcriptHref->{ref_aa_residue}
+        && $transcriptHref->{ref_aa_residue} eq '*' ) {
+          $sugar{StopLoss} = 1;
+        } else {
+          $sugar{$siteType} = 1;
+        }
+      } else {
+        $sugar{$siteType} = 1;
       }
     }
-    $index++;
+    if($cb) {$cb->($geneRecordAref); }
   }
-  chop $annotationStr;
-  return $annotationStr;
+  
+  #frameshift only matters for coding regions; lookup in order of frequency
+  $frame = $allele->frameType if $sugar{$codingName} 
+   || $sugar{StopLoss} || $sugar{StartLoss};
+
+  #the joiner is fasta's default separator; not using ; because that will split
+  #when as_href called, and I don't want to have to concat Del-Frameshift
+  #to each sugar key
+  #note this will sometimes result in empty brackets. I think it makes sense
+  #to keep those, becasue it makes parsing simpler, and contains information about feature absence
+  $allele->set_annotation_type (
+    $allele->typeName . ($frame && "-$frame") . '['. join('|', keys %sugar) . ']'
+  );
 }
 
-# sub __buildAnnotationHash {
-#   my $sitesAref = shift;
-
-#   my $foundSiteType;
-#   OUTER: for my $siteType (@$siteTypes) {
-#     for my $transcriptAref (@sitesAref) {
-#       for my $siteAref (@$transcriptAref) {
-#         if($siteAref->site_type eq $siteType) {
-#           $foundSiteType = $siteType;
-#           last OUTER;
-#         }
-#       }
-#     }
-#   }
-#   #I like to use indices, because underlying names can change, even case
-#   if($foundSIteType eq $siteType->[0] ) {
-
-#   }
-# }
-
-# sub _set_annotation_type {
-#   my $self = shift;
-#   my $frame = $self->indLength % 3 ? 'FrameShift' : 'InFrame';
-
-#   my $str = ($self->indType eq '-' ? 'Del' : 'Ins' ) . "-$frame-";
-#   #first capture gross
-#   #covers 3UTR, 5UTR, and all other GeneSiteType 's enum'd
-#   my $annotation_type = $str . $self->site_type . ";"; #or could interpolate ${}
-
-#   if($self->site_type eq 'Coding') {
-#     if($self->codon_number == 1) {
-#       $annotation_type .= $str . "StartLoss;"; #or could interpolate
-#     }
-#     if ($self->ref_aa_residue eq '*' ) {
-#       $annotation_type .= $str . "StopLoss;";
-#     }
-#   }
-#   chop $annotation_type;
-
-#   return $annotation_type;
-# }
 __PACKAGE__->meta->make_immutable;
 
 1;

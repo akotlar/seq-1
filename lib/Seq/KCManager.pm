@@ -132,8 +132,9 @@ sub db_put {
   }
 }
 
+#currently reverse only applies to bulk get
 sub db_get {
-  my ( $self, $keys ) = @_;
+  my ( $self, $keys, $reverse ) = @_;
 
   # the reason we need to check the existance of the db has to do with that we
   # allow non-existant file names to be used in creating the object and since
@@ -158,7 +159,10 @@ sub db_get {
     # does the value exist within the dbm?
     if ( defined $val ) {
       return decode_json $val if !ref $keys;
-      return map {decode_json($val->{$_} ) } keys(%$val);
+      if($reverse) {
+        return map {decode_json($val->{$_} ) } sort{$b <=> $a} keys(%$val);
+      }
+      return map {decode_json($val->{$_} ) } sort{$a <=> $b} keys(%$val);
     }
     else {
       return;

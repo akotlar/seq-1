@@ -72,6 +72,7 @@ use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Gene;
 use Seq::Site::Snp;
+use Seq::Site::Indel;
 use Seq::Sites::Indels;
 
 use Seq::Annotate::All;
@@ -735,7 +736,7 @@ sub annotate {
   my %record;
   $record{chr}          = $chr;
   $record{pos}          = $rel_pos;
-  #what does this do? seems to return NA's in practice
+  #seems to result in NA's currently after as_href
   $record{var_allele}   = join ",", @$snpAllelesAref, @$indelAllelesAref;
   $record{allele_count} = $allele_count;
   $record{alleles}      = $all_allele_str;
@@ -793,17 +794,26 @@ sub annotate {
               push @gene_data, Seq::Site::Annotation->new($rec_href);  
             }
           }
-          # if(@$indelAllelesAref) {
-          #   for my $iAllele (@$indelAllelesAref) {
-          #     $rec_href->{minor_allele} = $iAllele;
-          #     push @gene_data, Seq::Site::Indel->new($rec_href);  
-          #   }
-          # }
+          if(defined $indelAnnotator) {
+            for my $iAllele ($indelAnnotator->allAlleles) {
+              $rec_href->{minor_allele} = $iAllele->minor_allele;
+              $rec_href->{annotation_type} = $iAllele->annotation_type;
+              push @gene_data, Seq::Site::Indel->new($rec_href); 
+
+              if($self->debug) {
+                say "for allele";
+                p $iAllele;
+                say "we had these indel gene data";
+                p $gene_data[$#gene_data];
+              }
+              
+            }
+          }
         }
       }
     }
   }
-  $record{gene_data} = \@gene_data;
+  $record{gene_data} = \@gene_data; 
 
   # get snp annotations at site
   if ($snp) {
@@ -834,6 +844,8 @@ sub annotate {
     say "In Annotate.pm::annotate, we had these Variants " . $record{var_allele};
     say "In Annotate.pm::annotate, we made this record:";
     p $obj;
+    say "In Annotate.pm::annotate, that record obj had this gene_data";
+    p $obj->gene_data;
   }
 
   if ($return_obj) {

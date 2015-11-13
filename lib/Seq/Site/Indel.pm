@@ -19,58 +19,55 @@ use Seq::Site::Indel::Type;
 extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
 
-#can't use type str, because -1 is a number, could coerce, but why?
-#will fail early if input bad anyway
-has indel => (
+has minor_allele => (
   is => 'ro',
-  isa => 'Indel',
-  handles => [qw(minor_allele indType indLength)]
-);
-
-has new_codon_seq => (
-  is      => 'ro',
-  isa     => 'Maybe[Str]',
-  lazy    => 1,
-  builder => '_set_new_codon_seq',
-);
-
-has new_aa_residue => (
-  is      => 'ro',
-  isa     => 'Maybe[Str]',
-  lazy    => 1,
-  builder => '_set_new_aa_residue',
+  isa => 'Str',
+  required => 1,
 );
 
 has annotation_type => (
-  is       => 'rw',
-  isa      => 'Str',
-  lazy     => 1,
-  default  => '',
+  is => 'ro',
+  isa => 'Str',
+  required => 1,
 );
 
-#Here, for a deletion, it would be confusing to show a longer allele
-#ned to think about how to represent that 
-sub _set_new_codon_seq {
-  my $self = shift;
+# #these won't work for now, probably handle in Indel/Definition
+# has new_codon_seq => (
+#   is      => 'ro',
+#   isa     => 'Maybe[Str]',
+#   lazy    => 1,
+#   builder => '_set_new_codon_seq',
+# );
 
-  if ( $self->ref_codon_seq ) {
-    return $self->indType . $self->indLength;
-  }
-  else {
-    return;
-  }
-}
+# has new_aa_residue => (
+#   is      => 'ro',
+#   isa     => 'Maybe[Str]',
+#   lazy    => 1,
+#   builder => '_set_new_aa_residue',
+# );
+# #Here, for a deletion, it would be confusing to show a longer allele
+# #ned to think about how to represent that 
+# sub _set_new_codon_seq {
+#   my $self = shift;
 
-sub _set_new_aa_residue {
-  my $self = shift;
+#   if ( $self->ref_codon_seq ) {
+#     return $self->indType . $self->indLength;
+#   }
+#   else {
+#     return;
+#   }
+# }
 
-  if ( $self->new_codon_seq ) {
-    return $self->indType . $self->indLength;
-  }
-  else {
-    return;
-  }
-}
+# sub _set_new_aa_residue {
+#   my $self = shift;
+
+#   if ( $self->new_codon_seq ) {
+#     return $self->indType . $self->indLength;
+#   }
+#   else {
+#     return;
+#   }
+# }
 
 __PACKAGE__->meta->make_immutable;
 

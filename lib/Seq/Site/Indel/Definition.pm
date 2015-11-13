@@ -2,14 +2,32 @@ use strict;
 use warnings;
 package Seq::Site::Indel::Definition;
 
+
 use Moose;
 use Moose::Util::TypeConstraints;
+#with 'Seq::Site::Gene::Definition'; #for remaking the AA, later
 
 has minor_allele => (
-  is       => 'ro',
+  is       => 'rw',
   isa => 'Str',
+  writer => '_rename_minor_allele',
   required => 1,
 );
+
+has annotation_type => (
+  is => 'rw',
+  isa => 'Str',
+  lazy => 1,
+  writer => 'set_annotation_type',
+  default => '', #or NA?
+);
+
+#############Protected Api; typically not consumed################
+# takes a string of bases
+sub renameMinorAllele {
+  my ($self, $newName) = @_;
+  $self->_rename_minor_allele($self->indType . $newName);
+}
 
 # will hard crash if bad input, as soon as it's called
 enum IndTypes => [qw(- +)];
@@ -35,22 +53,9 @@ has indLength => (
 
 sub _build_indel_length {
   my $self = shift;
-  return substr($self->minor_allele, 1) if $self->indType eq '-'; #a number
-  return length($self->minor_allele) - 1 if $self->indType eq '+'; #a string
-}
-
-enum FrameTypes => [qw(FrameShift InFrame)];
-has frameType => (
-  is => 'ro',
-  isa => 'FrameTypes',
-  lazy => 1,
-  builder => '_buildFrameType',
-);
-
-sub _buildFrameType {
-  my $self = shift;
-  my $frame = $self->indLength % 3 ? 'FrameShift' : 'InFrame';
-};
+  #duck type, +N, -N, or +{Str}, -{Str} all work
+  return abs(int($self->minor_allele) ) || length($self->minor_allele) - 1;
+} 
 
 has typeName => (
   is => 'ro',
@@ -64,6 +69,71 @@ sub _buildTypeName {
   return $self->indType eq '-' ? 'Del' : 'Ins';
 }
 
+#this is very basic; does not check if coding region
+#so look for frame type only when coding (only then does it make sense)
+has frameType => (
+  is => 'ro',
+  isa => 'Str',
+  lazy => 1,
+  builder => '_buildFrameType',
+);
+
+sub _buildFrameType {
+  my ($self, $siteType) = @_;
+  my $frame = $self->indLength % 3 ? 'FrameShift' : 'InFrame';
+};
+
+# for now not calculating refAAresidues
+# has refAAresidue => (
+#   is => 'rw',
+#   isa => 'Str',
+#   lazy => 1,
+#   default => '', #or NA?
+# );
+
+# has new_codon_seq => (
+#   is      => 'ro',
+#   isa     => 'Maybe[Str]',
+#   lazy    => 1,
+#   builder => '_set_new_codon_seq',
+# );
+
+# has new_aa_residue => (
+#   is      => 'ro',
+#   isa     => 'Maybe[Str]',
+#   lazy    => 1,
+#   builder => '_set_new_aa_residue',
+# );
+
+# #this won't work for now
+# sub _set_new_codon_seq {
+#   my $self = shift;
+
+#   if ( $self->ref_codon_seq ) {
+#     return $self->indType . $self->indLength;
+#   }
+#   else {
+#     return;
+#   }
+# }
+
+# sub _set_new_aa_residue {
+#   my $self = shift;
+
+#   if ( $self->new_codon_seq ) {
+#     return $self->indType . $self->indLength;
+#   }
+#   else {
+#     return;
+#   }
+# }
+
+# sub makeCodonSeq {
+#   my ($self, $beginEnd) = @_;
+#   if($self->indType eq '-') {
+
+#   }
+# }
 # #we expect a single argument, a scalar or scalar ref
 # around BUILDARGS => sub {
 #   my $orig = shift;
