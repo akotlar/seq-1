@@ -24,7 +24,7 @@ with 'Seq::Role::Serialize';
 has indel => (
   is => 'ro',
   isa => 'Indel',
-  handles => qw(minor_allele indType indLength)
+  handles => [qw(minor_allele indType indLength)]
 );
 
 has new_codon_seq => (

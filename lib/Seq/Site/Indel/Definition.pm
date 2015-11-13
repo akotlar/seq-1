@@ -64,27 +64,27 @@ sub _buildTypeName {
   return $self->indType eq '-' ? 'Del' : 'Ins';
 }
 
-#we expect a single argument, a scalar or scalar ref
-around BUILDARGS => sub {
-  my $orig = shift;
-  my $class = shift;
+# #we expect a single argument, a scalar or scalar ref
+# around BUILDARGS => sub {
+#   my $orig = shift;
+#   my $class = shift;
 
-  if (ref $_[0] eq 'HASH') {
-    $class->$orig($_[0]);
-  }
+#   if (ref $_[0] eq 'HASH') {
+#     $class->$orig($_[0]);
+#   }
 
-  my $allele = $_[0];
-  #alternatively can let hard crash
-  if(!$allele) {
-    confess "Error: $class expects simple scalar or scalar ref, falsy passed";
-  }
-  if(ref $allele) {
-    if(ref $allele ne 'SCALAR') { confess "$class accepts only scalar refs"};
-    $allele = $$allele;
-  }
+#   my $allele = $_[0];
+#   #alternatively can let hard crash
+#   if(!$allele) {
+#     confess "Error: $class expects simple scalar or scalar ref, falsy passed";
+#   }
+#   if(ref $allele) {
+#     if(ref $allele ne 'SCALAR') { confess "$class accepts only scalar refs"};
+#     $allele = $$allele;
+#   }
 
-  $class->$orig(minor_allele => $allele);
-};
+#   $class->$orig(minor_allele => $allele);
+# };
 
 __PACKAGE__->meta->make_immutable;
 1;

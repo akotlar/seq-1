@@ -71,8 +71,9 @@ use Seq::GenomeSizedTrackChar;
 use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Gene;
-use Seq::Site::Indel;
 use Seq::Site::Snp;
+use Seq::Sites::Indels;
+
 use Seq::Annotate::All;
 use Seq::Annotate::Snp;
 use Seq::Statistics;
@@ -726,6 +727,10 @@ sub annotate {
   if(!(@$snpAllelesAref || @$indelAllelesAref) ) {
     return;
   }
+  my $indelAnnotator;
+  if(@$indelAllelesAref) {
+    $indelAnnotator = Seq::Sites::Indels->new(alleles => $indelAllelesAref);
+  }
 
   my %record;
   $record{chr}          = $chr;
@@ -776,6 +781,10 @@ sub annotate {
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
 
+      if($indelAnnotator) {
+        $indelAnnotator->findGeneData($rec_aref, $abs_pos, $kch);
+      }
+
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
           if(@$snpAllelesAref) {
@@ -784,12 +793,12 @@ sub annotate {
               push @gene_data, Seq::Site::Annotation->new($rec_href);  
             }
           }
-          if(@$indelAllelesAref) {
-            for my $iAllele (@$indelAllelesAref) {
-              $rec_href->{minor_allele} = $iAllele;
-              push @gene_data, Seq::Site::Indel->new($rec_href);  
-            }
-          }
+          # if(@$indelAllelesAref) {
+          #   for my $iAllele (@$indelAllelesAref) {
+          #     $rec_href->{minor_allele} = $iAllele;
+          #     push @gene_data, Seq::Site::Indel->new($rec_href);  
+          #   }
+          # }
         }
       }
     }

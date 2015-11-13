@@ -144,15 +144,21 @@ sub db_get {
   # does dbm doesn't exist?
   my $val;
   if ( defined $dbm ) {
-    if (ref $keys eq 'ARRAY') {
-       $val = $dbm->get_bulk($keys);
-    } else { #singel key, scalar
+    if(!ref $keys) {
       $val = $dbm->get($keys);
+    } else {
+      # assume it's ARRAY; can also check ref $keys eq 'ARRAY', 
+      # but I think that wastes time, and is a function definition issue;
+      # if someone misuses, we can hope for death
+      # this is not less safe than what was done before (more safe by 1 check)
+      # alternatively can complicate the api w/ 1 'bulk' function
+      $val = $dbm->get_bulk($keys);
     }
 
     # does the value exist within the dbm?
     if ( defined $val ) {
-      return decode_json $val;
+      return decode_json $val if !ref $keys;
+      return map {decode_json($val->{$_} ) } keys(%$val);
     }
     else {
       return;
