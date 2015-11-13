@@ -10,19 +10,21 @@ our $VERSION = '0.001';
 # VERSION
 
 use Moose 2;
-
 use namespace::autoclean;
 use Moose::Util::TypeConstraints;
 use DDP;
+
+use Seq::Site::Indel::Type;
 
 extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
 
 #can't use type str, because -1 is a number, could coerce, but why?
 #will fail early if input bad anyway
-has minor_allele => (
-  is       => 'ro',
-  required => 1,
+has indel => (
+  is => 'ro',
+  isa => 'Indel',
+  handles => qw(minor_allele indType indLength)
 );
 
 has new_codon_seq => (
@@ -39,42 +41,27 @@ has new_aa_residue => (
   builder => '_set_new_aa_residue',
 );
 
-has annotation_type => (
-  is       => 'rw',
-  isa      => 'Str',
-  lazy     => 1,
-  builder  => '_set_annotation_type'
-);
-
-enum indTypes => [qw(- +)];
 has indType => (
   is => 'ro',
-  isa => 'indTypes',
-  lazy => 1,
-  builder => '_build_indel_type',
+  isa => 'Num',
+  required => 1,
 );
-
-#@returns - or +
-sub _build_indel_type {
-  my $self = shift;
-  #cast as str to substr in case of -N
-  return substr("".$self->minor_allele, 0, 1); 
-}
 
 has indLength => (
   is => 'ro',
   isa => 'Num',
-  lazy => 1,
-  builder => '_build_indel_length',
+  required => 1,
 );
 
-sub _build_indel_length {
-  my $self = shift;
-  return substr($self->minor_allele, 1) if $self->indType eq '-'; #a number
-  return length($self->minor_allele) - 1 if $self->indType eq '+'; #a string
-}
-#Thomas, haven't done anything with the next 2 methods yet
-#have $self->indType if want to use this
+has annotation_type => (
+  is       => 'rw',
+  isa      => 'Str',
+  lazy     => 1,
+  default  => '',
+);
+
+#Here, for a deletion, it would be confusing to show a longer allele
+#ned to think about how to represent that 
 sub _set_new_codon_seq {
   my $self = shift;
 
@@ -95,33 +82,6 @@ sub _set_new_aa_residue {
   else {
     return;
   }
-}
-
-sub BUILD {
-  my $self = shift;
-
-  $self->annotation_type;
-};
-
-sub _set_annotation_type {
-  my $self = shift;
-  my $frame = $self->indLength % 3 ? 'FrameShift' : 'InFrame';
-
-  my $str = ($self->indType eq '-' ? 'Del' : 'Ins' ) . "-$frame-";
-  #first capture gross
-  #covers 3UTR, 5UTR, and all other GeneSiteType 's enum'd
-  my $annotation_type = $str . $self->site_type . ";"; #or could interpolate ${}
-
-  if($self->site_type eq 'Coding') {
-    if($self->codon_number == 1) {
-      $annotation_type .= $str . "StartLoss;"; #or could interpolate
-    }
-    if ($self->ref_aa_residue eq '*' ) {
-      $annotation_type .= $str . "StopLoss;";
-    }
-  }
-  chop $annotation_type;
-  return $annotation_type;
 }
 
 __PACKAGE__->meta->make_immutable;
