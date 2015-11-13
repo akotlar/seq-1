@@ -25,6 +25,7 @@ use Moose::Util::TypeConstraints;
 
 use Carp qw/ confess /;
 use namespace::autoclean;
+use DDP;
 
 use Seq::Site::Snp;
 use Seq::Site::Annotation;
@@ -38,8 +39,8 @@ has chr          => ( is => 'ro', isa => 'Str',          required => 1, );
 has genomic_type => ( is => 'ro', isa => 'GenomicType',  required => 1, );
 has pos          => ( is => 'ro', isa => 'Int',          required => 1, );
 has ref_base     => ( is => 'ro', isa => 'Str',          required => 1, );
-has scores       => ( is => 'ro', isa => 'HashRef[Str]', default  => sub { {} }, );
-has warning      => ( is => 'ro', isa => 'Str',          default  => 'NA', );
+has scores       => ( is => 'ro', isa => 'HashRef[Str]', default  => sub { {} }, lazy => 1);
+has warning      => ( is => 'ro', isa => 'Str',          default  => 'NA', lazy => 1);
 
 # the objects stored in gene_data really only need to do as_href_with_NAs(),
 # which is a method in Seq::Role::Seralize
