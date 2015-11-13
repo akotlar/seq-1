@@ -51,6 +51,9 @@ has siteTypes => (
   init_arg => undef,
   default => sub{$siteTypes},
 );
+=type {Str} SiteTypes
+=cut
+enum SiteTypes => ['SNP', 'MULTIALLELIC', 'DEL', 'INS'];
 
 =type {Str} GeneSiteType
 

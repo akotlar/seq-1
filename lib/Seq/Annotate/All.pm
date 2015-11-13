@@ -27,8 +27,7 @@ use Seq::Site::Annotation;
 
 extends 'Seq::Annotate::Site';
 with 'Seq::Role::Serialize';
-
-enum SiteTypes => ['SNP', 'MULTIALLELIC', 'DEL', 'INS'];
+with 'Seq::Site::Gene::Definition';
 
 has alleles      => ( is => 'ro', isa => 'Str',     required => 1, );
 has allele_count => ( is => 'ro', isa => 'Str',     required => 1, );
@@ -56,7 +55,7 @@ has '+gene_data' => (
 # );
 override attrs => sub {
   state $attrs = ['chr', 'pos', 'allele_count', 'alleles', 'var_type', 
-  'ref_base', 'genomic_type', 'het_ids', 'hom_ids', 'warning'];
+  'ref_base', 'genomic_type', 'var_allele', 'het_ids', 'hom_ids', 'warning'];
   return $attrs;
 };
 
