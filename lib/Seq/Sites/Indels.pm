@@ -94,7 +94,7 @@ sub __buildAnnotationStr {
         if($index == 0) { 
           if(defined $transcriptHref->ref_aa_residue && $transcriptHref->ref_aa_residue eq '*' ) {
             $sugar = 'StopLoss';
-          } elsif ($transcriptHref->codon_number == 1) {
+          } elsif (defined $transcriptHref->codon_number && $transcriptHref->codon_number == 1) {
             $sugar = 'StartLoss';
           }
         } else {
