@@ -91,7 +91,7 @@ sub __buildAnnotationStr {
   for my $siteType (@$siteTypes) {
     for my $geneRecordAref (@sitesAref) {
       for my $transcriptHref (@$geneRecordAref) {
-        if($index = 0) { 
+        if($index == 0) { 
           if(defined $transcriptHref->ref_aa_residue && $transcriptHref->ref_aa_residue eq '*' ) {
             $sugar = 'StopLoss';
           } elsif ($transcriptHref->codon_number == 1) {
