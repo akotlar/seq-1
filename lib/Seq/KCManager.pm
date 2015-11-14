@@ -162,7 +162,7 @@ sub db_put {
 }
 
 sub db_get {
-  my ( $self, $key ) = @_;
+  my ( $self, $keys ) = @_;
 
   # the reason we need to check the existance of the db has to do with that we
   # allow non-existant file names to be used in creating the object and since
@@ -171,8 +171,13 @@ sub db_get {
   my $dbm = $self->_db;
 
   # does dbm doesn't exist?
+  my $val;
   if ( defined $dbm ) {
-    my $val = $dbm->get($key);
+    if (ref $keys eq 'ARRAY') {
+       $val = $dbm->get_bulk($keys);
+    } else { #singel key, scalar
+      $val = $dbm->get($keys);
+    }
 
     # does the value exist within the dbm?
     if ( defined $val ) {

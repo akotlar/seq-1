@@ -5,6 +5,8 @@ use strict;
 use warnings;
 use Moose::Role;
 use Moose::Util::TypeConstraints;
+use File::Which qw(which);
+use File::Basename;
 use namespace::autoclean;
 
 requires 'has_out_file';
@@ -45,6 +47,12 @@ has header => (
   default => sub { [] },
 );
 
+has compress_extension => (
+  is => 'ro',
+  lazy => 1,
+  default => '.tar.gz',
+);
+
 has _out_fh => (
   is       => 'ro',
   lazy     => 1,
@@ -80,6 +88,29 @@ sub print_annotations {
     }
     say { $self->_out_fh } join "\t", @prt_record;
   }
+}
+
+sub compress_output {
+  my $self = shift;
+
+  $self->tee_logger('info', 'Compressing all output files');
+
+  if(! -e $self->output_path) {
+    $self->tee_logger('warn', 'No output files to compress');
+    return;
+  }
+
+ # my($filename, $dirs) = fileparse($self->output_path);
+
+  my $tar = which('tar') or $self->tee_logger('error', 'No tar program found');
+  my $pigz = which('pigz');
+  if ($pigz) { $tar = "$tar --use-compress-program=$pigz"; } #-I $pigz
+
+  my $outcome = system(
+    "$tar -cf ".$self->output_path.$self->compress_extension." ".$self->output_path."*"
+  );
+
+  $self->tee_logger('warn', "Zipping failed with $?") unless $outcome == 0;
 }
 
 sub check_header {

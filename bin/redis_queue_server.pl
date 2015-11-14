@@ -109,9 +109,6 @@ sub handleJobStart {
     $redis->lrem($jobPreStartQueue, 0, $jobID);
     $redis->lpush($jobStartedQueue, $jobID );
     my @replies = $redis->exec();
-  #  $redis->unwatch;
-    say "Replies are in handleJobStart";
-    p @replies;
   } catch {
     say "Error in handleJobSuccess: $_";
     $submittedJob->{$jobKeys->{started} } = 0;
@@ -134,7 +131,6 @@ sub handleJobSuccess {
     $redis->set($documentKey, $jobJSON);
     $redis->lpush($jobFinishedQueue, $jobID );
     my @replies = $redis->exec();
-   # $redis->unwatch;
     $Qdone->enqueue( $jobID );
   }
   catch {
@@ -167,7 +163,9 @@ sub handleJob {
   my $jobID = shift;
 
   say "Job id is $jobID";
-  my $redis = Redis->new( server=> "$redisHost:$redisPort" ); 
+  my $redis = Redis->new( server=> "$redisHost:$redisPort",
+    reconnect => 72, every => 5_000_000
+  ); 
   my $documentKey = $submittedJobsDocument . ':' . $jobID;
 
   my $log_name = join '.', 'annotation', 'jobID',$jobID,'log';
@@ -177,6 +175,8 @@ sub handleJob {
   my $log = Log::Any->get_logger();
 
   my $submittedJob;
+
+  my $inputHref;
 
   my $failed = 0;
   try {
@@ -188,8 +188,6 @@ sub handleJob {
   };
 
   try {
-    my $inputHref = {};
-  
     $inputHref = coerceInputs($submittedJob);
 
     handleJobStart($jobID, $documentKey, $submittedJob, $redis);
@@ -198,21 +196,28 @@ sub handleJob {
       say "The user job data sent to annotator is: ";
       p $inputHref;
     }
-    
     # create the annotator
     my $annotate_instance = Seq->new($inputHref);
-
-    # annotate the snp file
-    # may be empty because no annotations found, so don't die if no results
     my $result = $annotate_instance->annotate_snpfile;
 
-    die "Nothing returned from annotate_snpfile" unless defined $result;
+    die 'Error: Nothing returned from annotate_snpfile' unless defined $result;
+    
     $submittedJob->{$jobKeys->{result} } = $result;
+
+    $annotate_instance->compress_output;
   }
   catch {
     say $_;
 
     $log->error($_);
+    #because here we don't have automatic logging guaranteed
+    if(defined $inputHref && exists $inputHref->{messanger}
+    && keys %{$inputHref->{messanger} } ) {
+      say "publishing message $_";
+      $inputHref->{messanger}{message}{data} = "$_";
+      $redis->publish($inputHref->{messanger}{event},
+        encode_json($inputHref->{messanger}) );
+    }
 
     $failed = 1;
 
@@ -247,8 +252,8 @@ sub coerceInputs {
     ignore_unknown_chr => 1,
     overwrite          => 1,
     debug              => $debug,
-    messangerHref      => $messangerHref,
-    publishServerAddress       => "$redisHost:$redisPort",
+    messanger          => $messangerHref,
+    publisherAddress  => [$redisHost,$redisPort],
   }
 }
 
@@ -301,8 +306,11 @@ sub worker {
 
 my @listenerThreads;
 
+#reconnect every 5 seconds, for an hour
 my $normalQueue = threads->new(sub {
-  my $redis = Redis->new( server=> "$redisHost:$redisPort" );
+  my $redis = Redis->new( server=> "$redisHost:$redisPort",
+    reconnect => 72, every => 5_000_000
+  );
 
   while (1) {
     #this can result in N identical items in $jobStartedQueue; 

@@ -62,8 +62,8 @@ has snp_data => (
 );
 
 sub attrs {
-  my @attrs = qw/ chr pos var_type ref_base genomic_type warning /;
-  return \@attrs;
+  state $attrs = ['chr', 'pos', 'var_type', 'ref_base', 'genomic_type', 'warning'];
+  return $attrs;
 }
 
 sub as_href {
@@ -113,7 +113,7 @@ sub _join_href {
         $merge{$attr} = $self->_join_href( $old_val, $new_val );
       }
       elsif ( $old_val eq $new_val ) {
-        $merge{$attr} = join ";", $old_val, $new_val;
+        $merge{$attr} = "$old_val;$new_val"; #http://www.perlmonks.org/?node_id=964608
       }
       else {
         my @old_vals = split /\;/, $old_val;

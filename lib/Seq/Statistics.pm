@@ -55,6 +55,7 @@ has debug => (
 with 'Seq::Statistics::Record';
 with 'Seq::Statistics::Ratios';
 with 'Seq::Role::Message';
+with 'Seq::Statistics::Store';
 
 #############################################################################
 # Public Methods

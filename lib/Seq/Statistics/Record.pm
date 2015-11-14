@@ -1,3 +1,5 @@
+# This package essentially expects good inputs
+# Meaning non-reference alleles at the least
 package Seq::Statistics::Record;
 
 use 5.10.0;
@@ -51,52 +53,75 @@ has _transitionTransversionKeysAref => (
   init_arg => undef,
 );
 
+has _snpAnnotationsAref => (
+  is      => 'ro',
+  isa     => 'ArrayRef[Str]',
+  traits  => ['Array'],
+  handles => {
+    snpKey => 'get',
+  },
+  default => sub{ ['noRs', 'rs'] },
+  lazy => 1,
+  init_arg => undef,
+);
+
 # at every level in the has, record whether transition or transversion
 # assumes that only non-reference alleles are passed, hence it is a role
 sub record {
-  my ($self, $sampleIDgenoHref, $annotationsAref, $featuresAref, $refAllele) = @_;
+  my ($self, $idGenoHref, $featuresAref, $refAllele, $geneDataAref, $snpDataAref) = @_;
+  #by order of complexity of left operand
+  return unless defined $refAllele && @$featuresAref && @$geneDataAref;
 
-  if(!(keys %$sampleIDgenoHref && @$annotationsAref 
-  && @$featuresAref && defined $refAllele) ) {
-    return; 
-  }
+  my @genoKeys = keys %$idGenoHref; #sampleIDs
+  return unless @genoKeys;
 
   my ($geno, $dGeno, $annotationType, $sampleStats, $trTvKey, 
     $targetHref, $minorAllele, $aCount, @featuresMerged);
 
+  #here we define anything that needn't be calculated per sample
+  #if n+1 features we can put into sub
+  my $snpKey;
+  $snpKey = $self->snpKey(int(!!@$snpDataAref) ) if defined $snpDataAref;
   #for now, analyze only 
-  for my $sampleID (keys %$sampleIDgenoHref) {
-    $geno = $sampleIDgenoHref->{$sampleID};
-    if($self->hasGeno($geno, $refAllele) ) {next;} #require IUPAC geno, or D,I,E,H
+  for my $sampleID (@genoKeys) {
+    $geno = $idGenoHref->{$sampleID};
+    #this isn't as safe as $hasGeno, but saves ~1s per 20k lines over 100samples
+    #but, should be ok, if we stick to conceit that homozygotes are 1 letter
+    next unless $geno ne $refAllele; #require IUPAC geno, or D,I,E,H
 
     if(!$self->hasStat($sampleID) ) {$self->setStat($sampleID, {} ); }
     $targetHref = $self->getStat($sampleID);
 
-    #transitions & transversion counter;
-    $self->storeTrTv($targetHref, $refAllele, $geno);
+    #we do this to avoid having to check against a string
+    #because loose coupling good
+    #stores tr, tv, and any other features
+    $self->countCustomFeatures($targetHref, $refAllele, $geno, $snpKey);
 
-    if(@$annotationsAref > 1) {next; } #for now we omit multiple transcript sites
+    next unless @$geneDataAref == 1; #for now we omit multiple transcript sites
     
-    $aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote    
+    $aCount = $self->isHomo($geno) ? 2 : 1;
+    #$aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote    
     if(!$aCount) {
       $self->tee_logger('warn', 'No allele count found for genotype $geno');
       next;
     }
 
-    for my $annotationHref (@$annotationsAref) {
+    for my $annotationHref (@$geneDataAref) {
       $minorAllele = $annotationHref->minor_allele;
       # if it's an ins or del, there will be no deconvolutedGeno
       # taking this check out, because handling of del alleles does not work,
       # Annotate.pm sets the allele as the neegative length of the del, rather than D or E
-      if(!$self->hasGeno($self->deconvoluteGeno($geno), $minorAllele) ) {
-        next;
-      }
+      # not checking now; since we skip any case where > 1 annotation,
+      # which covers multi-allelic sites
+      # if(!$self->hasGeno($self->deconvoluteGeno($geno), $minorAllele) ) {
+      #   next;
+      # }
       
       $annotationType = $annotationHref->annotation_type;
 
       if($self->debug) {
-        say "we have the geno $geno";
-        say "annotation type is $annotationType";
+        say "recording statistics for geno $geno, minorAllele $minorAllele, 
+          annotation_type $annotationType";
       } 
       #there is a more efficient option: just passing annotatypeType separately
       #I think this is cleaner (see use of shit in storeCount), and probably fast enough
@@ -105,10 +130,6 @@ sub record {
 
       $self->storeCount(\@featuresMerged, $targetHref, $aCount);
     }
-  }
-  if($self->debug) {
-    say "Stat record is";
-    p $self->statsRecord;
   }
 }
 
@@ -120,43 +141,46 @@ sub storeCount {
   
   #to be more efficient we could track a feature index, and return when 
   #it == last featureAref index, and beyond that could store annotationType sep
-  if(!@$featuresAref) { return };
+  if(!@$featuresAref) {return; };
   my $feature = shift @$featuresAref;
-  if($self->debug) {
-    say "in store count for feature $feature";
-  }
   
   if($self->isBadFeature($feature) ) {return; }
   $targetHref = \%{$targetHref->{$feature} };
   $targetHref->{$self->statsKey}{$self->countKey} += $aCount;
 
-  $self->storeCount($featuresAref, $targetHref, $aCount);
+  @_ = ($self, $featuresAref, $targetHref, $aCount);
+  goto &storeCount; #tail call opt
 }
 
-#transitions are unique, they are the only StatsCalculator created feature
+# transitions are dependent only on the reference base and sample allele,
+# they are, unlike geneDataAref features, a StatsCalculator created feature
 # they should only be inserted in a single locaiton, else they'll be counted
 # by sum(n*tr_i)
 # by definition there can only be one tr or tv per site
-sub storeTrTv {
-  my ($self, $targetHref, $refAllele, $geno) = @_;
-  my $trTvKey = $self->_getTr($refAllele, $geno);
+# rs numbers are just like transitions and transversion
+#we use defined check to find out whether anything exists; encapsulate here
+#if it doesn't, presume the caller intended this not to be recorded as a non-snp site
+#as a non-snp site
+sub countCustomFeatures {
+  my ($self, $targetHref, $refAllele, $geno, $snpKey) = @_;
+  my $trTvKey = $self->trTvKey(
+    $self->isTr($geno) || $self->isTr($refAllele.$geno) || 0
+  );
   $targetHref->{$trTvKey}{$self->statsKey}{$self->countKey} += 1;
-}
 
-sub _getTr {
-  my ($self, $refAllele, $geno) = @_;
-  return $self->trTvKey(int(!!($self->isTr($geno) || $self->isTr($refAllele.$geno) ) ) );
+  return unless defined $snpKey;
+  $targetHref->{$snpKey}{$self->statsKey}{$self->countKey} += 1;
 }
 
 # if it's a het; currently supports only diploid organisms
 # 2nd if isn't strictly necessary, but safer, and allows this to be used
 # as an alternative to isHet, isHomo
-sub getAlleleCount {
-  my ($self, $iupacAllele) = @_;
-  if($self->isHomo($iupacAllele) ) {return 2;}
-  if($self->isHet($iupacAllele) ) {return 1;}
-  return undef;
-}
+# sub getAlleleCount {
+#   my ($self, $iupacAllele) = @_;
+#   if($self->isHomo($iupacAllele) ) {return 2;}
+#   if($self->isHet($iupacAllele) ) {return 1;}
+#   return;
+# }
 
 no Moose::Role;
 1;

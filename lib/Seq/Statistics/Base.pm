@@ -34,6 +34,7 @@ has statsRecord => (
     hasStat => 'exists',
     statsKv => 'kv',
     statSamples => 'keys',
+    hasStats => 'keys',
   },
   init_arg => undef,
   default => sub { return {} },
@@ -41,18 +42,19 @@ has statsRecord => (
 
 has disallowedFeatures => (
   is      => 'ro',
-  traits  => ['Array'],
-  isa     => 'ArrayRef[Str]',
+  traits  => ['Hash'],
+  isa     => 'HashRef[Str]',
   handles => {
-    isBadFeature => 'first_index',
+    isBadFeature => 'exists',
   },
-  builder => '_buildDisallowedFeatures',
+  default => sub{ return {'NA'=>1 } },
 );
 
-around 'isBadFeature' => sub {
-  my ($orig, $self, $value) = @_;
-  return $self->$orig( sub { $_ eq $value } ) > -1;
-};
+# This is VERY slow; 41220 calls takes 1.25s on hgcc
+# around 'isBadFeature' => sub {
+#   my ($orig, $self, $value) = @_;
+#   return $self->$orig( sub { $_ eq $value } ) > -1;
+# };
 
 # has stuff => (
 #   is => 'ro',
@@ -63,9 +65,6 @@ around 'isBadFeature' => sub {
 #############################################################################
 # Default value builder functions
 #############################################################################
-sub _buildDisallowedFeatures {
-  return ['NA'];
-}
 
 #############Public##############
 
