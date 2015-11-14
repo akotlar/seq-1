@@ -9,7 +9,7 @@ use Path::Tiny;
 use Test::More;
 use YAML qw/ LoadFile /;
 
-plan tests => 51;
+plan tests => 46;
 
 my %attr_2_type = (
   _genome        => 'Seq::GenomeBin',
@@ -18,7 +18,7 @@ my %attr_2_type = (
   _cadd_lookup   => 'HashRef',
   dbm_gene       => 'ArrayRef[ArrayRef[Maybe[Seq::KCManager]]]',
   dbm_snp        => 'ArrayRef[ArrayRef[Maybe[Seq::KCManager]]]',
-  dbm_tx         => 'ArrayRef[Seq::KCManager]',
+  # dbm_tx         => 'ArrayRef[Seq::KCManager]',
   _header        => 'ArrayRef',
   has_cadd_track => 'Bool',
 
