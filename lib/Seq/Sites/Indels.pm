@@ -59,8 +59,14 @@ sub findGeneData {
       #feature
       @range = ( $abs_pos .. $abs_pos + 1 );
 
-      @data = $db->db_bulk_get( \@range, 0);
-      $self->_annotateSugar( \@data[ 1 .. $#data ], $allele );
+      @data = $db->db_bulk_get( \@range, 0 );
+      if (@data) {
+        shift @data;
+        $self->_annotateSugar( \@data, $allele );
+      }
+      else {
+        $self->_annotateSugar( [], $allele );
+      }
     }
   }
 }
@@ -79,30 +85,32 @@ sub _annotateSugar {
   state $codingName = $self->getSiteType(0); #for API: Coding type always first
   state $allowedSitesHref = { map { $_ => 1 } $self->allSiteTypes };
 
-  for my $geneRecordAref (@$dataAref) {
-    for my $transcriptHref (@$geneRecordAref) {
-      $siteType = $transcriptHref->{site_type};
-      next if !$allowedSitesHref->{$siteType};
-      if ( $siteType eq $codingName ) {
-        if ( defined $transcriptHref->{codon_number}
-          && $transcriptHref->{codon_number} == 1 )
-        {
-          $sugar{StartLoss} = 1;
-        }
-        if ( defined $transcriptHref->{ref_aa_residue}
-          && $transcriptHref->{ref_aa_residue} eq '*' )
-        {
-          $sugar{StopLoss} = 1;
+  if (@$dataAref) {
+    for my $geneRecordAref (@$dataAref) {
+      for my $transcriptHref (@$geneRecordAref) {
+        $siteType = $transcriptHref->{site_type};
+        next if !$allowedSitesHref->{$siteType};
+        if ( $siteType eq $codingName ) {
+          if ( defined $transcriptHref->{codon_number}
+            && $transcriptHref->{codon_number} == 1 )
+          {
+            $sugar{StartLoss} = 1;
+          }
+          if ( defined $transcriptHref->{ref_aa_residue}
+            && $transcriptHref->{ref_aa_residue} eq '*' )
+          {
+            $sugar{StopLoss} = 1;
+          }
+          else {
+            $sugar{$siteType} = 1;
+          }
         }
         else {
           $sugar{$siteType} = 1;
         }
       }
-      else {
-        $sugar{$siteType} = 1;
-      }
+      if ($cb) { $cb->($geneRecordAref); }
     }
-    if ($cb) { $cb->($geneRecordAref); }
   }
 
   #frameshift only matters for coding regions; lookup in order of frequency
