@@ -75,13 +75,13 @@ try {
   # create the annotator
   my $annotate_instance = Seq->new(
     {
-      file_type         => 'snp_2',
-      config_file       => $yaml_config,
-      debug             => $debug,
-      overwrite         => $overwrite,
+      file_type          => 'snp_2',
+      config_file        => $yaml_config,
+      debug              => $debug,
+      overwrite          => $overwrite,
       ignore_unknown_chr => ( !$no_skip_chr ),
-      out_file          => $out_file,
-      snpfile           => $snpfile,
+      out_file           => $out_file,
+      snpfile            => $snpfile,
     }
   );
   $annotate_instance->annotate_snpfile;
