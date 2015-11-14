@@ -132,8 +132,7 @@ sub db_put {
   }
 }
 
-#currently reverse only applies to bulk get
-sub db_get {
+sub db_bulk_get {
   my ( $self, $keys, $reverse ) = @_;
 
   # the reason we need to check the existance of the db has to do with that we
@@ -145,25 +144,43 @@ sub db_get {
   # does dbm doesn't exist?
   my $val;
   if ( defined $dbm ) {
-    if ( !ref $keys ) {
-      $val = $dbm->get($keys);
-    }
-    else {
-      # assume it's ARRAY; can also check ref $keys eq 'ARRAY',
-      # but I think that wastes time, and is a function definition issue;
-      # if someone misuses, we can hope for death
-      # this is not less safe than what was done before (more safe by 1 check)
-      # alternatively can complicate the api w/ 1 'bulk' function
-      $val = $dbm->get_bulk($keys);
-    }
+
+    # keys is assumed to be an array reference
+    $val = $dbm->get_bulk($keys);
 
     # does the value exist within the dbm?
     if ( defined $val ) {
-      return decode_json $val if !ref $keys;
       if ($reverse) {
         return map { decode_json( $val->{$_} ) } sort { $b <=> $a } keys(%$val);
       }
       return map { decode_json( $val->{$_} ) } sort { $a <=> $b } keys(%$val);
+    }
+    else {
+      return;
+    }
+  }
+  else {
+    return;
+  }
+}
+
+sub db_get {
+  my ( $self, $keys ) = @_;
+
+  # the reason we need to check the existance of the db has to do with that we
+  # allow non-existant file names to be used in creating the object and since
+  # the creation of the _db attribute is done in a lazy way we may never need to
+  # bother checking the file system or opening the databse.
+  my $dbm = $self->_db;
+
+  # does dbm doesn't exist?
+  my $val;
+  if ( defined $dbm ) {
+    $val = $dbm->get($keys);
+
+    # does the value exist within the dbm?
+    if ( defined $val ) {
+      return decode_json $val;
     }
     else {
       return;
