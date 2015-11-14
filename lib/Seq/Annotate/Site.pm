@@ -62,7 +62,7 @@ has snp_data => (
 );
 
 sub attrs {
-  state $attrs = ['chr', 'pos', 'var_type', 'ref_base', 'genomic_type', 'warning'];
+  state $attrs = [ 'chr', 'pos', 'var_type', 'ref_base', 'genomic_type', 'warning' ];
   return $attrs;
 }
 

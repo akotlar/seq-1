@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+
 =head1 NAME
 Snpfile::StatisticsBase
 =head1 SYNOPSIS
@@ -18,36 +19,34 @@ package Seq::Statistics::Base;
 
 use 5.10.0;
 use Moose;
-use namespace::autoclean;#remove moose keywords after compilation
+use namespace::autoclean; #remove moose keywords after compilation
 
 #############################################################################
-# Non required vars passable to constructor during new 
-# All can be passed either by new( {varName1:value,...} ) or new( {configfile=>'path/to/yamlfile.yaml'} ) 
+# Non required vars passable to constructor during new
+# All can be passed either by new( {varName1:value,...} ) or new( {configfile=>'path/to/yamlfile.yaml'} )
 #############################################################################
 has statsRecord => (
-  is => 'rw',
-  isa => 'HashRef',
-  traits => ['Hash'],
+  is      => 'rw',
+  isa     => 'HashRef',
+  traits  => ['Hash'],
   handles => {
-    getStat => 'get',
-    setStat => 'set',
-    hasStat => 'exists',
-    statsKv => 'kv',
+    getStat     => 'get',
+    setStat     => 'set',
+    hasStat     => 'exists',
+    statsKv     => 'kv',
     statSamples => 'keys',
-    hasStats => 'keys',
+    hasStats    => 'keys',
   },
   init_arg => undef,
-  default => sub { return {} },
+  default  => sub { return {} },
 );
 
 has disallowedFeatures => (
   is      => 'ro',
   traits  => ['Hash'],
   isa     => 'HashRef[Str]',
-  handles => {
-    isBadFeature => 'exists',
-  },
-  default => sub{ return {'NA'=>1 } },
+  handles => { isBadFeature => 'exists', },
+  default => sub { return { 'NA' => 1 } },
 );
 
 # This is VERY slow; 41220 calls takes 1.25s on hgcc
@@ -71,6 +70,7 @@ has disallowedFeatures => (
 __PACKAGE__->meta->make_immutable;
 
 1;
+
 =head1 COPYRIGHT
 
 Copyright (c) 2014 Alex Kotlar (<alex.kotlar@emory.edu>). All rights

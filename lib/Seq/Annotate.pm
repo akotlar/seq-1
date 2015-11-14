@@ -64,7 +64,7 @@ use Type::Params qw/ compile /;
 use Types::Standard qw/ :types /;
 use YAML::XS qw/ LoadFile /;
 
-use DDP;                   # for debugging
+use DDP; # for debugging
 use Cpanel::JSON::XS;
 
 use Seq::GenomeBin;
@@ -87,6 +87,7 @@ with 'Seq::Role::IO';
 
 @see @class Seq::GenomeBin
 =cut
+
 # has messangerHref => (
 #   is => 'ro',
 #   required => 1,
@@ -99,31 +100,30 @@ with 'Seq::Role::IO';
 # );
 
 has statisticsCalculator => (
-  is => 'ro',
-  isa => 'Seq::Statistics',
+  is      => 'ro',
+  isa     => 'Seq::Statistics',
   handles => {
-    recordStat => 'record',
+    recordStat     => 'record',
     summarizeStats => 'summarize',
-    statsRecord => 'statsRecord',
-    storeStats => 'storeStats',
+    statsRecord    => 'statsRecord',
+    storeStats     => 'storeStats',
   },
-  lazy => 1,
+  lazy     => 1,
   required => 1,
-  builder => '_buildStatistics',
+  builder  => '_buildStatistics',
 );
 
-sub _buildStatistics
-{
+sub _buildStatistics {
   my $self = shift;
-  return Seq::Statistics->new(debug => $self->debug);
+  return Seq::Statistics->new( debug => $self->debug );
 }
 
 has _ngene => (
-  is => 'ro',
-  isa => 'Maybe[Seq::GenomeBin]',
+  is      => 'ro',
+  isa     => 'Maybe[Seq::GenomeBin]',
   builder => '_load_ngene',
-  lazy => 1,
-  handles => [ 'get_nearest_gene',],
+  lazy    => 1,
+  handles => [ 'get_nearest_gene', ],
 );
 
 sub _load_ngene {
@@ -197,7 +197,7 @@ sub _load_genome_sized_track {
 
   # if $msg_aref has data then we had some errors; print and halt
   if ( scalar @$msg_aref > 0 ) {
-    $self->tee_logger('error', join( "\n", @$msg_aref) );
+    $self->tee_logger( 'error', join( "\n", @$msg_aref ) );
   }
 
   my $idx_file = $gst->genome_bin_file;
@@ -220,13 +220,13 @@ sub _load_genome_sized_track {
       genome_chrs   => $gst->genome_chrs,
       genome_length => $genome_length,
       chr_len       => $chr_len_href,
-      bin_seq      => \$seq,
+      bin_seq       => \$seq,
     }
   );
 
   my $msg = sprintf( "read genome-sized track '%s' of length %d from file: %s",
     $gst->name, $genome_length, $idx_file );
-  $self->tee_logger('info', $msg);
+  $self->tee_logger( 'info', $msg );
   say $msg if $self->debug;
 
   return $obj;
@@ -275,7 +275,7 @@ sub _load_cadd_score {
 
     # if $msg_aref has data then we had some errors; print and halt
     if ( scalar @$msg_aref > 0 ) {
-      $self->tee_logger('error', join( "\n", @$msg_aref) );
+      $self->tee_logger( 'error', join( "\n", @$msg_aref ) );
       croak join( "\n", @$msg_aref );
     }
 
@@ -299,13 +299,13 @@ sub _load_cadd_score {
         genome_chrs   => $gst->genome_chrs,
         genome_length => $genome_length,
         chr_len       => $chr_len_href,
-        bin_seq      => \$seq,
+        bin_seq       => \$seq,
       }
     );
     push @cadd_scores, $obj;
     my $msg =
       sprintf( "read cadd track file '%s' of length %d", $idx_file, $genome_length );
-    $self->tee_logger('info',$msg);
+    $self->tee_logger( 'info', $msg );
     say $msg if $self->debug;
   }
   # tell the package we loaded some cadd scores
@@ -420,9 +420,7 @@ has dbm_ngene => (
   isa     => 'Maybe[Seq::KCManager]',
   builder => '_build_dbm_ngene',
   lazy    => 1,
-  handles => {
-    gene_num_2_str => 'db_get_string',
-  },
+  handles => { gene_num_2_str => 'db_get_string', },
 );
 
 # NOTE: this is not being used presently;
@@ -517,9 +515,9 @@ sub _build_dbm_gene {
 
 sub _build_dbm_ngene {
   my $self = shift;
-  for my $gene_track ($self->all_gene_tracks ) {
-    my $dbm = $gene_track->get_kch_file( 'genome', 'ngene');
-    if (-f $dbm) {
+  for my $gene_track ( $self->all_gene_tracks ) {
+    my $dbm = $gene_track->get_kch_file( 'genome', 'ngene' );
+    if ( -f $dbm ) {
       return Seq::KCManager->new( { filename => $dbm, mode => 'read', } );
     }
   }
@@ -679,15 +677,15 @@ sub BUILD {
 
   my $msg = sprintf( "Loaded genome of size: %d", $self->genome_length );
   say $msg if $self->debug;
-  $self->tee_logger('info', $msg);
+  $self->tee_logger( 'info', $msg );
 
   $msg = sprintf( "Loaded %d genome score track(s)", $self->count_genome_scores );
   say $msg if $self->debug;
-  $self->tee_logger('info',$msg);
+  $self->tee_logger( 'info', $msg );
 
   $msg = sprintf( "Loaded %d cadd scores", $self->count_cadd_scores );
   say $msg if $self->debug;
-  $self->tee_logger('info',$msg);
+  $self->tee_logger( 'info', $msg );
 
   for my $dbm_aref ( $self->_all_dbm_snp, $self->_all_dbm_gene ) {
     my @chrs = $self->all_genome_chrs;
@@ -695,14 +693,14 @@ sub BUILD {
       my $dbm = ( $dbm_aref->[$i] ) ? $dbm_aref->[$i]->filename : 'NA';
       my $msg = sprintf( "Loaded dbm: %s for chr: %s", $dbm, $chrs[$i] );
       say $msg if $self->debug;
-      $self->tee_logger('info', $msg);
+      $self->tee_logger( 'info', $msg );
     }
   }
   for my $dbm_aref ( $self->_all_dbm_tx ) {
     my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
     my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
     say $msg if $self->debug;
-    $self->tee_logger('info', $msg);
+    $self->tee_logger( 'info', $msg );
   }
 }
 
@@ -740,9 +738,9 @@ sub _var_alleles_no_indel {
 # given position and variant alleles
 sub annotate_snp_site {
   my (
-    $self,         $chr,        $chr_index, $rel_pos,
-    $abs_pos,      $ref_allele, $var_type,  $all_allele_str,
-    $allele_count, $het_ids,    $hom_ids, $id_genos_href, $return_obj
+    $self,       $chr,           $chr_index,      $rel_pos,      $abs_pos,
+    $ref_allele, $var_type,      $all_allele_str, $allele_count, $het_ids,
+    $hom_ids,    $id_genos_href, $return_obj
   ) = @_;
 
   my %record;
@@ -757,9 +755,9 @@ sub annotate_snp_site {
   # check reference base in assembly is the same as the one suppiled by the user
   if ( $base ne $ref_allele ) {
     my $msg = sprintf(
-    "Warning: Discordant ref base at SNP/MULTIALLELIC site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
-    $chr, $rel_pos, $abs_pos, $base, $ref_allele );
-    $self->tee_logger('warn', $msg);
+      "Warning: Discordant ref base at SNP/MULTIALLELIC site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
+      $chr, $rel_pos, $abs_pos, $base, $ref_allele );
+    $self->tee_logger( 'warn', $msg );
     $record{warning} = $msg;
   }
 
@@ -770,10 +768,11 @@ sub annotate_snp_site {
   my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
 
   if ( !@var_alleles ) {
-    my $msg = sprintf("Warning: No alleles to annotate at site %s:%d;", $chr, $rel_pos);
+    my $msg =
+      sprintf( "Warning: No alleles to annotate at site %s:%d;", $chr, $rel_pos );
     $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
       $all_allele_str, $ref_allele, $ref_allele );
-    $self->tee_logger('warn', $msg);
+    $self->tee_logger( 'warn', $msg );
     return;
   }
 
@@ -794,18 +793,18 @@ sub annotate_snp_site {
     }
     else {
       $record{genomic_type} = 'Intronic';
-      my $nearest_gene_code = $self->get_nearest_gene( $abs_pos ) || '-9';
+      my $nearest_gene_code = $self->get_nearest_gene($abs_pos) || '-9';
       if ( $nearest_gene_code != -9 ) {
-        $record{nearest_gene} = $self->gene_num_2_str( $nearest_gene_code );
+        $record{nearest_gene} = $self->gene_num_2_str($nearest_gene_code);
       }
       # say STDERR join "\t", $record{genomic_type}, $nearest_gene_code, $record{nearest_gene};
     }
   }
   else {
     $record{genomic_type} = 'Intergenic';
-    my $nearest_gene_code = $self->get_nearest_gene( $abs_pos ) || '-9';
+    my $nearest_gene_code = $self->get_nearest_gene($abs_pos) || '-9';
     if ( $nearest_gene_code != -9 ) {
-      $record{nearest_gene} = $self->gene_num_2_str( $nearest_gene_code );
+      $record{nearest_gene} = $self->gene_num_2_str($nearest_gene_code);
     }
     # say STDERR join "\t", $record{genomic_type}, $nearest_gene_code, $record{nearest_gene};
   }
@@ -842,7 +841,7 @@ sub annotate_snp_site {
           }
         }
       }
-    } 
+    }
   }
   $record{gene_data} = \@gene_data;
 
@@ -865,8 +864,8 @@ sub annotate_snp_site {
   }
   $record{snp_data} = \@snp_data;
 
-  $self->recordStat($id_genos_href, [$record{var_type}, $record{genomic_type}], 
-    $record{ref_base}, \@gene_data, \@snp_data);
+  $self->recordStat( $id_genos_href, [ $record{var_type}, $record{genomic_type} ],
+    $record{ref_base}, \@gene_data, \@snp_data );
   # create object for href export
   my $obj = Seq::Annotate::Snp->new( \%record );
 
@@ -898,7 +897,7 @@ sub annotate_ref_site {
       my $msg = sprintf(
         "Warning: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
         $chr, $rel_pos, $abs_pos, $base, $ref_allele );
-      $self->tee_logger('warn', $msg);
+      $self->tee_logger( 'warn', $msg );
       $record{warning} = $msg;
     }
   }
@@ -982,9 +981,9 @@ sub annotate_ref_site {
 # to assign functional relevance of the insertion
 sub annotate_ins_site {
   my (
-    $self,         $chr,        $chr_index, $rel_pos,
-    $abs_pos,      $ref_allele, $var_type,  $all_allele_str,
-    $allele_count, $het_ids,    $hom_ids, $id_genos_href, $return_obj
+    $self,       $chr,           $chr_index,      $rel_pos,      $abs_pos,
+    $ref_allele, $var_type,      $all_allele_str, $allele_count, $het_ids,
+    $hom_ids,    $id_genos_href, $return_obj
   ) = @_;
 
   my %record;
@@ -997,10 +996,11 @@ sub annotate_ins_site {
   my @var_alleles = @{ $self->_var_alleles( $all_allele_str, $ref_obj->ref_base ) };
 
   if ( !@var_alleles ) {
-    my $msg = sprintf("Warning: No alleles to annotate at INS site %s:%d;", $chr, $rel_pos);
+    my $msg =
+      sprintf( "Warning: No alleles to annotate at INS site %s:%d;", $chr, $rel_pos );
     $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
       $all_allele_str, $ref_allele, $ref_obj->ref_base );
-    $self->tee_logger('warn', $msg);
+    $self->tee_logger( 'warn', $msg );
     return;
   }
 
@@ -1071,8 +1071,8 @@ sub annotate_ins_site {
     }
     push @gene_data, Seq::Site::Indel->new($gene_href);
   }
-  $self->recordStat($id_genos_href, [$record{var_type}, $record{genomic_type}], 
-      $record{ref_base}, \@gene_data, \@snp_data);
+  $self->recordStat( $id_genos_href, [ $record{var_type}, $record{genomic_type} ],
+    $record{ref_base}, \@gene_data, \@snp_data );
 
   $record{gene_data} = \@gene_data;
 
@@ -1149,12 +1149,13 @@ sub annotate_del_sites {
 
     for ( my $i = $region_aref->[0]; $i <= $region_aref->[1]; $i++ ) {
       my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count,
-        $het_ids, $hom_ids, $id_genos_href ) = @{ $sites_href->{$i} };
+        $het_ids, $hom_ids, $id_genos_href )
+        = @{ $sites_href->{$i} };
       my $chr_index = $chr_index_href->{$chr};
       my $ref_obj =
         $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $i, $ref_allele, 1 );
 
-      if ( !$id_genos_href_contig ) { $id_genos_href_contig = $id_genos_href};
+      if ( !$id_genos_href_contig ) { $id_genos_href_contig = $id_genos_href }
 
       if ( !%record ) {
         $record{abs_pos}      = $i;
@@ -1222,7 +1223,7 @@ sub annotate_del_sites {
                 my $gene_href = $gene_obj->as_href;
                 $gene_href->{minor_allele}    = '-' . scalar @pos;
                 $gene_href->{annotation_type} = "Del-$frame";
-                if ($coding_type eq 'Start' || $coding_type eq 'Stop' ){
+                if ( $coding_type eq 'Start' || $coding_type eq 'Stop' ) {
                   $gene_href->{annotation_type} .= ",$coding_type\_Loss";
                 }
                 push @gene_data, Seq::Site::Indel->new($gene_href);
@@ -1244,9 +1245,10 @@ sub annotate_del_sites {
         }
       }
     }
-    $self->recordStat($id_genos_href_contig, [$record{var_type}, $record{genomic_type}], 
-      $record{ref_base}, \@gene_data, \@snp_data);
-    
+    $self->recordStat( $id_genos_href_contig,
+      [ $record{var_type}, $record{genomic_type} ],
+      $record{ref_base}, \@gene_data, \@snp_data );
+
     $record{gene_data} = \@gene_data;
 
     my $obj = Seq::Annotate::Indel->new( \%record );

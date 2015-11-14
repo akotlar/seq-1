@@ -139,7 +139,6 @@ sub get_base {
   }
 }
 
-
 =method @public get_nearest_gene
 
   Returns the gene number for the nearest gene to the absolute position;
@@ -158,12 +157,12 @@ sub get_base {
 =cut
 
 sub get_nearest_gene {
-  my ($self, $pos ) = @_;
+  my ( $self, $pos ) = @_;
 
   state $genome_length = $self->_get_genome_length;
 
   if ( $pos >= 0 and $pos < $genome_length ) {
-    return unpack( 'n', substr( ${ $self->bin_seq }, $pos*2, 2 ) );
+    return unpack( 'n', substr( ${ $self->bin_seq }, $pos * 2, 2 ) );
   }
   else {
     confess "get_base() expects a position between 0 and $genome_length, got $pos.";

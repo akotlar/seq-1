@@ -151,10 +151,10 @@ sub _get_file {
     if ( $var eq 'tx' ) {
       $file_name = join ".", $self->name, $var, $chr, $ext;
     }
-    elsif ( $var eq 'nn') {
+    elsif ( $var eq 'nn' ) {
       $file_name = join ".", $self->name, $var, $chr, $ext;
     }
-    elsif ( $var eq 'test')  {
+    elsif ( $var eq 'test' ) {
       $file_name = join ".", $self->name, $var, $chr, $ext;
     }
     else {

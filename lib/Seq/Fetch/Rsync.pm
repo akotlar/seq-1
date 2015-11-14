@@ -29,15 +29,21 @@ use MooseX::Types::Path::Tiny qw/AbsFile AbsPath/;
 
 use namespace::autoclean;
 
-has _rsync_cmd => ( is => 'ro', builder => '_build_rsync_cmd' );
-has rsync_path => ( is => 'ro', isa => AbsPath, coerce => 1);
-has compress => ( is => 'ro', isa => 'Bool', default => 1);
-has dry_run => (is => 'ro', isa => 'Bool', default => 0 );
-has verbose => (is => 'ro', isa => 'Bool', default => 0 );
-has remote_host => (is => 'ro', isa => 'Str', required => 1);
-has remote_dir => (is => 'ro', isa => 'Str', required => 1);
-has remote_file => (is => 'ro', isa => 'Str', required => 1);
-has local_dest => (is => 'ro', isa => AbsPath, required => 1, coerce => 1, handles => { abs_dest => 'stringify' }, );
+has _rsync_cmd  => ( is => 'ro', builder => '_build_rsync_cmd' );
+has rsync_path  => ( is => 'ro', isa     => AbsPath, coerce => 1 );
+has compress    => ( is => 'ro', isa     => 'Bool', default => 1 );
+has dry_run     => ( is => 'ro', isa     => 'Bool', default => 0 );
+has verbose     => ( is => 'ro', isa     => 'Bool', default => 0 );
+has remote_host => ( is => 'ro', isa     => 'Str', required => 1 );
+has remote_dir  => ( is => 'ro', isa     => 'Str', required => 1 );
+has remote_file => ( is => 'ro', isa     => 'Str', required => 1 );
+has local_dest => (
+  is       => 'ro',
+  isa      => AbsPath,
+  required => 1,
+  coerce   => 1,
+  handles  => { abs_dest => 'stringify' },
+);
 
 sub _build_rsync_cmd {
   my $class = shift;
@@ -56,7 +62,7 @@ sub _build_rsync_cmd {
   }
   else {
     my $msg = "Error: cannot find rsync.\n";
-    my @loc = map { $rsync_loc_for{$_} } (keys %rsync_loc_for);
+    my @loc = map { $rsync_loc_for{$_} } ( keys %rsync_loc_for );
     push @loc, $class->rsync_path->stringify;
     $msg .= join "\n\t", "Looked here:", @loc;
     croak $msg;
@@ -72,12 +78,12 @@ sub cmd {
   $opt .= "n" if $self->dry_run;
   $opt .= "v" if $self->verbose;
 
-  if ( !-d $self->local_dest) {
+  if ( !-d $self->local_dest ) {
     $self->local_dest->mkpath;
   }
 
-  my $remote_file = "rsync://" . join('/', $self->remote_host, 
-    $self->remote_dir, $self->remote_file);
+  my $remote_file = "rsync://"
+    . join( '/', $self->remote_host, $self->remote_dir, $self->remote_file );
 
   my $cmd = join " ", $bin, $opt, $remote_file, $self->abs_dest;
 

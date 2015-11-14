@@ -125,9 +125,9 @@ sub _get_gene_data {
   return \@gene_data;
 }
 
-# build_tx_db_for_genome takes the genome length, the 
+# build_tx_db_for_genome takes the genome length, the
 sub build_tx_db_for_genome {
-  my ($self, $genome_length ) = @_;
+  my ( $self, $genome_length ) = @_;
 
   # read gene data for the chromosome
   #   if there is no usable data then we will bail out and no blank files
@@ -191,7 +191,7 @@ sub build_tx_db_for_genome {
   );
 
   my $gene_number = 1;
-  my (%chr_for_gene, %txStartStop, %txGeneToNum);
+  my ( %chr_for_gene, %txStartStop, %txGeneToNum );
 
   for my $gene_href (@$chr_data_aref) {
     my $gene = Seq::Gene->new($gene_href);
@@ -222,26 +222,26 @@ sub build_tx_db_for_genome {
     my $gene_name = $gene_href->{_alt_names}{geneSymbol} or $gene->transcript_id;
 
     # there are certain gene symbols, primarily provisional ones, that are re-used
-    #   this causes some problems since they are often on different chromosomes; 
-    #   it should be obvious that we'll only capture the 1st gene symbol for any 
+    #   this causes some problems since they are often on different chromosomes;
+    #   it should be obvious that we'll only capture the 1st gene symbol for any
     #   repeats
     if ( exists $chr_for_gene{$gene_name} ) {
-      if ($gene->chr ne $chr_for_gene{$gene_name}) {
+      if ( $gene->chr ne $chr_for_gene{$gene_name} ) {
         next;
       }
     }
     else {
-      $chr_for_gene{ $gene_name } = $gene->chr;
+      $chr_for_gene{$gene_name} = $gene->chr;
     }
 
     # - skip entries wihout a gene symbol, which will default to 'NA'
     # - skip entries that are non-coding (many of these have duplicate names,
     #   often appearing on the same chromosome, which makes things weird).
-    if ($gene_name eq "NA" || ( $gene->coding_start == $gene->coding_end)) {
+    if ( $gene_name eq "NA" || ( $gene->coding_start == $gene->coding_end ) ) {
       next;
     }
 
-    if ( exists $txStartStop{ $gene_name } ) {
+    if ( exists $txStartStop{$gene_name} ) {
       my ( $start, $end ) = @{ $txStartStop{$gene_name} };
       if ( $gene->transcript_start < $start ) {
         $start = $gene->transcript_start;
@@ -257,9 +257,13 @@ sub build_tx_db_for_genome {
       $gene_number++;
     }
 
-    $msg = sprintf("gene: %s (%d), start: %s, stop %s", 
-      $gene_name, $txGeneToNum{$gene_name}, $txStartStop{$gene_name}[0],
-      $txStartStop{$gene_name}[1]);
+    $msg = sprintf(
+      "gene: %s (%d), start: %s, stop %s",
+      $gene_name,
+      $txGeneToNum{$gene_name},
+      $txStartStop{$gene_name}[0],
+      $txStartStop{$gene_name}[1]
+    );
     $self->_logger->info($msg);
 
   }
@@ -267,28 +271,31 @@ sub build_tx_db_for_genome {
   # now, the helper program will sort this so it's not strictly necessary to do so here
   my @sorted_genes = map { $_->[0] }
     sort { $a->[1] <=> $b->[1] }
-    map { [ $_, $txStartStop{$_}->[0] ] } (keys %txStartStop);
+    map { [ $_, $txStartStop{$_}->[0] ] } ( keys %txStartStop );
 
-  # write data 
+  # write data
   #   1) dat file => ngene idx
   #   2) kch for ngene db lookup
-  my $regionFh = IO::File->new( $nn_region_file, 'w') || die "$!";
+  my $regionFh = IO::File->new( $nn_region_file, 'w' ) || die "$!";
 
   # might just make this a command line argument
-  say { $regionFh } $genome_length;
+  say {$regionFh} $genome_length;
 
-  for my $gene ( @sorted_genes ) {
+  for my $gene (@sorted_genes) {
 
     # save in dat file for ngene idx helper program
-    say { $regionFh } join "\t", $gene, $txGeneToNum{$gene}, @{ $txStartStop{$gene} };
+    say {$regionFh} join "\t", $gene, $txGeneToNum{$gene}, @{ $txStartStop{$gene} };
 
     # kch save gene number and name
     $db_nn->db_put_string( $txGeneToNum{$gene}, $gene );
   }
-  close ($regionFh);
+  close($regionFh);
 
-  $msg = sprintf("genes: %d; first gene: %s, last gene: %s", 
-    (scalar @sorted_genes), $sorted_genes[0], $sorted_genes[$#sorted_genes]);
+  $msg = sprintf(
+    "genes: %d; first gene: %s, last gene: %s",
+    ( scalar @sorted_genes ),
+    $sorted_genes[0], $sorted_genes[$#sorted_genes]
+  );
   $self->_logger->info($msg);
   return $nn_region_file;
 }

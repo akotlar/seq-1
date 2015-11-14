@@ -21,45 +21,45 @@ use DDP;
 ##############################################################################
 
 use constant VERSION => '1.0.0';
-use constant PROGRAM => eval { ($0 =~ m/(\w+\.pl)$/) ? $1 : $0 };
+use constant PROGRAM => eval { ( $0 =~ m/(\w+\.pl)$/ ) ? $1 : $0 };
 
 ##############################################################################
 ### Globals
 ##############################################################################
 
 my %hCmdLineOption = ();
-my $sHelpHeader = "\nThis is ".PROGRAM." version ".VERSION."\n";
+my $sHelpHeader    = "\nThis is " . PROGRAM . " version " . VERSION . "\n";
 
 my %iupac = (
-	'G,T' => 'K',
-	'T,G' => 'K',
-	'A,C' => 'M',
-	'C,A' => 'M',
-	'A,G' => 'R',
-	'G,A' => 'R',
-	'C,G' => 'S',
-	'G,C' => 'S',
-	'A,T' => 'W',
-	'T,A' => 'W',
-	'C,T' => 'Y',
-	'T,C' => 'Y',
-	'G,G' => 'G',
-	'T,T' => 'T',
-	'A,A' => 'A',
-	'C,C' => 'C',
-	'D,D' => 'D',
-	'I,I' => 'I',
-	# TODO: clear with everyone; I think an Indel should be distinct from
-	# del/mutation; rare but possible.
-	'D,I' => 'J', 
-	'I,D' => 'J',
+  'G,T' => 'K',
+  'T,G' => 'K',
+  'A,C' => 'M',
+  'C,A' => 'M',
+  'A,G' => 'R',
+  'G,A' => 'R',
+  'C,G' => 'S',
+  'G,C' => 'S',
+  'A,T' => 'W',
+  'T,A' => 'W',
+  'C,T' => 'Y',
+  'T,C' => 'Y',
+  'G,G' => 'G',
+  'T,T' => 'T',
+  'A,A' => 'A',
+  'C,C' => 'C',
+  'D,D' => 'D',
+  'I,I' => 'I',
+  # TODO: clear with everyone; I think an Indel should be distinct from
+  # del/mutation; rare but possible.
+  'D,I' => 'J',
+  'I,D' => 'J',
 );
 # set hets ; doing both permutations prob. unnec; GT should go in numerical asc.
-foreach (qw/A T C G/) { 
-	$iupac{"$_,D"} = 'E';
-	$iupac{"D,$_"} = 'E';
-	$iupac{"I,$_"} = 'H';
-	$iupac{"$_,I"} = 'H';
+foreach (qw/A T C G/) {
+  $iupac{"$_,D"} = 'E';
+  $iupac{"D,$_"} = 'E';
+  $iupac{"I,$_"} = 'H';
+  $iupac{"$_,I"} = 'H';
 }
 ##############################################################################
 ### Main
@@ -67,17 +67,19 @@ foreach (qw/A T C G/) {
 
 # note on interpolation vs join vs concatenation:
 # in perl, all compile to the same optree: http://www.perlmonks.org/?node_id=964608
-my ($sInFile, $sOutFile, $bVerbose);
-GetOptions( \%hCmdLineOption,
-            'infile|i=s' => \$sInFile,
-            'outfile|o=s' => \$sOutFile,
-            'help',
-            'man') or pod2usage(2);
+my ( $sInFile, $sOutFile, $bVerbose );
+GetOptions(
+  \%hCmdLineOption,
+  'infile|i=s'  => \$sInFile,
+  'outfile|o=s' => \$sOutFile,
+  'help',
+  'man'
+) or pod2usage(2);
 
-pod2usage( -msg => $sHelpHeader, -exitval => 1) 
-	if $hCmdLineOption{'help'} || !$sInFile || !$sOutFile;
-pod2usage( -exitval => 0, -verbose => 2) 
-	if $hCmdLineOption{'man'};
+pod2usage( -msg => $sHelpHeader, -exitval => 1 )
+  if $hCmdLineOption{'help'} || !$sInFile || !$sOutFile;
+pod2usage( -exitval => 0, -verbose => 2 )
+  if $hCmdLineOption{'man'};
 
 File::Spec->canonpath($sOutFile);
 
@@ -86,21 +88,22 @@ my $log_file = join '.', $sOutFile, 'snp_conversion', 'log';
 Log::Any::Adapter->set( 'File', $log_file );
 my $log = Log::Any->get_logger();
 
-my ($fpIn, $fpOut);
-if(!$sInFile) {
-	$fpIn = \*STDIN;
-}else{
-	unless (open ($fpIn, "<$sInFile") ) {
-		my $err = "\tError : Cannot open $sInFile for reading .....\n";
-		$log->error($err);
-		die $err;
-	}
+my ( $fpIn, $fpOut );
+if ( !$sInFile ) {
+  $fpIn = \*STDIN;
+}
+else {
+  unless ( open( $fpIn, "<$sInFile" ) ) {
+    my $err = "\tError : Cannot open $sInFile for reading .....\n";
+    $log->error($err);
+    die $err;
+  }
 }
 
-unless ( open($fpOut, ">$sOutFile") ) {
-	my $err = "\tError : Cannot open $sInFile for reading .....\n";
-	$log->error($err);
-	die $err;
+unless ( open( $fpOut, ">$sOutFile" ) ) {
+  my $err = "\tError : Cannot open $sInFile for reading .....\n";
+  $log->error($err);
+  die $err;
 }
 
 my $outHeaders = "Fragment\tPosition\tReference\tAlleles\tAllele_Counts\tType";
@@ -108,15 +111,15 @@ my @sampleIds;
 my @samplesIdxs;
 
 LOOP_FILE: while (<$fpIn>) {
-	chomp;
-	next if ($_ =~ /^##/);
-	
-	my @row = split(/\t/);
-	#header containing sample pos begins with #CHROM
-	if ($_ =~/^#C/) {
-		# if range is > $@row, will modify @row, but doesn't matter here
-    @samplesIdxs = 9...$#row;
-    @sampleIds = @row[@samplesIdxs];  
+  chomp;
+  next if ( $_ =~ /^##/ );
+
+  my @row = split(/\t/);
+  #header containing sample pos begins with #CHROM
+  if ( $_ =~ /^#C/ ) {
+    # if range is > $@row, will modify @row, but doesn't matter here
+    @samplesIdxs = 9 ... $#row;
+    @sampleIds   = @row[@samplesIdxs];
 
     croak "No samples found" unless scalar @sampleIds;
 
@@ -124,23 +127,24 @@ LOOP_FILE: while (<$fpIn>) {
 
     $log->debug("output headers are $outHeaders");
 
-		say $fpOut $outHeaders;
-		next LOOP_FILE;
-	}  
-	# ($sFragId, $nBasePos, $sId, $sRefBase, $sInBase, $sQual, $sFilter, $sInfo, 
-	# 	$sFormat, @aSampleCalls) = split(/\t/);
-	
-	#this formula is nonsense: $sqal = $sQual / 100 ... it's a phred score
+    say $fpOut $outHeaders;
+    next LOOP_FILE;
+  }
+  # ($sFragId, $nBasePos, $sId, $sRefBase, $sInBase, $sQual, $sFilter, $sInfo,
+  # 	$sFormat, @aSampleCalls) = split(/\t/);
 
-	#5th row is ALT (all sample alleles)
-	next LOOP_FILE unless $row[4] ne '.';
-	
-  my ($allelesAref, $ac, $type) = _getBases(\@row);
+  #this formula is nonsense: $sqal = $sQual / 100 ... it's a phred score
 
-  my $sampleStr = _formatSampleString(\@row, $allelesAref);
+  #5th row is ALT (all sample alleles)
+  next LOOP_FILE unless $row[4] ne '.';
+
+  my ( $allelesAref, $ac, $type ) = _getBases( \@row );
+
+  my $sampleStr = _formatSampleString( \@row, $allelesAref );
 
   say $fpOut "$row[0]\t$row[1]\t$allelesAref->[0]\t"
-  	.join(',', @$allelesAref[1...$#$allelesAref]) . "\t$ac\t$type\t$sampleStr";
+    . join( ',', @$allelesAref[ 1 ... $#$allelesAref ] )
+    . "\t$ac\t$type\t$sampleStr";
 }
 
 ###Private###
@@ -148,113 +152,120 @@ LOOP_FILE: while (<$fpIn>) {
 #for now following exac_to_snp.pl in assuming no het reference base
 my $ambigBase = 'N';
 my $alleles;
-sub _getBases{
-	my ($rowAref) = @_;
 
-	my @allelesA = split(',', $rowAref->[4]);
-	my $ref = $rowAref->[3];
+sub _getBases {
+  my ($rowAref) = @_;
 
-	# check if reference is het, to see if something strange
-	# TODO: Is this a real poss? handle?
-	unless (index ($ref,',') == -1 ) {
-		$log->error('Reference is het or has unexpected comma:' . join('\t',@$rowAref) );
-		croak;
-	}
-	my $type = 'SNP';
-	
-	my $refLength = length $ref;
- 
- 	# TODO: implement the count check, but the Clarity vcf doesn't use AC field.
-	#my $acIdx = first { $rowAref->[$_] =~ m\AC=\ } 1 .. $#$rowAref;
- 	my $rc = scalar @allelesA;
+  my @allelesA = split( ',', $rowAref->[4] );
+  my $ref = $rowAref->[3];
 
- 	my $ac;
- 	my @outAlleles = ($ref);
- 	# change from dave's only call multiallelic if non-snps present...
- 	# TOOD: is this desirable?
- 	my %newTypes; 
- 	my $alleleLength;
- 	foreach (@allelesA) {
- 		$alleleLength = length $_;
- 		if($alleleLength > $refLength) {
-			$newTypes{INS} = 'INS';
-			$_ = 'I';
-		} elsif($alleleLength < $refLength) {
-			$newTypes{DEL} = 'DEL';
-			$_ = 'D';
-		}
-		$rc-- unless ($_ eq $ref) ;
+  # check if reference is het, to see if something strange
+  # TODO: Is this a real poss? handle?
+  unless ( index( $ref, ',' ) == -1 ) {
+    $log->error( 'Reference is het or has unexpected comma:' . join( '\t', @$rowAref ) );
+    croak;
+  }
+  my $type = 'SNP';
 
-		push(@outAlleles, $_);
-	}
-	$ac = "$rc, " . scalar @allelesA - $rc;
-	#TODO: should multiallelic be determined by sample composition instead?
-	my @newTypesKeys = keys %newTypes;
-	if (scalar @newTypesKeys > 1) {
-		$type = 'MULTIALLELIC';
-	} elsif (scalar @newTypesKeys == 1) {
-		$type = $newTypes{$newTypesKeys[0] };
-	}
+  my $refLength = length $ref;
 
-	return (\@outAlleles, $ac, $type);
+  # TODO: implement the count check, but the Clarity vcf doesn't use AC field.
+  #my $acIdx = first { $rowAref->[$_] =~ m\AC=\ } 1 .. $#$rowAref;
+  my $rc = scalar @allelesA;
+
+  my $ac;
+  my @outAlleles = ($ref);
+  # change from dave's only call multiallelic if non-snps present...
+  # TOOD: is this desirable?
+  my %newTypes;
+  my $alleleLength;
+  foreach (@allelesA) {
+    $alleleLength = length $_;
+    if ( $alleleLength > $refLength ) {
+      $newTypes{INS} = 'INS';
+      $_ = 'I';
+    }
+    elsif ( $alleleLength < $refLength ) {
+      $newTypes{DEL} = 'DEL';
+      $_ = 'D';
+    }
+    $rc-- unless ( $_ eq $ref );
+
+    push( @outAlleles, $_ );
+  }
+  $ac = "$rc, " . scalar @allelesA - $rc;
+  #TODO: should multiallelic be determined by sample composition instead?
+  my @newTypesKeys = keys %newTypes;
+  if ( scalar @newTypesKeys > 1 ) {
+    $type = 'MULTIALLELIC';
+  }
+  elsif ( scalar @newTypesKeys == 1 ) {
+    $type = $newTypes{ $newTypesKeys[0] };
+  }
+
+  return ( \@outAlleles, $ac, $type );
 }
 
 sub _formatSampleString {
-	my ($rowAref, $allelesAref)  = @_;
+  my ( $rowAref, $allelesAref ) = @_;
 
-	#may be undefined, AC is optional
-	my $out = '';
-	#we don't need qual for the entire expriment
-	
-	#my $qual = 1 - 10 ** (-$rowAref->[5]/10); 
-	my @format = split(':', $rowAref->[8] );
+  #may be undefined, AC is optional
+  my $out = '';
+  #we don't need qual for the entire expriment
 
-	# format not guaranteed same for every sample, so can't do this once
-	# but spec doesn't seem to state this must be true, which is ...
-	# states: the same types of data must be present for all samples
-	# First a FORMAT field is given specifying the data types and order 
-	# (colon-separated alphanumeric String). This is followed by one field per 
-	# sample, with the colon-separated data in this field corresponding to the 
-	# types specified in the format
-	# can never be first
-	my $gqIdx = first { $format[$_] eq 'GQ' } 1 .. $#format;
+  #my $qual = 1 - 10 ** (-$rowAref->[5]/10);
+  my @format = split( ':', $rowAref->[8] );
 
-	foreach (@$rowAref[@samplesIdxs] ) {
-		my @fields = split(':');
-		# \ for phased, | for unphased ; genotype always first (when genotypes avail)
-		my @genotype = split('/|', $fields[0]);
+  # format not guaranteed same for every sample, so can't do this once
+  # but spec doesn't seem to state this must be true, which is ...
+  # states: the same types of data must be present for all samples
+  # First a FORMAT field is given specifying the data types and order
+  # (colon-separated alphanumeric String). This is followed by one field per
+  # sample, with the colon-separated data in this field corresponding to the
+  # types specified in the format
+  # can never be first
+  my $gqIdx = first { $format[$_] eq 'GQ' } 1 .. $#format;
 
-		# if it's a haploid call, e.g 1:SOME_QUALITY_SCORE, assume correct
-		foreach (@genotype) {
-			# if data missing, seen as '.', call N
-			if ($_ eq '.') { 
-				$log->debug("Calling ambiguous genotype for sample $_
-					because of missing genotype (e.g '.''); row is " . join("\t", @$rowAref) );
-				$out = 'N,'; 
-				last; 
-			}
-			$out.= "$allelesAref->[$_]," 
-		}
-		chop($out);
+  foreach ( @$rowAref[@samplesIdxs] ) {
+    my @fields = split(':');
+    # \ for phased, | for unphased ; genotype always first (when genotypes avail)
+    my @genotype = split( '/|', $fields[0] );
 
-		if(length $out == 1) {
-			$log->debug("Calling haploid for sample $_; row is " . join("\t", @$rowAref) )
-		} else {
-			$out = $iupac{$out};
-		}
-		$log->error('No out found for row ' . join('\t',@$rowAref) ) unless $out;
-	
-		if ($gqIdx) {
-			#phred -10*log10(Prob{mistake} )
-			$out.= sprintf("\t%.1f", 1 - 10 ** (-$fields[$gqIdx]/10) );
-		} else {
-			$out.= "\t1.0";
-		}
-	}
-	return $out;
+    # if it's a haploid call, e.g 1:SOME_QUALITY_SCORE, assume correct
+    foreach (@genotype) {
+      # if data missing, seen as '.', call N
+      if ( $_ eq '.' ) {
+        $log->debug(
+          "Calling ambiguous genotype for sample $_
+					because of missing genotype (e.g '.''); row is " . join( "\t", @$rowAref )
+        );
+        $out = 'N,';
+        last;
+      }
+      $out .= "$allelesAref->[$_],";
+    }
+    chop($out);
+
+    if ( length $out == 1 ) {
+      $log->debug( "Calling haploid for sample $_; row is " . join( "\t", @$rowAref ) );
+    }
+    else {
+      $out = $iupac{$out};
+    }
+    $log->error( 'No out found for row ' . join( '\t', @$rowAref ) ) unless $out;
+
+    if ($gqIdx) {
+      #phred -10*log10(Prob{mistake} )
+      $out .= sprintf( "\t%.1f", 1 - 10**( -$fields[$gqIdx] / 10 ) );
+    }
+    else {
+      $out .= "\t1.0";
+    }
+  }
+  return $out;
 }
 exit;
-	
+
 ##################################################################################
 ### POD Documentation
 ##################################################################################

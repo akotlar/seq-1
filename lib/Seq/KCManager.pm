@@ -118,14 +118,14 @@ sub _build_db {
 #   existing data and write the string
 #   -> retrieve this data using db_get_string
 sub db_put_string {
-  my ($self, $key, $string) = @_;
-  return $self->_db->set( $key, $string);
+  my ( $self, $key, $string ) = @_;
+  return $self->_db->set( $key, $string );
 }
 
 # db_get_string retireves the string for the given key
-sub db_get_string { 
-  my ($self, $key) = @_;
-  
+sub db_get_string {
+  my ( $self, $key ) = @_;
+
   my $dbm = $self->_db;
 
   if ( defined $dbm ) {
@@ -173,9 +173,10 @@ sub db_get {
   # does dbm doesn't exist?
   my $val;
   if ( defined $dbm ) {
-    if (ref $keys eq 'ARRAY') {
-       $val = $dbm->get_bulk($keys);
-    } else { #singel key, scalar
+    if ( ref $keys eq 'ARRAY' ) {
+      $val = $dbm->get_bulk($keys);
+    }
+    else { #singel key, scalar
       $val = $dbm->get($keys);
     }
 

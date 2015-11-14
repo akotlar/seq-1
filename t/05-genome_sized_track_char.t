@@ -61,7 +61,7 @@ for my $attr_name (qw( chr_len )) {
   }
   my $href = build_obj_data( 'genome_sized_tracks', 'genome', $config_href );
   $href->{bin_seq} = \$seq;
-  $href->{chr_len}  = \%chr_len;
+  $href->{chr_len} = \%chr_len;
   my $obj = $package->new($href);
   ok( $obj, 'object creation' );
 }
@@ -97,7 +97,7 @@ for my $attr_name (qw( chr_len )) {
       name        => $track_name,
       char2score  => $char2score_phyloP,
       score2char  => $score2char_phyloP,
-      bin_seq    => \$bin_seq,
+      bin_seq     => \$bin_seq,
       chr_len     => {},
       genome_chrs => [],
       type        => 'score',

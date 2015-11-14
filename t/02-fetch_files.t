@@ -12,8 +12,8 @@ use YAML qw/ LoadFile /;
 plan tests => 17;
 
 my %attr_2_type = (
-  act       => 'Bool',
-  debug     => 'Bool',
+  act   => 'Bool',
+  debug => 'Bool',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 

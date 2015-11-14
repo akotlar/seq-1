@@ -34,44 +34,43 @@ use IO::Socket;
 
 use Redis;
 
-my $DEV                = 0;
+my $DEV = 0;
 my $redisHost : shared = $ARGV[0] || 'genome.local';
 my $redisPort : shared = $ARGV[1] || '6379';
 
 #these queues are only consumed by this service
-my $submittedJobsDocument: shared   = 'submittedJob';
-my $jobQueueName: shared          = 'submittedJobQueue';
-my $jobPreStartQueue: shared = 'submittedJobProcessingQueue';
+my $submittedJobsDocument : shared = 'submittedJob';
+my $jobQueueName : shared          = 'submittedJobQueue';
+my $jobPreStartQueue : shared      = 'submittedJobProcessingQueue';
 # these queues are consumed by the calling program
 # so items from these queues should not be removed by this program
 # should any job fail, it will be restarted by the caller
 # this queue is meant to simply to place the job in the appropriate queue
 # and take the action relevant to that queue (such as start a job, or complete it)
-my $jobStartedQueue: shared   = 'startedJobQueue';
-my $jobFinishedQueue: shared = 'finishedJobQueue';
-my $jobFailedQueue: shared   = 'failedJobQueue';
+my $jobStartedQueue : shared  = 'startedJobQueue';
+my $jobFinishedQueue : shared = 'finishedJobQueue';
+my $jobFailedQueue : shared   = 'failedJobQueue';
 
 # notify the client
-my $annotationMessageChannel: shared = 'annotationProgress';
+my $annotationMessageChannel : shared = 'annotationProgress';
 
 # these keys should match the corresponding fields in the web server
 # mongoose schema; TODO: at startup request file from webserver with this config
-my $jobKeys:shared = shared_clone({});
-$jobKeys->{inputFilePath} = 'inputFilePath',
-$jobKeys->{attempts} = 'attempts',
-$jobKeys->{outputFilePath} = 'outputFilePath',
-$jobKeys->{options} = 'options',
-$jobKeys->{started} = 'started',
-$jobKeys->{completed} = 'completed',
-$jobKeys->{failed} = 'failed',
-$jobKeys->{result} = 'annotationSummary',
-$jobKeys->{assembly} = 'assembly',
-$jobKeys->{comm} = 'comm',
-$jobKeys->{clientComm} = 'client',
-$jobKeys->{serverComm} = 'server',
+my $jobKeys : shared = shared_clone( {} );
+$jobKeys->{inputFilePath}    = 'inputFilePath',
+  $jobKeys->{attempts}       = 'attempts',
+  $jobKeys->{outputFilePath} = 'outputFilePath',
+  $jobKeys->{options}        = 'options',
+  $jobKeys->{started}        = 'started',
+  $jobKeys->{completed}      = 'completed',
+  $jobKeys->{failed}         = 'failed',
+  $jobKeys->{result}         = 'annotationSummary',
+  $jobKeys->{assembly}       = 'assembly',
+  $jobKeys->{comm}           = 'comm',
+  $jobKeys->{clientComm}     = 'client',
+  $jobKeys->{serverComm}     = 'server',
 
-
-my $configPathBaseDir : shared = "config/web/";
+  my $configPathBaseDir : shared = "config/web/";
 my $configFilePathHref : shared = shared_clone( {} );
 my $semSTDOUT : shared;
 
@@ -83,10 +82,10 @@ $|++;
 my %cache;
 my $Qwork : shared = new Thread::Queue;
 my $Qdone : shared = new Thread::Queue;
-my $done : shared = 0;
+my $done : shared  = 0;
 
 #my $info = Sys::Info->new;
-my $cpu = 4;#$info->device( CPU => my %options );
+my $cpu = 4; #$info->device( CPU => my %options );
 
 my $verbose : shared = 1;
 
@@ -97,22 +96,23 @@ my $verbose : shared = 1;
 
 # TODO: we need to retry jobs that fail because of watch/race
 sub handleJobStart {
-  my ($jobID, $documentKey, $submittedJob, $redis) = @_;
+  my ( $jobID, $documentKey, $submittedJob, $redis ) = @_;
   say "Handle job start submittedJob:";
 
   try {
-    $submittedJob->{$jobKeys->{started} } = 1;
-    my $jobJSON =  encode_json($submittedJob);
-  #  $redis->watch($documentKey);
+    $submittedJob->{ $jobKeys->{started} } = 1;
+    my $jobJSON = encode_json($submittedJob);
+    #  $redis->watch($documentKey);
     $redis->multi;
-    $redis->set($documentKey, $jobJSON);
-    $redis->lrem($jobPreStartQueue, 0, $jobID);
-    $redis->lpush($jobStartedQueue, $jobID );
+    $redis->set( $documentKey, $jobJSON );
+    $redis->lrem( $jobPreStartQueue, 0, $jobID );
+    $redis->lpush( $jobStartedQueue, $jobID );
     my @replies = $redis->exec();
-  } catch {
+  }
+  catch {
     say "Error in handleJobSuccess: $_";
-    $submittedJob->{$jobKeys->{started} } = 0;
-    handleJobFailure($jobID, $documentKey, $submittedJob, $redis);
+    $submittedJob->{ $jobKeys->{started} } = 0;
+    handleJobFailure( $jobID, $documentKey, $submittedJob, $redis );
   }
 }
 
@@ -120,58 +120,60 @@ sub handleJobStart {
 #expects $redis from local scope (not passed)
 #look into multi-exec consequences, performance, investigate storing in redis Sets instead of linked-lists
 sub handleJobSuccess {
-  my ($jobID, $documentKey, $submittedJob, $redis) = @_;
+  my ( $jobID, $documentKey, $submittedJob, $redis ) = @_;
 
   print "job succeeded $jobID";
   try {
-    $submittedJob->{$jobKeys->{completed} } = 1;
+    $submittedJob->{ $jobKeys->{completed} } = 1;
     my $jobJSON = encode_json($submittedJob);
-   # $redis->watch($documentKey);
+    # $redis->watch($documentKey);
     $redis->multi;
-    $redis->set($documentKey, $jobJSON);
-    $redis->lpush($jobFinishedQueue, $jobID );
+    $redis->set( $documentKey, $jobJSON );
+    $redis->lpush( $jobFinishedQueue, $jobID );
     my @replies = $redis->exec();
-    $Qdone->enqueue( $jobID );
+    $Qdone->enqueue($jobID);
   }
   catch {
     print "Error in handleJobSuccess: $_";
-    $submittedJob->{$jobKeys->{completed} } = 0;
-    handleJobFailure($jobID, $documentKey, $submittedJob, $redis);
+    $submittedJob->{ $jobKeys->{completed} } = 0;
+    handleJobFailure( $jobID, $documentKey, $submittedJob, $redis );
   }
 }
 
 sub handleJobFailure {
-  my ($jobID, $documentKey, $submittedJob, $redis) = @_;
+  my ( $jobID, $documentKey, $submittedJob, $redis ) = @_;
   print "job failed $jobID";
   try {
-    $submittedJob->{$jobKeys->{failed} } = 1;
+    $submittedJob->{ $jobKeys->{failed} } = 1;
     my $jobJSON = encode_json($submittedJob);
     #$redis->watch($documentKey);
     $redis->multi;
-    $redis->set($documentKey, $jobJSON );
+    $redis->set( $documentKey, $jobJSON );
     $redis->lpush( $jobFailedQueue, $jobID );
     my @replies = $redis->exec();
-   # $redis->unwatch;
+    # $redis->unwatch;
   }
   catch {
     print $_;
   }
-  $Qdone->enqueue( $jobID );
+  $Qdone->enqueue($jobID);
 }
 
 sub handleJob {
   my $jobID = shift;
 
   say "Job id is $jobID";
-  my $redis = Redis->new( server=> "$redisHost:$redisPort",
-    reconnect => 72, every => 5_000_000
-  ); 
+  my $redis = Redis->new(
+    server    => "$redisHost:$redisPort",
+    reconnect => 72,
+    every     => 5_000_000
+  );
   my $documentKey = $submittedJobsDocument . ':' . $jobID;
 
-  my $log_name = join '.', 'annotation', 'jobID',$jobID,'log';
+  my $log_name = join '.', 'annotation', 'jobID', $jobID, 'log';
   my $log_file = File::Spec->rel2abs( ".", $log_name );
-    say "writing log file here: $log_file" if $verbose;
-    Log::Any::Adapter->set( 'File', $log_file );
+  say "writing log file here: $log_file" if $verbose;
+  Log::Any::Adapter->set( 'File', $log_file );
   my $log = Log::Any->get_logger();
 
   my $submittedJob;
@@ -180,29 +182,30 @@ sub handleJob {
 
   my $failed = 0;
   try {
-    $submittedJob = decode_json($redis->get($documentKey) );
-  } catch {
+    $submittedJob = decode_json( $redis->get($documentKey) );
+  }
+  catch {
     $log->error($_);
     $failed = 1;
-    $Qdone->enqueue( $jobID );
+    $Qdone->enqueue($jobID);
   };
 
   try {
     $inputHref = coerceInputs($submittedJob);
 
-    handleJobStart($jobID, $documentKey, $submittedJob, $redis);
+    handleJobStart( $jobID, $documentKey, $submittedJob, $redis );
 
-    if($verbose) {
+    if ($verbose) {
       say "The user job data sent to annotator is: ";
       p $inputHref;
     }
     # create the annotator
     my $annotate_instance = Seq->new($inputHref);
-    my $result = $annotate_instance->annotate_snpfile;
+    my $result            = $annotate_instance->annotate_snpfile;
 
     die 'Error: Nothing returned from annotate_snpfile' unless defined $result;
-    
-    $submittedJob->{$jobKeys->{result} } = $result;
+
+    $submittedJob->{ $jobKeys->{result} } = $result;
 
     $annotate_instance->compress_output;
   }
@@ -211,39 +214,39 @@ sub handleJob {
 
     $log->error($_);
     #because here we don't have automatic logging guaranteed
-    if(defined $inputHref && exists $inputHref->{messanger}
-    && keys %{$inputHref->{messanger} } ) {
+    if ( defined $inputHref
+      && exists $inputHref->{messanger}
+      && keys %{ $inputHref->{messanger} } )
+    {
       say "publishing message $_";
       $inputHref->{messanger}{message}{data} = "$_";
-      $redis->publish($inputHref->{messanger}{event},
-        encode_json($inputHref->{messanger}) );
+      $redis->publish( $inputHref->{messanger}{event},
+        encode_json( $inputHref->{messanger} ) );
     }
 
     $failed = 1;
 
-    handleJobFailure($jobID, $documentKey, $submittedJob, $redis);
+    handleJobFailure( $jobID, $documentKey, $submittedJob, $redis );
   };
-  handleJobSuccess($jobID, $documentKey, $submittedJob, $redis) unless $failed;
+  handleJobSuccess( $jobID, $documentKey, $submittedJob, $redis ) unless $failed;
 }
 
 #Here we may wish to read a json or yaml file containing argument mappings
 sub coerceInputs {
   my $jobDetailsHref = shift;
 
-  my $inputFilePath = $jobDetailsHref->{$jobKeys->{inputFilePath} };
-  my $outputFilePath = $jobDetailsHref->{$jobKeys->{outputFilePath} };
-  my $debug = !!$DEV; #not, not!
+  my $inputFilePath  = $jobDetailsHref->{ $jobKeys->{inputFilePath} };
+  my $outputFilePath = $jobDetailsHref->{ $jobKeys->{outputFilePath} };
+  my $debug          = !!$DEV;                                         #not, not!
 
-  my $configFilePath = getConfigFilePath( 
-    $jobDetailsHref->{$jobKeys->{assembly} } 
-  );
+  my $configFilePath = getConfigFilePath( $jobDetailsHref->{ $jobKeys->{assembly} } );
 
   # expects
   # @prop {String} channelKey
   # @prop {String} channelID
   # @prop {Object} message : with @prop data for the message
-  my $messangerHref = $jobDetailsHref->
-    {$jobKeys->{comm} }->{$jobKeys->{clientComm} };
+  my $messangerHref =
+    $jobDetailsHref->{ $jobKeys->{comm} }->{ $jobKeys->{clientComm} };
 
   return {
     snpfile            => $inputFilePath,
@@ -253,8 +256,8 @@ sub coerceInputs {
     overwrite          => 1,
     debug              => $debug,
     messanger          => $messangerHref,
-    publisherAddress  => [$redisHost,$redisPort],
-  }
+    publisherAddress   => [ $redisHost, $redisPort ],
+  };
 }
 
 sub getConfigFilePath {
@@ -307,26 +310,30 @@ sub worker {
 my @listenerThreads;
 
 #reconnect every 5 seconds, for an hour
-my $normalQueue = threads->new(sub {
-  my $redis = Redis->new( server=> "$redisHost:$redisPort",
-    reconnect => 72, every => 5_000_000
-  );
+my $normalQueue = threads->new(
+  sub {
+    my $redis = Redis->new(
+      server    => "$redisHost:$redisPort",
+      reconnect => 72,
+      every     => 5_000_000
+    );
 
-  while (1) {
-    #this can result in N identical items in $jobStartedQueue; 
-    #resolved on successful start of job on lines 89,116
-    my $jobID: shared = $redis->brpoplpush($jobQueueName, $jobPreStartQueue, 0); 
+    while (1) {
+      #this can result in N identical items in $jobStartedQueue;
+      #resolved on successful start of job on lines 89,116
+      my $jobID : shared = $redis->brpoplpush( $jobQueueName, $jobPreStartQueue, 0 );
 
-    if ($jobID) {
-      print "\n\nGOT $jobID";
+      if ($jobID) {
+        print "\n\nGOT $jobID";
 
-      $cache{$jobID} = $jobID;
+        $cache{$jobID} = $jobID;
 
-      $Qwork->enqueue($jobID);
+        $Qwork->enqueue($jobID);
+      }
+      delete $cache{ $Qdone->dequeue } while $Qdone->pending;
     }
-    delete $cache{ $Qdone->dequeue } while $Qdone->pending;
   }
-});
+);
 
 push @listenerThreads, $normalQueue;
 

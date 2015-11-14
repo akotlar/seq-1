@@ -199,9 +199,9 @@ sub BUILDARGS {
     for my $attrib (@_attributes) {
       $hash{$attrib} = $href->{$attrib} if exists $href->{$attrib};
     }
-    #allows mixins to get attributes without making subclasses 
+    #allows mixins to get attributes without making subclasses
     #avoid knowitall antipatterns (defeat purpose of encapsulation in mixins)
-    for my $key (keys %$href) {
+    for my $key ( keys %$href ) {
       next if exists $hash{$key};
       $hash{$key} = $href->{$key};
     }

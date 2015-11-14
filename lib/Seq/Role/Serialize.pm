@@ -62,17 +62,17 @@ sub as_href_with_NAs {
   my $name;
   my $selfAttr; #declared here to easy garbage collection
   for my $attr ( $self->meta->get_all_attributes ) {
-    $name            = $attr->name;
-    $selfAttr        = $self->$name;
-    # Attempting optimization; this is a bottleneck; 
+    $name     = $attr->name;
+    $selfAttr = $self->$name;
+    # Attempting optimization; this is a bottleneck;
     # At this point, all attrs sohuld have been populated, so ref HASH / ARRAY should be safe
     # my $type_constraint = $attr->type_constraint;
     if ( defined $selfAttr ) {
       if ( ref $selfAttr eq 'HASH' ) { #if ( ref $type_constraint eq 'HashRef' ) {
-        map { $obj{"$name.$_"} = $selfAttr->{$_} } keys %{ $selfAttr };
+        map { $obj{"$name.$_"} = $selfAttr->{$_} } keys %{$selfAttr};
       }
       elsif ( ref $selfAttr eq 'ARRAY' ) {
-        $obj{$name} = join( ";", @{ $selfAttr } );
+        $obj{$name} = join( ";", @{$selfAttr} );
       }
       else {
         $obj{$name} = $selfAttr;

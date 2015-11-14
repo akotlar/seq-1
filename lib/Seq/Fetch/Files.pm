@@ -31,7 +31,6 @@ use File::Spec;
 use Moose;
 use namespace::autoclean;
 
-
 use DDP;
 use Data::Dump qw/ dump /;
 
@@ -49,11 +48,14 @@ sub fetch_files {
 
   my $name              = $self->name;
   my $remote_files_aref = $self->remote_files;
-  my $local_dir = $self->genome_raw_dir->child( $self->type );
+  my $local_dir         = $self->genome_raw_dir->child( $self->type );
 
   # get rsync cmd and opts
-  my $rsync_basic_opt = { compress => 1, dry_run => !$self->act, 
-    verbose => $self->debug };
+  my $rsync_basic_opt = {
+    compress => 1,
+    dry_run  => !$self->act,
+    verbose  => $self->debug
+  };
 
   my @remote_src  = split /\//, $self->remote_dir;
   my $remote_host = $remote_src[0];
@@ -61,10 +63,10 @@ sub fetch_files {
 
   # fetch files
   for my $file ( @{$remote_files_aref} ) {
-    my $dest_file = $local_dir->child( $file );
-    my $cmd_href         = {
+    my $dest_file = $local_dir->child($file);
+    my $cmd_href  = {
       remote_host => $remote_host,
-      remote_dir => $remote_dir,
+      remote_dir  => $remote_dir,
       remote_file => $file,
       local_dest  => $dest_file->parent->absolute->stringify
     };
@@ -75,24 +77,24 @@ sub fetch_files {
     my $cmd_txt = $rsync->cmd();
 
     if ( $self->act ) {
-      if ( system($cmd_txt) == 0) {
+      if ( system($cmd_txt) == 0 ) {
         if ( $self->debug ) {
-          $self->_logger->info( "rsync cmd: " . $cmd_txt ) 
+          $self->_logger->info( "rsync cmd: " . $cmd_txt );
         }
-        my $msg = sprintf("Successfully downloaded: '%s'",
-          $dest_file->absolute->stringify);
-        $self->_logger->info( $msg );
+        my $msg =
+          sprintf( "Successfully downloaded: '%s'", $dest_file->absolute->stringify );
+        $self->_logger->info($msg);
       }
       else {
-        my $msg = sprintf("Error downloading: '%s' with cmd: '%s'", 
-          $dest_file->absolute->stringify, $cmd_txt);
-        $self->_logger->error( $msg );
+        my $msg = sprintf( "Error downloading: '%s' with cmd: '%s'",
+          $dest_file->absolute->stringify, $cmd_txt );
+        $self->_logger->error($msg);
       }
       # stagger requests to be kind to the remote server
       sleep 3;
     }
-    elsif ( $self->debug ){
-      $self->_logger->info( "rsync cmd: " . $cmd_txt ) 
+    elsif ( $self->debug ) {
+      $self->_logger->info( "rsync cmd: " . $cmd_txt );
     }
   }
   return \@fetched_files;

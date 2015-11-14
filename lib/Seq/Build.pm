@@ -80,8 +80,8 @@ has genome_cadd => (
 );
 
 has ngene_bin => (
-  is => 'ro',
-  isa => AbsFile,
+  is     => 'ro',
+  isa    => AbsFile,
   coerce => 1,
 );
 
@@ -97,7 +97,7 @@ sub BUILD {
   $self->_logger->info( "genome_hasher: " . ( $self->genome_hasher || 'NA' ) );
   $self->_logger->info( "genome_scorer: " . ( $self->genome_scorer || 'NA' ) );
   $self->_logger->info( "genome_cadd: " .   ( $self->genome_cadd   || 'NA' ) );
-  $self->_logger->info( "ngene_bin " .   ( $self->ngene_bin   || 'NA' ) );
+  $self->_logger->info( "ngene_bin " .      ( $self->ngene_bin     || 'NA' ) );
   $self->_logger->info( "wanted_chr: " .    ( $self->wanted_chr    || 'all' ) );
 }
 
@@ -147,13 +147,13 @@ sub build_transcript_db {
     my $ngene_obj;
     foreach my $gst ( $self->all_genome_sized_tracks ) {
       if ( $gst->type eq 'ngene' ) {
-        if ( $gene_track->name eq $gst->name) {
+        if ( $gene_track->name eq $gst->name ) {
           $ngene_obj = $gst;
         }
       }
     }
 
-    # skip if we don't find gene track that has the same name as the ngene 
+    # skip if we don't find gene track that has the same name as the ngene
     #   genome-sized track
     next unless $ngene_obj;
 
@@ -165,8 +165,8 @@ sub build_transcript_db {
     my $chr_offset_fh   = $self->get_write_fh($chr_offset_file);
     print {$chr_offset_fh} Dump( \%chr_len );
 
-    my $cmd = sprintf("%s -chr %s -gene %s -out %s\n", $self->ngene_bin,
-      $chr_offset_file, $region_file, $ngene_obj->genome_bin_file );
+    my $cmd = sprintf( "%s -chr %s -gene %s -out %s\n",
+      $self->ngene_bin, $chr_offset_file, $region_file, $ngene_obj->genome_bin_file );
 
     $self->_logger->info("running command: $cmd");
 

@@ -60,7 +60,7 @@ sub load_track_data {
   }
 
   # Here we lock the entire hash, to prevent multiple threads from simulatenously
-  # writing to any particular key (which will always be unnecessary) 
+  # writing to any particular key (which will always be unnecessary)
   # this is the best granularity we can achieve with threads::shared alone
   # comment: if we need finer control, like per property, use threads::sempahore
   lock( $self->{_genomeDataHref} );

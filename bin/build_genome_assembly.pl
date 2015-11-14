@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 use 5.10.0;
-use lib '/mnt/q22FSS/data/adsp/software/seq/lib'; 
+use lib '/mnt/q22FSS/data/adsp/software/seq/lib';
 use strict;
 use warnings;
 use Carp qw/ croak /;
@@ -35,7 +35,7 @@ my %bin_2_default = (
   genome_cadd_bin   => "bin/genome_cadd",
   genome_hasher_bin => "bin/genome_hasher",
   genome_scorer_bin => "bin/genome_scorer",
-  ngene_bin => "bin/ngene",
+  ngene_bin         => "bin/ngene",
 );
 my %bin_2_path = map { $_ => undef } ( keys %bin_2_default );
 

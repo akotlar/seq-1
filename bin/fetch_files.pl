@@ -94,7 +94,7 @@ if ( $cmd eq 'gene' or $cmd eq 'snp' ) {
   say "\n" . "=" x 80;
   say "Updated configuration file written: '$out_ext.yml'";
   say "=" x 80;
-  
+
   my $out_fh = IO::File->new( "$out_ext.yml", 'w' );
   say {$out_fh} Dump($config_href);
 }
@@ -106,7 +106,6 @@ else {
   say Dump($files_href) if $verbose;
   say "=" x 80;
 }
-
 
 __END__
 

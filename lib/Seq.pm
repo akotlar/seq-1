@@ -177,13 +177,13 @@ B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
 sub annotate_snpfile {
   my $self = shift;
 
-  $self->tee_logger('info', 'about to load annotation data');
+  $self->tee_logger( 'info', 'about to load annotation data' );
 
   my $annotator = Seq::Annotate->new_with_config(
     {
-      configfile => $self->config_file_path,
-      debug      => $self->debug,
-      messanger  => $self->messanger,
+      configfile       => $self->config_file_path,
+      debug            => $self->debug,
+      messanger        => $self->messanger,
       publisherAddress => $self->publisherAddress,
     }
   );
@@ -211,7 +211,7 @@ sub annotate_snpfile {
   #my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
   #get_file_lines is an abstraction of our file reading functionality,
   #whether it's line-by-line, or slurping
-  for my $line ( $self->get_file_lines($self->snpfile_path) ) {
+  for my $line ( $self->get_file_lines( $self->snpfile_path ) ) {
     chomp $line;
     # taint check the snpfile's data
     my $clean_line = $self->clean_line($line);
@@ -315,8 +315,9 @@ sub annotate_snpfile {
     #     the SNPs
     if ( $var_type eq 'SNP' || $var_type eq 'MULTIALLELIC' ) {
       my $record_href = $annotator->annotate_snp_site(
-        $chr,      $chr_index,      $pos,          $abs_pos, $ref_allele,
-        $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids, $id_genos_href
+        $chr,        $chr_index, $pos,            $abs_pos,
+        $ref_allele, $var_type,  $all_allele_str, $allele_count,
+        $het_ids,    $hom_ids,   $id_genos_href
       );
       if ( defined $record_href ) {
         push @snp_annotations, $record_href;
@@ -325,8 +326,9 @@ sub annotate_snpfile {
     }
     elsif ( $var_type eq 'INS' ) {
       my $record_href = $annotator->annotate_ins_site(
-        $chr,      $chr_index,      $pos,          $abs_pos, $ref_allele,
-        $var_type, $all_allele_str, $allele_count, $het_ids, $hom_ids, $id_genos_href
+        $chr,        $chr_index, $pos,            $abs_pos,
+        $ref_allele, $var_type,  $all_allele_str, $allele_count,
+        $het_ids,    $hom_ids,   $id_genos_href
       );
       if ( defined $record_href ) {
         push @snp_annotations, $record_href;
@@ -335,11 +337,14 @@ sub annotate_snpfile {
     }
     elsif ( $var_type eq 'DEL' ) {
       # deletions are saved so they can be aggregated and annotated en block later
-      $self->set_del_site( $abs_pos =>
-          [ $chr, $pos, $ref_allele, $all_allele_str, $allele_count, $het_ids,
-            $hom_ids, $id_genos_href ] );
+      $self->set_del_site(
+        $abs_pos => [
+          $chr,          $pos,     $ref_allele, $all_allele_str,
+          $allele_count, $het_ids, $hom_ids,    $id_genos_href
+        ]
+      );
     }
-    elsif ($var_type ne 'MESS' && $var_type ne 'LOW') {
+    elsif ( $var_type ne 'MESS' && $var_type ne 'LOW' ) {
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
       $self->tee_logger( 'warn', $msg );
     }
@@ -348,9 +353,9 @@ sub annotate_snpfile {
     if ( $self->counter > $self->write_batch ) {
       $self->print_annotations( \@snp_annotations, $self->header );
       @snp_annotations = ();
-      $self->reset_counter; 
+      $self->reset_counter;
     }
-    if($self->hasPublisher) {
+    if ( $self->hasPublisher ) {
       $self->publishMessage("annotated $chr:$pos");
     }
   }
@@ -373,12 +378,12 @@ sub annotate_snpfile {
 
   $annotator->summarizeStats;
 
-  if($self->debug) {
+  if ( $self->debug ) {
     say "The stats record after summarize is:";
     p $annotator->statsRecord;
   }
 
-  $annotator->storeStats($self->output_path);
+  $annotator->storeStats( $self->output_path );
 
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do
@@ -390,27 +395,31 @@ sub _minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 
   my %id_genos_href = ();
-  my $het_ids_str = '';
-  my $hom_ids_str = '';
+  my $het_ids_str   = '';
+  my $hom_ids_str   = '';
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
-     # skip reference && N's
-    next if ($id_geno eq $ref_allele || $id_geno eq 'N');
+    # skip reference && N's
+    next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
 
-    if ($self->isHet($id_geno) ) {
+    if ( $self->isHet($id_geno) ) {
       $het_ids_str .= "$id;";
-    } elsif ($self->isHomo($id_geno) ) {
+    }
+    elsif ( $self->isHomo($id_geno) ) {
       $hom_ids_str .= "$id;";
-    } else {
-      $self->tee_logger('warn', "$id_geno was not recognized, skipping");
+    }
+    else {
+      $self->tee_logger( 'warn', "$id_geno was not recognized, skipping" );
     }
     $id_genos_href{$id} = $id_geno;
   }
-  if($hom_ids_str) { chop $hom_ids_str; } else { $hom_ids_str = 'NA'; }
-  if($het_ids_str) { chop $het_ids_str; } else { $het_ids_str = 'NA'; }
+  if   ($hom_ids_str) { chop $hom_ids_str; }
+  else                { $hom_ids_str = 'NA'; }
+  if   ($het_ids_str) { chop $het_ids_str; }
+  else                { $het_ids_str = 'NA'; }
 
   # return ids for printing
-  return ( $het_ids_str, $hom_ids_str, \%id_genos_href);
+  return ( $het_ids_str, $hom_ids_str, \%id_genos_href );
 }
 
 __PACKAGE__->meta->make_immutable;
