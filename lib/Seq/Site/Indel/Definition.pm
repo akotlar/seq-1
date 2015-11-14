@@ -1,7 +1,7 @@
 use strict;
 use warnings;
-package Seq::Site::Indel::Definition;
 
+package Seq::Site::Indel::Definition;
 
 use Moose;
 use Moose::Util::TypeConstraints;
@@ -9,58 +9,58 @@ use Moose::Util::TypeConstraints;
 
 has minor_allele => (
   is       => 'rw',
-  isa => 'Str',
-  writer => '_rename_minor_allele',
+  isa      => 'Str',
+  writer   => '_rename_minor_allele',
   required => 1,
 );
 
 has annotation_type => (
-  is => 'rw',
-  isa => 'Str',
-  lazy => 1,
-  writer => 'set_annotation_type',
-  default => '', #or NA?
+  is      => 'rw',
+  isa     => 'Str',
+  lazy    => 1,
+  writer  => 'set_annotation_type',
+  default => '',                   #or NA?
 );
 
 #############Protected Api; typically not consumed################
 # takes a string of bases
 sub renameMinorAllele {
-  my ($self, $newName) = @_;
-  $self->_rename_minor_allele($self->indType . $newName);
+  my ( $self, $newName ) = @_;
+  $self->_rename_minor_allele( $self->indType . $newName );
 }
 
 # will hard crash if bad input, as soon as it's called
 enum IndTypes => [qw(- +)];
-has indType => (
-  is => 'ro',
-  isa => 'IndTypes',
-  lazy => 1,
+has indType   => (
+  is      => 'ro',
+  isa     => 'IndTypes',
+  lazy    => 1,
   builder => '_build_indel_type',
 );
 
 sub _build_indel_type {
   my $self = shift;
   #cast as str to substr in case of -N
-  return substr("".$self->minor_allele, 0, 1); 
+  return substr( "" . $self->minor_allele, 0, 1 );
 }
 
 has indLength => (
-  is => 'ro',
-  isa => 'Num',
-  lazy => 1,
+  is      => 'ro',
+  isa     => 'Num',
+  lazy    => 1,
   builder => '_build_indel_length',
 );
 
 sub _build_indel_length {
   my $self = shift;
   #duck type, +N, -N, or +{Str}, -{Str} all work
-  return abs(int($self->minor_allele) ) || length($self->minor_allele) - 1;
-} 
+  return abs( int( $self->minor_allele ) ) || length( $self->minor_allele ) - 1;
+}
 
 has typeName => (
-  is => 'ro',
-  isa => 'Str',
-  lazy => 1,
+  is      => 'ro',
+  isa     => 'Str',
+  lazy    => 1,
   builder => '_buildTypeName',
 );
 
@@ -72,16 +72,16 @@ sub _buildTypeName {
 #this is very basic; does not check if coding region
 #so look for frame type only when coding (only then does it make sense)
 has frameType => (
-  is => 'ro',
-  isa => 'Str',
-  lazy => 1,
+  is      => 'ro',
+  isa     => 'Str',
+  lazy    => 1,
   builder => '_buildFrameType',
 );
 
 sub _buildFrameType {
-  my ($self, $siteType) = @_;
+  my ( $self, $siteType ) = @_;
   my $frame = $self->indLength % 3 ? 'FrameShift' : 'InFrame';
-};
+}
 
 # for now not calculating refAAresidues
 # has refAAresidue => (

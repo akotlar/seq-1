@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+
 package Seq::Site::Indel::Type;
 
 # use Moose;
@@ -16,29 +17,21 @@ package Seq::Site::Indel::Type;
 
 use Moose::Util::TypeConstraints;
 class_type 'Indel', { class => 'Seq::Site::Indel::Definition' };
-coerce 'Indel',
-  from 'Str',
-  via { 
-    require Seq::Site::Indel::Definition; 
-    Seq::Site::Indel::Definition->new(minor_allele => $_)
-  };
+coerce 'Indel', from 'Str', via {
+  require Seq::Site::Indel::Definition;
+  Seq::Site::Indel::Definition->new( minor_allele => $_ )
+};
 
 subtype 'Indels' => as 'ArrayRef[Indel]';
 
-coerce 'Indels',
-  from 'Indel',
-  via {
-    [$_]
-  },
-  from 'ArrayRef[Str]',
-  via { 
-    require Seq::Site::Indel::Definition;
-    [ map { Seq::Site::Indel::Definition->new(minor_allele => $_) } @$_ ] 
-  },
-  from 'Str',
-  via { 
-    require Seq::Site::Indel::Definition; 
-    Seq::Site::Indel::Definition->new(minor_allele => $_)
-  };
+coerce 'Indels', from 'Indel', via {
+  [$_]
+}, from 'ArrayRef[Str]', via {
+  require Seq::Site::Indel::Definition;
+  [ map { Seq::Site::Indel::Definition->new( minor_allele => $_ ) } @$_ ]
+}, from 'Str', via {
+  require Seq::Site::Indel::Definition;
+  Seq::Site::Indel::Definition->new( minor_allele => $_ )
+};
 
 1;

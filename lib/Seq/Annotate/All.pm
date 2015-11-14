@@ -29,11 +29,11 @@ extends 'Seq::Annotate::Site';
 with 'Seq::Role::Serialize';
 with 'Seq::Site::Gene::Definition';
 
-has alleles      => ( is => 'ro', isa => 'Str',     required => 1, );
-has allele_count => ( is => 'ro', isa => 'Str',     required => 1, );
-has het_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', lazy=> 1,);
-has hom_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', lazy=> 1,);
-has var_allele   => ( is => 'ro', isa => 'Str',     required => 1, );
+has alleles      => ( is => 'ro', isa => 'Str',       required => 1, );
+has allele_count => ( is => 'ro', isa => 'Str',       required => 1, );
+has het_ids      => ( is => 'ro', isa => 'Str',       default  => 'NA', lazy => 1, );
+has hom_ids      => ( is => 'ro', isa => 'Str',       default  => 'NA', lazy => 1, );
+has var_allele   => ( is => 'ro', isa => 'Str',       required => 1, );
 has var_type     => ( is => 'ro', isa => 'SiteTypes', required => 1, );
 
 # the objects stored in gene_data really only need to do as_href_with_NAs(),
@@ -54,8 +54,11 @@ has '+gene_data' => (
 #   init_arg => undef,
 # );
 override attrs => sub {
-  state $attrs = ['chr', 'pos', 'allele_count', 'alleles', 'var_type', 
-  'ref_base', 'genomic_type', 'var_allele', 'het_ids', 'hom_ids', 'warning'];
+  state $attrs = [
+    'chr',      'pos',      'allele_count', 'alleles',
+    'var_type', 'ref_base', 'genomic_type', 'var_allele',
+    'het_ids',  'hom_ids',  'warning'
+  ];
   return $attrs;
 };
 

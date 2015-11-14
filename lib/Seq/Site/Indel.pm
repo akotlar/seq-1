@@ -20,14 +20,14 @@ extends 'Seq::Site::Gene';
 with 'Seq::Role::Serialize';
 
 has minor_allele => (
-  is => 'ro',
-  isa => 'Str',
+  is       => 'ro',
+  isa      => 'Str',
   required => 1,
 );
 
 has annotation_type => (
-  is => 'ro',
-  isa => 'Str',
+  is       => 'ro',
+  isa      => 'Str',
   required => 1,
 );
 
@@ -46,7 +46,7 @@ has annotation_type => (
 #   builder => '_set_new_aa_residue',
 # );
 # #Here, for a deletion, it would be confusing to show a longer allele
-# #ned to think about how to represent that 
+# #ned to think about how to represent that
 # sub _set_new_codon_seq {
 #   my $self = shift;
 

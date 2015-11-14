@@ -53,11 +53,13 @@ has siteTypes => (
 );
 =type {Str} SiteTypes
 =cut
+
 enum SiteTypes => ['SNP', 'MULTIALLELIC', 'DEL', 'INS'];
 
 =type {Str} GeneSiteType
 
 =cut
+
 #public
 enum GeneSiteType => $siteTypes;
 

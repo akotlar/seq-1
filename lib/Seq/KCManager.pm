@@ -145,10 +145,11 @@ sub db_get {
   # does dbm doesn't exist?
   my $val;
   if ( defined $dbm ) {
-    if(!ref $keys) {
+    if ( !ref $keys ) {
       $val = $dbm->get($keys);
-    } else {
-      # assume it's ARRAY; can also check ref $keys eq 'ARRAY', 
+    }
+    else {
+      # assume it's ARRAY; can also check ref $keys eq 'ARRAY',
       # but I think that wastes time, and is a function definition issue;
       # if someone misuses, we can hope for death
       # this is not less safe than what was done before (more safe by 1 check)
@@ -159,10 +160,10 @@ sub db_get {
     # does the value exist within the dbm?
     if ( defined $val ) {
       return decode_json $val if !ref $keys;
-      if($reverse) {
-        return map {decode_json($val->{$_} ) } sort{$b <=> $a} keys(%$val);
+      if ($reverse) {
+        return map { decode_json( $val->{$_} ) } sort { $b <=> $a } keys(%$val);
       }
-      return map {decode_json($val->{$_} ) } sort{$a <=> $b} keys(%$val);
+      return map { decode_json( $val->{$_} ) } sort { $a <=> $b } keys(%$val);
     }
     else {
       return;

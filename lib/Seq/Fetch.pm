@@ -101,7 +101,7 @@ sub fetch_genome_size_data {
       say $msg;
     }
 
-    my $obj = Seq::Fetch::Files->new($record);
+    my $obj        = Seq::Fetch::Files->new($record);
     my $files_aref = $obj->fetch_files;
     $files{ $track->name } = $files_aref;
   }

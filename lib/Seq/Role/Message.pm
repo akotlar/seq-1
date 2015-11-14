@@ -29,40 +29,38 @@ use DDP;
 
 # sub initialize {
 #     defined $singleton
-#       and croak __PACKAGE__ . ' singleton has already been instanciated'; 
+#       and croak __PACKAGE__ . ' singleton has already been instanciated';
 #     shift;
 #     return __PACKAGE__->new(@_);
 # }
 
 #note: not using native traits because they don't support Maybe attrs
 has publisherAddress => (
-  is => 'ro',
-  isa => 'Maybe[ArrayRef]',
-  required  => 0,
-  lazy => 1,
-  default => undef,
+  is       => 'ro',
+  isa      => 'Maybe[ArrayRef]',
+  required => 0,
+  lazy     => 1,
+  default  => undef,
 );
 
 #note: not using native traits because they don't support Maybe attrs
 has messanger => (
-  is        => 'rw',
-  isa       => 'Maybe[HashRef]',
-  required  => 0,
-  lazy => 1,
-  default => undef,
+  is       => 'rw',
+  isa      => 'Maybe[HashRef]',
+  required => 0,
+  lazy     => 1,
+  default  => undef,
 );
 
 has publisher => (
-  is       => 'ro',
-  required => 0,
-  lazy     => 1,
-  init_arg => undef,
-  builder  => '_buildMessagePublisher',
-  lazy => 1,
+  is        => 'ro',
+  required  => 0,
+  lazy      => 1,
+  init_arg  => undef,
+  builder   => '_buildMessagePublisher',
+  lazy      => 1,
   predicate => 'hasPublisher',
-  handles => {
-    notify => 'command'
-  },
+  handles   => { notify => 'command' },
 );
 
 sub _buildMessagePublisher {
@@ -77,16 +75,16 @@ sub _buildMessagePublisher {
 
 #note, accessing hash directly because traits don't work with Maybe types
 sub publishMessage {
-  my ($self, $msg) = @_;
+  my ( $self, $msg ) = @_;
   #because predicates don't trigger builders, need to check hasPublisherAddress
   return unless $self->messanger && $self->publisherAddress;
   $self->messanger->{message}{data} = $msg;
-  $self->notify(['publish', $self->messanger->{event},
-    encode_json($self->messanger) ] );
-};
+  $self->notify(
+    [ 'publish', $self->messanger->{event}, encode_json( $self->messanger ) ] );
+}
 
 sub tee_logger {
-  my ($self, $log_method, $msg) = @_;
+  my ( $self, $log_method, $msg ) = @_;
   $self->publishMessage($msg);
 
   async {
@@ -95,7 +93,7 @@ sub tee_logger {
   # redundant, _logger should handle exceptions
   # if ( $log_method eq 'error' ) {
   #   confess $msg . "\n";
-  # } 
+  # }
 }
 
 no Moose::Role;

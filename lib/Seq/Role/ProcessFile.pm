@@ -25,7 +25,7 @@ has file_type => (
   is       => 'ro',
   isa      => 'fileTypes',
   required => 1,
-  default => 'snp_2',
+  default  => 'snp_2',
 );
 
 has printed_header => (
@@ -48,8 +48,8 @@ has header => (
 );
 
 has compress_extension => (
-  is => 'ro',
-  lazy => 1,
+  is      => 'ro',
+  lazy    => 1,
   default => '.tar.gz',
 );
 
@@ -93,24 +93,27 @@ sub print_annotations {
 sub compress_output {
   my $self = shift;
 
-  $self->tee_logger('info', 'Compressing all output files');
+  $self->tee_logger( 'info', 'Compressing all output files' );
 
-  if(! -e $self->output_path) {
-    $self->tee_logger('warn', 'No output files to compress');
+  if ( !-e $self->output_path ) {
+    $self->tee_logger( 'warn', 'No output files to compress' );
     return;
   }
 
- # my($filename, $dirs) = fileparse($self->output_path);
+  # my($filename, $dirs) = fileparse($self->output_path);
 
-  my $tar = which('tar') or $self->tee_logger('error', 'No tar program found');
+  my $tar = which('tar') or $self->tee_logger( 'error', 'No tar program found' );
   my $pigz = which('pigz');
   if ($pigz) { $tar = "$tar --use-compress-program=$pigz"; } #-I $pigz
 
-  my $outcome = system(
-    "$tar -cf ".$self->output_path.$self->compress_extension." ".$self->output_path."*"
-  );
+  my $outcome =
+    system( "$tar -cf "
+      . $self->output_path
+      . $self->compress_extension . " "
+      . $self->output_path
+      . "*" );
 
-  $self->tee_logger('warn', "Zipping failed with $?") unless $outcome == 0;
+  $self->tee_logger( 'warn', "Zipping failed with $?" ) unless $outcome == 0;
 }
 
 sub check_header {

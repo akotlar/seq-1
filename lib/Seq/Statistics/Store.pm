@@ -12,8 +12,8 @@ requires 'hasStats';
 use namespace::autoclean;
 
 has statsExtension => (
-  is => 'rw',
-  lazy => 1,
+  is      => 'rw',
+  lazy    => 1,
   default => 'json'
 );
 
@@ -25,21 +25,23 @@ has statsFH => (
 );
 
 sub storeStats {
-  my ($self, $outBasePath) = @_;
-  if(!$self->hasStats) {
-    $self->tee_logger('warn', 'No stats to store');
-  } else {
-    my $fh = $self->_buildFh($outBasePath.'.'.$self->statsExtension);
-    print $fh encode_json($self->statsRecord);
+  my ( $self, $outBasePath ) = @_;
+  if ( !$self->hasStats ) {
+    $self->tee_logger( 'warn', 'No stats to store' );
+  }
+  else {
+    my $fh = $self->_buildFh( $outBasePath . '.' . $self->statsExtension );
+    print $fh encode_json( $self->statsRecord );
   }
 }
-  
-sub _buildFh {
-  my ($self, $outPath) = @_;
 
-  if(!defined $outPath) {
-    $self->tee_logger('error', 'no path provided to storeStats'); #programmer error
-  } elsif(!$outPath) {
+sub _buildFh {
+  my ( $self, $outPath ) = @_;
+
+  if ( !defined $outPath ) {
+    $self->tee_logger( 'error', 'no path provided to storeStats' ); #programmer error
+  }
+  elsif ( !$outPath ) {
     return \*STDOUT;
   }
 

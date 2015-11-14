@@ -32,8 +32,8 @@ enum SnpType => [ 'SNP', 'MULTIALLELIC', ];
 
 has alleles      => ( is => 'ro', isa => 'Str',     required => 1, );
 has allele_count => ( is => 'ro', isa => 'Str',     required => 1, );
-has het_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', lazy=> 1,);
-has hom_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', lazy=> 1,);
+has het_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', lazy => 1, );
+has hom_ids      => ( is => 'ro', isa => 'Str',     default  => 'NA', lazy => 1, );
 has var_allele   => ( is => 'ro', isa => 'Str',     required => 1, );
 has var_type     => ( is => 'ro', isa => 'SnpType', required => 1, );
 
@@ -55,8 +55,10 @@ has '+gene_data' => (
 #   init_arg => undef,
 # );
 override attrs => sub {
-  state $attrs = ['chr', 'pos', 'allele_count', 'alleles', 'var_type', 
-  'ref_base', 'genomic_type', 'het_ids', 'hom_ids', 'warning'];
+  state $attrs = [
+    'chr',          'pos',     'allele_count', 'alleles', 'var_type', 'ref_base',
+    'genomic_type', 'het_ids', 'hom_ids',      'warning'
+  ];
   return $attrs;
 };
 

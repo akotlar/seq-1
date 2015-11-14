@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+
 =head1 NAME
 
 Statistics::StatisticsCalculator
@@ -20,6 +21,7 @@ siteTypes or siteCodes
 ====
 
 =cut
+
 package Seq::Statistics;
 
 use 5.10.0;
@@ -31,12 +33,12 @@ extends 'Seq::Statistics::Base';
 use Seq::Statistics::Percentiles;
 use DDP;
 
-has statsKey => ( 
+has statsKey => (
   is      => 'ro',
   isa     => 'Str',
   default => 'statistics',
 );
-has ratioKey => ( 
+has ratioKey => (
   is      => 'ro',
   isa     => 'Str',
   default => 'ratios',
@@ -61,48 +63,49 @@ with 'Seq::Statistics::Store';
 # Public Methods
 #############################################################################
 
-sub summarize { 
+sub summarize {
   my $self = shift;
-  my ($percentilesHref, $destHref);
+  my ( $percentilesHref, $destHref );
 
   $self->makeRatios;
 
-  if($self->debug) {
+  if ( $self->debug ) {
     say "Ratios:";
     p $self->ratiosHref;
   }
 
-  if($self->hasNoRatios) {
+  if ( $self->hasNoRatios ) {
     #message
     return;
   }
 
-  $destHref = $self->setStat($self->statsKey, {} ); #init statKey at top of href;
+  $destHref = $self->setStat( $self->statsKey, {} ); #init statKey at top of href;
 
-  for my $kv ($self->allRatiosKv) {
-    if(!defined $kv->[1] ) {next;} #not certain this needed
+  for my $kv ( $self->allRatiosKv ) {
+    if ( !defined $kv->[1] ) { next; }               #not certain this needed
 
     $percentilesHref = Seq::Statistics::Percentiles->new(
       ratioName => $kv->[0],
-      ratios => $kv->[1],
+      ratios    => $kv->[1],
       qcFailKey => $self->qcFailKey,
-      target => $destHref,
+      target    => $destHref,
     );
 
-    if(!$percentilesHref->hasPercentiles) {next;}
-   
+    if ( !$percentilesHref->hasPercentiles ) { next; }
+
     $percentilesHref->storeAndQc;
 
-    if($self->debug) {
+    if ( $self->debug ) {
       say "after qc, stats record has";
       p $self->statsRecord;
     }
 
-    $self->tee_logger('info', 'Finished calculating statistics');
+    $self->tee_logger( 'info', 'Finished calculating statistics' );
   }
 }
 __PACKAGE__->meta->make_immutable;
 1;
+
 =head1 COPYRIGHT
 
 Copyright (c) 2014 Alex Kotlar (<alex.kotlar@emory.edu>). All rights
