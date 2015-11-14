@@ -37,7 +37,7 @@ sub findGeneData {
       #inclusive of current base
       @range = ( $abs_pos - $allele->indLength + 1 .. $abs_pos );
 
-      @data = $db->db_get( \@range, 1 ); #last arg is for reversal of order
+      @data = $db->db_bulk_get( \@range, 1 ); #last arg is for reversal of order
 
       $self->_annotateSugar(
         \@data,
@@ -59,7 +59,7 @@ sub findGeneData {
       #feature
       @range = ( $abs_pos .. $abs_pos + 1 );
 
-      @data = $db->get_bulk( \@range );
+      @data = $db->db_bulk_get( \@range, 0);
       $self->_annotateSugar( \@data[ 1 .. $#data ], $allele );
     }
   }
