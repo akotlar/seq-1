@@ -4,7 +4,6 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use lib '/mnt/q22FSS/data/adsp/software/seq/lib';
 use Carp;
 use Getopt::Long;
 use File::Spec;
@@ -21,6 +20,7 @@ use Seq;
 
 my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $overwrite, $no_skip_chr,
   $debug, $snp_file_version );
+$snp_file_version = 'snp_2';
 
 # TODO: read directly from argument_format.json
 
@@ -83,7 +83,7 @@ try {
   # create the annotator
   my $annotate_instance = Seq->new(
     {
-      file_type          => 'snp_2',
+      file_type          => $snp_file_version,
       config_file        => $yaml_config,
       debug              => $debug,
       overwrite          => $overwrite,
