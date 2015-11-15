@@ -38,7 +38,7 @@ sub findGeneData {
       @range = ( $abs_pos - $allele->indLength + 1 .. $abs_pos );
       @data = $db->db_bulk_get( \@range, 1 ); #last arg is for reversal of order
 
-      next unless @data; #should not be necessary
+      next unless @data;                      #should not be necessary
 
       $self->_annotateSugar(
         \@data,
@@ -66,7 +66,7 @@ sub findGeneData {
       #feature
       @range = ( $abs_pos .. $abs_pos + 1 );
       @data = $db->db_bulk_get( \@range, 0 );
-      
+
       next unless @data; #should not be necessary
 
       $self->_annotateSugar( \@data, $allele );
@@ -74,7 +74,7 @@ sub findGeneData {
   }
 }
 
-state $delim = '|'; #can't be ; or will get split, unless we prepend Type-Frame-
+state $delim = '|';      #can't be ; or will get split, unless we prepend Type-Frame-
 #Thomas, I noticed that we can potentially have many interesting variants
 #Say indels that hit start and stop, so I want to grab them all, in order
 #It seems like a waste not to if we're already 90% of the way there; people can
@@ -101,7 +101,7 @@ sub _annotateSugar {
       );
       next;
     }
-    
+
     for my $transcriptHref (@$geneRecordAref) {
       if ( !$transcriptHref ) {
         $self->tee_logger(
@@ -110,10 +110,10 @@ sub _annotateSugar {
         );
         next;
       }
-      
+
       $siteType = $transcriptHref->{site_type};
       next if !$allowedSitesHref->{$siteType};
-      
+
       if ( $siteType eq $codingName ) {
         if ( defined $transcriptHref->{codon_number}
           && $transcriptHref->{codon_number} == 1 )
