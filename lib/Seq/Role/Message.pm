@@ -2,7 +2,7 @@ package Seq::Role::Message;
 
 our $VERSION = '0.001';
 
-# ABSTRACT: A class for communicating 
+# ABSTRACT: A class for communicating
 # VERSION
 
 # vars that are not initialized at construction

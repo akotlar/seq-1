@@ -18,9 +18,13 @@ use Data::Dump qw/ dump pp /;
 
 use Seq;
 
-my ( $snpfile, $yaml_config, $verbose, $help, $out_file, $overwrite, $no_skip_chr,
-  $debug, $snp_file_version );
+my (
+  $snpfile,     $yaml_config, $verbose,
+  $help,        $out_file,    $overwrite,
+  $no_skip_chr, $debug,       $snp_file_version
+);
 $snp_file_version = 'snp_2';
+$debug            = 0;
 
 # TODO: read directly from argument_format.json
 
@@ -33,8 +37,8 @@ GetOptions(
   'o|out=s'     => \$out_file,
   'overwrite'   => \$overwrite,
   'no_skip_chr' => \$no_skip_chr,
-  'd|debug'     => \$debug,
-  't|type=s' => \$snp_file_version,
+  'd|debug=n'   => \$debug,
+  't|type=s'    => \$snp_file_version,
 );
 
 if ($help) {
@@ -44,8 +48,8 @@ if ($help) {
 
 unless ( $yaml_config
   and $snpfile
-  and $out_file 
-  and $snp_file_version)
+  and $out_file
+  and $snp_file_version )
 {
   Pod::Usage::pod2usage();
 }
@@ -54,11 +58,17 @@ try {
   # sanity checking
   if ( -f $out_file && !$overwrite ) {
     say "ERROR: '$out_file' already exists. Use '--overwrite' switch to over write it.";
-    exit;
+    exit(1);
   }
 
-  unless ( $snp_file_version eq 'snp_1' or $snp_file_version eq 'snp_2' ) { 
-    say "ERROR: Expected snp file version to be either snp_1 or snp_2 but found . " . $snp_file_version;
+  if ( $debug < 0 || $debug > 2 ) {
+    say "ERROR: debug out of range (0-2); found $debug";
+    exit(1);
+  }
+
+  unless ( $snp_file_version eq 'snp_1' or $snp_file_version eq 'snp_2' ) {
+    say "ERROR: Expected snp file version to be either snp_1 or snp_2 but found . "
+      . $snp_file_version;
     exit;
   }
 
@@ -94,8 +104,8 @@ try {
   );
 
   my $href = $annotate_instance->annotate_snpfile;
-  my $fh = IO::File->new( "$out_file.stats.txt", 'w') || die "$!";
-  print {$fh} Dump ($href);
+  my $fh = IO::File->new( "$out_file.stats.txt", 'w' ) || die "$!";
+  print {$fh} Dump($href);
 }
 catch {
   say $_;

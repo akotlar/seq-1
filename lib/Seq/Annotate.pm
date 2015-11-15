@@ -703,12 +703,12 @@ sub BUILD {
       $self->tee_logger( 'info', $msg );
     }
   }
-#  for my $dbm_aref ( $self->_all_dbm_tx ) {
-#    my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
-#    my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
-#    say $msg if $self->debug;
-#    $self->tee_logger( 'info', $msg );
-#  }
+  #  for my $dbm_aref ( $self->_all_dbm_tx ) {
+  #    my $dbm = ($dbm_aref) ? $dbm_aref->filename : 'NA';
+  #    my $msg = sprintf( "Loaded dbm: %s for genome", $dbm );
+  #    say $msg if $self->debug;
+  #    $self->tee_logger( 'info', $msg );
+  #  }
 }
 
 sub _var_alleles {
@@ -796,23 +796,23 @@ sub annotate {
     }
     else {
       $record{genomic_type} = 'Intronic';
-      if ($self->_ngene) {
-      my $nearest_gene_code = $self->get_nearest_gene($abs_pos) || '-9';
-      if ( $nearest_gene_code != -9 ) {
-        $record{nearest_gene} = $self->gene_num_2_str($nearest_gene_code);
+      if ( $self->_ngene ) {
+        my $nearest_gene_code = $self->get_nearest_gene($abs_pos) || '-9';
+        if ( $nearest_gene_code != -9 ) {
+          $record{nearest_gene} = $self->gene_num_2_str($nearest_gene_code);
+        }
       }
-    }
       # say STDERR join "\t", $record{genomic_type}, $nearest_gene_code, $record{nearest_gene};
     }
   }
   else {
     $record{genomic_type} = 'Intergenic';
-      if ($self->_ngene) {
-    my $nearest_gene_code = $self->get_nearest_gene($abs_pos) || '-9';
-    if ( $nearest_gene_code != -9 ) {
-      $record{nearest_gene} = $self->gene_num_2_str($nearest_gene_code);
+    if ( $self->_ngene ) {
+      my $nearest_gene_code = $self->get_nearest_gene($abs_pos) || '-9';
+      if ( $nearest_gene_code != -9 ) {
+        $record{nearest_gene} = $self->gene_num_2_str($nearest_gene_code);
+      }
     }
-  }
     # say STDERR join "\t", $record{genomic_type}, $nearest_gene_code, $record{nearest_gene};
   }
 

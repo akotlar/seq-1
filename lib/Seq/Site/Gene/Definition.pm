@@ -64,12 +64,14 @@ enum SiteTypes => ['SNP', 'MULTIALLELIC', 'DEL', 'INS'];
 
 
 
+
 =type {Str} GeneSiteType
 
 =cut
 
 #public
 enum GeneSiteType => $siteTypes;
+
 
 
 
