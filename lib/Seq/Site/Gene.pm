@@ -93,6 +93,7 @@ enum GeneSiteType => [ '5UTR', 'Coding', '3UTR', 'non-coding RNA',
                        'Splice Donor', 'Splice Acceptor' ];
 
 
+
 =type {Str} StrandType
 
 =cut
