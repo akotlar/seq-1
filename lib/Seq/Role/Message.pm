@@ -1,5 +1,11 @@
-# vars that are not initialized at construction
 package Seq::Role::Message;
+
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for communicating 
+# VERSION
+
+# vars that are not initialized at construction
 
 use 5.10.0;
 use Moose::Role;

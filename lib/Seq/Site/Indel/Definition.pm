@@ -3,6 +3,11 @@ use warnings;
 
 package Seq::Site::Indel::Definition;
 
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for emiting indel features
+# VERSION
+
 use Moose;
 use Moose::Util::TypeConstraints;
 #with 'Seq::Site::Gene::Definition'; #for remaking the AA, later

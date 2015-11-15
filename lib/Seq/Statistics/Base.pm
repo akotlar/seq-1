@@ -17,6 +17,11 @@ SNP, MESS, LOW
 
 package Seq::Statistics::Base;
 
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for holding counts, features
+# VERSION
+
 use 5.10.0;
 use Moose;
 use namespace::autoclean; #remove moose keywords after compilation

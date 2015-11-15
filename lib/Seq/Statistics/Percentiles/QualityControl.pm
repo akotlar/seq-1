@@ -1,5 +1,10 @@
 package Seq::Statistics::Percentiles::QualityControl;
 
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for giving quality scores
+# VERSION
+
 use Moose::Role;
 use strict;
 use warnings;

@@ -3,6 +3,11 @@ use warnings;
 
 package Seq::Site::Indel::Type;
 
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for coercing indels
+# VERSION
+
 # use Moose;
 # use MooseX::Types -declare => [qw/Indel/];
 

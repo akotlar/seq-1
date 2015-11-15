@@ -1,6 +1,12 @@
+package Seq::Statistics::Record;
+
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for recording statistics
+# VERSION
+
 # This package essentially expects good inputs
 # Meaning non-reference alleles at the least
-package Seq::Statistics::Record;
 
 use 5.10.0;
 use Moose::Role;

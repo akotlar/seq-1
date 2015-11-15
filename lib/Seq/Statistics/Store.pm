@@ -1,5 +1,11 @@
 package Seq::Statistics::Store;
 
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for storing statistics
+# VERSION
+
+
 use 5.10.0;
 use Moose::Role;
 use Cpanel::JSON::XS;

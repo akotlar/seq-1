@@ -1,4 +1,10 @@
 package Seq::Site::Gene::Definition;
+
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for storing defintions and codon table
+# VERSION
+
 use Moose::Role;
 use 5.10.0;
 use Moose::Util::TypeConstraints;

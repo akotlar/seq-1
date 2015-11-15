@@ -1,8 +1,14 @@
 package Seq::Role::ProcessFile;
 
+our $VERSION = '0.001';
+
+# ABSTRACT: A role for processing snp files
+# VERSION
+
 use 5.10.0;
 use strict;
 use warnings;
+
 use Moose::Role;
 use Moose::Util::TypeConstraints;
 use File::Which qw(which);

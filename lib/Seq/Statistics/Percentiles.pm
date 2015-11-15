@@ -1,4 +1,10 @@
 package Seq::Statistics::Percentiles;
+
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for generating percentiles
+# VERSION
+
 use 5.10.0;
 use strict;
 use warnings;

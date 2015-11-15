@@ -24,6 +24,11 @@ siteTypes or siteCodes
 
 package Seq::Statistics;
 
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for sequence statistics
+# VERSION
+
 use 5.10.0;
 use Moose;
 use namespace::autoclean;

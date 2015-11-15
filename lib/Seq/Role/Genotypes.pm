@@ -1,8 +1,16 @@
 package Seq::Role::Genotypes;
+
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for converting genotyping codes
+# VERSION
+
 use strict;
 use warnings;
+use 5.10.0;
 use Moose::Role;
 use namespace::autoclean;
+
 # the genotype codes below are based on the IUPAC ambiguity codes with the notable
 #   exception of the indel codes that are specified in the snpfile specifications
 # no type checks to avoid constraint checks at inclusion time
@@ -19,6 +27,8 @@ has iupac => (
   builder  => '_buildIUPAC',
 );
 
+# _buildIUPAC retruns a hashref of genotyping codes and corresponding nucleic
+#   acid codes
 #IUPAC also includes D => 'AGT', H => 'ACT', # may want to think about renaming D,H
 #also includes V => 'ACG', B => 'CGT', do we want to include these?
 #could remove * from E & H, but then we lose information on het vs homozygote

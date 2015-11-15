@@ -4,6 +4,11 @@ use warnings;
 
 package Seq::Sites::Indels;
 
+our $VERSION = '0.001';
+
+# ABSTRACT: A class for annotating indels
+# VERSION
+
 use Moose;
 use DDP;
 
