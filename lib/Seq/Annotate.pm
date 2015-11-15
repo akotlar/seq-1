@@ -71,10 +71,11 @@ use Seq::GenomeBin;
 use Seq::KCManager;
 use Seq::Site::Annotation;
 use Seq::Site::Gene;
-use Seq::Site::Indel;
 use Seq::Site::Snp;
-use Seq::Annotate::Indel;
-use Seq::Annotate::Site;
+use Seq::Site::Indel;
+use Seq::Sites::Indels;
+
+use Seq::Annotate::All;
 use Seq::Annotate::Snp;
 use Seq::Statistics;
 
@@ -115,7 +116,7 @@ has statisticsCalculator => (
 
 sub _buildStatistics {
   my $self = shift;
-  return Seq::Statistics->new( debug => $self->debug );
+  return Seq::Statistics->new( debug => $self->debug > 2 ? 1 : 0 );
 }
 
 has _ngene => (
@@ -336,7 +337,6 @@ sub get_cadd_score {
 
   my $key = join ":", $ref, $allele;
   my $i = $self->get_cadd_index($key);
-  say "cadd score key: $key; cadd score index: $i" if $self->debug;
   if ( defined $i ) {
     my $cadd_track = $self->_get_cadd_track($i);
     return $cadd_track->get_score($abs_pos);
@@ -478,6 +478,13 @@ has has_cadd_track => (
     unset_cadd => 'unset',
     set_cadd   => 'set',
   }
+);
+
+has discordant_bases => (
+  is      => 'rw',
+  isa     => 'Num',
+  traits  => ['Counter'],
+  handles => { count_discordant => 'inc', }
 );
 
 sub _build_dbm_array {
@@ -706,44 +713,47 @@ sub BUILD {
 
 sub _var_alleles {
   my ( $self, $alleles_str, $ref_allele ) = @_;
-  my @var_alleles;
+  my ( @snpAlleles, @indelAlleles );
 
   for my $allele ( split /\,/, $alleles_str ) {
     if ( $allele ne $ref_allele && $allele ne 'N' ) {
-      push @var_alleles, $allele;
+      if ( length $allele == 1 ) {
+        push @snpAlleles, $allele;
+      }
+      else {
+        push @indelAlleles, $allele;
+      }
     }
   }
-  return \@var_alleles;
+  return ( \@snpAlleles, \@indelAlleles );
 }
 
-sub _var_alleles_no_indel {
-  my ( $self, $alleles_str, $ref_allele ) = @_;
-  my @var_alleles;
+# sub _var_alleles_no_indel {
+#   my ( $self, $alleles_str, $ref_allele ) = @_;
+#   my @var_alleles;
 
-  for my $allele ( split /\,/, $alleles_str ) {
-    if ( $allele ne $ref_allele
-      && $allele ne 'D'
-      && $allele ne 'E'
-      && $allele ne 'H'
-      && $allele ne 'I'
-      && $allele ne 'N' )
-    {
-      push @var_alleles, $allele;
-    }
-  }
-  return \@var_alleles;
-}
+#   for my $allele ( split /\,/, $alleles_str ) {
+#     if ( $allele ne $ref_allele
+#       && $allele ne 'D'
+#       && $allele ne 'E'
+#       && $allele ne 'H'
+#       && $allele ne 'I'
+#       && $allele ne 'N' )
+#     {
+#       push @var_alleles, $allele;
+#     }
+#   }
+#   return \@var_alleles;
+# }
 
 # annotate_snp_site returns a hash reference of the annotation data for a
 # given position and variant alleles
-sub annotate_snp_site {
+sub annotate {
   my (
     $self,       $chr,           $chr_index,      $rel_pos,      $abs_pos,
     $ref_allele, $var_type,      $all_allele_str, $allele_count, $het_ids,
     $hom_ids,    $id_genos_href, $return_obj
   ) = @_;
-
-  my %record;
 
   my $site_code = $self->get_base($abs_pos);
   my $base      = $self->get_idx_base($site_code);
@@ -752,33 +762,26 @@ sub annotate_snp_site {
   my $exon      = $self->get_idx_in_exon($site_code);
   my $snp       = $self->get_idx_in_snp($site_code);
 
-  # check reference base in assembly is the same as the one suppiled by the user
   if ( $base ne $ref_allele ) {
-    my $msg = sprintf(
-      "Warning: Discordant ref base at SNP/MULTIALLELIC site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
-      $chr, $rel_pos, $abs_pos, $base, $ref_allele );
-    $self->tee_logger( 'warn', $msg );
-    $record{warning} = $msg;
+    $self->count_discordant;
   }
 
-  # purposely filtering away indels, which can happen for multiallelelic sites
-  # TODO: discuss re-working the format of the snpfile a bit
-  # determine variant alleles
-  # my @var_alleles = grep { !/($base|D|E|I|H)/ } ( split /\,/, $base );
-  my @var_alleles = @{ $self->_var_alleles_no_indel( $all_allele_str, $base ) };
+  my ( $snpAllelesAref, $indelAllelesAref ) =
+    $self->_var_alleles( $all_allele_str, $base );
 
-  if ( !@var_alleles ) {
-    my $msg =
-      sprintf( "Warning: No alleles to annotate at site %s:%d;", $chr, $rel_pos );
-    $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
-      $all_allele_str, $ref_allele, $ref_allele );
-    $self->tee_logger( 'warn', $msg );
+  if ( !( @$snpAllelesAref || @$indelAllelesAref ) ) {
     return;
   }
+  my $indelAnnotator;
+  if (@$indelAllelesAref) {
+    $indelAnnotator = Seq::Sites::Indels->new( alleles => $indelAllelesAref );
+  }
 
-  $record{chr}          = $chr;
-  $record{pos}          = $rel_pos;
-  $record{var_allele}   = join ",", @var_alleles;
+  my %record;
+  $record{chr} = $chr;
+  $record{pos} = $rel_pos;
+  #seems to result in NA's currently after as_href
+  $record{var_allele}   = join ",", @$snpAllelesAref, @$indelAllelesAref;
   $record{allele_count} = $allele_count;
   $record{alleles}      = $all_allele_str;
   $record{abs_pos}      = $abs_pos;
@@ -814,10 +817,9 @@ sub annotate_snp_site {
     $record{scores}{ $gs->name } = $gs->get_score($abs_pos);
   }
 
-  # add cadd score
-  if ( $self->has_cadd_track ) {
-    for my $var_allele (@var_alleles) {
-      $record{scores}{cadd} = $self->get_cadd_score( $abs_pos, $base, $var_allele );
+  if ( @$snpAllelesAref && $self->has_cadd_track ) {
+    for my $sAllele (@$snpAllelesAref) {
+      $record{scores}{cadd} = $self->get_cadd_score( $abs_pos, $base, $sAllele );
     }
   }
 
@@ -827,17 +829,31 @@ sub annotate_snp_site {
   if ($gan) {
     for my $gene_dbs ( $self->_all_dbm_gene ) {
       my $kch = $gene_dbs->[$chr_index];
+
       # if there's no file for the track then it will be undef
       next unless defined $kch;
 
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
 
+      if ($indelAnnotator) {
+        $indelAnnotator->findGeneData( $rec_aref, $abs_pos, $kch );
+      }
+
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
-          for my $allele (@var_alleles) {
-            $rec_href->{minor_allele} = $allele;
-            push @gene_data, Seq::Site::Annotation->new($rec_href);
+          if (@$snpAllelesAref) {
+            for my $sAllele (@$snpAllelesAref) {
+              $rec_href->{minor_allele} = $sAllele;
+              push @gene_data, Seq::Site::Annotation->new($rec_href);
+            }
+          }
+          if ( defined $indelAnnotator ) {
+            for my $iAllele ( $indelAnnotator->allAlleles ) {
+              $rec_href->{minor_allele}    = $iAllele->minor_allele;
+              $rec_href->{annotation_type} = $iAllele->annotation_type;
+              push @gene_data, Seq::Site::Indel->new($rec_href);
+            }
           }
         }
       }
@@ -854,6 +870,7 @@ sub annotate_snp_site {
       next unless defined $kch;
 
       # all kc values come as aref's of href's
+      my $firstBase;
       my $rec_aref = $kch->db_get($abs_pos);
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
@@ -867,394 +884,31 @@ sub annotate_snp_site {
   $self->recordStat( $id_genos_href, [ $record{var_type}, $record{genomic_type} ],
     $record{ref_base}, \@gene_data, \@snp_data );
   # create object for href export
-  my $obj = Seq::Annotate::Snp->new( \%record );
+  my $obj = Seq::Annotate::All->new( \%record );
 
+  if ( $self->debug ) {
+    say "In Annotate.pm::annotate, for these Variants " . $record{var_allele};
+    #undef should be fine, if gene_data is an href or something, let's crash
+    #so that we can update our expectations
+    if ( $self->debug > 1 ) {
+      say "We had this record:";
+      p $obj;
+      if ( @{ $obj->snp_data } ) {
+        say "We had this snp_data";
+        p $obj->snp_data;
+      }
+    }
+    if ( @{ $obj->gene_data } ) {
+      say "We had this gene_data";
+      p $obj->gene_data;
+    }
+  }
   if ($return_obj) {
     return $obj;
   }
   else {
     return $obj->as_href;
   }
-}
-
-# annotate_ref_site returns a hash reference of data for the reference
-# annotation of a particular genomic site
-sub annotate_ref_site {
-  my ( $self, $chr, $chr_index, $rel_pos, $abs_pos, $ref_allele, $return_obj ) = @_;
-
-  my %record;
-
-  my $site_code = $self->get_base($abs_pos);
-  my $base      = $self->get_idx_base($site_code);
-  my $gan       = $self->get_idx_in_gan($site_code);
-  my $gene      = $self->get_idx_in_gene($site_code);
-  my $exon      = $self->get_idx_in_exon($site_code);
-  my $snp       = $self->get_idx_in_snp($site_code);
-
-  # check reference base in the genome assembly is the same as provided by the user
-  if ( $ref_allele ne 'NA' ) {
-    if ( $base ne $ref_allele ) {
-      my $msg = sprintf(
-        "Warning: Discordant ref base at site %s:%d (abs_pos: %d); obs: '%s', got: '%s'",
-        $chr, $rel_pos, $abs_pos, $base, $ref_allele );
-      $self->tee_logger( 'warn', $msg );
-      $record{warning} = $msg;
-    }
-  }
-
-  $record{chr}      = $chr;
-  $record{pos}      = $rel_pos;
-  $record{abs_pos}  = $abs_pos;
-  $record{ref_base} = $base;
-
-  if ($gene) {
-    if ($exon) {
-      $record{genomic_type} = 'Exonic';
-    }
-    else {
-      $record{genomic_type} = 'Intronic';
-    }
-  }
-  else {
-    $record{genomic_type} = 'Intergenic';
-  }
-
-  # get scores at site
-  for my $gs ( $self->_all_genome_scores ) {
-    $record{scores}{ $gs->name } = $gs->get_score($abs_pos);
-  }
-
-  my ( @gene_data, @snp_data ) = ();
-
-  # get gene annotations at site
-  if ($gan) {
-    for my $gene_dbs ( $self->_all_dbm_gene ) {
-      my $kch = $gene_dbs->[$chr_index];
-
-      # if there's no file for the track then it will be undef
-      next unless defined $kch;
-
-      # all kc values come as aref's of href's
-      my $rec_aref = $kch->db_get($abs_pos);
-
-      if ( defined $rec_aref ) {
-        for my $rec_href (@$rec_aref) {
-          push @gene_data, Seq::Site::Gene->new($rec_href);
-        }
-      }
-    }
-  }
-  $record{gene_data} = \@gene_data;
-
-  # get snp annotations at site
-  if ($snp) {
-    for my $snp_dbs ( $self->_all_dbm_snp ) {
-      my $kch = $snp_dbs->[$chr_index];
-
-      # if there's no file for the track then it will be undef
-      next unless defined $kch;
-
-      # all kc values come as aref's of href's
-      my $rec_aref = $kch->db_get($abs_pos);
-      if ( defined $rec_aref ) {
-        for my $rec_href (@$rec_aref) {
-          push @snp_data, Seq::Site::Snp->new($rec_href);
-        }
-      }
-    }
-  }
-  $record{snp_data} = \@snp_data;
-
-  # create obj for href export
-  my $obj = Seq::Annotate::Site->new( \%record );
-
-  if ($return_obj) {
-    return $obj;
-  }
-  else {
-    return $obj->as_href;
-  }
-}
-
-# annotate_ins_sites takes the same arguments as annoate_snp_site but
-# internally calls annotate_ref_site and uses any gene_data in that object
-# to assign functional relevance of the insertion
-sub annotate_ins_site {
-  my (
-    $self,       $chr,           $chr_index,      $rel_pos,      $abs_pos,
-    $ref_allele, $var_type,      $all_allele_str, $allele_count, $het_ids,
-    $hom_ids,    $id_genos_href, $return_obj
-  ) = @_;
-
-  my %record;
-
-  my $ref_obj =
-    $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $abs_pos, $ref_allele, 1 );
-
-  # @var_alleles has all variant alleles but only the 1st will be reported
-  # my @var_alleles = grep { !/$ref_allele/ } ( split /\,/, $record{ref_base} );
-  my @var_alleles = @{ $self->_var_alleles( $all_allele_str, $ref_obj->ref_base ) };
-
-  if ( !@var_alleles ) {
-    my $msg =
-      sprintf( "Warning: No alleles to annotate at INS site %s:%d;", $chr, $rel_pos );
-    $msg .= sprintf( " Alleles '%s' & Reference '%s'; but, DB Reference '%s'",
-      $all_allele_str, $ref_allele, $ref_obj->ref_base );
-    $self->tee_logger( 'warn', $msg );
-    return;
-  }
-
-  $record{abs_pos}      = $abs_pos;
-  $record{alleles}      = $all_allele_str;
-  $record{allele_count} = $allele_count;
-  $record{chr}          = $chr;
-  $record{pos}          = $rel_pos;
-  $record{genomic_type} = $ref_obj->genomic_type;
-  $record{het_ids}      = $het_ids;
-  $record{hom_ids}      = $hom_ids;
-  $record{ref_base}     = $ref_obj->ref_base;
-  $record{scores}       = $ref_obj->scores;
-  $record{var_allele}   = $var_alleles[0];
-  $record{var_type}     = $var_type;
-
-  # examine underling genomic data
-  my %data;
-  for my $gene_obj ( $ref_obj->all_gene_obj ) {
-    if ( $gene_obj->site_type() ) {
-      $data{ $gene_obj->transcript_id }{ $gene_obj->site_type }++;
-      if ( $gene_obj->site_type eq 'Coding' ) {
-        if ( $gene_obj->codon_number == 1 ) {
-          $data{ $gene_obj->transcript_id }{Start}++;
-        }
-        if ( $gene_obj->ref_aa_residue eq '*' ) {
-          $data{ $gene_obj->transcript_id }{Stop}++;
-        }
-      }
-    }
-  }
-
-  # save snp data
-  my @snp_data;
-  for my $snp_obj ( $ref_obj->all_snp_obj ) {
-    push @snp_data, $snp_obj;
-  }
-  $record{snp_data} = \@snp_data;
-
-  # process gene data to determine functional relevance of insertion
-  my @gene_data;
-  for my $gene_obj ( $ref_obj->all_gene_obj ) {
-    my $gene_href = $gene_obj->as_href;
-    $gene_href->{minor_allele} = $var_alleles[0];
-    my $tx = $gene_obj->transcript_id;
-    if ( exists $data{$tx}{Coding} ) {
-      if ( length( $var_alleles[0] ) % 3 == 0 ) {
-        $gene_href->{annotation_type} = "Ins-InFrame";
-      }
-      else {
-        $gene_href->{annotation_type} = "Ins-FrameShift";
-      }
-      if ( exists $data{$tx}{Start} ) {
-        $gene_href->{annotation_type} .= ", StartLoss";
-      }
-      elsif ( exists $data{$tx}{Stop} ) {
-        $gene_href->{annotation_type} .= ", StopLoss";
-      }
-    }
-    elsif ( exists $data{$tx}{'5UTR'} || exists $data{$tx}{'3UTR'} ) {
-      $gene_href->{annotation_type} = "Ins-UTR";
-    }
-    elsif ( exists $data{$tx}{'Splice Donor'} || exists $data{$tx}{'Splice Acceptor'} ) {
-      $gene_href->{annotation_type} = "Ins-Splice";
-    }
-    else {
-      $gene_href->{annotation_type} = 'NA';
-    }
-    push @gene_data, Seq::Site::Indel->new($gene_href);
-  }
-  $self->recordStat( $id_genos_href, [ $record{var_type}, $record{genomic_type} ],
-    $record{ref_base}, \@gene_data, \@snp_data );
-
-  $record{gene_data} = \@gene_data;
-
-  my $obj = Seq::Annotate::Indel->new( \%record );
-  if ($return_obj) {
-    return $obj;
-  }
-  else {
-    return $obj->as_href;
-  }
-}
-
-# _sort_del_sites takes a hash reference of sites and returns a sorted
-# array reference of the start of each contiguous regions and the length
-# of each region
-sub _sort_del_sites {
-  my ( $self, $href ) = @_;
-
-  # sort sites in numerical order
-  my @sites = sort { $a <=> $b } keys %$href;
-
-  my (@idx);
-  push @idx, 0;
-
-  # find indicies of contiguous regions
-  for ( my $i = 1; $i < @sites; $i++ ) {
-    if ( $sites[ $i - 1 ] + 1 != $sites[$i] ) {
-      push @idx, $i;
-    }
-  }
-
-  my (@offsets);
-
-  # save the start of each contiguous region and the length
-  for ( my $i = 0; $i < @idx; $i++ ) {
-    if ( defined $idx[ $i + 1 ] ) {
-      my $offset      = $idx[$i];
-      my $next_offset = $idx[ $i + 1 ];
-      push @offsets, [ $sites[$offset], $sites[ $next_offset - 1 ] ];
-    }
-    else {
-      my $offset      = $idx[$i];
-      my $next_offset = $#sites;
-      push @offsets, [ $sites[$offset], $sites[$next_offset] ];
-    }
-  }
-  return \@offsets;
-}
-
-# annotate_del_sites takes an hash reference of sites and chromosome
-#   indicies hash reference and returns a list of annotations
-#   - the site hash reference is defined like so:
-#     %site{ abs_pos } = [ chr, rel_pos, ref_allele, all_alleles, allele_counts
-#       het_ids, hom_ids ]
-#   - the list of sites are grouped into contiguous sites by _sort_del_sites()
-#   - the annotation for the 1st site of each contiguous site is assigned the
-#     start of the del
-#   - the actual annotations come from gene_obj
-#   - seralization is performed by Seq::Annotate::Indel
-my @site_types = ( 'Coding', '5UTR', '3UTR', 'Splice Acceptor', 'Splice Donor' );
-
-sub annotate_del_sites {
-  state $check = compile( Object, HashRef, HashRef );
-  my ( $self, $chr_index_href, $sites_href ) = $check->(@_);
-
-  my @del_annotations;
-
-  my $contiguous_sites_aref = $self->_sort_del_sites($sites_href);
-
-  for my $region_aref (@$contiguous_sites_aref) {
-
-    # region_aref => [ start, stop ]
-    my ( %data, %record, @snp_data, $id_genos_href_contig );
-
-    for ( my $i = $region_aref->[0]; $i <= $region_aref->[1]; $i++ ) {
-      my ( $chr, $rel_pos, $ref_allele, $all_alleles, $allele_count,
-        $het_ids, $hom_ids, $id_genos_href )
-        = @{ $sites_href->{$i} };
-      my $chr_index = $chr_index_href->{$chr};
-      my $ref_obj =
-        $self->annotate_ref_site( $chr, $chr_index, $rel_pos, $i, $ref_allele, 1 );
-
-      if ( !$id_genos_href_contig ) { $id_genos_href_contig = $id_genos_href }
-
-      if ( !%record ) {
-        $record{abs_pos}      = $i;
-        $record{alleles}      = $all_alleles;
-        $record{allele_count} = $allele_count;
-        $record{chr}          = $chr;
-        $record{pos}          = $rel_pos;
-        $record{genomic_type} = $ref_obj->genomic_type;
-        $record{het_ids}      = $het_ids;
-        $record{hom_ids}      = $hom_ids;
-        $record{ref_base}     = $ref_obj->ref_base;
-        $record{scores}       = $ref_obj->scores;
-        $record{var_allele}   = '-';
-        $record{var_type}     = 'DEL';
-      }
-
-      # examine underling genomic data
-      for my $gene_obj ( $ref_obj->all_gene_obj ) {
-        if ( $gene_obj->site_type() ) {
-
-          # save the object that has the type of interest
-          #   for sites that disrupt start or stop, we'll save those specifically, too
-          push @{ $data{ $gene_obj->site_type }{$i} }, $gene_obj;
-          if ( $gene_obj->site_type eq 'Coding' ) {
-            if ( $gene_obj->codon_number == 1 ) {
-              push @{ $data{Start}{$i} }, $gene_obj;
-            }
-            if ( $gene_obj->ref_aa_residue eq '*' ) {
-              push @{ $data{Stop}{$i} }, $gene_obj;
-            }
-          }
-        }
-      }
-
-      # save snp data
-      for my $snp_obj ( $ref_obj->all_snp_obj ) {
-        push @snp_data, $snp_obj;
-      }
-      $record{snp_data} = \@snp_data;
-    }
-
-    # save gene data
-    #   - we will cycle through the various kinds of deletions possible and assign
-    #   the site the 'worst' kind of deletion using hte order of @site_types
-    my @gene_data;
-    for my $type (@site_types) {
-      if ( exists $data{$type} ) {
-        if ( $type eq 'Coding' ) {
-          my @pos = keys %{ $data{$type} };
-          my $frame;
-
-          # determine frame
-          if ( scalar(@pos) % 3 == 0 ) {
-            $frame = "InFrame";
-          }
-          else {
-            $frame = "FrameShift";
-          }
-
-          # determien which 'kind' of coding deletion
-          for my $coding_type (qw/ Start Stop Coding/) {
-            if ( exists $data{$coding_type} ) {
-              @pos = keys %{ $data{$coding_type} };
-              for my $gene_obj ( @{ $data{$coding_type}{ $pos[0] } } ) {
-                my $gene_href = $gene_obj->as_href;
-                $gene_href->{minor_allele}    = '-' . scalar @pos;
-                $gene_href->{annotation_type} = "Del-$frame";
-                if ( $coding_type eq 'Start' || $coding_type eq 'Stop' ) {
-                  $gene_href->{annotation_type} .= ",$coding_type\_Loss";
-                }
-                push @gene_data, Seq::Site::Indel->new($gene_href);
-              }
-              last;
-            }
-          }
-          last;
-        }
-        else {
-          my @pos = keys %{ $data{$type} };
-          for my $gene_obj ( @{ $data{$type}{ $pos[0] } } ) {
-            my $gene_href = $gene_obj->as_href;
-            $gene_href->{minor_allele}    = '-' . scalar @pos;
-            $gene_href->{annotation_type} = "Del-$type";
-            push @gene_data, Seq::Site::Indel->new($gene_href);
-          }
-          last;
-        }
-      }
-    }
-    $self->recordStat( $id_genos_href_contig,
-      [ $record{var_type}, $record{genomic_type} ],
-      $record{ref_base}, \@gene_data, \@snp_data );
-
-    $record{gene_data} = \@gene_data;
-
-    my $obj = Seq::Annotate::Indel->new( \%record );
-    push @del_annotations, $obj->as_href;
-  }
-  return \@del_annotations;
 }
 
 __PACKAGE__->meta->make_immutable;

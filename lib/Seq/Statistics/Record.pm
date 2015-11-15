@@ -96,8 +96,7 @@ sub record {
 
     next unless @$geneDataAref == 1; #for now we omit multiple transcript sites
 
-    $aCount = $self->isHomo($geno) ? 2 : 1;
-    #$aCount = $self->getAlleleCount($geno); #should be 2 for a diploid homozygote
+    $aCount = $self->isHomo($geno) ? 2 : 1; #assumes diploid
     if ( !$aCount ) {
       $self->tee_logger( 'warn', 'No allele count found for genotype $geno' );
       next;
@@ -105,11 +104,8 @@ sub record {
 
     for my $annotationHref (@$geneDataAref) {
       $minorAllele = $annotationHref->minor_allele;
-      # if it's an ins or del, there will be no deconvolutedGeno
-      # taking this check out, because handling of del alleles does not work,
-      # Annotate.pm sets the allele as the neegative length of the del, rather than D or E
-      # not checking now; since we skip any case where > 1 annotation,
-      # which covers multi-allelic sites
+      # we do not check genotypes; multi-allelic sites not currently handled
+      # nor are multi-transcript sites
       # if(!$self->hasGeno($self->deconvoluteGeno($geno), $minorAllele) ) {
       #   next;
       # }

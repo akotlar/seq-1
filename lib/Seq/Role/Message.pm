@@ -8,9 +8,9 @@ use strict;
 use warnings;
 use namespace::autoclean;
 with 'MooX::Role::Logger';
-use IO::AIO; #AnyEvent logger will use this
 use Carp 'croak';
 
+use Coro;
 use Cpanel::JSON::XS;
 use DDP;
 
@@ -86,8 +86,10 @@ sub publishMessage {
 sub tee_logger {
   my ( $self, $log_method, $msg ) = @_;
   $self->publishMessage($msg);
-  $self->_logger->$log_method($msg);
 
+  async {
+    $self->_logger->$log_method($msg);
+  }
   # redundant, _logger should handle exceptions
   # if ( $log_method eq 'error' ) {
   #   confess $msg . "\n";

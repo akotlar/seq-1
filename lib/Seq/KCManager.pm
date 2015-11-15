@@ -161,6 +161,38 @@ sub db_put {
   }
 }
 
+sub db_bulk_get {
+  my ( $self, $keys, $reverse ) = @_;
+
+  # the reason we need to check the existance of the db has to do with that we
+  # allow non-existant file names to be used in creating the object and since
+  # the creation of the _db attribute is done in a lazy way we may never need to
+  # bother checking the file system or opening the databse.
+  my $dbm = $self->_db;
+
+  # does dbm doesn't exist?
+  my $val;
+  if ( defined $dbm ) {
+
+    # keys is assumed to be an array reference
+    $val = $dbm->get_bulk($keys);
+
+    # does the value exist within the dbm?
+    if ( defined $val ) {
+      if ($reverse) {
+        return map { decode_json( $val->{$_} ) } sort { $b <=> $a } keys(%$val);
+      }
+      return map { decode_json( $val->{$_} ) } sort { $a <=> $b } keys(%$val);
+    }
+    else {
+      return;
+    }
+  }
+  else {
+    return;
+  }
+}
+
 sub db_get {
   my ( $self, $keys ) = @_;
 
@@ -173,12 +205,7 @@ sub db_get {
   # does dbm doesn't exist?
   my $val;
   if ( defined $dbm ) {
-    if ( ref $keys eq 'ARRAY' ) {
-      $val = $dbm->get_bulk($keys);
-    }
-    else { #singel key, scalar
-      $val = $dbm->get($keys);
-    }
+    $val = $dbm->get($keys);
 
     # does the value exist within the dbm?
     if ( defined $val ) {

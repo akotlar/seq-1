@@ -42,7 +42,7 @@ my $now_timestamp = sprintf( "%d-%02d-%02d", $year, $mos, $day );
 
 has db    => ( is => 'ro', isa => 'Str',  required => 1 );
 has act   => ( is => 'ro', isa => 'Bool', default  => 0 );
-has debug => ( is => 'ro', isa => 'Bool', default  => 0 );
+has debug => ( is => 'ro', isa => 'Int',  default  => 0 );
 has dsn   => ( is => 'ro', isa => 'Str',  required => 1, default => "DBI:mysql" );
 has host => (
   is       => 'ro',

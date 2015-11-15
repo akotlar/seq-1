@@ -77,7 +77,7 @@ has overwrite => (
 
 has debug => (
   is      => 'ro',
-  isa     => 'Bool',
+  isa     => 'Int',
   default => 0,
 );
 
@@ -313,36 +313,24 @@ sub annotate_snpfile {
     #   - NOTE: the way the annotations for INS sites now work (due to changes in the
     #     snpfile format, we could change their annotation to one off annotations like
     #     the SNPs
-    if ( $var_type eq 'SNP' || $var_type eq 'MULTIALLELIC' ) {
-      my $record_href = $annotator->annotate_snp_site(
+    if ( $var_type eq 'SNP'
+      || $var_type eq 'MULTIALLELIC'
+      || $var_type eq 'DEL'
+      || $var_type eq 'INS' )
+    {
+      my $record_href = $annotator->annotate(
         $chr,        $chr_index, $pos,            $abs_pos,
         $ref_allele, $var_type,  $all_allele_str, $allele_count,
         $het_ids,    $hom_ids,   $id_genos_href
       );
       if ( defined $record_href ) {
+        if ( $self->debug > 1 ) {
+          say 'In seq.pm record_href is';
+          p $record_href;
+        }
         push @snp_annotations, $record_href;
         $self->inc_counter;
       }
-    }
-    elsif ( $var_type eq 'INS' ) {
-      my $record_href = $annotator->annotate_ins_site(
-        $chr,        $chr_index, $pos,            $abs_pos,
-        $ref_allele, $var_type,  $all_allele_str, $allele_count,
-        $het_ids,    $hom_ids,   $id_genos_href
-      );
-      if ( defined $record_href ) {
-        push @snp_annotations, $record_href;
-        $self->inc_counter;
-      }
-    }
-    elsif ( $var_type eq 'DEL' ) {
-      # deletions are saved so they can be aggregated and annotated en block later
-      $self->set_del_site(
-        $abs_pos => [
-          $chr,          $pos,     $ref_allele, $all_allele_str,
-          $allele_count, $het_ids, $hom_ids,    $id_genos_href
-        ]
-      );
     }
     elsif ( $var_type ne 'MESS' && $var_type ne 'LOW' ) {
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
@@ -370,11 +358,11 @@ sub annotate_snpfile {
   #   - indel annotations come back as an array reference of hash references
   #   - the print_annotations function flattens the hash reference and
   #     prints them in order
-  unless ( $self->has_no_del_sites ) {
-    my $del_annotations_aref =
-      $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
-    $self->print_annotations( $del_annotations_aref, $self->header );
-  }
+  # unless ( $self->has_no_del_sites ) {
+  #   my $del_annotations_aref =
+  #     $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
+  #   $self->print_annotations( $del_annotations_aref, $self->header );
+  # }
 
   $annotator->summarizeStats;
 
@@ -388,9 +376,20 @@ sub annotate_snpfile {
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do
   #       interesting things.
+  if ( $annotator->discordant_bases ) {
+    $self->tee_logger( 'warn',
+      'We found ' . $self->discordant_bases . ' discordant_bases' );
+  }
+  cede; #any logging messages now should be printed;
   return $annotator->statsRecord;
 }
 
+# _minor_allele_carriers assumes the following spec for indels:
+# Allele listed in sample column is one of D,E,I,H, or whatever single base
+# codes are defined in Seq::Role::Genotypes
+# However, the alleles listed in the Alleles column will not be these
+# Instead, will indicate the type (- or +) followed by the number of bases created/removed rel.ref
+# So the sample column gives us heterozygosity, while Alleles column gives us nucleotide composition
 sub _minor_allele_carriers {
   my ( $self, $fields_aref, $ids_href, $id_names_aref, $ref_allele ) = @_;
 

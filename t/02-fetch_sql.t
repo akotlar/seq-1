@@ -13,7 +13,7 @@ plan tests => 51;
 
 my %attr_2_type = (
   act      => 'Bool',
-  debug    => 'Bool',
+  debug    => 'Int',
   dsn      => 'Str',
   host     => 'Str',
   user     => 'Str',

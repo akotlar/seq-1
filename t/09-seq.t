@@ -17,7 +17,7 @@ my %attr_2_type_ro = (
   out_file           => 'MooseX::Types::Path::Tiny::AbsPath',
   ignore_unknown_chr => 'Bool',
   overwrite          => 'Bool',
-  debug              => 'Bool',
+  debug              => 'Int',
   write_batch        => 'Int',
 );
 my %attr_2_type_rw = (

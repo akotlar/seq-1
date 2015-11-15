@@ -13,7 +13,7 @@ plan tests => 17;
 
 my %attr_2_type = (
   act   => 'Bool',
-  debug => 'Bool',
+  debug => 'Int',
 );
 my %attr_to_is = map { $_ => 'ro' } ( keys %attr_2_type );
 

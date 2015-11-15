@@ -141,7 +141,7 @@ has target => (
 
 has debug => (
   is      => 'ro',
-  isa     => 'Bool',
+  isa     => 'Int',
   default => 0,
 );
 
