@@ -119,7 +119,7 @@ has dbm_dry_run => (
 
 has debug => (
   is      => 'ro',
-  isa     => 'Bool',
+  isa     => 'Int',
   default => 0,
 );
 

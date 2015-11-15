@@ -116,7 +116,7 @@ has statisticsCalculator => (
 
 sub _buildStatistics {
   my $self = shift;
-  return Seq::Statistics->new( debug => $self->debug );
+  return Seq::Statistics->new( debug => $self->debug > 2 ? 1 : 0 );
 }
 
 has _genome => (
@@ -317,7 +317,6 @@ sub get_cadd_score {
 
   my $key = join ":", $ref, $allele;
   my $i = $self->get_cadd_index($key);
-  say "cadd score key: $key; cadd score index: $i" if $self->debug;
   if ( defined $i ) {
     my $cadd_track = $self->_get_cadd_track($i);
     return $cadd_track->get_score($abs_pos);
@@ -798,14 +797,6 @@ sub annotate {
               $rec_href->{minor_allele}    = $iAllele->minor_allele;
               $rec_href->{annotation_type} = $iAllele->annotation_type;
               push @gene_data, Seq::Site::Indel->new($rec_href);
-
-              if ( $self->debug ) {
-                say "for allele";
-                p $iAllele;
-                say "we had these indel gene data";
-                p $gene_data[$#gene_data];
-              }
-
             }
           }
         }
@@ -840,11 +831,21 @@ sub annotate {
   my $obj = Seq::Annotate::All->new( \%record );
 
   if ( $self->debug ) {
-    say "In Annotate.pm::annotate, we had these Variants " . $record{var_allele};
-    say "In Annotate.pm::annotate, we made this record:";
-    p $obj;
-    say "In Annotate.pm::annotate, that record obj had this gene_data";
-    p $obj->gene_data;
+    say "In Annotate.pm::annotate, for these Variants " . $record{var_allele};
+    #undef should be fine, if gene_data is an href or something, let's crash
+    #so that we can update our expectations
+    if ( $self->debug > 1 ) {
+      say "We had this record:";
+      p $obj;
+      if ( @{ $obj->snp_data } ) {
+        say "We had this snp_data";
+        p $obj->snp_data;
+      }
+    }
+    if ( @{ $obj->gene_data } ) {
+      say "We had this gene_data";
+      p $obj->gene_data;
+    }
   }
 
   if ($return_obj) {

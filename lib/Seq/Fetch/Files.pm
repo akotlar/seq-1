@@ -39,7 +39,7 @@ use Seq::Fetch::Rsync;
 extends 'Seq::Config::GenomeSizedTrack';
 
 has act   => ( is => 'ro', isa => 'Bool', );
-has debug => ( is => 'ro', isa => 'Bool', );
+has debug => ( is => 'ro', isa => 'Int', );
 
 sub fetch_files {
   my $self = shift;

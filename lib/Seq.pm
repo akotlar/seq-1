@@ -77,7 +77,7 @@ has overwrite => (
 
 has debug => (
   is      => 'ro',
-  isa     => 'Bool',
+  isa     => 'Int',
   default => 0,
 );
 
@@ -324,7 +324,7 @@ sub annotate_snpfile {
         $het_ids,    $hom_ids,   $id_genos_href
       );
       if ( defined $record_href ) {
-        if ( $self->debug ) {
+        if ( $self->debug > 1 ) {
           say 'In seq.pm record_href is';
           p $record_href;
         }

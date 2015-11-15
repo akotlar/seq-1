@@ -73,7 +73,7 @@ has force => (
 
 has debug => (
   is      => 'ro',
-  isa     => 'Bool',
+  isa     => 'Int',
   default => 0,
 );
 
