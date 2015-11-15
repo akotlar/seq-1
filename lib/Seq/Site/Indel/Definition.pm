@@ -53,6 +53,7 @@ has indLength => (
 
 sub _build_indel_length {
   my $self = shift;
+  no warnings 'numeric';
   #duck type, +N, -N, or +{Str}, -{Str} all work
   return abs( int( $self->minor_allele ) ) || length( $self->minor_allele ) - 1;
 }
