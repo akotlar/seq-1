@@ -299,7 +299,7 @@ sub annotate_snpfile {
 
     if ( $abs_pos > $next_chr_offset ) {
       my $msg = "Error: $chr:$pos is beyond the end of $chr $next_chr_offset";
-      $self->tee_logger->( 'error', $msg );
+      $self->tee_logger( 'error', $msg );
     }
 
     # save the current chr for next iteration of the loop
