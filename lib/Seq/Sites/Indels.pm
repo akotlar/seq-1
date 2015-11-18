@@ -31,7 +31,7 @@ has alleles => (
 #the actual allele; this is very easy to solve, see below, kept this way for perf.
 ##could check if(int($allele->minor_allele) )
 sub findGeneData {
-  my ( $self, $basePosDataAref, $abs_pos, $db ) = @_;
+  my ( $self, $abs_pos, $db ) = @_;
 
   my @data;
   my @range; #can't pass list to db_get

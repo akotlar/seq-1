@@ -840,9 +840,7 @@ sub annotate {
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
 
-      if ($indelAnnotator) {
-        $indelAnnotator->findGeneData( $rec_aref, $abs_pos, $kch );
-      }
+      $indelAnnotator->findGeneData( $abs_pos, $kch ) if ($indelAnnotator);
 
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {
