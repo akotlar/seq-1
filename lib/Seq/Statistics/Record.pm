@@ -1,5 +1,8 @@
 package Seq::Statistics::Record;
 
+use strict;
+use warnings;
+use 5.10.0;
 our $VERSION = '0.001';
 
 # ABSTRACT: A class for recording statistics
@@ -8,10 +11,7 @@ our $VERSION = '0.001';
 # This package essentially expects good inputs
 # Meaning non-reference alleles at the least
 
-use 5.10.0;
 use Moose::Role;
-use strict;
-use warnings;
 
 use Carp qw/cluck confess/;
 use List::MoreUtils qw(first_index);
