@@ -228,7 +228,7 @@ sub _formatSampleString {
 
   foreach ( @$rowAref[@samplesIdxs] ) {
     my @fields = split(':');
-    # \ for phased, | for unphased ; genotype always first (when genotypes avail)
+    # / for phased, | for unphased ; genotype always first (when genotypes avail)
     my @genotype = split( '/|', $fields[0] );
 
     # if it's a haploid call, e.g 1:SOME_QUALITY_SCORE, assume correct

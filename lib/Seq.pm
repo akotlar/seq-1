@@ -59,7 +59,6 @@ has out_file => (
   isa       => AbsPath,
   coerce    => 1,
   required  => 0,
-  predicate => 'has_out_file',
   handles   => { output_path => 'stringify' }
 );
 
@@ -79,36 +78,6 @@ has debug => (
   is      => 'ro',
   isa     => 'Int',
   default => 0,
-);
-
-has del_sites => (
-  is       => 'rw',
-  isa      => 'HashRef',
-  init_arg => undef,
-  default  => sub { {} },
-  traits   => ['Hash'],
-  handles  => {
-    set_del_site     => 'set',
-    get_del_site     => 'get',
-    keys_del_sites   => 'keys',
-    kv_del_sites     => 'kv',
-    has_no_del_sites => 'is_empty',
-  },
-);
-
-has ins_sites => (
-  is       => 'rw',
-  isa      => 'HashRef',
-  init_arg => undef,
-  default  => sub { {} },
-  traits   => ['Hash'],
-  handles  => {
-    set_ins_site     => 'set',
-    get_ins_site     => 'get',
-    keys_ins_sites   => 'keys',
-    kv_ins_sites     => 'kv',
-    has_no_ins_sites => 'is_empty',
-  },
 );
 
 has snp_sites => (
@@ -199,12 +168,12 @@ sub annotate_snpfile {
   my @header        = $annotator->all_header;
 
   # add header information to Seq class
-  $self->add_header_attr($_) for @header;
+  $self->add_header_attr(@header);
 
   $self->tee_logger( 'info', "Loaded assembly " . $annotator->genome_name );
 
   # variables
-  my ( %header, %ids, @sample_ids, @snp_annotations ) = ();
+  my ( %ids, @sample_ids, @snp_annotations ) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
 
@@ -220,39 +189,32 @@ sub annotate_snpfile {
     next unless $clean_line;
 
     my @fields = split( /\t/, $clean_line );
+    # API: snp files contain column names in the first row
+    # check that these match the expected, which is based on $self->file_type
+    # then, get everything else
+    if ( !%ids ) {
+      $self->checkHeader( \@fields );
 
-    # for snpfile, define columns for expected header fields and ids
-    if ( !%header ) {
-      my $transition_column;
-      if ( $self->file_type eq 'snp_1' ) {
-        $transition_column = 4;
-      }
-      elsif ( $self->file_type eq 'snp_2' ) {
-        $transition_column = 5;
-      }
-      else {
-        my $msg = sprintf("Error: unrecognzied file_type");
-        $self->tee_logger( 'error', $msg );
-      }
+      say "fields are ";
+      p @fields;
 
-      %header = map { $fields[$_] => $_ } ( 0 .. $transition_column );
-      $self->check_header( \%header );
+      %ids = $self->getSampleNamesIdx( \@fields );
 
-      for my $i ( ( $transition_column + 1 ) .. $#fields ) {
-        $ids{ $fields[$i] } = $i if ( $fields[$i] ne '' );
-      }
-
+      say "getSampleNamesIdx gives us";
+      p %ids;
       # save list of ids within the snpfile
       @sample_ids = sort( keys %ids );
       next;
     }
-
+    say "snp fields are ";
+    my @stuff =  $self->getSnpFields( \@fields );
+    p @stuff;
     # process the snpfile line
     my ( $chr, $pos, $ref_allele, $var_type, $all_allele_str, $allele_count ) =
-      $self->proc_line( \%header, \@fields );
+      $self->getSnpFields( \@fields );
 
-    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
-    #   later (hets currently ignored)
+    # get carrier ids for variant; returns hom_ids_href for use in 
+    # statistics calculator; later (hets currently ignored)
     my ( $het_ids, $hom_ids, $id_genos_href ) =
       $self->_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
@@ -261,7 +223,8 @@ sub annotate_snpfile {
     # check that $chr is an allowable chromosome
     unless ( exists $chr_len_href->{$chr} ) {
       my $msg =
-        sprintf( "Error: unrecognized chromosome in input: '%s', pos: %d", $chr, $pos );
+        sprintf( "Error: unrecognized chromosome in input: '%s', pos: %d", 
+          $chr, $pos );
       # decide if we plow through the error or if we stop
       if ( $self->ignore_unknown_chr ) {
         $self->tee_logger( 'warn', $msg );

@@ -13,9 +13,9 @@ use Moose::Role;
 use Moose::Util::TypeConstraints;
 use File::Which qw(which);
 use File::Basename;
+use List::MoreUtils qw(firstidx);
 use namespace::autoclean;
 
-requires 'has_out_file';
 requires 'output_path';
 requires 'debug';
 
@@ -26,12 +26,15 @@ with 'Seq::Role::IO', 'Seq::Role::Message';
 #   - snp_1 => snpfile format: [ "Fragment", "Position", "Reference", "Minor_Allele"]
 #   - snp_2 => snpfile format: ["Fragment", "Position", "Reference", "Alleles", "Allele_Counts", "Type"]
 #   - vcf => placeholder
-enum fileTypes => [ 'snp_1', 'snp_2', 'vcf' ];
+state $allowedTypes = [ 'snp_2', 'snp_1' ];
+enum fileTypes => $allowedTypes;
+
 has file_type => (
   is       => 'ro',
   isa      => 'fileTypes',
-  required => 1,
-  default  => 'snp_2',
+  required => 0,
+  default  => '',
+  writer   => 'setFileType'
 );
 
 has printed_header => (
@@ -53,6 +56,15 @@ has header => (
   default => sub { [] },
 );
 
+has snpHeader => (
+  traits => ['Array'],
+  isa => 'ArrayRef',
+  handles => {
+    setSnpField => 'push',
+    allSnpFieldIdx => 'elements',
+  }
+);
+
 has compress_extension => (
   is      => 'ro',
   lazy    => 1,
@@ -65,6 +77,28 @@ has _out_fh => (
   init_arg => undef,
   builder  => '_build_out_fh',
 );
+
+has _req_header_fields => (
+  is => 'ro',
+  isa => 'HashRef',
+  traits => ['Hash'],
+  lazy => 1,
+  init_arg => undef,
+  builder => '_build_headers',
+  handles => {
+    allReqFields => 'get',
+  }
+);
+
+#API: The order here is the order of values returend for any consuming programs
+#See: $self->proc_line
+sub _build_headers {
+  return {
+    snp_1 => [qw/ Fragment Position Reference Type Minor_allele /],
+    snp_2 => [qw/ Fragment Position Reference Type Alleles Allele_Counts /],
+  };
+}
+
 # _print_annotations takes an array reference of annotations and hash
 # reference of header attributes and writes the header (if needed) to the
 # output file and flattens the hash references for each entry and writes
@@ -74,7 +108,7 @@ sub print_annotations {
 
   # print header
   if ( !$self->printed_header ) {
-    say { $self->_out_fh } join "\t", @$header_aref;
+    say { $self->_out_fh } join "\t", keys @$$header_aref;
     $self->set_printed_header;
   }
 
@@ -122,67 +156,76 @@ sub compress_output {
   $self->tee_logger( 'warn', "Zipping failed with $?" ) unless $outcome == 0;
 }
 
-sub check_header {
-  my ( $self, $header_href ) = @_;
+sub checkHeader {
+  my ( $self, $field_aref, $die_on_unknown ) = @_;
+  $die_on_unknown = defined $die_on_unknown ? $die_on_unknown : 1;
+  my $err;
 
-  my ( @req_fields, %exp_header );
-  my $req_field_count = 0;
-
-  if ( $self->file_type eq 'snp_1' ) {
-    @req_fields = qw/ Fragment Position Reference Minor_allele Type /;
-  }
-  elsif ( $self->file_type eq 'snp_2' ) {
-    @req_fields = qw/ Fragment Position Reference Alleles Allele_Counts Type /;
-  }
-  elsif ( $self->file_type eq 'vcf' ) {
-    my $msg = "Error: 'vcf' file_type is not implemented";
-    $self->tee_logger( 'error', $msg );
-  }
-
-  # make temp hash for expected attributes
-  for my $attr (@req_fields) {
-    $exp_header{$attr} = 1;
-  }
-
-  for my $obs_attr ( keys %$header_href ) {
-    if ( exists $exp_header{$obs_attr} ) {
-      $req_field_count++;
+  if($self->file_type) {
+    $err = $self->_checkInvalid($field_aref, $self->file_type);
+    $self->setHeader($field_aref);
+  } else {
+    for my $type (@$allowedTypes) {
+      $err = $self->_checkInvalid($field_aref, $type);
+      if(!$err) {
+        $self->setFileType($type);
+        $self->setHeader($field_aref);
+        last;
+      }
     }
+    $err = "Error: " . $self->file_type . "not supported. Please convert" if $err;
   }
 
-  if ( $req_field_count != scalar @req_fields ) {
-    my $req_fields_str = join ",", @req_fields;
-    my $obs_fields_str = join ",", keys %$header_href;
-    my $msg = sprintf( "Error: Expected header fields: '%s'\n\tBut found fields: %s\n",
-      $req_fields_str, $obs_fields_str );
-    say $self->tee_logger( 'error', $msg );
+  if($err) {
+    if(defined $die_on_unknown) { $self->tee_logger( 'error', $err ); }
+    else { $self->tee_logger( 'warn', $err ) };
+    return; 
+  }
+  return 1;
+}
+
+sub _checkInvalid {
+  my ($self, $aRef, $type) = @_;
+
+  my $recFields = join ',', @{$self->allReqFields($type) };
+  my $fields = join ',', map {$aRef->[$_] } 0 .. $#{$self->allReqFields($type) };
+
+  if($recFields ne $fields) {
+    return "Header misformed. Found $fields, expected $recFields.";
+  }
+  return;
+}
+
+sub setHeader {
+  my ($self, $aRef) = @_;
+
+  my $idx;
+  for my $field (@{$self->allReqFields($self->file_type) } ) {
+    $idx = firstidx { $_ eq $field } @$aRef;
+    say "First index for $field is $idx";
+    $self->setSnpField($idx) unless $idx == -1;
   }
 }
 
-sub proc_line {
-  my ( $self, $header_href, $fields_aref ) = @_;
+sub getSampleNamesIdx {
+  my ($self, $fAref) = @_;
+  my $strt = scalar @{$self->allReqFields($self->file_type) };
 
-  if ( $self->file_type eq 'snp_1' ) {
-    my $chr         = $fields_aref->[ $header_href->{Fragment} ];
-    my $pos         = $fields_aref->[ $header_href->{Position} ];
-    my $ref_allele  = $fields_aref->[ $header_href->{Reference} ];
-    my $var_type    = $fields_aref->[ $header_href->{Type} ];
-    my $all_alleles = $fields_aref->[ $header_href->{Minor_allele} ];
-    return ( $chr, $pos, $ref_allele, $var_type, $all_alleles, '' );
-  }
-  elsif ( $self->file_type eq 'snp_2' ) {
-    my $chr           = $fields_aref->[ $header_href->{Fragment} ];
-    my $pos           = $fields_aref->[ $header_href->{Position} ];
-    my $ref_allele    = $fields_aref->[ $header_href->{Reference} ];
-    my $var_type      = $fields_aref->[ $header_href->{Type} ];
-    my $all_alleles   = $fields_aref->[ $header_href->{Alleles} ];
-    my $allele_counts = $fields_aref->[ $header_href->{Allele_Counts} ];
-    return ( $chr, $pos, $ref_allele, $var_type, $all_alleles, $allele_counts );
-  }
-  else {
-    my $msg = sprintf( "Error: unknown file_type '%s'", $self->file_type );
-    $self->tee_logger( 'error', $msg );
-  }
+  # every other field column name is blank, holds genotype probability 
+  # for preceeding column's sample;
+  # don't just check for ne '', to avoid simple header issues
+  my $step = 2; my $idx;
+  return map { 
+    $idx = $_ + $step; 
+    $fAref->[$idx] => $idx;
+  } $strt - $step .. $#$fAref - $step;
+}
+
+#presumes that file_type exists and has corresponding key in _req_header_fields
+sub getSnpFields {
+  my ( $self, $fAref ) = @_;
+
+  return map {$fAref->[$_] } $self->allSnpFieldIdx;
 }
 
 =head2
@@ -195,7 +238,7 @@ filepath, if directory use some sensible default
 sub _build_out_fh {
   my $self = shift;
 
-  if ( !$self->has_out_file ) {
+  if ( !$self->output_path ) {
     say "Did not find a file or directory path in Seq.pm _build_out_fh" if $self->debug;
     return \*STDOUT;
   }
