@@ -108,7 +108,7 @@ sub print_annotations {
 
   # print header
   if ( !$self->printed_header ) {
-    say { $self->_out_fh } join "\t", keys @$$header_aref;
+    say { $self->_out_fh } join "\t", @$header_aref;
     $self->set_printed_header;
   }
 
@@ -184,14 +184,21 @@ sub checkHeader {
   return 1;
 }
 
+# checks whether the first N fields, where N is the number of fields defined in
+# $self->allReqFields, in the input file match the reqFields values
+# order however in those first N fields doesn't matter
 sub _checkInvalid {
   my ($self, $aRef, $type) = @_;
 
-  my $recFields = join ',', @{$self->allReqFields($type) };
-  my $fields = join ',', map {$aRef->[$_] } 0 .. $#{$self->allReqFields($type) };
-
-  if($recFields ne $fields) {
-    return "Header misformed. Found $fields, expected $recFields.";
+  my $reqFields = $self->allReqFields($type);
+  my @inSlice = @$aRef[0 .. $#$reqFields];
+  my $idx;
+  for my $reqField (@$reqFields) {
+    $idx = firstidx { $_ eq $reqField } @inSlice;
+    if($idx == -1) {
+      return "Input file header misformed. Coudln't find $reqField in first " 
+        . @inSlice . ' fields.';
+    }
   }
   return;
 }
@@ -214,11 +221,12 @@ sub getSampleNamesIdx {
   # every other field column name is blank, holds genotype probability 
   # for preceeding column's sample;
   # don't just check for ne '', to avoid simple header issues
-  my $step = 2; my $idx;
-  return map { 
-    $idx = $_ + $step; 
-    $fAref->[$idx] => $idx;
-  } $strt - $step .. $#$fAref - $step;
+  my %data;
+
+  for(my $i = $strt; $i <= $#$fAref; $i += 2) {
+    $data{$fAref->[$i] } = $i;
+  }
+  return %data;
 }
 
 #presumes that file_type exists and has corresponding key in _req_header_fields
