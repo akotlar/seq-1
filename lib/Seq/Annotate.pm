@@ -711,17 +711,29 @@ sub BUILD {
   #  }
 }
 
+#TODO: should we uppercase alleles before returning them?
 sub _var_alleles {
   my ( $self, $alleles_str, $ref_allele ) = @_;
+
+  return if !$alleles_str || !$ref_allele;
+
   my ( @snpAlleles, @indelAlleles );
 
   for my $allele ( split /\,/, $alleles_str ) {
-    if ( $allele ne $ref_allele && $allele ne 'N' ) {
-      if ( length $allele == 1 ) {
-        push @snpAlleles, $allele;
-      }
-      else {
-        push @indelAlleles, $allele;
+    if ( $allele ne $ref_allele ) {
+      if ( length $allele == 1) {
+        #skip anything that looks odd; we could also log this, 
+        #but could slow us down; haven't benched coro logging
+        push @snpAlleles, $allele unless $allele eq 'N';
+      } else {
+        #we could also avoid this and place the indel calling function in annotate
+        #into an eval, but this may be slower, althoug here we duplicate concerns
+        my $subs = substr($allele, 0, 1);
+        if($subs eq '-' || $subs eq '+') {
+          push @indelAlleles, $allele;
+        } else {
+          $self->tee_logger('warn', "Allele $allele is unknown");
+        }
       }
     }
   }
