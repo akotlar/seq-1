@@ -724,7 +724,7 @@ sub _var_alleles {
       if ( length $allele == 1) {
         #skip anything that looks odd; we could also log this, 
         #but could slow us down; haven't benched coro logging
-        push @snpAlleles, $allele unless $allele eq 'N';
+        push @snpAlleles, $allele;
       } else {
         #we could also avoid this and place the indel calling function in annotate
         #into an eval, but this may be slower, althoug here we duplicate concerns
