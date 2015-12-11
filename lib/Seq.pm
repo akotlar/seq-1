@@ -213,8 +213,11 @@ sub annotate_snpfile {
     my ( $chr, $pos, $ref_allele, $var_type, $all_allele_str, $allele_count ) =
       $self->getSnpFields( \@fields );
 
-    # get carrier ids for variant; returns hom_ids_href for use in 
-    # statistics calculator; later (hets currently ignored)
+    # not checking for $allele_count for now, because it isn't in use
+    next unless $chr && $pos && $ref_allele && $var_type && $all_allele_str;
+    
+    # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
+    #   later (hets currently ignored)
     my ( $het_ids, $hom_ids, $id_genos_href ) =
       $self->_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
@@ -262,7 +265,7 @@ sub annotate_snpfile {
 
     if ( $abs_pos > $next_chr_offset ) {
       my $msg = "Error: $chr:$pos is beyond the end of $chr $next_chr_offset";
-      $self->tee_logger->( 'error', $msg );
+      $self->tee_logger( 'error', $msg );
     }
 
     # save the current chr for next iteration of the loop
@@ -276,14 +279,10 @@ sub annotate_snpfile {
     #   - NOTE: the way the annotations for INS sites now work (due to changes in the
     #     snpfile format, we could change their annotation to one off annotations like
     #     the SNPs
-    if ( $var_type eq 'SNP'
-      || $var_type eq 'MULTIALLELIC'
-      || $var_type eq 'DEL'
-      || $var_type eq 'INS' )
-    {
+    if ( $var_type =~ /(SNP|MULTIALLELIC|DEL|INS)/s ) {
       my $record_href = $annotator->annotate(
         $chr,        $chr_index, $pos,            $abs_pos,
-        $ref_allele, $var_type,  $all_allele_str, $allele_count,
+        $ref_allele, $1,  $all_allele_str, $allele_count,
         $het_ids,    $hom_ids,   $id_genos_href
       );
       if ( defined $record_href ) {
@@ -294,8 +293,7 @@ sub annotate_snpfile {
         push @snp_annotations, $record_href;
         $self->inc_counter;
       }
-    }
-    elsif ( $var_type ne 'MESS' && $var_type ne 'LOW' ) {
+    } elsif ( $var_type ne 'MESS' && $var_type ne 'LOW' ) { #$1 is regex match
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
       $self->tee_logger( 'warn', $msg );
     }
@@ -343,7 +341,6 @@ sub annotate_snpfile {
     $self->tee_logger( 'warn',
       'We found ' . $self->discordant_bases . ' discordant_bases' );
   }
-  cede; #any logging messages now should be printed;
   return $annotator->statsRecord;
 }
 
@@ -361,8 +358,8 @@ sub _minor_allele_carriers {
   my $hom_ids_str   = '';
   for my $id (@$id_names_aref) {
     my $id_geno = $fields_aref->[ $ids_href->{$id} ];
-    # skip reference && N's
-    next if ( $id_geno eq $ref_allele || $id_geno eq 'N' );
+    # skip reference && N's && empty things
+    next if ( !$id_geno || $id_geno eq $ref_allele || $id_geno eq 'N' );
 
     if ( $self->isHet($id_geno) ) {
       $het_ids_str .= "$id;";

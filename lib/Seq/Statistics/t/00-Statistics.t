@@ -2,14 +2,8 @@ use 5.10.0;
 use strict;
 use warnings;
 
-use Data::Dump qw/ dump /;
-use Path::Tiny;
 use Test::More qw(no_plan);
 use Test::Moose::More;
-use Test::Deep; 
-use Test::MockObject;
-use Test::MockObject::Extends;
-use DDP;
 use Seq::Statistics;
 
 validate_class 'Seq::Statistics' => (

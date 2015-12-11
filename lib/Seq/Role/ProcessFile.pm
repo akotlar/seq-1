@@ -173,7 +173,8 @@ sub checkHeader {
         last;
       }
     }
-    $err = "Error: " . $self->file_type . "not supported. Please convert" if $err;
+    $err = "Error: " . $self->file_type . 
+      "not supported. Please convert" if $err;
   }
 
   if($err) {
