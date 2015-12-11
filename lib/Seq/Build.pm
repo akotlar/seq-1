@@ -330,6 +330,9 @@ sub build_conserv_scores_index {
 
         # local file
         my @local_files = $gst->all_local_files;
+
+        # TODO: Do we have to look for "Cadd?" This limits the file name
+        # which is not "Seqant-like" convention over configuration 
         unless ( scalar @local_files == 1 && $local_files[0] =~ m/cadd/ ) {
           my $msg = sprintf(
             "expected 1 local file to build but found %d: %s",

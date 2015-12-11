@@ -143,7 +143,7 @@ sub compress_output {
   # my($filename, $dirs) = fileparse($self->output_path);
 
   my $tar = which('tar') or $self->tee_logger( 'error', 'No tar program found' );
-  my $pigz = which('pigz');
+  my $pigz = which('pigz') || which('gzip');
   if ($pigz) { $tar = "$tar --use-compress-program=$pigz"; } #-I $pigz
 
   my $outcome =
