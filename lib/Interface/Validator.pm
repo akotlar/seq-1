@@ -8,6 +8,7 @@ with 'MooseX::Getopt::Usage';
 with 'MooseX::Getopt::Usage::Role::Man';
 use namespace::autoclean;
 
+#also prrovides ->is_file function
 use MooseX::Types::Path::Tiny qw/File AbsFile AbsPath AbsDir/;
 
 use DDP;
@@ -72,8 +73,8 @@ has binaryPedConverterPath => (
   init_arg => undef,
   required => 1,
   default  => sub {
-    return path( abs_path(__FILE__) )->child('./bin/linkage-go');
-  }, 
+    return path(which('linkage') );
+  },
   handles => {
     ped2snp => 'stringify',
   }
@@ -140,21 +141,24 @@ sub validateState {
     scalar @{ $self->errorsAref }
     ) #if $erorrs, Global symobl requires explicit package error
   {
-    $self->getopt_usage( exit => 10, err => join( "\n", @{ $self->errorsAref } ) );
+    $self->getopt_usage( exit => 10, 
+      err => join( "\n", @{ $self->errorsAref } ) 
+    );
   }
 }
 
 sub _validateInputFile {
   my $self = shift;
 
-  unless($self->snpfile->if_file) {
-    # for now log an error, later let people provide 
-    $self->tee_logger('error', 'Snpfile must be file, got ' . $self->snpfilePath);
+  unless($self->snpfile->is_file) {
+    # for now log an error, later let people provide directories
+    $self->tee_logger('error', 
+      'Snpfile must be file, got ' . $self->snpfilePath
+    );
     return;
   }
-  my $fh = $self->get_read_fh($self->snpfile);
 
-  if(!$self->check_snp_header(<$fh>) ) {
+  if(!$self->check_snp_header($self->get_read_fh($self->snpfile) ) ) {
     if(! $self->convertToPed) {
       if(!$self->convertToSnp) {
         $self->tee_logger('error', 
@@ -166,38 +170,26 @@ sub _validateInputFile {
 
 sub convertToPed {
   my ($self, $attempts) = @_;
- 
-  $attempts = $attempts || 0;
-
-  if($attempts > 2) {
-    $self->tee_logger('exit', 
-      "User exited file conversion: $!. See log @ ". $self->getLogPath
-    );
-  }
 
   my $outPath = $self->convertFileBasePath;
   system($self->vcf2ped . " --vcf " . $self->snpfilePath . " --out $outPath");
 
+  #simply return; the process crashed, this is not a vcf file
   return if $? == 2;
 
   # user quit
-  if ($? == 1) {
-    $self->tee_logger('warn', "User exited file conversion: $!");
-    sleep(5);
-    return $self->convertVcf($attempts++);
-  }
+  return $self->tee_logger('error', "User exited file conversion: $!") if $? == 1;
 
   $self->convertToSnp($outPath);
   return 1;
 }
 
+# converts a binary file to snp; expects out path to be a path to folder
+# containing a .bed, .bim, .fam
 sub convertToSnp {
   my ($self, $convertFilesPath, $attempts) = @_;
 
-  $attempts = $attempts || 0;
-
   my $infiles;
-
   unless ($convertFilesPath) {
     my $archive;
     $convertFilesPath = $self->convertFileBasePath;
@@ -223,7 +215,8 @@ sub convertToSnp {
 
   }
 
-  my $cFiles = $self->_findBinaryPlinkFiles($convertFilesPath) unless $infiles;
+  my $cFiles = $convertFilesPath || 
+    $self->_findBinaryPlinkFiles($convertFilesPath);
 
   my $outPath = path($convertFilesPath)->child('.snp')->stringify;
 

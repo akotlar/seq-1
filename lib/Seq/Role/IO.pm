@@ -38,38 +38,37 @@ use Moose::Role;
 use Carp qw/ confess /;
 use IO::File;
 use IO::Compress::Gzip qw/ $GzipError /;
-use IO::Uncompress::Gunzip qw/ $GunzipError /;
+use IO::Uncompress::AnyUncompress qw/ $AnyUncompressError /;
 use Path::Tiny;
-use File::Slurper;
-use Scalar::Util qw/ reftype /;
+use Try::Tiny;
 
+with 'Seq::Role::Message';
 # tried various ways of assigning this to an attrib, with the intention that
 # one could change the taint checking characters allowed but this is the simpliest
 # one that worked; wanted it precompiled to improve the speed of checking
 my $taint_check_regex = qr{\A([\+\,\.\-\=\:\/\t\s\w\d]+)\z};
 
+#@param {Path::Tiny} $file : the Path::Tiny object representing a single input file
+#@return file handle
 sub get_read_fh {
-  my ( $class, $file ) = @_;
-
+  my ( $self, $file ) = @_;
   my $fh;
-  my $reftype = reftype $file;
-
-  # TODO: should explicitly check it's a Path::Tiny object
-  if ( defined $reftype ) {
-    $file = $file->absolute->stringify;
-    if ( !-f $file ) {
-      confess sprintf( "ERROR: file does not exist for reading: %s", $file );
-    }
+  my $filePath = $file->stringify;
+  
+  $self->tee_logger('error',
+    'file does not exist for reading: '. $filePath
+  ) if !$file->is_file;
+  
+  #duck type compressed files
+  try {
+    $fh = IO::Uncompress::AnyUncompress->new($filePath)
+  } catch {
+    $self->tee_logger('debug', "$filePath probably isn't an archive");
   }
 
-  if ( $file =~ m/\.gz\Z/ ) {
-    $fh = IO::Uncompress::Gunzip->new($file)
-      || confess "\nError: gzip failed: $GunzipError\n";
-  }
-  else {
-    $fh = IO::File->new( $file, 'r' )
-      || confess "\nError: unable to open file ($file) for reading: $!\n";
-  }
+  $fh = IO::File->new($file, 'r') unless $fh;
+  $self->tee_logger('error', "Unable to open file $filePath") unless $fh;
+
   return $fh;
 }
 
@@ -83,14 +82,14 @@ sub get_file_lines {
 
 #another version, seems slower in practice
 #if using this no need to chomp each individual line
-sub slurp_file_lines {
-  my ( $self, $filePath ) = @_;
-  if ( !-f $filePath ) {
-    confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
-  }
-  return File::Slurper::read_lines( $filePath, 'utf-8', { chomp => 1 } )
-    ; #returns array
-}
+# sub slurp_file_lines {
+#   my ( $self, $filePath ) = @_;
+#   if ( !-f $filePath ) {
+#     confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
+#   }
+#   return File::Slurper::read_lines( $filePath, 'utf-8', { chomp => 1 } )
+#     ; #returns array
+# }
 
 sub get_write_fh {
   my ( $class, $file ) = @_;
