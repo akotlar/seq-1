@@ -34,7 +34,7 @@ use IO::Socket;
 
 use Redis;
 
-my $DEV = 0;
+my $DEBUG = 0;
 my $redisHost : shared = $ARGV[0] || 'genome.local';
 my $redisPort : shared = $ARGV[1] || '6379';
 
@@ -237,7 +237,7 @@ sub coerceInputs {
 
   my $inputFilePath  = $jobDetailsHref->{ $jobKeys->{inputFilePath} };
   my $outputFilePath = $jobDetailsHref->{ $jobKeys->{outputFilePath} };
-  my $debug          = !!$DEV;                                         #not, not!
+  my $debug          = $DEBUG;                                        #not, not!
 
   my $configFilePath = getConfigFilePath( $jobDetailsHref->{ $jobKeys->{assembly} } );
 
