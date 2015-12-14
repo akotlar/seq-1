@@ -269,7 +269,7 @@ sub annotate_snpfile {
     #   - NOTE: the way the annotations for INS sites now work (due to changes in the
     #     snpfile format, we could change their annotation to one off annotations like
     #     the SNPs
-    if ( $var_type =~ /(SNP|MULTIALLELIC|DEL|INS)/s ) {
+    if ( $var_type =~ /^(SNP|DEL|INS|MULTIALLELIC)$/s ) {
       my $record_href = $annotator->annotate(
         $chr,        $chr_index, $pos,            $abs_pos,
         $ref_allele, $1,  $all_allele_str, $allele_count,
