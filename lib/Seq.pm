@@ -195,20 +195,12 @@ sub annotate_snpfile {
     if ( !%ids ) {
       $self->checkHeader( \@fields );
 
-      say "fields are ";
-      p @fields;
-
       %ids = $self->getSampleNamesIdx( \@fields );
 
-      say "getSampleNamesIdx gives us";
-      p %ids;
       # save list of ids within the snpfile
       @sample_ids = sort( keys %ids );
       next;
     }
-    say "snp fields are ";
-    my @stuff =  $self->getSnpFields( \@fields );
-    p @stuff;
     # process the snpfile line
     my ( $chr, $pos, $ref_allele, $var_type, $all_allele_str, $allele_count ) =
       $self->getSnpFields( \@fields );
@@ -300,7 +292,7 @@ sub annotate_snpfile {
 
     # write data in batches
     if ( $self->counter > $self->write_batch ) {
-      $self->print_annotations( \@snp_annotations, $self->header );
+      $self->print_annotations( \@snp_annotations );
       @snp_annotations = ();
       $self->reset_counter;
     }
@@ -311,19 +303,9 @@ sub annotate_snpfile {
 
   # finished printing the final snp annotations
   if (@snp_annotations) {
-    $self->print_annotations( \@snp_annotations, $self->header );
+    $self->print_annotations( \@snp_annotations );
     @snp_annotations = ();
   }
-
-  # print deletion sites
-  #   - indel annotations come back as an array reference of hash references
-  #   - the print_annotations function flattens the hash reference and
-  #     prints them in order
-  # unless ( $self->has_no_del_sites ) {
-  #   my $del_annotations_aref =
-  #     $annotator->annotate_del_sites( \%chr_index, $self->del_sites() );
-  #   $self->print_annotations( $del_annotations_aref, $self->header );
-  # }
 
   $annotator->summarizeStats;
 

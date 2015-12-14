@@ -158,7 +158,8 @@ sub convertToSnp {
   # returns a value only upon error
   return if system($self->_ped2snp . ' convert ' . join(' ', @args) );
 
-  $self->setSnpfile($out);
+  #because the linkage2Snp converted auto-appends a .snp file extension
+  $self->setSnpfile($out.'.snp');
   return 1;
 }
 

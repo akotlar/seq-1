@@ -53,6 +53,15 @@ has _header => (
   default => sub { [] },
 );
 
+after add_header_attr => sub {
+  my $self = shift;
+
+  if ( !$self->_headerPrinted ) {
+    say { $self->_out_fh } join "\t", $self->all_header_attr;
+    $self->_flagHeaderPrinted;
+  }
+};
+
 ##########Private Variables##########
 
 # flags whether or not the header has been printed
@@ -119,12 +128,12 @@ sub _build_headers {
 # output file and flattens the hash references for each entry and writes
 # them to the output file
 sub print_annotations {
-  my ( $self, $annotations_aref, $header_aref ) = @_;
+  my ( $self, $annotations_aref ) = @_;
 
   # print header
-  if ( !$self->_headerPrinted ) {
-    say { $self->_out_fh } join "\t", @$header_aref;
-    $self->_flagHeaderPrinted;
+  if ( !$self->_flagHeaderPrinted ) {
+    $self->tee_logger('error', 'Header wasn\'t printed');
+    return; 
   }
 
   # cache header attributes
@@ -180,9 +189,7 @@ sub checkHeader {
     $err = $self->_checkInvalid($field_aref, $self->file_type);
     $self->setHeader($field_aref);
   } else {
-    say "checking type";
     for my $type (@$allowedTypes) {
-      say "trying with type $type";
       $err = $self->_checkInvalid($field_aref, $type);
       if(!$err) {
         $self->setFileType($type);
@@ -208,15 +215,10 @@ sub checkHeader {
 sub _checkInvalid {
   my ($self, $aRef, $type) = @_;
 
-  say "$aRef is";
-  p $aRef;
   my $reqFields = $self->allReqFields($type);
-  say "req fields are";
-  p $reqFields;
+
   my @inSlice = @$aRef[0 .. $#$reqFields];
 
-  say "inSlice is";
-  p @inSlice;
   my $idx;
   for my $reqField (@$reqFields) {
     $idx = firstidx { $_ eq $reqField } @inSlice;
