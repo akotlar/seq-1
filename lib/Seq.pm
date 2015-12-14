@@ -183,12 +183,10 @@ sub annotate_snpfile {
   for my $line ( $self->get_file_lines( $self->snpfile_path ) ) {
     chomp $line;
     # taint check the snpfile's data
-    my $clean_line = $self->clean_line($line);
+    my @fields = $self->get_clean_fields($line);
 
     # skip lines that don't return any usable data
-    next unless $clean_line;
-
-    my @fields = split( /\t/, $clean_line );
+    next unless $#fields;
     # API: snp files contain column names in the first row
     # check that these match the expected, which is based on $self->file_type
     # then, get everything else
