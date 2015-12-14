@@ -48,6 +48,7 @@ with 'Seq::Role::Message';
 # one that worked; wanted it precompiled to improve the speed of checking
 my $taint_check_regex = qr{\A([\+\,\.\-\=\:\/\t\s\w\d]+)\z};
 
+my $delimiter = "\t";
 #@param {Path::Tiny} $file : the Path::Tiny object representing a single input file
 #@return file handle
 sub get_read_fh {
@@ -61,12 +62,12 @@ sub get_read_fh {
   
   #duck type compressed files
   try {
-    $fh = IO::Uncompress::AnyUncompress->new($filePath)
+    $fh = IO::Uncompress::AnyUncompress->new($filePath);
   } catch {
     $self->tee_logger('debug', "$filePath probably isn't an archive");
-  }
-
-  $fh = IO::File->new($file, 'r') unless $fh;
+  };
+  
+  $fh = IO::File->new($filePath, 'r') unless $fh;
   $self->tee_logger('error', "Unable to open file $filePath") unless $fh;
 
   return $fh;
@@ -124,6 +125,15 @@ sub clean_line {
 
   if ( $line =~ m/$taint_check_regex/xm ) {
     return $1;
+  }
+  return;
+}
+
+sub get_clean_fields {
+  my ( $class, $line ) = @_;
+
+  if ( $line =~ m/$taint_check_regex/xm ) {
+    return split($delimiter, $1);
   }
   return;
 }

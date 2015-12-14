@@ -15,7 +15,7 @@ use File::Which qw(which);
 use File::Basename;
 use List::MoreUtils qw(firstidx);
 use namespace::autoclean;
-
+use DDP;
 requires 'output_path';
 requires 'debug';
 
@@ -33,8 +33,7 @@ has file_type => (
   is       => 'ro',
   isa      => 'fileTypes',
   required => 0,
-  default  => '',
-  writer   => 'setFileType'
+  writer   => 'setFileType',
 );
 
 has printed_header => (
@@ -165,7 +164,9 @@ sub checkHeader {
     $err = $self->_checkInvalid($field_aref, $self->file_type);
     $self->setHeader($field_aref);
   } else {
+    say "checking type";
     for my $type (@$allowedTypes) {
+      say "trying with type $type";
       $err = $self->_checkInvalid($field_aref, $type);
       if(!$err) {
         $self->setFileType($type);
@@ -191,8 +192,15 @@ sub checkHeader {
 sub _checkInvalid {
   my ($self, $aRef, $type) = @_;
 
+  say "$aRef is";
+  p $aRef;
   my $reqFields = $self->allReqFields($type);
+  say "req fields are";
+  p $reqFields;
   my @inSlice = @$aRef[0 .. $#$reqFields];
+
+  say "inSlice is";
+  p @inSlice;
   my $idx;
   for my $reqField (@$reqFields) {
     $idx = firstidx { $_ eq $reqField } @inSlice;
