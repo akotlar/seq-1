@@ -16,39 +16,40 @@ $snp_file_version = 'snp_2';
 $debug            = 0;
 
 # TODO: read directly from argument_format.json
-my %h;
-# usage
-GetOptions(\%h,
-  'config_file|config|c=s' ,
-  'snpfile|input|i=s'  ,
-  'verbose|v'    ,
-  'help|h'     ,
-  'out_file|out|o=s'     ,
-  'overwrite'   ,
-  'no_skip_chr' ,
-  'debug|d=n'   ,
-  'type|t=s',
-  'messanger|m=s' ,
-  'publisherAddress|p =s'
-);
+# my %h;
+# # usage
+# GetOptions(\%h,
+#   'config_file|config|c=s' ,
+#   'snpfile|input|i=s'  ,
+#   'verbose|v'    ,
+#   'help|h'     ,
+#   'out_file|out|o=s'     ,
+#   'overwrite'   ,
+#   'no_skip_chr' ,
+#   'debug|d=n'   ,
+#   'type|t=s',
+#   'messanger|m=s' ,
+#   'publisherAddress|p =s'
+# );
 
-if ($h{help}) {
-  Pod::Usage::pod2usage(1);
-  exit;
-}
-say "hash has";
-p %h;
+# if ($h{help}) {
+#   Pod::Usage::pod2usage(1);
+#   exit;
+# }
+# say "hash has";
+# p %h;
 
-unless ( $h{config_file}
-  and $h{snpfile}
-  and $h{out_file}
-)
-{
-  Pod::Usage::pod2usage();
-}
+# unless ( $h{config_file}
+#   and $h{snpfile}
+#   and $h{out_file}
+# )
+# {
+#   Pod::Usage::pod2usage();
+# }
 
-my $annotate_instance = Interface->new(\%h);
+# my $annotate_instance = Interface->new(\%h);
 
+my $app = Interface->new_with_options();
 =head1 NAME
 
 snpfile_annotate_mongo_command_line.pl

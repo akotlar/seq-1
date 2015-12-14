@@ -7,7 +7,7 @@ use File::Basename;
 
 use Moose;
 use Seq;
-use MooseX::Types::Path::Tiny qw/File AbsFile AbsPath/;
+use MooseX::Types::Path::Tiny qw/Path File AbsFile AbsPath/;
 use Moose::Util::TypeConstraints;
 use Log::Any::Adapter;
 
@@ -18,11 +18,20 @@ use DDP;
 use YAML::XS qw/LoadFile/;
 # use Try::Tiny;
 use Path::Tiny;
+with 'MooseX::Getopt::Usage';
 
+#without this, Getopt won't konw how to handle AbsFile, AbsPath, and you'll get
+#Invalid 'config_file' : File '/mnt/icebreaker/data/home/akotlar/my_projects/seq/1' does not exist
+#but it won't understand AbsFile=> and AbsPath=> mappings directly, so below
+#we use it's parental inference property 
+#http://search.cpan.org/~ether/MooseX-Getopt-0.68/lib/MooseX/Getopt.pm
+MooseX::Getopt::OptionTypeMap->add_option_type_to_map(
+    'Path::Tiny' => '=s',
+);
 #not using Moose X types path tiny because it reads my file strings as "1" for some reason
 has snpfile => (
   is        => 'rw',
-  isa       => AbsPath,
+  isa       => AbsFile,
   coerce => 1,
   #handles => {openInputFile => 'open'},
   required      => 1,
@@ -154,11 +163,10 @@ with 'Interface::Validator';
 sub BUILD {
   my $self = shift;
   my $args = shift;
- 
- say "hello!";
+  
   $self->createLog;
 
-  $self->validateState; #exit if errors found via this Validator.pm method
+  #$self->validateState; #exit if errors found via this Validator.pm method
 
   $self->_buildAnnotatorArguments;
 
@@ -171,6 +179,7 @@ sub _buildAnnotatorArguments {
 
   for my $attr ( $self->meta->get_all_attributes ) {
     my $name = $attr->name;
+    say "name is $name";
     if ( defined $self->{$name} ) {
       $self->setArg($name => $self->$name);
     }
@@ -185,10 +194,10 @@ sub _buildAnnotatorArguments {
 
 sub _run {
   my $self = shift;
-  say "argumetns are";
+  say "arguments are";
   p $self->_arguments;
   my $annotator = Seq->new( $self->_arguments );
-  return $annotator->annotate_snpfile();
+  return $annotator->annotate_snpfile;
 }
 
 sub createLog {
