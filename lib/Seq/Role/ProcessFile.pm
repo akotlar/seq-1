@@ -29,6 +29,8 @@ with 'Seq::Role::IO', 'Seq::Role::Message';
 state $allowedTypes = [ 'snp_2', 'snp_1' ];
 enum fileTypes => $allowedTypes;
 
+# pre-define a file type; not necessary, but saves some time if type is snp_1
+# @ public
 has file_type => (
   is       => 'ro',
   isa      => 'fileTypes',
@@ -36,15 +38,10 @@ has file_type => (
   writer   => 'setFileType',
 );
 
-has printed_header => (
-  is      => 'rw',
-  traits  => ['Bool'],
-  isa     => 'Bool',
-  default => 0,
-  handles => { set_printed_header => 'set', },
-);
-
-has header => (
+# @pseudo-protected; using _header to designate that only the methods are public
+# stores everything after the minimum required; this comes from Seq::Annotate.pm
+# add_header_attr called in Seq.pm
+has _header => (
   traits  => ['Array'],
   is      => 'ro',
   isa     => 'ArrayRef',
@@ -52,22 +49,28 @@ has header => (
     all_header_attr => 'elements',
     add_header_attr => 'push',
   },
+  init_arg => undef,
   default => sub { [] },
 );
 
-has snpHeader => (
-  traits => ['Array'],
-  isa => 'ArrayRef',
-  handles => {
-    setSnpField => 'push',
-    allSnpFieldIdx => 'elements',
-  }
+##########Private Variables##########
+
+# flags whether or not the header has been printed
+has _headerPrinted => (
+  is      => 'rw',
+  traits  => ['Bool'],
+  isa     => 'Bool',
+  default => 0,
+  handles => { _flagHeaderPrinted => 'set', }, #set to 1
+  init_arg => undef,
 );
 
-has compress_extension => (
+#if we compress the output, the extension we store it with
+has _compressExtension => (
   is      => 'ro',
   lazy    => 1,
   default => '.tar.gz',
+  init_arg => undef,
 );
 
 has _out_fh => (
@@ -77,7 +80,20 @@ has _out_fh => (
   builder  => '_build_out_fh',
 );
 
-has _req_header_fields => (
+# the minimum required snp headers that we actually have
+has _snpHeader => (
+  traits => ['Array'],
+  isa => 'ArrayRef',
+  handles => {
+    setSnpField => 'push',
+    allSnpFieldIdx => 'elements',
+  },
+  init_arg => undef,
+);
+
+#all the header field names that we require;
+#@ {HashRef[ArrayRef]} : file_type => [field1, field2...]
+has _reqHeaderFields => (
   is => 'ro',
   isa => 'HashRef',
   traits => ['Hash'],
@@ -86,7 +102,7 @@ has _req_header_fields => (
   builder => '_build_headers',
   handles => {
     allReqFields => 'get',
-  }
+  },
 );
 
 #API: The order here is the order of values returend for any consuming programs
@@ -106,9 +122,9 @@ sub print_annotations {
   my ( $self, $annotations_aref, $header_aref ) = @_;
 
   # print header
-  if ( !$self->printed_header ) {
+  if ( !$self->_headerPrinted ) {
     say { $self->_out_fh } join "\t", @$header_aref;
-    $self->set_printed_header;
+    $self->_flagHeaderPrinted;
   }
 
   # cache header attributes
@@ -148,7 +164,7 @@ sub compress_output {
   my $outcome =
     system( "$tar -cf "
       . $self->output_path
-      . $self->compress_extension . " "
+      . $self->_compressExtension . " "
       . $self->output_path
       . "*" );
 
@@ -218,7 +234,6 @@ sub setHeader {
   my $idx;
   for my $field (@{$self->allReqFields($self->file_type) } ) {
     $idx = firstidx { $_ eq $field } @$aRef;
-    say "First index for $field is $idx";
     $self->setSnpField($idx) unless $idx == -1;
   }
 }
@@ -238,7 +253,7 @@ sub getSampleNamesIdx {
   return %data;
 }
 
-#presumes that file_type exists and has corresponding key in _req_header_fields
+#presumes that _file_type exists and has corresponding key in _headerFields
 sub getSnpFields {
   my ( $self, $fAref ) = @_;
 

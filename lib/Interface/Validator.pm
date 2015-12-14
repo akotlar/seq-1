@@ -4,8 +4,6 @@ use 5.10.0;
 package Interface::Validator;
 
 use Moose::Role;
-with 'MooseX::Getopt::Usage';
-with 'MooseX::Getopt::Usage::Role::Man';
 use namespace::autoclean;
 
 #also prrovides ->is_file function
@@ -24,38 +22,7 @@ use Carp qw(cluck confess);
 
 with 'Seq::Role::ProcessFile', 'Seq::Role::IO', 'Seq::Role::Message';
 
-has errorsAref => (
-  is        => 'rw',
-  isa       => 'ArrayRef',
-  required  => 1,
-  default   => sub { return [] },
-  predicate => 'hasError'
-);
-
-# has serverConfigPath => (
-#   is       => 'ro',
-#   isa      => AbsPath,
-#   init_arg => undef,
-#   required => 1,
-#   default  => sub {
-#     return path( abs_path(__FILE__) )->absolute('/')
-#       ->parent->parent->parent->child('./config/web');
-#   }
-# );
-
-
-#when we switch to our own vcf converter
-# has vcfConverterParth => (
-#   is       => 'ro',
-#   isa      => AbsFile,
-#   init_arg => undef,
-#   required => 1,
-#   default  => sub {
-#     return path( abs_path(__FILE__) )->child('./bin/Vcf2SeqAnt_SNP_4_1.pl');
-#   }
-# );
-
-has vcfConverterParth => (
+has _vcfConverterParth => (
   is       => 'ro',
   isa      => AbsFile,
   init_arg => undef,
@@ -65,11 +32,11 @@ has vcfConverterParth => (
     return which('plink');
   },
   handles => {
-    vcf2ped => 'stringify',
-  }
+    _vcf2ped => 'stringify',
+  },
 );
 
-has binaryPedConverterPath => (
+has _binaryPedConverterPath => (
   is       => 'ro',
   isa      => AbsFile,
   init_arg => undef,
@@ -79,11 +46,11 @@ has binaryPedConverterPath => (
     return which('linkage2Snp');
   },
   handles => {
-    ped2snp => 'stringify',
-  }
+    _ped2snp => 'stringify',
+  },
 );
 
-has twoBitDir => (
+has _twoBitDir => (
   is       => 'ro',
   isa      => AbsPath,
   init_arg => undef,
@@ -93,7 +60,7 @@ has twoBitDir => (
   }, 
 );
 
-has convertDir => (
+has _convertDir => (
   isa => AbsDir,
   is => 'ro',
   coerce => 1,
@@ -106,15 +73,13 @@ has convertDir => (
 sub _buildConvertDir {
   my $self = shift;
     
-  say "building out path: ";
-  p $self->out_file->parent;
   my $path = $self->out_file->parent->child('/converted');
   $path->mkpath;
 
   return $path;
 }
 
-has inputFileBaseName => (
+has _inputFileBaseName => (
   isa => 'Str',
   is => 'ro',
   init_arg => undef,
@@ -126,34 +91,25 @@ has inputFileBaseName => (
   },
 );
 
-has convertFileBase => (
+has _convertFileBase => (
   isa => AbsPath,
   is => 'ro',
   init_arg => undef,
   required => 0,
   lazy => 1,
   handles => {
-    convertFileBasePath => 'stringify',
+    _convertFileBasePath => 'stringify',
   },
   default => sub {
     my $self = shift;
-    return $self->convertDir->child($self->inputFileBaseName);
-  }
+    return $self->_convertDir->child($self->_inputFileBaseName);
+  },
 );
 
 sub validateState {
   my $self = shift;
 
   $self->_validateInputFile();
-
-  if (
-    scalar @{ $self->errorsAref }
-    ) #if $erorrs, Global symobl requires explicit package error
-  {
-    $self->getopt_usage( exit => 10, 
-      err => join( "\n", @{ $self->errorsAref } ) 
-    );
-  }
 }
 
 sub _validateInputFile {
@@ -163,35 +119,22 @@ sub _validateInputFile {
 
   my @header_fields = $self->get_clean_fields($firstLine);
 
-  # $self->_setSnpfile('blah');
-  # say $self->snpfile;
-  $self->convertToSnp;
-
   if(!@header_fields || !$self->checkHeader(\@header_fields) ) {
-    if(! $self->convertToPed) {
-      if(!$self->convertToSnp) {
-        $self->tee_logger('error', 
-          'Conversion failed, see log @ '. $self->logPath);
-      }
-    }
+    
+    $self->tee_logger('error', "Vcf->ped conversion failed") 
+      unless $self->convertToPed;
+
+    $self->tee_logger('error', "Binary plink -> Snp conversion failed")
+     unless $self->convertToSnp;
   }
 }
 
 sub convertToPed {
   my ($self, $attempts) = @_;
 
-  say "converting to PED";
-  my $outPath = $self->convertFileBasePath;
-  system($self->vcf2ped . " --vcf " . $self->snpfilePath . " --out $outPath");
-
-  #simply return; the process crashed, this is not a vcf file
-  return if $? == 2;
-
-  # user quit
-  return $self->tee_logger('error', "User exited conversion: $!") if $? == 1;
-
-  say "Finished converting to ped";
-  $self->convertToSnp($outPath);
+  my $out = $self->_convertFileBasePath;
+  return if system($self->_vcf2ped . " --vcf " . $self->snpfilePath . " --out $out");
+  
   return 1;
 }
 
@@ -201,29 +144,30 @@ sub convertToSnp {
   my $self = shift;
 
   my $cFiles = $self->_findBinaryPlinkFiles;
-  my $outPath = $self->convertFileBasePath; #assumes the converter appends ".snp"
-  my $twobit = $self->twoBitDir->child($self->assembly . '.2bit')->stringify;
+  my $out = $self->_convertFileBasePath; #assumes the converter appends ".snp"
+  my $twobit = $self->_twoBitDir->child($self->assembly . '.2bit')->stringify;
 
+  return unless defined $cFiles;
+  
   my @args = ( 
     '-bed ', $cFiles->{bed},
     '-bim ', $cFiles->{bim}, 
     '-fam ', $cFiles->{fam}, 
-    '-out ', $outPath, '-two ', $twobit);
+    '-out ', $out, '-two ', $twobit);
 
-  if(system($self->ped2snp . ' convert ' . join(' ', @args) ) ) {
-    $self->tee_logger('error', "Conversion failed");
-    return;
-  }
-  $self->_setSnpfile($outPath);
+  # returns a value only upon error
+  return if system($self->_ped2snp . ' convert ' . join(' ', @args) );
+
+  $self->setSnpfile($out);
   return 1;
 }
 
 sub _findBinaryPlinkFiles {
   my $self = shift;
   
-  my $bed = path($self->convertFileBasePath.'.bed'); 
-  my $bim = path($self->convertFileBasePath.'.bim'); 
-  my $fam = path($self->convertFileBasePath.'.fam'); 
+  my $bed = path($self->_convertFileBasePath.'.bed'); 
+  my $bim = path($self->_convertFileBasePath.'.bim'); 
+  my $fam = path($self->_convertFileBasePath.'.fam'); 
 
   if($bed->is_file && $bim->is_file && $fam->is_file) {
     return {
@@ -422,4 +366,12 @@ sub _findBinaryPlinkFiles {
   #   }
 
   # }
+#   has _errorsAref => (
+#   is        => 'rw',
+#   isa       => 'ArrayRef',
+#   required  => 1,
+#   default   => sub { return [] },
+#   predicate => 'hasError',
+# );
+
 1;

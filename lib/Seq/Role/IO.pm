@@ -41,6 +41,7 @@ use IO::Compress::Gzip qw/ $GzipError /;
 use IO::Uncompress::AnyUncompress qw/ $AnyUncompressError /;
 use Path::Tiny;
 use Try::Tiny;
+use DDP;
 
 with 'Seq::Role::Message';
 # tried various ways of assigning this to an attrib, with the intention that
@@ -54,6 +55,11 @@ my $delimiter = "\t";
 sub get_read_fh {
   my ( $self, $file ) = @_;
   my $fh;
+  
+  if(ref $file ne 'Path::Tiny' ) {
+    $file = path($file)->absolute;
+  }
+
   my $filePath = $file->stringify;
   
   $self->tee_logger('error',

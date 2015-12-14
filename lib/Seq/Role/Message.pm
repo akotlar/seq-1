@@ -58,7 +58,7 @@ has messanger => (
   default  => undef,
 );
 
-has publisher => (
+has _publisher => (
   is        => 'ro',
   required  => 0,
   lazy      => 1,

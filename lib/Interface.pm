@@ -16,9 +16,10 @@ use namespace::autoclean;
 use DDP;
 
 use YAML::XS qw/LoadFile/;
-# use Try::Tiny;
 use Path::Tiny;
-with 'MooseX::Getopt::Usage';
+
+use Getopt::Long::Descriptive;
+with 'MooseX::Getopt::Usage','MooseX::Getopt::Usage::Role::Man';
 
 #without this, Getopt won't konw how to handle AbsFile, AbsPath, and you'll get
 #Invalid 'config_file' : File '/mnt/icebreaker/data/home/akotlar/my_projects/seq/1' does not exist
@@ -28,7 +29,8 @@ with 'MooseX::Getopt::Usage';
 MooseX::Getopt::OptionTypeMap->add_option_type_to_map(
     'Path::Tiny' => '=s',
 );
-#not using Moose X types path tiny because it reads my file strings as "1" for some reason
+
+##########Parameters accepted from command line#################
 has snpfile => (
   is        => 'rw',
   isa       => AbsFile,
@@ -38,7 +40,10 @@ has snpfile => (
   handles => {
     snpfilePath => 'stringify',
   },
-  writer => '_setSnpfile'
+  writer => 'setSnpfile',
+  metaclass => 'Getopt',
+  cmd_aliases   => [qw/input snp i/],
+  documentation => qq{Input file path.},
 );
 
 has out_file => (
@@ -49,6 +54,9 @@ has out_file => (
   handles => {
     output_path => 'stringify',
   },
+  metaclass => 'Getopt',
+  cmd_aliases   => [qw/out output/],
+  documentation => qq{Where you want your output.},
 );
 
 has config_file => (
@@ -59,17 +67,9 @@ has config_file => (
   handles     => {
     configfilePath => 'stringify',
   },
-);
-
-
-enum file_types => [qw /snp_1 snp_2/];
-
-has type => (
-  is        => 'rw',
-  isa       => 'file_types',
-  #handles => {openInputFile => 'open'},
-  required      => 0,
-  default   => 'snp_2',
+  metaclass => 'Getopt',
+  cmd_aliases   => [qw/config/],
+  documentation => qq{Yaml config file path.},
 );
 
 has overwrite => (
@@ -77,16 +77,8 @@ has overwrite => (
   isa         => 'Bool',
   default     => 0,
   required    => 0,
-);
-
-has ignore_unknown_chr => (
-  metaclass   => 'Getopt',
-  is          => 'ro',
-  isa         => 'Bool',
-  default     => 1,
-  required    => 0,
-  documentation =>
-    qq{Ignore chromosomes not known to seqant, instead of crashing. Default 1}
+  metaclass => 'Getopt',
+  documentation => qq{Overwrite existing output file.},
 );
 
 has debug => (
@@ -94,19 +86,14 @@ has debug => (
   isa         => 'Num',
   default     => 0,
   required    => 0,
+  metaclass   => 'Getopt',
  );
 
-subtype HashRefFlex => as 'HashRef';
-coerce HashRefFlex => from 'Str' => via { from_json $_ };
-subtype ArrayRefFlex => as 'ArrayRef';
-coerce ArrayRefFlex => from 'Str' => via { from_json $_ };
-
-# TODO: documetn 
 has messanger => (
-  metaclass   => 'Getopt',
   is => 'rw',
-  isa => 'HashRefFlex',
+  isa => 'HashRefJson',
   required => 0,
+  metaclass   => 'Getopt',
   documentation => 
     qq{Tell Seqant how to send messages to a plugged-in interface 
       (such as a web interface) }
@@ -114,23 +101,33 @@ has messanger => (
 
 has publisherAddress => (
   is => 'ro',
-  isa => 'ArrayRefFlex',
+  isa => 'ArrayRefJson',
   required => 0,
+  metaclass   => 'Getopt',
+  documentation => 
+    qq{Tell Seqant how to send messages to a plugged-in interface 
+      (such as a web interface) }
 );
 
-has _arguments => (
-  is       => 'rw',     #Todo: is validateState in builder cleaner than rw
-  isa      => 'HashRef',
-  traits   => ['Hash'],
-  required => 1,
-  init_arg => undef,
-  default  => sub { {} },
-  handles  => {
-    setArg => 'set',
-  }
+has ignore_unknown_chr => (
+  is          => 'ro',
+  isa         => 'Bool',
+  default     => 1,
+  required    => 0,
+  metaclass   => 'Getopt',
+  documentation =>
+    qq{Don't quit if we find a non-reference chromosome (like ChrUn)}
 );
 
-has logPath => (
+##################Not set in command line######################
+
+subtype HashRefJson => as 'HashRef';
+coerce HashRefJson => from 'Str' => via { from_json $_ };
+subtype ArrayRefJson => as 'ArrayRef';
+coerce ArrayRefJson => from 'Str' => via { from_json $_ };
+
+has _logPath => (
+  metaclass => 'NoGetopt',  # do not attempt to capture this param
   is => 'rw',
   isa => 'Str',
   required => 0,
@@ -144,18 +141,20 @@ sub _buildLogPath {
 
   my $config_href = LoadFile($self->configfilePath)
     || die "ERROR: Cannot read YAML file at " . $self->configfilePath . ": $!\n";
-  my $log_name = join '.', $self->output_path, 
-    'annotation', $self->assembly, 'log';
   
-  return path($self->output_path)->child($log_name)->stringify;
+  return join '.', $self->output_path, 
+    'annotation', $self->assembly, 'log';
 }
 
+#@public, but not passed by commandl ine
 has assembly => (
   is => 'ro',
   isa => 'Str',
   required => 0,
+  init_arg => undef,
   lazy => 1,
   builder => '_buildAssembly',
+  metaclass => 'NoGetopt',  # do not attempt to capture this param
 );
 
 with 'Interface::Validator';
@@ -166,9 +165,7 @@ sub BUILD {
   
   $self->createLog;
 
-  #$self->validateState; #exit if errors found via this Validator.pm method
-
-  $self->_buildAnnotatorArguments;
+  $self->validateState; #exit if errors found via this Validator.pm method
 
   $self->_run;
 }
@@ -176,36 +173,29 @@ sub BUILD {
 #I wish for a neater way; but can't find method in MooseX::GetOpt to return just these arguments
 sub _buildAnnotatorArguments {
   my $self = shift;
-
+  my %args;
   for my $attr ( $self->meta->get_all_attributes ) {
     my $name = $attr->name;
-    say "name is $name";
-    if ( defined $self->{$name} ) {
-      $self->setArg($name => $self->$name);
-    }
+    my $value = $attr->get_value($self);
+    next unless $value;
+    $args{$name} = $value;
   }
-  # if ( !$self->isProkaryotic ) {
-  #   return { map { $_ => $self->$_; } qw(snpfile configfile out_file debug verbose) };
-  # }
-  # else {
-  #   return { 'vcf' => $self->snpfile, 'gb' => $self->genBankAnnotation };
-  # }
+
+  return \%args;
 }
 
 sub _run {
   my $self = shift;
-  say "arguments are";
-  p $self->_arguments;
-  my $annotator = Seq->new( $self->_arguments );
+  
+  #pass all arguments, let the annotator figure out what it needs
+  my $annotator = Seq->new( $self->_buildAnnotatorArguments );
   return $annotator->annotate_snpfile;
 }
 
 sub createLog {
   my $self = shift;
-  
-  say "writing log file here: " . $self->logPath if $self->debug;
-  
-  Log::Any::Adapter->set( 'File', $self->logPath );
+
+  Log::Any::Adapter->set( 'File', $self->_logPath );
 }
 
 sub _buildAssembly {
