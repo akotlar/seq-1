@@ -109,22 +109,22 @@ has genes_annotated => (
   },
 );
 
-has write_batch => (
-  is      => 'ro',
-  isa     => 'Int',
-  default => 100000,
-);
-
-has counter => (
+has _counter => (
   is      => 'rw',
   traits  => ['Counter'],
   isa     => 'Num',
   default => 0,
   handles => {
     inc_counter   => 'inc',
-    dec_counter   => 'dec',
     reset_counter => 'reset',
   },
+);
+
+
+has _write_batch => (
+  is      => 'ro',
+  isa     => 'Int',
+  default => 100000,
 );
 
 my %site_2_set_method = (
@@ -135,7 +135,7 @@ my %site_2_set_method = (
 );
 
 #come after all attributes to meet "requires '<attribute>'"
-with 'Seq::Role::ProcessFile', 'Seq::Role::Genotypes', 'Seq::Role::Message';
+with 'Seq::Role::ProcessFile', 'Seq::Role::Genotypes', 'Seq::Role::Message', 'Seq::Role::Progress';
 
 =head2 annotation_snpfile
 
@@ -180,8 +180,18 @@ sub annotate_snpfile {
   #my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
   #get_file_lines is an abstraction of our file reading functionality,
   #whether it's line-by-line, or slurping
-  for my $line ( $self->get_file_lines( $self->snpfile_path ) ) {
-    chomp $line;
+  my $fileLines = $self->get_file_lines( $self->snpfile_path );
+
+  $self->setTotalLinesInFile(scalar @$fileLines);
+    
+  #tell us what to do with progress information
+  $self->setProgressAction(sub{
+    $self->publishMessage({progress => $_[0] } ) if $self->hasPublisher;
+  });
+
+  for my $line ( @$fileLines ) {
+    #expects chomped lines
+
     # taint check the snpfile's data
     my @fields = $self->get_clean_fields($line);
 
@@ -269,7 +279,7 @@ sub annotate_snpfile {
     #   - NOTE: the way the annotations for INS sites now work (due to changes in the
     #     snpfile format, we could change their annotation to one off annotations like
     #     the SNPs
-    if ( $var_type =~ /^(SNP|DEL|INS|MULTIALLELIC)$/s ) {
+    if ( $var_type =~ /(SNP|DEL|INS|MULTIALLELIC)$/s ) {
       my $record_href = $annotator->annotate(
         $chr,        $chr_index, $pos,            $abs_pos,
         $ref_allele, $1,  $all_allele_str, $allele_count,
@@ -281,26 +291,32 @@ sub annotate_snpfile {
           p $record_href;
         }
         push @snp_annotations, $record_href;
-        $self->inc_counter;
+        $self->inc_counter; 
       }
     } elsif ( $var_type ne 'MESS' && $var_type ne 'LOW' ) { #$1 is regex match
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
       $self->tee_logger( 'warn', $msg );
     }
 
+    $self->incProgressCounter;
+
     # write data in batches
-    if ( $self->counter > $self->write_batch ) {
+    if ( $self->_counter > $self->_write_batch ) {
+      $self->publishMessage('Writing ' . 
+        $self->_write_batch . ' lines to disk') if $self->hasPublisher;
+
       $self->print_annotations( \@snp_annotations );
       @snp_annotations = ();
       $self->reset_counter;
     }
-    if ( $self->hasPublisher ) {
-      $self->publishMessage("annotated $chr:$pos");
-    }
+    
   }
 
   # finished printing the final snp annotations
   if (@snp_annotations) {
+    $self->publishMessage('Writing remaining ' . 
+        $self->_counter . ' lines to disk') if $self->hasPublisher;
+
     $self->print_annotations( \@snp_annotations );
     @snp_annotations = ();
   }

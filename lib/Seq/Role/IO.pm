@@ -36,6 +36,7 @@ Extended by: None
 use Moose::Role;
 
 use Carp qw/ confess /;
+use PerlIO::utf8_strict;
 use IO::File;
 use IO::Compress::Gzip qw/ $GzipError /;
 use IO::Uncompress::AnyUncompress qw/ $AnyUncompressError /;
@@ -52,6 +53,7 @@ my $taint_check_regex = qr{\A([\+\,\.\-\=\:\/\t\s\w\d]+)\z};
 my $delimiter = "\t";
 #@param {Path::Tiny} $file : the Path::Tiny object representing a single input file
 #@return file handle
+
 sub get_read_fh {
   my ( $self, $file ) = @_;
   my $fh;
@@ -79,13 +81,26 @@ sub get_read_fh {
   return $fh;
 }
 
+#version based on File::Slurper, advantage is it uses our get_read_fh to support
+#compressed files
 sub get_file_lines {
-  my ( $self, $filePath ) = @_;
-  if ( !-f $filePath ) {
-    confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
-  }
-  return path($filePath)->lines; #returns array
+  my ($self, $filename) = @_;
+
+  my $fh = $self->get_read_fh($filename);
+  
+  my @buf = <$fh>;
+  close $fh;
+  chomp @buf;
+  return \@buf;
 }
+
+# sub get_file_lines {
+#   my ( $self, $filePath ) = @_;
+#   if ( !-f $filePath ) {
+#     confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
+#   }
+#   my @lines = path($filePath)->lines; #returns array
+# }
 
 #another version, seems slower in practice
 #if using this no need to chomp each individual line
