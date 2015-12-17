@@ -1,11 +1,23 @@
 use Benchmark 'timethese';
 use strict;
 use warnings;
-sub eq_alone    { $_[0] eq 'SNP' || $_[0] eq 'INS' || $_[0] eq 'DEL' || $_[0] eq 'MULTIALLELIC'; }
-sub regex       { $_[0] =~ /(SNP|INS|DEL|MULTIALLELIC)$/s }
+sub eq_alone    { if($_[0] eq 'SNP' || $_[0] eq 'INS' || $_[0] eq 'DEL' || $_[0] eq 'MULTIALLELIC'){return 1} return 0; }
+sub regex       { if($_[0] =~ /(SNP|INS|DEL|MULTIALLELIC)$/s){return 1;} return 0; }
+
+my $foundVarType;
 sub indexing {
-  index($_[0], 'SNP') > -1 || index($_[0], 'INS') > -1
-  || index($_[0], 'DEL') > -1 || index($_[0], 'MULTIALLELIC') > -1
+  if(index($_[0], 'SNP') > -1){
+      $foundVarType = 'SNP';
+    } elsif(index($_[0], 'DEL') > -1) {
+      $foundVarType = 'DEL';
+    } elsif(index($_[0], 'INS') > -1) {
+      $foundVarType = 'INS';
+    } elsif(index($_[0], 'MULTIALLELIC') > -1) {
+      $foundVarType = 'MULTIALLELIC';
+    } else {
+      $foundVarType = '';
+    }
+    return $foundVarType;
 }
 
 timethese (2_000_000, {

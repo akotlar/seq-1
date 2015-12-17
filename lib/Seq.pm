@@ -37,6 +37,7 @@ use DDP;
 use Coro;
 
 use Seq::Annotate;
+use Seq::Progress;
 
 has snpfile => (
   is       => 'ro',
@@ -66,18 +67,21 @@ has ignore_unknown_chr => (
   is      => 'ro',
   isa     => 'Bool',
   default => 1,
+  lazy => 1,
 );
 
 has overwrite => (
   is      => 'ro',
   isa     => 'Bool',
   default => 0,
+  lazy => 1,
 );
 
 has debug => (
   is      => 'ro',
   isa     => 'Int',
   default => 0,
+  lazy => 1,
 );
 
 has snp_sites => (
@@ -93,6 +97,7 @@ has snp_sites => (
     kv_snp_sites     => 'kv',
     has_no_snp_sites => 'is_empty',
   },
+  lazy => 1,
 );
 
 has genes_annotated => (
@@ -107,35 +112,18 @@ has genes_annotated => (
     keys_gene_ann   => 'keys',
     has_no_gene_ann => 'is_empty',
   },
+  lazy => 1,
 );
 
-has _counter => (
-  is      => 'rw',
-  traits  => ['Counter'],
-  isa     => 'Num',
-  default => 0,
-  handles => {
-    inc_counter   => 'inc',
-    reset_counter => 'reset',
-  },
-);
-
-
-has _write_batch => (
+has write_batch => (
   is      => 'ro',
   isa     => 'Int',
   default => 100000,
-);
-
-my %site_2_set_method = (
-  DEL          => 'set_del_site',
-  INS          => 'set_ins_site',
-  MULTIALLELIC => 'set_snp_site',
-  SNP          => 'set_snp_site',
+  lazy => 1,
 );
 
 #come after all attributes to meet "requires '<attribute>'"
-with 'Seq::Role::ProcessFile', 'Seq::Role::Genotypes', 'Seq::Role::Message', 'Seq::Role::Progress';
+with 'Seq::Role::ProcessFile', 'Seq::Role::Genotypes', 'Seq::Role::Message';
 
 =head2 annotation_snpfile
 
@@ -146,7 +134,7 @@ B<annotate_snpfile> - annotates the snpfile that was supplied to the Seq object
 sub annotate_snpfile {
   my $self = shift;
 
-  $self->tee_logger( 'info', 'about to load annotation data' );
+  $self->tee_logger( 'info', 'Loading annotation data' );
 
   my $annotator = Seq::Annotate->new_with_config(
     {
@@ -172,32 +160,55 @@ sub annotate_snpfile {
 
   $self->tee_logger( 'info', "Loaded assembly " . $annotator->genome_name );
 
+  #a file slurper that is compression-aware
+  $self->tee_logger( 'info', "Reading input file" );
+  
+  my $fileLines = $self->get_file_lines( $self->snpfile_path );
+  
+  $self->tee_logger( 'info',
+    sprintf("Finished reading input file, found %s lines", @$fileLines)
+  );
+
+  my $defPos = -9; #default value, indicating out of bounds or not set
   # variables
   my ( %ids, @sample_ids, @snp_annotations ) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
-    ( -9, -9, -9, -9, -9 );
+    ( $defPos, $defPos, $defPos, $defPos, $defPos );
+  
+  # progress counters
+  my ($pubProg, $writeProg);
 
-  my $foundVarType;
-  #my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
-  #get_file_lines is an abstraction of our file reading functionality,
-  #whether it's line-by-line, or slurping
-  my $fileLines = $self->get_file_lines( $self->snpfile_path );
+  if ($self->hasPublisher) {
+    $pubProg = Seq::Progress->new({
+      progressBatch => 200,
+      fileLines => scalar @$fileLines,
+      progressAction => sub {
+        $pubProg->recordProgress($pubProg->progressCounter);
+        $pubProg->publishMessage({progress => $pubProg->progressFraction } )
+      },
+    })
+  }
+  
+  $writeProg = Seq::Progress->new({
+      progressBatch => $self->write_batch,
+      progressAction => sub {
+        $self->publishMessage('Writing ' . 
+          $self->write_batch . ' lines to disk') if $self->hasPublisher;
+        $self->print_annotations( \@snp_annotations );
+        @snp_annotations = ();
+      },
+    })
+  }
 
-  $self->setTotalLinesInFile(scalar @$fileLines);
-    
-  #tell us what to do with progress information
-  $self->setProgressAction(sub{
-    $self->publishMessage({progress => $_[0] } ) if $self->hasPublisher;
-  });
-
+  my (@fields, $abs_pos, $foundVarType);
   for my $line ( @$fileLines ) {
     #if we wish to save cycles, can move this to original position, below
     #many conditionals, and then upon completion, set progress(1).
-    $self->incProgressCounter;
+    $pubProg->incProgressCounter if $pubProg;
     #expects chomped lines
 
     # taint check the snpfile's data
-    my @fields = $self->get_clean_fields($line);
+    @fields = $self->get_clean_fields($line);
 
     # skip lines that don't return any usable data
     next unless $#fields;
@@ -225,44 +236,35 @@ sub annotate_snpfile {
     my ( $het_ids, $hom_ids, $id_genos_href ) =
       $self->_minor_allele_carriers( \@fields, \%ids, \@sample_ids, $ref_allele );
 
-    my $abs_pos;
-
     # check that $chr is an allowable chromosome
-    unless ( exists $chr_len_href->{$chr} ) {
-      my $msg =
-        sprintf( "Error: unrecognized chromosome in input: '%s', pos: %d", 
-          $chr, $pos );
-      # decide if we plow through the error or if we stop
-      if ( $self->ignore_unknown_chr ) {
-        $self->tee_logger( 'warn', $msg );
-        next;
-      }
-      else {
-        $self->tee_logger( 'error', $msg );
-      }
+    # decide if we plow through the error or if we stop
+    # if we allow plow through, don't write log, to avoid performance hit
+    unless ( exists $chr_len_href->{$chr} || $self->ignore_unknown_chr ) {
+      $self->tee_logger( 'error', 
+        sprintf( "Error: unrecognized chromosome: '%s', pos: %d", $chr, $pos )
+      );
     }
 
     # determine the absolute position of the base to annotate
     if ( $chr eq $last_chr ) {
       $abs_pos = $chr_offset + $pos - 1;
-    }
-    else {
+    } else {
       $chr_offset = $chr_len_href->{$chr};
       $chr_index  = $chr_index{$chr};
       $next_chr   = $next_chr_href->{$chr};
+      
       if ( defined $next_chr ) {
         $next_chr_offset = $chr_len_href->{$next_chr};
-      }
-      else {
-        $next_chr        = -9;
+      } else {
+        $next_chr        = $defPos;
         $next_chr_offset = $genome_len;
       }
 
       # check that we set the needed variables for determining position
       unless ( defined $chr_offset and defined $chr_index ) {
-        my $msg =
-          sprintf( "Error: unable to set 'chr_offset' or 'chr_index' for: '%s'", $chr );
-        $self->tee_logger( 'error', $msg );
+        $self->tee_logger( 'error',
+          "Error: Couldn't set 'chr_offset' or 'chr_index' for: %chr"
+        );
       }
       $abs_pos = $chr_offset + $pos - 1;
     }
@@ -310,31 +312,22 @@ sub annotate_snpfile {
         $self->inc_counter; 
       }
     } elsif ( index($var_type, 'MESS') == -1 && index($var_type,'LOW') == -1 ) {  
-      my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
-      $self->tee_logger( 'warn', $msg );
+      $self->tee_logger( 'warn', "Unrecognized variant type: $var_type" );
     }
-
-    # write data in batches
-    if ( $self->_counter > $self->_write_batch ) {
-      $self->publishMessage('Writing ' . 
-        $self->_write_batch . ' lines to disk') if $self->hasPublisher;
-
-      $self->print_annotations( \@snp_annotations );
-      @snp_annotations = ();
-      $self->reset_counter;
-    }
-    
+    $writeProg->incProgressCounter;
   }
 
   # finished printing the final snp annotations
   if (@snp_annotations) {
-    $self->publishMessage('Writing remaining ' . 
-        $self->_counter . ' lines to disk') if $self->hasPublisher;
+    $self->tee_logger('info', 
+      sprintf('Writing remaining %s lines to disk', $writeProg->progressCounter)
+    );
 
     $self->print_annotations( \@snp_annotations );
     @snp_annotations = ();
   }
 
+  $self->tee_logger('info', 'Summarizing statistics');
   $annotator->summarizeStats;
 
   if ( $self->debug ) {
@@ -347,10 +340,10 @@ sub annotate_snpfile {
   # TODO: decide on the final return value, at a minimum we need the sample-level summary
   #       we may want to consider returning the full experiment hash, in case we do
   #       interesting things.
-  if ( $annotator->discordant_bases ) {
-    $self->tee_logger( 'warn',
-      'We found ' . $annotator->discordant_bases . ' discordant_bases' );
-  }
+  $self->tee_logger( 'info',
+    sprintf('We found %s discordant_bases', $annotator->discordant_bases )
+  ) if $annotator->discordant_bases;
+
   return $annotator->statsRecord;
 }
 
