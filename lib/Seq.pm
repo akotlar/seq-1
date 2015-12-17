@@ -279,7 +279,8 @@ sub annotate_snpfile {
     #   - NOTE: the way the annotations for INS sites now work (due to changes in the
     #     snpfile format, we could change their annotation to one off annotations like
     #     the SNPs
-    if ( $var_type =~ /(SNP|DEL|INS|MULTIALLELIC)$/s ) {
+    if ( index($var_type, 'SNP') > -1 || index($var_type, 'DEL') > -1
+    || index($var_type, 'INS') > -1 || index($var_type, 'MULTIALLELIC') > -1 ) {
       my $record_href = $annotator->annotate(
         $chr,        $chr_index, $pos,            $abs_pos,
         $ref_allele, $1,  $all_allele_str, $allele_count,
@@ -293,7 +294,7 @@ sub annotate_snpfile {
         push @snp_annotations, $record_href;
         $self->inc_counter; 
       }
-    } elsif ( $var_type ne 'MESS' && $var_type ne 'LOW' ) { #$1 is regex match
+    } elsif ( index($var_type, 'MESS') == -1 && index($var_type,'LOW') == -1 ) {  
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
       $self->tee_logger( 'warn', $msg );
     }
