@@ -2,7 +2,7 @@ use Benchmark 'timethese';
 use strict;
 use warnings;
 sub eq_alone    { $_[0] eq 'SNP' || $_[0] eq 'INS' || $_[0] eq 'DEL' || $_[0] eq 'MULTIALLELIC'; }
-sub regex       { $_[0] =~ /^(SNP|INS|DEL|MULTIALLELIC)/s }
+sub regex       { $_[0] =~ /(SNP|INS|DEL|MULTIALLELIC)$/s }
 sub indexing {
   index($_[0], 'SNP') > -1 || index($_[0], 'INS') > -1
   || index($_[0], 'DEL') > -1 || index($_[0], 'MULTIALLELIC') > -1

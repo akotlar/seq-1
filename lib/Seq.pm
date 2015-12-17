@@ -177,6 +177,7 @@ sub annotate_snpfile {
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( -9, -9, -9, -9, -9 );
 
+  my $foundVarType;
   #my $snpfile_fh = $self->get_read_fh($self->snpfile_path);
   #get_file_lines is an abstraction of our file reading functionality,
   #whether it's line-by-line, or slurping
@@ -279,11 +280,22 @@ sub annotate_snpfile {
     #   - NOTE: the way the annotations for INS sites now work (due to changes in the
     #     snpfile format, we could change their annotation to one off annotations like
     #     the SNPs
-    if ( index($var_type, 'SNP') > -1 || index($var_type, 'DEL') > -1
-    || index($var_type, 'INS') > -1 || index($var_type, 'MULTIALLELIC') > -1 ) {
+    if(index($var_type, 'SNP') > -1){
+      $foundVarType = 'SNP';
+    } elsif(index($var_type, 'DEL') > -1) {
+      $foundVarType = 'DEL';
+    } elsif(index($var_type, 'INS') > -1) {
+      $foundVarType = 'INS';
+    } elsif(index($var_type, 'MULTIALLELIC') > -1) {
+      $foundVarType = 'MULTIALLELIC';
+    } else {
+      $foundVarType = '';
+    }
+
+    if ($foundVarType) {
       my $record_href = $annotator->annotate(
         $chr,        $chr_index, $pos,            $abs_pos,
-        $ref_allele, $1,  $all_allele_str, $allele_count,
+        $ref_allele, $foundVarType,  $all_allele_str, $allele_count,
         $het_ids,    $hom_ids,   $id_genos_href
       );
       if ( defined $record_href ) {
@@ -336,7 +348,7 @@ sub annotate_snpfile {
   #       interesting things.
   if ( $annotator->discordant_bases ) {
     $self->tee_logger( 'warn',
-      'We found ' . $self->discordant_bases . ' discordant_bases' );
+      'We found ' . $annotator->discordant_bases . ' discordant_bases' );
   }
   return $annotator->statsRecord;
 }
