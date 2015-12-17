@@ -166,7 +166,7 @@ sub annotate_snpfile {
   my $fileLines = $self->get_file_lines( $self->snpfile_path );
   
   $self->tee_logger( 'info',
-    sprintf("Finished reading input file, found %s lines", @$fileLines)
+    sprintf("Finished reading input file, found %s lines", scalar @$fileLines)
   );
 
   my $defPos = -9; #default value, indicating out of bounds or not set
@@ -184,7 +184,7 @@ sub annotate_snpfile {
       fileLines => scalar @$fileLines,
       progressAction => sub {
         $pubProg->recordProgress($pubProg->progressCounter);
-        $pubProg->publishMessage({progress => $pubProg->progressFraction } )
+        $self->publishMessage({progress => $pubProg->progressFraction } )
       },
     });
   }
@@ -308,12 +308,11 @@ sub annotate_snpfile {
           p $record_href;
         }
         push @snp_annotations, $record_href;
-        $self->inc_counter; 
+        $writeProg->incProgressCounter;
       }
     } elsif ( index($var_type, 'MESS') == -1 && index($var_type,'LOW') == -1 ) {  
       $self->tee_logger( 'warn', "Unrecognized variant type: $var_type" );
     }
-    $writeProg->incProgressCounter;
   }
 
   # finished printing the final snp annotations

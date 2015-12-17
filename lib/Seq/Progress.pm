@@ -1,4 +1,4 @@
-package Seq::Role::Progress;
+package Seq::Progress;
 
 use Moose;
 use strict;
