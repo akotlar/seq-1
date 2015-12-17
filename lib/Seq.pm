@@ -191,6 +191,9 @@ sub annotate_snpfile {
   });
 
   for my $line ( @$fileLines ) {
+    #if we wish to save cycles, can move this to original position, below
+    #many conditionals, and then upon completion, set progress(1).
+    $self->incProgressCounter;
     #expects chomped lines
 
     # taint check the snpfile's data
@@ -310,8 +313,6 @@ sub annotate_snpfile {
       my $msg = sprintf( "Error: unrecognized variant var_type: '%s'", $var_type );
       $self->tee_logger( 'warn', $msg );
     }
-
-    $self->incProgressCounter;
 
     # write data in batches
     if ( $self->_counter > $self->_write_batch ) {
