@@ -186,19 +186,18 @@ sub annotate_snpfile {
         $pubProg->recordProgress($pubProg->progressCounter);
         $pubProg->publishMessage({progress => $pubProg->progressFraction } )
       },
-    })
+    });
   }
   
   $writeProg = Seq::Progress->new({
-      progressBatch => $self->write_batch,
-      progressAction => sub {
-        $self->publishMessage('Writing ' . 
-          $self->write_batch . ' lines to disk') if $self->hasPublisher;
-        $self->print_annotations( \@snp_annotations );
-        @snp_annotations = ();
-      },
-    })
-  }
+    progressBatch => $self->write_batch,
+    progressAction => sub {
+      $self->publishMessage('Writing ' . 
+        $self->write_batch . ' lines to disk') if $self->hasPublisher;
+      $self->print_annotations( \@snp_annotations );
+      @snp_annotations = ();
+    },
+  });
 
   my (@fields, $abs_pos, $foundVarType);
   for my $line ( @$fileLines ) {
