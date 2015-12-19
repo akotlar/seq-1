@@ -83,7 +83,7 @@ sub _buildMessagePublisher {
 sub publishMessage {
   my ( $self, $msg ) = @_;
   #because predicates don't trigger builders, need to check hasPublisherAddress
-  return unless $self->messanger && $self->publisherAddress;
+  return unless $self->messanger;
   $self->messanger->{message}{data} = $msg;
   $self->notify(
     [ 'publish', $self->messanger->{event}, encode_json( $self->messanger ) ] );
@@ -92,12 +92,14 @@ sub publishMessage {
 sub tee_logger {
   my ( $self, $log_method, $msg ) = @_;
 
+  #interestingly some kind of message bufferring occurs, such that
+  #this will actually make it through to the rest of the tee_logger function
+  if ( $log_method eq 'error' ) {
+    return confess "\n$msg\n";
+  }
+
   $self->publishMessage($msg);
   $self->_logger->$log_method($msg);
-
-  if ( $log_method eq 'error' ) {
-    confess "\n$msg\n";
-  }
 }
 
 no Moose::Role;
