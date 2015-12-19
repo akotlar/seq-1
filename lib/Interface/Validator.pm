@@ -119,19 +119,20 @@ sub _validateInputFile {
 
   my @header_fields = $self->get_clean_fields($firstLine);
 
-  if(!@header_fields || !$self->checkHeader(\@header_fields) ) {
-    
-    $self->tee_logger('error', "Vcf->ped conversion failed") 
+  if(!@header_fields || !$self->checkHeader(\@header_fields) ) {  
+    return $self->tee_logger('error', "Vcf->ped conversion failed") 
       unless $self->convertToPed;
 
-    $self->tee_logger('error', "Binary plink -> Snp conversion failed")
+    return $self->tee_logger('error', "Binary plink -> Snp conversion failed")
      unless $self->convertToSnp;
   }
+  return 1;
 }
 
 sub convertToPed {
   my ($self, $attempts) = @_;
 
+  $self->tee_logger('info', 'Converting input file to binary plink format');
   my $out = $self->_convertFileBasePath;
   return if system($self->_vcf2ped . " --vcf " . $self->snpfilePath . " --out $out");
   
@@ -155,11 +156,15 @@ sub convertToSnp {
     '-fam ', $cFiles->{fam}, 
     '-out ', $out, '-two ', $twobit);
 
+  $self->tee_logger('info', 'Converting from binary plink to snp format');
+
   # returns a value only upon error
   return if system($self->_ped2snp . ' convert ' . join(' ', @args) );
 
   #because the linkage2Snp converted auto-appends a .snp file extension
   $self->setSnpfile($out.'.snp');
+
+  $self->tee_logger('info', 'Successfully converted to snp format');
   return 1;
 }
 

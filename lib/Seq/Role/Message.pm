@@ -91,15 +91,13 @@ sub publishMessage {
 
 sub tee_logger {
   my ( $self, $log_method, $msg ) = @_;
-  $self->publishMessage($msg);
 
-  async {
-    $self->_logger->$log_method($msg);
+  $self->publishMessage($msg);
+  $self->_logger->$log_method($msg);
+
+  if ( $log_method eq 'error' ) {
+    confess "\n$msg\n";
   }
-  # redundant, _logger should handle exceptions
-  # if ( $log_method eq 'error' ) {
-  #   confess $msg . "\n";
-  # }
 }
 
 no Moose::Role;

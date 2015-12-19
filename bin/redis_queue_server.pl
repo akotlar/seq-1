@@ -24,7 +24,7 @@ use threads::shared;
 use Log::Any::Adapter;
 use File::Basename;
 use DDP;
-use Seq;
+use Interface;
 
 use Thread::Queue;
 use IO::Socket;
@@ -200,7 +200,7 @@ sub handleJob {
       p $inputHref;
     }
     # create the annotator
-    my $annotate_instance = Seq->new($inputHref);
+    my $annotate_instance = Interface->new($inputHref);
     my $result            = $annotate_instance->annotate_snpfile;
 
     die 'Error: Nothing returned from annotate_snpfile' unless defined $result;

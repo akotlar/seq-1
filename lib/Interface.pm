@@ -19,7 +19,7 @@ use YAML::XS qw/LoadFile/;
 use Path::Tiny;
 
 use Getopt::Long::Descriptive;
-with 'MooseX::Getopt::Usage','MooseX::Getopt::Usage::Role::Man';
+with 'MooseX::Getopt::Usage','MooseX::Getopt::Usage::Role::Man', 'Seq::Role::Message';
 
 #without this, Getopt won't konw how to handle AbsFile, AbsPath, and you'll get
 #Invalid 'config_file' : File '/mnt/icebreaker/data/home/akotlar/my_projects/seq/1' does not exist
@@ -89,9 +89,16 @@ has debug => (
   metaclass   => 'Getopt',
  );
 
+
+subtype HashRefJson => as 'HashRef'; #subtype 'HashRefJson', as 'HashRef', where { ref $_ eq 'HASH' };
+coerce HashRefJson => from 'Str' => via { from_json $_ };
+subtype ArrayRefJson => as 'ArrayRef';
+coerce ArrayRefJson => from 'Str' => via { from_json $_ };
+
 has messanger => (
   is => 'rw',
   isa => 'HashRefJson',
+  coerce => 1,
   required => 0,
   metaclass   => 'Getopt',
   documentation => 
@@ -102,6 +109,7 @@ has messanger => (
 has publisherAddress => (
   is => 'ro',
   isa => 'ArrayRefJson',
+  coerce => 1,
   required => 0,
   metaclass   => 'Getopt',
   documentation => 
@@ -120,11 +128,6 @@ has ignore_unknown_chr => (
 );
 
 ##################Not set in command line######################
-
-subtype HashRefJson => as 'HashRef';
-coerce HashRefJson => from 'Str' => via { from_json $_ };
-subtype ArrayRefJson => as 'ArrayRef';
-coerce ArrayRefJson => from 'Str' => via { from_json $_ };
 
 has _logPath => (
   metaclass => 'NoGetopt',  # do not attempt to capture this param
@@ -165,7 +168,8 @@ sub BUILD {
   
   $self->createLog;
 
-  $self->validateState; #exit if errors found via this Validator.pm method
+  #exit if errors found via this Validator.pm method
+  $self->validateState; 
 
   $self->_run;
 }
