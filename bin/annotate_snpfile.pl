@@ -8,6 +8,7 @@ use Interface;
 use Getopt::Long;
 
 my $app = Interface->new_with_options();
+$app->annotate_snpfile;
 =head1 NAME
 
 snpfile_annotate_mongo_command_line.pl

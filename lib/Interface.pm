@@ -6,7 +6,7 @@ package Interface;
 use File::Basename;
 
 use Moose;
-use Seq;
+extends 'Seq';
 use MooseX::Types::Path::Tiny qw/Path File AbsFile AbsPath/;
 use Moose::Util::TypeConstraints;
 use Log::Any::Adapter;
@@ -169,9 +169,7 @@ sub BUILD {
   $self->createLog;
 
   #exit if errors found via this Validator.pm method
-  $self->validateState; 
-
-  $self->_run;
+  $self->validateState;
 }
 
 #I wish for a neater way; but can't find method in MooseX::GetOpt to return just these arguments
@@ -188,14 +186,6 @@ sub _buildAnnotatorArguments {
   return \%args;
 }
 
-sub _run {
-  my $self = shift;
-  
-  #pass all arguments, let the annotator figure out what it needs
-  my $annotator = Seq->new( $self->_buildAnnotatorArguments );
-  return $annotator->annotate_snpfile;
-}
-
 sub createLog {
   my $self = shift;
 
@@ -205,8 +195,9 @@ sub createLog {
 sub _buildAssembly {
   my $self = shift;
 
-  my $config_href = LoadFile($self->configfilePath)
-    || die "ERROR: Cannot read YAML file at " . $self->configfilePath . ": $!\n";
+  my $config_href = LoadFile($self->configfilePath) || $self->tee_logger('error',
+    sprintf("ERROR: Cannot read YAML file at %s", $self->configfilePath) 
+  );
   
   return $config_href->{genome_name};
 }
