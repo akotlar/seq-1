@@ -171,11 +171,19 @@ sub compress_output {
   my $pigz = which('pigz');
   if ($pigz) { $tar = "$tar --use-compress-program=$pigz"; } #-I $pigz
 
+  # transform #bar/foo.snp to bar/foo
+  # only affects one extension so foo.snp.zip -> foo.snp
+  # I did this because some user (I) use periods to denote file features
+  # and it would annoy me if those were stripped
+  my $baseName = $self->out_file->parent->basename;
+  my $strippedBaseName = $self->out_file->parent->basename(qr/\.\w*/);
   my $outcome =
-    system(sprintf("$tar -cf %s -C %s %s --exclude '.*'",
-      $self->output_path.$self->_compressExtension,
-      $self->out_file->parent->parent->stringify, #p/baz/bar/foo.snp -> p/baz
-      $self->out_file->parent->basename, #bar
+    system(sprintf("$tar -cf %s -C %s %s --transform s/%s/%s/ --exclude '.*'",
+      $strippedBaseName . $self->_compressExtension,
+      $self->out_file->parent(2)->stringify, #p/baz/bar/foo.snp -> p/baz
+      $baseName, #bar
+      $baseName,
+      $strippedBaseName
     ) );
 
   $self->tee_logger( 'warn', "Zipping failed with $?" ) unless $outcome == 0;

@@ -2,7 +2,8 @@ use strict;
 use warnings;
 use 5.10.0;
 
-use Test::More tests => 10;
+use Path::Tiny;
+use Test::More tests => 12;
 
 sub _build_headers {
   return {
@@ -44,4 +45,11 @@ ok($#{$headersHref->{snp_1} } == 4, 'Can dereference array ref and get last inde
 
 
 ok(@{$headersHref->{snp_2} }[1] eq 'Position', 'Can deference array ref');
+
+my $name = path("foo.txt")->basename(qr/\.\w*/); 
+my $name2 = path("foo.bar.baz.txt")->basename(qr/\.\w*/); 
+
+is($name, 'foo');
+is($name2,'foo.bar.baz');
+
 
