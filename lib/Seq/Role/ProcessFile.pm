@@ -17,6 +17,7 @@ use List::MoreUtils qw(firstidx);
 use namespace::autoclean;
 use DDP;
 requires 'output_path';
+requires 'out_file';
 requires 'debug';
 
 #requires get_write_bin_fh from Seq::Role::IO, can't formally requires it in a role
@@ -167,15 +168,15 @@ sub compress_output {
   # my($filename, $dirs) = fileparse($self->output_path);
 
   my $tar = which('tar') or $self->tee_logger( 'error', 'No tar program found' );
-  my $pigz = which('pigz') || which('gzip');
+  my $pigz = which('pigz');
   if ($pigz) { $tar = "$tar --use-compress-program=$pigz"; } #-I $pigz
 
   my $outcome =
-    system( "$tar -cf "
-      . $self->output_path
-      . $self->_compressExtension . " "
-      . $self->output_path
-      . "*" );
+    system(sprintf("$tar -cf %s -C %s %s --exclude '.*'",
+      $self->output_path.$self->_compressExtension,
+      $self->out_file->parent->parent->stringify, #p/baz/bar/foo.snp -> p/baz
+      $self->out_file->parent->basename, #bar
+    ) );
 
   $self->tee_logger( 'warn', "Zipping failed with $?" ) unless $outcome == 0;
 }
