@@ -225,10 +225,10 @@ sub _load_genome_sized_track {
     }
   );
 
-  my $msg = sprintf( "read genome-sized track '%s' of length %d from file: %s",
-    $gst->name, $genome_length, $idx_file );
+  my $msg = sprintf( "Read genome-sized track '%s' of length %d", 
+    $gst->name, $genome_length);
   $self->tee_logger( 'info', $msg );
-  say $msg if $self->debug;
+  say $msg . " from file: $idx_file" if $self->debug;
 
   return $obj;
 }

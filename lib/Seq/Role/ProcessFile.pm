@@ -178,12 +178,12 @@ sub compress_output {
   my $baseName = $self->out_file->parent->basename;
   my $strippedBaseName = $self->out_file->parent->basename(qr/\.\w*/);
   my $outcome =
-    system(sprintf("$tar -cf %s -C %s %s --transform s/%s/%s/ --exclude '.*'",
+    system(sprintf("$tar -cf %s -C %s %s --exclude '.*'",
       $strippedBaseName . $self->_compressExtension,
       $self->out_file->parent(2)->stringify, #p/baz/bar/foo.snp -> p/baz
       $baseName, #bar
-      $baseName,
-      $strippedBaseName
+      # $baseName,
+      # $strippedBaseName
     ) );
 
   $self->tee_logger( 'warn', "Zipping failed with $?" ) unless $outcome == 0;
