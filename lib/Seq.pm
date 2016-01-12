@@ -238,7 +238,8 @@ sub annotate_snpfile {
     # check that $chr is an allowable chromosome
     # decide if we plow through the error or if we stop
     # if we allow plow through, don't write log, to avoid performance hit
-    unless ( exists $chr_len_href->{$chr} || $self->ignore_unknown_chr ) {
+    if(! exists $chr_len_href->{$chr} ) {
+      next if $self->ignore_unknown_chr;
       $self->tee_logger( 'error', 
         sprintf( "Error: unrecognized chromosome: '%s', pos: %d", $chr, $pos )
       );
@@ -262,7 +263,7 @@ sub annotate_snpfile {
       # check that we set the needed variables for determining position
       unless ( defined $chr_offset and defined $chr_index ) {
         $self->tee_logger( 'error',
-          "Error: Couldn't set 'chr_offset' or 'chr_index' for: %chr"
+          "Error: Couldn't set 'chr_offset' or 'chr_index' for: $chr"
         );
       }
       $abs_pos = $chr_offset + $pos - 1;
