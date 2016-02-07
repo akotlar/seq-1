@@ -269,7 +269,8 @@ sub annotate_snpfile {
     }
 
     if ( $abs_pos > $next_chr_offset ) {
-      my $msg = "Error: $chr:$pos is beyond the end of $chr $next_chr_offset";
+      my $msg = "Error: $chr:$pos is beyond the end of $chr $next_chr_offset\n
+        Did you choose the right reference assembly?";
       $self->tee_logger( 'error', $msg );
     }
 
