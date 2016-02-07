@@ -171,22 +171,25 @@ sub compress_output {
   my $pigz = which('pigz');
   if ($pigz) { $tar = "$tar --use-compress-program=$pigz"; } #-I $pigz
 
-  # transform #bar/foo.snp to bar/foo
-  # only affects one extension so foo.snp.zip -> foo.snp
-  # I did this because some user (I) use periods to denote file features
-  # and it would annoy me if those were stripped
-  my $baseName = $self->out_file->parent->basename;
-  my $strippedBaseName = $self->out_file->parent->basename(qr/\.\w*/);
-  my $outcome =
-    system(sprintf("$tar -cf %s -C %s %s --exclude '.*'",
-      $strippedBaseName . $self->_compressExtension,
-      $self->out_file->parent(2)->stringify, #p/baz/bar/foo.snp -> p/baz
-      $baseName, #bar
-      # $baseName,
-      # $strippedBaseName
-    ) );
+  my $baseFolderName = $self->out_file->parent->basename;
+  my $baseFileName = $self->out_file->basename;
+  my $compressName = $baseFileName . $self->_compressExtension;
 
-  $self->tee_logger( 'warn', "Zipping failed with $?" ) unless $outcome == 0;
+  my $outcome =
+    system(sprintf("$tar -cf %s -C %s %s --transform=s/%s/%s/ --exclude '.*' --exclude %s; mv %s %s",
+      $compressName,
+      $self->out_file->parent(2)->stringify, #change to parent of folder containing output files
+      $baseFolderName, #the name of the directory we want to compress
+      #transform and exclude
+      $baseFolderName, #inside the tarball, transform  that directory name
+      $baseFileName, #to one named as our file basename
+      $compressName, #and don't include our new compressed file in our tarball
+      #move our file into the original output directory
+      $compressName,
+      $self->out_file->parent->stringify,
+    ) );
+ 
+  $self->tee_logger( 'warn', "Zipping failed with $?" ) unless !$outcome;
 }
 
 sub checkHeader {
