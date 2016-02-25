@@ -34,7 +34,18 @@ has countKey => (
   default => 'count',
 );
 
+has _transitionTransversionKeysAref => (
+  is       => 'ro',
+  isa      => 'ArrayRef[Str]',
+  traits   => ['Array'],
+  handles  => { trTvKey => 'get', },
+  default  => sub { [ 'Transversions', 'Transitions' ] },
+  lazy     => 1,
+  init_arg => undef,
+);
+
 #href because the value corrsponds to the indices of _transitionTranvserionKeysAref
+#so transition has a value of 1
 has _transitionTypesHref => (
   is       => 'ro',
   isa      => 'HashRef[Int]',
@@ -45,14 +56,18 @@ has _transitionTypesHref => (
   init_arg => undef
 );
 
-has _transitionTransversionKeysAref => (
+#doing this explicitly/atomicly, rather than relying on var_type
+has _transversionTypesHref => (
   is       => 'ro',
-  isa      => 'ArrayRef[Str]',
-  traits   => ['Array'],
-  handles  => { trTvKey => 'get', },
-  default  => sub { [ 'Transversions', 'Transitions' ] },
+  isa      => 'HashRef[Int]',
+  traits   => ['Hash'],
+  handles  => { isTv => 'get', },
+  default  => sub { 
+    return { AT => 0, TA => 0, AC => 0, CA => 0, GT => 0, TG => 0, GC => 0, 
+      CG => 0,  S => 0, W => 0, K => 0, M => 0 } 
+  },
   lazy     => 1,
-  init_arg => undef,
+  init_arg => undef
 );
 
 has _snpAnnotationsAref => (
@@ -162,9 +177,22 @@ sub storeCount {
 #as a non-snp site
 sub countCustomFeatures {
   my ( $self, $targetHref, $refAllele, $geno, $snpKey ) = @_;
-  my $trTvKey =
-    $self->trTvKey( $self->isTr($geno) || $self->isTr( $refAllele . $geno ) || 0 );
-  $targetHref->{$trTvKey}{ $self->statsKey }{ $self->countKey } += 1;
+  my $trTvKey = $self->isTr($geno);
+  if(!defined $trTvKey) {
+    $trTvKey = $self->isTr( $refAllele . $geno );
+  }
+
+  if(!defined $trTvKey) {
+    $trTvKey = $self->isTv($geno);
+
+    if(!defined $trTvKey) {
+      $trTvKey = $self->isTv( $refAllele . $geno );
+    }
+  }
+  
+  $trTvKey = $self->trTvKey($trTvKey) if defined $trTvKey;
+
+  $targetHref->{$trTvKey}{ $self->statsKey }{ $self->countKey } += 1 if defined $trTvKey;
 
   return unless defined $snpKey;
   $targetHref->{$snpKey}{ $self->statsKey }{ $self->countKey } += 1;

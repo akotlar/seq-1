@@ -87,7 +87,7 @@ my $Qdone : shared = new Thread::Queue;
 my $done : shared  = 0;
 
 #my $info = Sys::Info->new;
-my $cpu = 4; #$info->device( CPU => my %options );
+my $cpu = 1; #$info->device( CPU => my %options );
 
 my $verbose : shared = 1;
 

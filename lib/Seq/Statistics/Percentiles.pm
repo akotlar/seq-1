@@ -85,7 +85,7 @@ around 'getRatioID' => sub {
 around 'getRatio' => sub {
   my $orig = shift;
   my $self = shift;
-  return $self->$orig(@_)->[1];
+  return $self->$orig(@_)->[1];#the ratio is in pos 1
 };
 
 around 'removeRatio' => sub {
@@ -114,8 +114,8 @@ has percentiles => (
 around 'setPercentile' => sub {
   my $orig = shift;
   my $self = shift;
-  return $self->$orig(
-    [ $self->getThresholdName( $_[0] ), $self->_calcPercentile( $_[1] ) ] );
+  return $self->$orig([ $self->getThresholdName( $_[0] ),
+    $self->_calcPercentile( $_[1] ) ] );
 };
 
 around 'getPercName' => sub {
@@ -210,37 +210,49 @@ sub screenRatios {
   my $self = shift;
   my @newArray;
   for my $ratio ( $self->allRatios ) {
-    if ( $ratio->[1] < 0 ) { #inf check;
-      $self->blacklistID( $ratio->[0] );
-      next;
-    }
+    # don't do this; inf is a valid ratio, and the 5th, 95th could be inf
+    # if ( $ratio->[1] < 0 ) { #inf check;
+    #   $self->blacklistID( $ratio->[0] );
+    #   next;
+    # }
     push @newArray, $ratio;
   }
 
   $self->ratios( \@newArray );
 }
 
+#todo: should we return -9 for missing data?
 sub _calcPercentile {
   my ( $self, $threshold ) = @_;
 
-  my $lastIndex  = $self->lastRatioIdx;
-  my $maybeIndex = $lastIndex * $threshold;
-  my $floor      = floor($maybeIndex);
-  my $ceil       = ceil($maybeIndex);
+  if($self->numRatios == 0) {
+    return;
+  }
 
-  if ( $ceil == $floor ) {
-    say "Ratio for $threshold: index $ceil, val " . $self->getRatio($ceil)
-      if $self->debug;
-    return $self->getRatio($ceil);
+  my $fractionalIdx = $self->lastRatioIdx * $threshold;
+
+  my $floorIdx = floor($fractionalIdx);
+  my $ceilIdx = ceil($fractionalIdx);
+
+  if ( $ceilIdx  == $floorIdx ) {
+    say "Ratio for $threshold: index $ceilIdx, val " 
+      . $self->getRatio($ceilIdx) if $self->debug;
+    return $self->getRatio($ceilIdx);
   }
   else {
-    #distance interpolated composite value
-    my $lowerVal  = $self->getRatio($floor) * ( $maybeIndex - $floor );
-    my $higherVal = $self->getRatio($ceil) *  ( $ceil - $maybeIndex );
+    # if we wish to use rank interpololation
+    # my $fractionalRank = $self->numRatios * $threshold;
+    # my $awayFromFloor = $fractionalRank - floor($fractionalRank);
 
-    say "Ratio for $threshold, btwn indices $ceil & $floor, ratio has"
-      . ( $lowerVal + $higherVal )
-      if $self->debug;
+    # my $higherVal  = $self->getRatio($ceilIdx) * $awayFromFloor;
+    # my $lowerVal = $self->getRatio($floorIdx) *  (1 - $awayFromFloor);
+
+    #index interpolation
+    my $higherVal  = $self->getRatio($ceilIdx) * ($fractionalIdx - $floorIdx);
+    my $lowerVal = $self->getRatio($floorIdx) *  ($ceilIdx - $fractionalIdx);
+    
+    say "Ratio for $threshold, btwn indices $ceilIdx & $floorIdx, interp to "
+      . ( $lowerVal + $higherVal )  if $self->debug;
     return $lowerVal + $higherVal;
   }
 }

@@ -80,7 +80,7 @@ sub summarize {
   }
 
   if ( $self->hasNoRatios ) {
-    #message
+    say "has no ratios" if $self->debug;
     return;
   }
 
