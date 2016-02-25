@@ -89,6 +89,16 @@ my $done : shared  = 0;
 #my $info = Sys::Info->new;
 my $cpu = 1; #$info->device( CPU => my %options );
 
+# how many threads we allow in the pool
+# what does //= do here?
+#!($cpu->count % 2) ? $cpu->count / 2 : !($cpu->count % 3) ? $cpu->count / 3 : $cpu->count || 1;
+# our $W //=
+#     !( $cpu->count % 2 ) ? $cpu->count / 2
+#   : !( $cpu->count % 3 ) ? $cpu->count / 3
+#   :                        $cpu->count || 1;
+
+our $W = 1;
+
 my $verbose : shared = 1;
 
 #note that it is possible that we will have, in odd cases, a potential
@@ -296,16 +306,6 @@ sub getConfigFilePath {
     #should log here
   }
 }
-
-# how many threads we allow in the pool
-# what does //= do here?
-#!($cpu->count % 2) ? $cpu->count / 2 : !($cpu->count % 3) ? $cpu->count / 3 : $cpu->count || 1;
-# our $W //=
-#     !( $cpu->count % 2 ) ? $cpu->count / 2
-#   : !( $cpu->count % 3 ) ? $cpu->count / 3
-#   :                        $cpu->count || 1;
-
-our $W = 8;
 
 my @workers = map threads->create( \&worker, \%cache ), 1 .. $W;
 
