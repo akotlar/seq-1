@@ -7,10 +7,8 @@ use Test::Moose::More;
 use Seq::Statistics::Ratios;
 
 validate_role 'Seq::Statistics::Ratios' => (
-  required_methods => [
-    'statsKey', 'countKey', 'ratioKey', 'statsKv', 'debug'
-  ],
-  attributes => [
+  required_methods => [ 'statsKey', 'countKey', 'ratioKey', 'statsKv', 'debug' ],
+  attributes       => [
     ratioFeaturesRef => {
       is      => 'ro',
       traits  => ['Hash'],
@@ -37,7 +35,7 @@ validate_role 'Seq::Statistics::Ratios' => (
       }
     }
   ],
-  does      => [],
-  methods   => [ 'makeRatios', '_recursiveCalc', '_calcRatio', '_nestedVal'],
+  does     => [],
+  methods  => [ 'makeRatios', '_recursiveCalc', '_calcRatio', '_nestedVal' ],
   compoase => 1
 );

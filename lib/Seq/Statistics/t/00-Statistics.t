@@ -7,36 +7,36 @@ use Test::Moose::More;
 use Seq::Statistics;
 
 validate_class 'Seq::Statistics' => (
-  isa => ['Seq::Statistics::Base'],
+  isa        => ['Seq::Statistics::Base'],
   attributes => [
     statsKey => {
       is      => 'ro',
       isa     => 'Str',
       default => 'statistics',
-    }, 
+    },
     ratioKey => {
       is      => 'ro',
       isa     => 'Str',
       default => 'ratios',
-    }, 
+    },
     qcFailKey => {
       is      => 'ro',
       isa     => 'Str',
       default => 'qcFail',
-    }, 
+    },
     debug => {
       is      => 'ro',
       isa     => 'Int',
       default => 0,
     }
   ],
-  does      => ['Seq::Statistics::Record', 'Seq::Statistics::Ratios', 
-    'Seq::Role::Message', 'Seq::Statistics::Store'
+  does => [
+    'Seq::Statistics::Record', 'Seq::Statistics::Ratios',
+    'Seq::Role::Message',      'Seq::Statistics::Store'
   ],
-  methods   => [ 'summarize' ],
+  methods   => ['summarize'],
   immutable => 1
 );
-
 
 # my $hRef = {
 #   SL58494 => {

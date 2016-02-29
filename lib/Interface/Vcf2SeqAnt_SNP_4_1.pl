@@ -142,7 +142,7 @@ LOOP_FILE: while (<$fpIn>) {
 
   my $sampleStr = _formatSampleString( \@row, $allelesAref );
 
-  say $fpOut "$row[0]\t$pos\t$ref\t" . join( ',', @$allelesAref)
+  say $fpOut "$row[0]\t$pos\t$ref\t" . join( ',', @$allelesAref )
     . "\t$ac\t$type\t$sampleStr";
 }
 
@@ -155,8 +155,8 @@ my $alleles;
 sub _getBases {
   my ($rowAref) = @_;
 
-  my $pos = $rowAref->[2];
-  my $ref = $rowAref->[3];
+  my $pos     = $rowAref->[2];
+  my $ref     = $rowAref->[3];
   my @alleles = split( ',', $rowAref->[4] );
 
   my $type = $#alleles > 1 ? 'MULTIALLELIC' : '';
@@ -172,8 +172,8 @@ sub _getBases {
   my $alleleLength;
   my $indelType;
   foreach (@alleles) {
-    ($_, $ref, $pos, $indelType) = _checkIndel($_, $ref, $pos);
-    
+    ( $_, $ref, $pos, $indelType ) = _checkIndel( $_, $ref, $pos );
+
     $rc-- unless ( $_ eq $ref );
 
     push( @outAlleles, $_ );
@@ -185,41 +185,41 @@ sub _getBases {
 }
 
 sub _checkIndel {
-  my ($allele, $ref, $pos) = @_;
-  
-  my $aLength = length $allele;
+  my ( $allele, $ref, $pos ) = @_;
+
+  my $aLength   = length $allele;
   my $refLength = length $ref;
   my $indelType = '';
 
-  my $overlap = $ref & $allele;
-  my $diff = $ref ^ $allele;
-  my @diffStrings = unpack("(Z*)*", $diff);
-  my $diffNoNull = $diffStrings[-1];
+  my $overlap     = $ref & $allele;
+  my $diff        = $ref ^ $allele;
+  my @diffStrings = unpack( "(Z*)*", $diff );
+  my $diffNoNull  = $diffStrings[-1];
 
   if ( $aLength > $refLength ) {
     $indelType = 'INS';
 
     #check that the left most normalized ref was used
-    if($overlap.$diffNoNull ne $allele) {
+    if ( $overlap . $diffNoNull ne $allele ) {
       croak "reconstituted allele $overlap.$diffNoNull doesn't 
         equal allele $allele"
     }
 
     $allele = "+" . $diffNoNull;
 
-  } elsif ( $aLength < $refLength ) {
+  }
+  elsif ( $aLength < $refLength ) {
     $indelType = 'DEL';
-    
-    if($overlap.$diffNoNull ne $ref) {
+
+    if ( $overlap . $diffNoNull ne $ref ) {
       croak "reconstituted allele $overlap.$diffNoNull doesn't 
         equal ref $ref"
     }
 
     $allele = '-' . length($diffNoNull);
   }
-  return ($allele, $ref, $pos, $indelType);
+  return ( $allele, $ref, $pos, $indelType );
 }
-
 
 sub _formatSampleString {
   my ( $rowAref, $allelesAref ) = @_;

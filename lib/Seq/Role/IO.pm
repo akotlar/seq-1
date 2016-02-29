@@ -57,26 +57,26 @@ my $delimiter = "\t";
 sub get_read_fh {
   my ( $self, $file ) = @_;
   my $fh;
-  
-  if(ref $file ne 'Path::Tiny' ) {
+
+  if ( ref $file ne 'Path::Tiny' ) {
     $file = path($file)->absolute;
   }
 
   my $filePath = $file->stringify;
-  
-  $self->tee_logger('error',
-    'file does not exist for reading: '. $filePath
-  ) if !$file->is_file;
-  
+
+  $self->tee_logger( 'error', 'file does not exist for reading: ' . $filePath )
+    if !$file->is_file;
+
   #duck type compressed files
   try {
     $fh = IO::Uncompress::AnyUncompress->new($filePath);
-  } catch {
-    $self->tee_logger('debug', "$filePath probably isn't an archive");
+  }
+  catch {
+    $self->tee_logger( 'debug', "$filePath probably isn't an archive" );
   };
-  
-  $fh = IO::File->new($filePath, 'r') unless $fh;
-  $self->tee_logger('error', "Unable to open file $filePath") unless $fh;
+
+  $fh = IO::File->new( $filePath, 'r' ) unless $fh;
+  $self->tee_logger( 'error', "Unable to open file $filePath" ) unless $fh;
 
   return $fh;
 }
@@ -84,10 +84,10 @@ sub get_read_fh {
 #version based on File::Slurper, advantage is it uses our get_read_fh to support
 #compressed files
 sub get_file_lines {
-  my ($self, $filename) = @_;
+  my ( $self, $filename ) = @_;
 
   my $fh = $self->get_read_fh($filename);
-  
+
   my @buf = <$fh>;
   close $fh;
   chomp @buf;
@@ -154,7 +154,7 @@ sub get_clean_fields {
   my ( $class, $line ) = @_;
 
   if ( $line =~ m/$taint_check_regex/xm ) {
-    return split($delimiter, $1);
+    return split( $delimiter, $1 );
   }
   return;
 }

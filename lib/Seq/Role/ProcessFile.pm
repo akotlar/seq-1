@@ -51,7 +51,7 @@ has _header => (
     add_header_attr => 'push',
   },
   init_arg => undef,
-  default => sub { [] },
+  default  => sub { [] },
 );
 
 after add_header_attr => sub {
@@ -67,19 +67,19 @@ after add_header_attr => sub {
 
 # flags whether or not the header has been printed
 has _headerPrinted => (
-  is      => 'rw',
-  traits  => ['Bool'],
-  isa     => 'Bool',
-  default => 0,
-  handles => { _flagHeaderPrinted => 'set', }, #set to 1
+  is       => 'rw',
+  traits   => ['Bool'],
+  isa      => 'Bool',
+  default  => 0,
+  handles  => { _flagHeaderPrinted => 'set', }, #set to 1
   init_arg => undef,
 );
 
 #if we compress the output, the extension we store it with
 has _compressExtension => (
-  is      => 'ro',
-  lazy    => 1,
-  default => '.tar.gz',
+  is       => 'ro',
+  lazy     => 1,
+  default  => '.tar.gz',
   init_arg => undef,
 );
 
@@ -92,10 +92,10 @@ has _out_fh => (
 
 # the minimum required snp headers that we actually have
 has _snpHeader => (
-  traits => ['Array'],
-  isa => 'ArrayRef',
+  traits  => ['Array'],
+  isa     => 'ArrayRef',
   handles => {
-    setSnpField => 'push',
+    setSnpField    => 'push',
     allSnpFieldIdx => 'elements',
   },
   init_arg => undef,
@@ -104,15 +104,13 @@ has _snpHeader => (
 #all the header field names that we require;
 #@ {HashRef[ArrayRef]} : file_type => [field1, field2...]
 has _reqHeaderFields => (
-  is => 'ro',
-  isa => 'HashRef',
-  traits => ['Hash'],
-  lazy => 1,
+  is       => 'ro',
+  isa      => 'HashRef',
+  traits   => ['Hash'],
+  lazy     => 1,
   init_arg => undef,
-  builder => '_build_headers',
-  handles => {
-    allReqFields => 'get',
-  },
+  builder  => '_build_headers',
+  handles  => { allReqFields => 'get', },
 );
 
 #API: The order here is the order of values returend for any consuming programs
@@ -133,8 +131,8 @@ sub print_annotations {
 
   # print header
   if ( !$self->_flagHeaderPrinted ) {
-    $self->tee_logger('error', 'Header wasn\'t printed');
-    return; 
+    $self->tee_logger( 'error', 'Header wasn\'t printed' );
+    return;
   }
 
   # cache header attributes
@@ -172,23 +170,26 @@ sub compress_output {
   if ($pigz) { $tar = "$tar --use-compress-program=$pigz"; } #-I $pigz
 
   my $baseFolderName = $self->out_file->parent->basename;
-  my $baseFileName = $self->out_file->basename;
-  my $compressName = $baseFileName . $self->_compressExtension;
+  my $baseFileName   = $self->out_file->basename;
+  my $compressName   = $baseFileName . $self->_compressExtension;
 
-  my $outcome =
-    system(sprintf("$tar -cf %s -C %s %s --transform=s/%s/%s/ --exclude '.*' --exclude %s; mv %s %s",
+  my $outcome = system(
+    sprintf(
+      "$tar -cf %s -C %s %s --transform=s/%s/%s/ --exclude '.*' --exclude %s; mv %s %s",
       $compressName,
-      $self->out_file->parent(2)->stringify, #change to parent of folder containing output files
+      $self->out_file->parent(2)
+        ->stringify, #change to parent of folder containing output files
       $baseFolderName, #the name of the directory we want to compress
       #transform and exclude
       $baseFolderName, #inside the tarball, transform  that directory name
-      $baseFileName, #to one named as our file basename
-      $compressName, #and don't include our new compressed file in our tarball
+      $baseFileName,   #to one named as our file basename
+      $compressName,   #and don't include our new compressed file in our tarball
       #move our file into the original output directory
       $compressName,
       $self->out_file->parent->stringify,
-    ) );
- 
+    )
+  );
+
   $self->tee_logger( 'warn', "Zipping failed with $?" ) unless !$outcome;
 }
 
@@ -197,26 +198,26 @@ sub checkHeader {
   $die_on_unknown = defined $die_on_unknown ? $die_on_unknown : 1;
   my $err;
 
-  if($self->file_type) {
-    $err = $self->_checkInvalid($field_aref, $self->file_type);
+  if ( $self->file_type ) {
+    $err = $self->_checkInvalid( $field_aref, $self->file_type );
     $self->setHeader($field_aref);
-  } else {
+  }
+  else {
     for my $type (@$allowedTypes) {
-      $err = $self->_checkInvalid($field_aref, $type);
-      if(!$err) {
+      $err = $self->_checkInvalid( $field_aref, $type );
+      if ( !$err ) {
         $self->setFileType($type);
         $self->setHeader($field_aref);
         last;
       }
     }
-    $err = "Error: " . $self->file_type . 
-      "not supported. Please convert" if $err;
+    $err = "Error: " . $self->file_type . "not supported. Please convert" if $err;
   }
 
-  if($err) {
-    if(defined $die_on_unknown) { $self->tee_logger( 'error', $err ); }
-    else { $self->tee_logger( 'warn', $err ) };
-    return; 
+  if ($err) {
+    if   ( defined $die_on_unknown ) { $self->tee_logger( 'error', $err ); }
+    else                             { $self->tee_logger( 'warn',  $err ) }
+    return;
   }
   return 1;
 }
@@ -225,44 +226,46 @@ sub checkHeader {
 # $self->allReqFields, in the input file match the reqFields values
 # order however in those first N fields doesn't matter
 sub _checkInvalid {
-  my ($self, $aRef, $type) = @_;
+  my ( $self, $aRef, $type ) = @_;
 
   my $reqFields = $self->allReqFields($type);
 
-  my @inSlice = @$aRef[0 .. $#$reqFields];
+  my @inSlice = @$aRef[ 0 .. $#$reqFields ];
 
   my $idx;
   for my $reqField (@$reqFields) {
     $idx = firstidx { $_ eq $reqField } @inSlice;
-    if($idx == -1) {
-      return "Input file header misformed. Coudln't find $reqField in first " 
-        . @inSlice . ' fields.';
+    if ( $idx == -1 ) {
+      return
+          "Input file header misformed. Coudln't find $reqField in first "
+        . @inSlice
+        . ' fields.';
     }
   }
   return;
 }
 
 sub setHeader {
-  my ($self, $aRef) = @_;
+  my ( $self, $aRef ) = @_;
 
   my $idx;
-  for my $field (@{$self->allReqFields($self->file_type) } ) {
+  for my $field ( @{ $self->allReqFields( $self->file_type ) } ) {
     $idx = firstidx { $_ eq $field } @$aRef;
     $self->setSnpField($idx) unless $idx == -1;
   }
 }
 
 sub getSampleNamesIdx {
-  my ($self, $fAref) = @_;
-  my $strt = scalar @{$self->allReqFields($self->file_type) };
+  my ( $self, $fAref ) = @_;
+  my $strt = scalar @{ $self->allReqFields( $self->file_type ) };
 
-  # every other field column name is blank, holds genotype probability 
+  # every other field column name is blank, holds genotype probability
   # for preceeding column's sample;
   # don't just check for ne '', to avoid simple header issues
   my %data;
 
-  for(my $i = $strt; $i <= $#$fAref; $i += 2) {
-    $data{$fAref->[$i] } = $i;
+  for ( my $i = $strt; $i <= $#$fAref; $i += 2 ) {
+    $data{ $fAref->[$i] } = $i;
   }
   return %data;
 }
@@ -271,7 +274,7 @@ sub getSampleNamesIdx {
 sub getSnpFields {
   my ( $self, $fAref ) = @_;
 
-  return map {$fAref->[$_] } $self->allSnpFieldIdx;
+  return map { $fAref->[$_] } $self->allSnpFieldIdx;
 }
 
 =head2

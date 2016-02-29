@@ -99,7 +99,8 @@ $obj_inframe->findGeneData( 103620639, $dbm );
 $annotation_type = $annotations[0]->annotation_type;
 $minor_allele    = $annotations[0]->minor_allele;
 is( $minor_allele, '-GTA' );
-is( $annotation_type, "$type-$frame" . "[StartLoss|StartLoss|StartLoss]", $annotation_type );
+is( $annotation_type, "$type-$frame" . "[StartLoss|StartLoss|StartLoss]",
+  $annotation_type );
 
 $dbm->mock( 'db_bulk_get', \&build_stoploss_inframe );
 $obj_inframe->findGeneData( 103620639, $dbm );
@@ -108,7 +109,8 @@ $obj_inframe->findGeneData( 103620639, $dbm );
 $annotation_type = $annotations[0]->annotation_type;
 $minor_allele    = $annotations[0]->minor_allele;
 is( $minor_allele, '-GAT' );
-is( $annotation_type, "$type-$frame" . "[StopLoss|StopLoss|StopLoss]", $annotation_type );
+is( $annotation_type, "$type-$frame" . "[StopLoss|StopLoss|StopLoss]",
+  $annotation_type );
 
 $dbm->mock( 'db_bulk_get', \&build_noncoding_inframe );
 $obj_inframe->findGeneData( 103620639, $dbm );

@@ -11,40 +11,40 @@ use Seq::Statistics::Percentiles;
 validate_class 'Seq::Statistics::Percentiles' => (
   attributes => [
     percentilesKey => {
-    is      => 'ro',
-    isa     => 'Str',
-    default => 'percentiles',
-  },
-  percentileThresholdNames => {
-    is      => 'ro',
-    traits  => ['Array'],
-    isa     => 'ArrayRef[Str]',
-    #won't return correct memory address  default => sub { return [ '5th', 'median', '95th' ] },
-    handles => { getThresholdName => 'get', }
-  },
-  percentileThresholds => {
-    is      => 'ro',
-    traits  => ['Array'],
-    isa     => 'ArrayRef[Num]',
-    #won't return correct memory address default => sub { return [ .05, .50, .95 ] },
-    handles => {
-      getThreshold  => 'get',
-      allThresholds => 'elements',
-    }
-  },
-  ratios => {
-    is      => 'rw',
-    isa     => 'ArrayRef[ArrayRef[Str|Num]]',
-    traits  => ['Array'],
-    handles => {
-      removeRatio => 'splice',
-      sortRatios  => 'sort_in_place',
-      getRatioID  => 'get',
-      getRatio    => 'get',
-      numRatios   => 'count',
-      allRatios   => 'elements',
+      is      => 'ro',
+      isa     => 'Str',
+      default => 'percentiles',
     },
-    required => 1,
+    percentileThresholdNames => {
+      is     => 'ro',
+      traits => ['Array'],
+      isa    => 'ArrayRef[Str]',
+      #won't return correct memory address  default => sub { return [ '5th', 'median', '95th' ] },
+      handles => { getThresholdName => 'get', }
+    },
+    percentileThresholds => {
+      is     => 'ro',
+      traits => ['Array'],
+      isa    => 'ArrayRef[Num]',
+      #won't return correct memory address default => sub { return [ .05, .50, .95 ] },
+      handles => {
+        getThreshold  => 'get',
+        allThresholds => 'elements',
+      }
+    },
+    ratios => {
+      is      => 'rw',
+      isa     => 'ArrayRef[ArrayRef[Str|Num]]',
+      traits  => ['Array'],
+      handles => {
+        removeRatio => 'splice',
+        sortRatios  => 'sort_in_place',
+        getRatioID  => 'get',
+        getRatio    => 'get',
+        numRatios   => 'count',
+        allRatios   => 'elements',
+      },
+      required => 1,
     },
     lastRatioIdx => {
       is      => 'ro',
@@ -85,13 +85,16 @@ validate_class 'Seq::Statistics::Percentiles' => (
       default => 0,
     },
   ],
-  does      => ['Seq::Statistics::Percentiles::QualityControl',],
-  methods   => [ 'BUILD', 'makePercentiles', 'storeAndQc', 'screenRatios',
+  does    => [ 'Seq::Statistics::Percentiles::QualityControl', ],
+  methods => [
+    'BUILD',
+    'makePercentiles',
+    'storeAndQc',
+    'screenRatios',
     '_calcPercentile'
   ],
   immutable => 1,
 );
-
 
 # my $hRef = {
 #   SL58494 => {

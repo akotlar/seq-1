@@ -31,9 +31,7 @@ has _vcfConverterParth => (
   default  => sub {
     return which('plink');
   },
-  handles => {
-    _vcf2ped => 'stringify',
-  },
+  handles => { _vcf2ped => 'stringify', },
 );
 
 has _binaryPedConverterPath => (
@@ -45,9 +43,7 @@ has _binaryPedConverterPath => (
   default  => sub {
     return which('linkage2Snp');
   },
-  handles => {
-    _ped2snp => 'stringify',
-  },
+  handles => { _ped2snp => 'stringify', },
 );
 
 has _twoBitDir => (
@@ -57,22 +53,22 @@ has _twoBitDir => (
   required => 1,
   default  => sub {
     return path( abs_path(__FILE__) )->parent->child('./twobit');
-  }, 
+  },
 );
 
 has _convertDir => (
-  isa => AbsDir,
-  is => 'ro',
-  coerce => 1,
+  isa      => AbsDir,
+  is       => 'ro',
+  coerce   => 1,
   init_arg => undef,
   required => 0,
-  lazy => 1,
-  builder => '_buildConvertDir',
+  lazy     => 1,
+  builder  => '_buildConvertDir',
 );
 
 sub _buildConvertDir {
   my $self = shift;
-    
+
   my $path = $self->out_file->parent->child('/converted');
   $path->mkpath;
 
@@ -80,29 +76,27 @@ sub _buildConvertDir {
 }
 
 has _inputFileBaseName => (
-  isa => 'Str',
-  is => 'ro',
+  isa      => 'Str',
+  is       => 'ro',
   init_arg => undef,
   required => 0,
-  lazy => 1,
-  default => sub {
+  lazy     => 1,
+  default  => sub {
     my $self = shift;
     return $self->snpfile->basename(qr/\..*/);
   },
 );
 
 has _convertFileBase => (
-  isa => AbsPath,
-  is => 'ro',
+  isa      => AbsPath,
+  is       => 'ro',
   init_arg => undef,
   required => 0,
-  lazy => 1,
-  handles => {
-    _convertFileBasePath => 'stringify',
-  },
-  default => sub {
+  lazy     => 1,
+  handles  => { _convertFileBasePath => 'stringify', },
+  default  => sub {
     my $self = shift;
-    return $self->_convertDir->child($self->_inputFileBaseName);
+    return $self->_convertDir->child( $self->_inputFileBaseName );
   },
 );
 
@@ -113,29 +107,29 @@ sub validateState {
 }
 
 sub _validateInputFile {
-  my $self = shift;
-  my $fh = $self->get_read_fh($self->snpfile);
+  my $self      = shift;
+  my $fh        = $self->get_read_fh( $self->snpfile );
   my $firstLine = <$fh>;
 
   my @header_fields = $self->get_clean_fields($firstLine);
 
-  if(!@header_fields || !$self->checkHeader(\@header_fields) ) {  
-    return $self->tee_logger('error', "Vcf->ped conversion failed") 
+  if ( !@header_fields || !$self->checkHeader( \@header_fields ) ) {
+    return $self->tee_logger( 'error', "Vcf->ped conversion failed" )
       unless $self->convertToPed;
 
-    return $self->tee_logger('error', "Binary plink -> Snp conversion failed")
-     unless $self->convertToSnp;
+    return $self->tee_logger( 'error', "Binary plink -> Snp conversion failed" )
+      unless $self->convertToSnp;
   }
   return 1;
 }
 
 sub convertToPed {
-  my ($self, $attempts) = @_;
+  my ( $self, $attempts ) = @_;
 
-  $self->tee_logger('info', 'Converting input file to binary plink format');
+  $self->tee_logger( 'info', 'Converting input file to binary plink format' );
   my $out = $self->_convertFileBasePath;
-  return if system($self->_vcf2ped . " --vcf " . $self->snpfilePath . " --out $out");
-  
+  return if system( $self->_vcf2ped . " --vcf " . $self->snpfilePath . " --out $out" );
+
   return 1;
 }
 
@@ -145,47 +139,45 @@ sub convertToSnp {
   my $self = shift;
 
   my $cFiles = $self->_findBinaryPlinkFiles;
-  my $out = $self->_convertFileBasePath; #assumes the converter appends ".snp"
-  my $twobit = $self->_twoBitDir->child($self->assembly . '.2bit')->stringify;
+  my $out    = $self->_convertFileBasePath; #assumes the converter appends ".snp"
+  my $twobit = $self->_twoBitDir->child( $self->assembly . '.2bit' )->stringify;
 
   return unless defined $cFiles;
-  
-  my @args = ( 
-    '-bed ', $cFiles->{bed},
-    '-bim ', $cFiles->{bim}, 
-    '-fam ', $cFiles->{fam}, 
-    '-out ', $out, '-two ', $twobit);
 
-  $self->tee_logger('info', 'Converting from binary plink to snp format');
+  my @args = (
+    '-bed ', $cFiles->{bed}, '-bim ', $cFiles->{bim}, '-fam ', $cFiles->{fam},
+    '-out ', $out,           '-two ', $twobit
+  );
+
+  $self->tee_logger( 'info', 'Converting from binary plink to snp format' );
 
   # returns a value only upon error
-  return if system($self->_ped2snp . ' convert ' . join(' ', @args) );
+  return if system( $self->_ped2snp . ' convert ' . join( ' ', @args ) );
 
   #because the linkage2Snp converted auto-appends a .snp file extension
-  $self->setSnpfile($out.'.snp');
+  $self->setSnpfile( $out . '.snp' );
 
-  $self->tee_logger('info', 'Successfully converted to snp format');
+  $self->tee_logger( 'info', 'Successfully converted to snp format' );
   return 1;
 }
 
 sub _findBinaryPlinkFiles {
   my $self = shift;
-  
-  my $bed = path($self->_convertFileBasePath.'.bed'); 
-  my $bim = path($self->_convertFileBasePath.'.bim'); 
-  my $fam = path($self->_convertFileBasePath.'.fam'); 
 
-  if($bed->is_file && $bim->is_file && $fam->is_file) {
+  my $bed = path( $self->_convertFileBasePath . '.bed' );
+  my $bim = path( $self->_convertFileBasePath . '.bim' );
+  my $fam = path( $self->_convertFileBasePath . '.fam' );
+
+  if ( $bed->is_file && $bim->is_file && $fam->is_file ) {
     return {
       bed => $bed->stringify,
       bim => $bim->stringify,
       fam => $fam->stringify,
-    }
+    };
   }
-  $self->tee_logger('warn', 
-    'Bed, bim, and/or fam don\'t exist at ' . $self->convertDir->stringify
-  );
-  return; 
+  $self->tee_logger( 'warn',
+    'Bed, bim, and/or fam don\'t exist at ' . $self->convertDir->stringify );
+  return;
 }
 # has _annotatorConfig => (
 #   is        => 'ro',
@@ -348,30 +340,30 @@ sub _findBinaryPlinkFiles {
 #   }
 # }
 
-  # unless ($convertFilesPath) {
-  #   my $archive;
-  #   $convertFilesPath = $self->convertFileBasePath;
-  #   try {
-  #     $archive = Archive::Extract->new($self->snpfilePath);
-  #   } catch {
-  #     #probably not an archive
-  #     $self->tee_logger('warn', $_);
+# unless ($convertFilesPath) {
+#   my $archive;
+#   $convertFilesPath = $self->convertFileBasePath;
+#   try {
+#     $archive = Archive::Extract->new($self->snpfilePath);
+#   } catch {
+#     #probably not an archive
+#     $self->tee_logger('warn', $_);
 
-  #     #if it's not an archive, maybe we were given a base path or directory
-  #     $infiles = $self->_findBinaryPlinkFiles($convertFilesPath);
+#     #if it's not an archive, maybe we were given a base path or directory
+#     $infiles = $self->_findBinaryPlinkFiles($convertFilesPath);
 
-  #     if(!$infiles) {
-  #       $self->tee_logger('error', $self . " did not find valid input file(s)");
-  #     }
-  #   }
+#     if(!$infiles) {
+#       $self->tee_logger('error', $self . " did not find valid input file(s)");
+#     }
+#   }
 
-  #   try {
-  #     $archive->extract($convertFilesPath);
-  #   } catch {
-  #      $self->tee_logger('error', "Extraction failed for $convertFilesPath");
-  #   }
+#   try {
+#     $archive->extract($convertFilesPath);
+#   } catch {
+#      $self->tee_logger('error', "Extraction failed for $convertFilesPath");
+#   }
 
-  # }
+# }
 #   has _errorsAref => (
 #   is        => 'rw',
 #   isa       => 'ArrayRef',

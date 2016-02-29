@@ -15,7 +15,7 @@ requires 'ratioKey';
 requires 'statsKv';
 requires 'debug';
 
-my $pinf = 1e9999;  
+my $pinf = 1e9999;
 
 has ratioFeaturesRef => (
   is      => 'ro',

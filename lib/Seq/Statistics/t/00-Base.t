@@ -33,7 +33,6 @@ validate_class 'Seq::Statistics::Base' => (
   immutable => 1
 );
 
-
 # my $hRef = {
 #   SL58494 => {
 #     Exonic => {

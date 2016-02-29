@@ -7,10 +7,8 @@ use Test::Moose::More;
 use Seq::Statistics::Percentiles::QualityControl;
 
 validate_role 'Seq::Statistics::Percentiles::QualityControl' => (
-  required_methods => [
-    'allRatios', 'getPercVal', 'target', 'ratioName'
-  ],
-  attributes => [
+  required_methods => [ 'allRatios', 'getPercVal', 'target', 'ratioName' ],
+  attributes       => [
     qcFailKey => {
       is      => 'ro',
       isa     => 'Str',
@@ -32,6 +30,6 @@ validate_role 'Seq::Statistics::Percentiles::QualityControl' => (
       default => sub { [] }
     },
   ],
-  methods   => [ 'qc', ],
+  methods  => [ 'qc', ],
   compoase => 1
 );

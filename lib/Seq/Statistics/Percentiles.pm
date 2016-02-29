@@ -85,7 +85,7 @@ around 'getRatioID' => sub {
 around 'getRatio' => sub {
   my $orig = shift;
   my $self = shift;
-  return $self->$orig(@_)->[1];#the ratio is in pos 1
+  return $self->$orig(@_)->[1]; #the ratio is in pos 1
 };
 
 around 'removeRatio' => sub {
@@ -114,8 +114,8 @@ has percentiles => (
 around 'setPercentile' => sub {
   my $orig = shift;
   my $self = shift;
-  return $self->$orig([ $self->getThresholdName( $_[0] ),
-    $self->_calcPercentile( $_[1] ) ] );
+  return $self->$orig(
+    [ $self->getThresholdName( $_[0] ), $self->_calcPercentile( $_[1] ) ] );
 };
 
 around 'getPercName' => sub {
@@ -225,18 +225,18 @@ sub screenRatios {
 sub _calcPercentile {
   my ( $self, $threshold ) = @_;
 
-  if($self->numRatios == 0) {
+  if ( $self->numRatios == 0 ) {
     return;
   }
 
   my $fractionalIdx = $self->lastRatioIdx * $threshold;
 
   my $floorIdx = floor($fractionalIdx);
-  my $ceilIdx = ceil($fractionalIdx);
+  my $ceilIdx  = ceil($fractionalIdx);
 
-  if ( $ceilIdx  == $floorIdx ) {
-    say "Ratio for $threshold: index $ceilIdx, val " 
-      . $self->getRatio($ceilIdx) if $self->debug;
+  if ( $ceilIdx == $floorIdx ) {
+    say "Ratio for $threshold: index $ceilIdx, val " . $self->getRatio($ceilIdx)
+      if $self->debug;
     return $self->getRatio($ceilIdx);
   }
   else {
@@ -248,11 +248,12 @@ sub _calcPercentile {
     # my $lowerVal = $self->getRatio($floorIdx) *  (1 - $awayFromFloor);
 
     #index interpolation
-    my $higherVal  = $self->getRatio($ceilIdx) * ($fractionalIdx - $floorIdx);
-    my $lowerVal = $self->getRatio($floorIdx) *  ($ceilIdx - $fractionalIdx);
-    
+    my $higherVal = $self->getRatio($ceilIdx) *  ( $fractionalIdx - $floorIdx );
+    my $lowerVal  = $self->getRatio($floorIdx) * ( $ceilIdx - $fractionalIdx );
+
     say "Ratio for $threshold, btwn indices $ceilIdx & $floorIdx, interp to "
-      . ( $lowerVal + $higherVal )  if $self->debug;
+      . ( $lowerVal + $higherVal )
+      if $self->debug;
     return $lowerVal + $higherVal;
   }
 }

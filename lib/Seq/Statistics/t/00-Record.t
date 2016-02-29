@@ -7,10 +7,8 @@ use Test::Moose::More;
 use Seq::Statistics::Record;
 
 validate_role 'Seq::Statistics::Record' => (
-  required_methods => [
-    'isBadFeature', 'statsKey', 'statsRecord', 'debug'
-  ],
-  attributes => [
+  required_methods => [ 'isBadFeature', 'statsKey', 'statsRecord', 'debug' ],
+  attributes       => [
     countKey => {
       is      => 'rw',
       isa     => 'Str',
@@ -35,7 +33,7 @@ validate_role 'Seq::Statistics::Record' => (
       lazy     => 1,
       init_arg => undef,
     },
-     _snpAnnotationsAref => {
+    _snpAnnotationsAref => {
       is       => 'ro',
       isa      => 'ArrayRef[Str]',
       traits   => ['Array'],
@@ -45,7 +43,7 @@ validate_role 'Seq::Statistics::Record' => (
       init_arg => undef,
     }
   ],
-  does      => ['Seq::Role::Genotypes', 'Seq::Role::Message'],
-  methods   => [ 'record', 'storeCount', 'countCustomFeatures' ],
+  does    => [ 'Seq::Role::Genotypes', 'Seq::Role::Message' ],
+  methods => [ 'record',               'storeCount', 'countCustomFeatures' ],
   compoase => 1
 );

@@ -56,32 +56,32 @@ has config_file => (
 );
 
 has out_file => (
-  is        => 'ro',
-  isa       => AbsPath,
-  coerce    => 1,
-  required  => 0,
-  handles   => { output_path => 'stringify' }
+  is       => 'ro',
+  isa      => AbsPath,
+  coerce   => 1,
+  required => 0,
+  handles  => { output_path => 'stringify' }
 );
 
 has ignore_unknown_chr => (
   is      => 'ro',
   isa     => 'Bool',
   default => 1,
-  lazy => 1,
+  lazy    => 1,
 );
 
 has overwrite => (
   is      => 'ro',
   isa     => 'Bool',
   default => 0,
-  lazy => 1,
+  lazy    => 1,
 );
 
 has debug => (
   is      => 'ro',
   isa     => 'Int',
   default => 0,
-  lazy => 1,
+  lazy    => 1,
 );
 
 has snp_sites => (
@@ -119,7 +119,7 @@ has write_batch => (
   is      => 'ro',
   isa     => 'Int',
   default => 100000,
-  lazy => 1,
+  lazy    => 1,
 );
 
 #come after all attributes to meet "requires '<attribute>'"
@@ -162,45 +162,48 @@ sub annotate_snpfile {
 
   #a file slurper that is compression-aware
   $self->tee_logger( 'info', "Reading input file" );
-  
+
   my $fileLines = $self->get_file_lines( $self->snpfile_path );
-  
+
   $self->tee_logger( 'info',
-    sprintf("Finished reading input file, found %s lines", scalar @$fileLines)
-  );
+    sprintf( "Finished reading input file, found %s lines", scalar @$fileLines ) );
 
   my $defPos = -9; #default value, indicating out of bounds or not set
   # variables
   my ( %ids, @sample_ids, @snp_annotations ) = ();
   my ( $last_chr, $chr_offset, $next_chr, $next_chr_offset, $chr_index ) =
     ( $defPos, $defPos, $defPos, $defPos, $defPos );
-  
+
   # progress counters
-  my ($pubProg, $writeProg);
+  my ( $pubProg, $writeProg );
 
-  if ($self->hasPublisher) {
-    $pubProg = Seq::Progress->new({
-      progressBatch => 200,
-      fileLines => scalar @$fileLines,
-      progressAction => sub {
-        $pubProg->recordProgress($pubProg->progressCounter);
-        $self->publishMessage({progress => $pubProg->progressFraction } )
-      },
-    });
+  if ( $self->hasPublisher ) {
+    $pubProg = Seq::Progress->new(
+      {
+        progressBatch  => 200,
+        fileLines      => scalar @$fileLines,
+        progressAction => sub {
+          $pubProg->recordProgress( $pubProg->progressCounter );
+          $self->publishMessage( { progress => $pubProg->progressFraction } );
+        },
+      }
+    );
   }
-  
-  $writeProg = Seq::Progress->new({
-    progressBatch => $self->write_batch,
-    progressAction => sub {
-      $self->publishMessage('Writing ' . 
-        $self->write_batch . ' lines to disk') if $self->hasPublisher;
-      $self->print_annotations( \@snp_annotations );
-      @snp_annotations = ();
-    },
-  });
 
-  my (@fields, $abs_pos, $foundVarType);
-  for my $line ( @$fileLines ) {
+  $writeProg = Seq::Progress->new(
+    {
+      progressBatch  => $self->write_batch,
+      progressAction => sub {
+        $self->publishMessage( 'Writing ' . $self->write_batch . ' lines to disk' )
+          if $self->hasPublisher;
+        $self->print_annotations( \@snp_annotations );
+        @snp_annotations = ();
+      },
+    }
+  );
+
+  my ( @fields, $abs_pos, $foundVarType );
+  for my $line (@$fileLines) {
     #if we wish to save cycles, can move this to original position, below
     #many conditionals, and then upon completion, set progress(1).
     $pubProg->incProgressCounter if $pubProg;
@@ -229,7 +232,7 @@ sub annotate_snpfile {
 
     # not checking for $allele_count for now, because it isn't in use
     next unless $chr && $pos && $ref_allele && $var_type && $all_allele_str;
-    
+
     # get carrier ids for variant; returns hom_ids_href for use in statistics calculator
     #   later (hets currently ignored)
     my ( $het_ids, $hom_ids, $id_genos_href ) =
@@ -238,24 +241,25 @@ sub annotate_snpfile {
     # check that $chr is an allowable chromosome
     # decide if we plow through the error or if we stop
     # if we allow plow through, don't write log, to avoid performance hit
-    if(! exists $chr_len_href->{$chr} ) {
+    if ( !exists $chr_len_href->{$chr} ) {
       next if $self->ignore_unknown_chr;
-      $self->tee_logger( 'error', 
-        sprintf( "Error: unrecognized chromosome: '%s', pos: %d", $chr, $pos )
-      );
+      $self->tee_logger( 'error',
+        sprintf( "Error: unrecognized chromosome: '%s', pos: %d", $chr, $pos ) );
     }
 
     # determine the absolute position of the base to annotate
     if ( $chr eq $last_chr ) {
       $abs_pos = $chr_offset + $pos - 1;
-    } else {
+    }
+    else {
       $chr_offset = $chr_len_href->{$chr};
       $chr_index  = $chr_index{$chr};
       $next_chr   = $next_chr_href->{$chr};
-      
+
       if ( defined $next_chr ) {
         $next_chr_offset = $chr_len_href->{$next_chr};
-      } else {
+      }
+      else {
         $next_chr        = $defPos;
         $next_chr_offset = $genome_len;
       }
@@ -263,8 +267,7 @@ sub annotate_snpfile {
       # check that we set the needed variables for determining position
       unless ( defined $chr_offset and defined $chr_index ) {
         $self->tee_logger( 'error',
-          "Error: Couldn't set 'chr_offset' or 'chr_index' for: $chr"
-        );
+          "Error: Couldn't set 'chr_offset' or 'chr_index' for: $chr" );
       }
       $abs_pos = $chr_offset + $pos - 1;
     }
@@ -286,23 +289,27 @@ sub annotate_snpfile {
     #   - NOTE: the way the annotations for INS sites now work (due to changes in the
     #     snpfile format, we could change their annotation to one off annotations like
     #     the SNPs
-    if(index($var_type, 'SNP') > -1){
+    if ( index( $var_type, 'SNP' ) > -1 ) {
       $foundVarType = 'SNP';
-    } elsif(index($var_type, 'DEL') > -1) {
+    }
+    elsif ( index( $var_type, 'DEL' ) > -1 ) {
       $foundVarType = 'DEL';
-    } elsif(index($var_type, 'INS') > -1) {
+    }
+    elsif ( index( $var_type, 'INS' ) > -1 ) {
       $foundVarType = 'INS';
-    } elsif(index($var_type, 'MULTIALLELIC') > -1) {
+    }
+    elsif ( index( $var_type, 'MULTIALLELIC' ) > -1 ) {
       $foundVarType = 'MULTIALLELIC';
-    } else {
+    }
+    else {
       $foundVarType = '';
     }
 
     if ($foundVarType) {
       my $record_href = $annotator->annotate(
-        $chr,        $chr_index, $pos,            $abs_pos,
-        $ref_allele, $foundVarType,  $all_allele_str, $allele_count,
-        $het_ids,    $hom_ids,   $id_genos_href
+        $chr,        $chr_index,    $pos,            $abs_pos,
+        $ref_allele, $foundVarType, $all_allele_str, $allele_count,
+        $het_ids,    $hom_ids,      $id_genos_href
       );
       if ( defined $record_href ) {
         if ( $self->debug > 1 ) {
@@ -312,22 +319,22 @@ sub annotate_snpfile {
         push @snp_annotations, $record_href;
         $writeProg->incProgressCounter;
       }
-    } elsif ( index($var_type, 'MESS') == -1 && index($var_type,'LOW') == -1 ) {  
+    }
+    elsif ( index( $var_type, 'MESS' ) == -1 && index( $var_type, 'LOW' ) == -1 ) {
       $self->tee_logger( 'warn', "Unrecognized variant type: $var_type" );
     }
   }
 
   # finished printing the final snp annotations
   if (@snp_annotations) {
-    $self->tee_logger('info', 
-      sprintf('Writing remaining %s lines to disk', $writeProg->progressCounter)
-    );
+    $self->tee_logger( 'info',
+      sprintf( 'Writing remaining %s lines to disk', $writeProg->progressCounter ) );
 
     $self->print_annotations( \@snp_annotations );
     @snp_annotations = ();
   }
 
-  $self->tee_logger('info', 'Summarizing statistics');
+  $self->tee_logger( 'info', 'Summarizing statistics' );
   $annotator->summarizeStats;
 
   if ( $self->debug ) {
@@ -341,8 +348,8 @@ sub annotate_snpfile {
   #       we may want to consider returning the full experiment hash, in case we do
   #       interesting things.
   $self->tee_logger( 'info',
-    sprintf('We found %s discordant_bases', $annotator->discordant_bases )
-  ) if $annotator->discordant_bases;
+    sprintf( 'We found %s discordant_bases', $annotator->discordant_bases ) )
+    if $annotator->discordant_bases;
 
   return $annotator->statsRecord;
 }

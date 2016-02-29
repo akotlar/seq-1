@@ -225,8 +225,8 @@ sub _load_genome_sized_track {
     }
   );
 
-  my $msg = sprintf( "Read genome-sized track '%s' of length %d", 
-    $gst->name, $genome_length);
+  my $msg =
+    sprintf( "Read genome-sized track '%s' of length %d", $gst->name, $genome_length );
   $self->tee_logger( 'info', $msg );
   say $msg . " from file: $idx_file" if $self->debug;
 
@@ -721,18 +721,20 @@ sub _var_alleles {
 
   for my $allele ( split /\,/, $alleles_str ) {
     if ( $allele ne $ref_allele ) {
-      if ( length $allele == 1) {
-        #skip anything that looks odd; we could also log this, 
+      if ( length $allele == 1 ) {
+        #skip anything that looks odd; we could also log this,
         #but could slow us down; haven't benched coro logging
         push @snpAlleles, $allele;
-      } else {
+      }
+      else {
         #we could also avoid this and place the indel calling function in annotate
         #into an eval, but this may be slower, althoug here we duplicate concerns
-        my $subs = substr($allele, 0, 1);
-        if($subs eq '-' || $subs eq '+') {
+        my $subs = substr( $allele, 0, 1 );
+        if ( $subs eq '-' || $subs eq '+' ) {
           push @indelAlleles, $allele;
-        } else {
-          $self->tee_logger('warn', "Allele $allele is unknown");
+        }
+        else {
+          $self->tee_logger( 'warn', "Allele $allele is unknown" );
         }
       }
     }
