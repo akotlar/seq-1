@@ -10,8 +10,31 @@ our $VERSION = '0.001';
 
 use Moose;
 use Moose::Util::TypeConstraints;
+use Scalar::Util qw(looks_like_number);
+with 'Seq::Role::Message';
 #with 'Seq::Site::Gene::Definition'; #for remaking the AA, later
 
+#############BUILD#################
+#Force insertions to be +[A-G]+ instead of numeric
+#Because this has implications on how the minor_allele is calcualted
+#For deletions, since we tend to gather all bases, can conver -N to a -[A-G]+
+#In insertion case, at most we get abs_pos and flanking sites
+sub BUILD {
+  my $self = shift;
+  if ( $self->indType eq '-' ) {
+    if ( !looks_like_number( $self->minor_allele ) ) {
+      $self->tee_logger( 'error', 'Site::Indel expects deletion alleles to be numeric' );
+    }
+  }
+  else {
+    if ( looks_like_number( $self->minor_allele ) ) {
+      $self->tee_logger( 'error',
+        'Site::Indel expects insertion alleles to consist of letters after +' );
+      confess("BAD");
+    }
+  }
+}
+######################Public Attributes##################
 has minor_allele => (
   is       => 'rw',
   isa      => 'Str',
@@ -56,11 +79,14 @@ has indLength => (
   builder => '_build_indel_length',
 );
 
+# we only allow numeric for deletions;
+# we could also do the check around
 sub _build_indel_length {
   my $self = shift;
-  no warnings 'numeric';
-  #duck type, +N, -N, or +{Str}, -{Str} all work
-  return abs( int( $self->minor_allele ) ) || length( $self->minor_allele ) - 1;
+  if ( $self->indType eq '-' ) {
+    return abs( int( $self->minor_allele ) );
+  }
+  return length( substr( $self->minor_allele, 1 ) );
 }
 
 has typeName => (

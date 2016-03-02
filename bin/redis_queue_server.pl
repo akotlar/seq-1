@@ -24,7 +24,7 @@ use threads::shared;
 use Log::Any::Adapter;
 use File::Basename;
 use DDP;
-use Seq;
+use Interface;
 
 use Thread::Queue;
 use IO::Socket;
@@ -34,7 +34,7 @@ use IO::Socket;
 
 use Redis;
 
-my $DEV = 0;
+my $DEBUG = 0;
 my $redisHost : shared = $ARGV[0] || 'genome.local';
 my $redisPort : shared = $ARGV[1] || '6379';
 
@@ -69,6 +69,8 @@ $jobKeys->{inputFilePath}    = 'inputFilePath',
   $jobKeys->{comm}           = 'comm',
   $jobKeys->{clientComm}     = 'client',
   $jobKeys->{serverComm}     = 'server',
+  $jobKeys->{log} = 'log';
+  $jobKeys->{logException} = 'exceptions';
 
   my $configPathBaseDir : shared = "config/web/";
 my $configFilePathHref : shared = shared_clone( {} );
@@ -85,7 +87,17 @@ my $Qdone : shared = new Thread::Queue;
 my $done : shared  = 0;
 
 #my $info = Sys::Info->new;
-my $cpu = 4; #$info->device( CPU => my %options );
+my $cpu = 1; #$info->device( CPU => my %options );
+
+# how many threads we allow in the pool
+# what does //= do here?
+#!($cpu->count % 2) ? $cpu->count / 2 : !($cpu->count % 3) ? $cpu->count / 3 : $cpu->count || 1;
+# our $W //=
+#     !( $cpu->count % 2 ) ? $cpu->count / 2
+#   : !( $cpu->count % 3 ) ? $cpu->count / 3
+#   :                        $cpu->count || 1;
+
+our $W = 1;
 
 my $verbose : shared = 1;
 
@@ -110,9 +122,10 @@ sub handleJobStart {
     my @replies = $redis->exec();
   }
   catch {
-    say "Error in handleJobSuccess: $_";
+    say "Error saving Redis record in handleJobStart: $_";
     $submittedJob->{ $jobKeys->{started} } = 0;
-    handleJobFailure( $jobID, $documentKey, $submittedJob, $redis );
+    handleJobFailure( $jobID, $documentKey,
+      'Error saving newly started job to Redis', $submittedJob, $redis );
   }
 }
 
@@ -136,15 +149,24 @@ sub handleJobSuccess {
   catch {
     print "Error in handleJobSuccess: $_";
     $submittedJob->{ $jobKeys->{completed} } = 0;
-    handleJobFailure( $jobID, $documentKey, $submittedJob, $redis );
+    handleJobFailure( $jobID, $documentKey,
+      'Error saving successful job to Redis', $submittedJob, $redis );
   }
 }
 
 sub handleJobFailure {
-  my ( $jobID, $documentKey, $submittedJob, $redis ) = @_;
-  print "job failed $jobID";
+  my ( $jobID, $documentKey, $reason, $submittedJob, $redis ) = @_;
+  
+  say "job failed $jobID because of $reason";
+
   try {
     $submittedJob->{ $jobKeys->{failed} } = 1;
+    if(ref $submittedJob->{$jobKeys->{log} }{$jobKeys->{logException} } ne "ARRAY") {
+      $submittedJob->{$jobKeys->{log} }{$jobKeys->{logException} } = [$reason];
+    } else {
+      push(@{$submittedJob->{$jobKeys->{log} }{$jobKeys->{logException} } }, $reason);
+    }
+    
     my $jobJSON = encode_json($submittedJob);
     #$redis->watch($documentKey);
     $redis->multi;
@@ -200,7 +222,7 @@ sub handleJob {
       p $inputHref;
     }
     # create the annotator
-    my $annotate_instance = Seq->new($inputHref);
+    my $annotate_instance = Interface->new($inputHref);
     my $result            = $annotate_instance->annotate_snpfile;
 
     die 'Error: Nothing returned from annotate_snpfile' unless defined $result;
@@ -214,19 +236,21 @@ sub handleJob {
 
     $log->error($_);
     #because here we don't have automatic logging guaranteed
-    if ( defined $inputHref
-      && exists $inputHref->{messanger}
-      && keys %{ $inputHref->{messanger} } )
-    {
-      say "publishing message $_";
-      $inputHref->{messanger}{message}{data} = "$_";
-      $redis->publish( $inputHref->{messanger}{event},
-        encode_json( $inputHref->{messanger} ) );
-    }
+
+    ##we now record this to exceptions instead of messages
+    # if ( defined $inputHref
+    #   && exists $inputHref->{messanger}
+    #   && keys %{ $inputHref->{messanger} } )
+    # {
+    #   say "publishing message $_";
+    #   $inputHref->{messanger}{message}{data} = "$_";
+    #   $redis->publish( $inputHref->{messanger}{event},
+    #     encode_json( $inputHref->{messanger} ) );
+    # }
 
     $failed = 1;
 
-    handleJobFailure( $jobID, $documentKey, $submittedJob, $redis );
+    handleJobFailure( $jobID, $documentKey, $_, $submittedJob, $redis );
   };
   handleJobSuccess( $jobID, $documentKey, $submittedJob, $redis ) unless $failed;
 }
@@ -237,7 +261,7 @@ sub coerceInputs {
 
   my $inputFilePath  = $jobDetailsHref->{ $jobKeys->{inputFilePath} };
   my $outputFilePath = $jobDetailsHref->{ $jobKeys->{outputFilePath} };
-  my $debug          = !!$DEV;                                         #not, not!
+  my $debug          = $DEBUG;                                        #not, not!
 
   my $configFilePath = getConfigFilePath( $jobDetailsHref->{ $jobKeys->{assembly} } );
 
@@ -282,16 +306,6 @@ sub getConfigFilePath {
     #should log here
   }
 }
-
-# how many threads we allow in the pool
-# what does //= do here?
-#!($cpu->count % 2) ? $cpu->count / 2 : !($cpu->count % 3) ? $cpu->count / 3 : $cpu->count || 1;
-# our $W //=
-#     !( $cpu->count % 2 ) ? $cpu->count / 2
-#   : !( $cpu->count % 3 ) ? $cpu->count / 3
-#   :                        $cpu->count || 1;
-
-our $W = 8;
 
 my @workers = map threads->create( \&worker, \%cache ), 1 .. $W;
 

@@ -13,10 +13,11 @@ use Moose::Role;
 use Moose::Util::TypeConstraints;
 use File::Which qw(which);
 use File::Basename;
+use List::MoreUtils qw(firstidx);
 use namespace::autoclean;
-
-requires 'has_out_file';
+use DDP;
 requires 'output_path';
+requires 'out_file';
 requires 'debug';
 
 #requires get_write_bin_fh from Seq::Role::IO, can't formally requires it in a role
@@ -26,23 +27,22 @@ with 'Seq::Role::IO', 'Seq::Role::Message';
 #   - snp_1 => snpfile format: [ "Fragment", "Position", "Reference", "Minor_Allele"]
 #   - snp_2 => snpfile format: ["Fragment", "Position", "Reference", "Alleles", "Allele_Counts", "Type"]
 #   - vcf => placeholder
-enum fileTypes => [ 'snp_1', 'snp_2', 'vcf' ];
+state $allowedTypes = [ 'snp_2', 'snp_1' ];
+enum fileTypes => $allowedTypes;
+
+# pre-define a file type; not necessary, but saves some time if type is snp_1
+# @ public
 has file_type => (
   is       => 'ro',
   isa      => 'fileTypes',
-  required => 1,
-  default  => 'snp_2',
+  required => 0,
+  writer   => 'setFileType',
 );
 
-has printed_header => (
-  is      => 'rw',
-  traits  => ['Bool'],
-  isa     => 'Bool',
-  default => 0,
-  handles => { set_printed_header => 'set', },
-);
-
-has header => (
+# @pseudo-protected; using _header to designate that only the methods are public
+# stores everything after the minimum required; this comes from Seq::Annotate.pm
+# add_header_attr called in Seq.pm
+has _header => (
   traits  => ['Array'],
   is      => 'ro',
   isa     => 'ArrayRef',
@@ -50,13 +50,37 @@ has header => (
     all_header_attr => 'elements',
     add_header_attr => 'push',
   },
-  default => sub { [] },
+  init_arg => undef,
+  default  => sub { [] },
 );
 
-has compress_extension => (
-  is      => 'ro',
-  lazy    => 1,
-  default => '.tar.gz',
+after add_header_attr => sub {
+  my $self = shift;
+
+  if ( !$self->_headerPrinted ) {
+    say { $self->_out_fh } join "\t", $self->all_header_attr;
+    $self->_flagHeaderPrinted;
+  }
+};
+
+##########Private Variables##########
+
+# flags whether or not the header has been printed
+has _headerPrinted => (
+  is       => 'rw',
+  traits   => ['Bool'],
+  isa      => 'Bool',
+  default  => 0,
+  handles  => { _flagHeaderPrinted => 'set', }, #set to 1
+  init_arg => undef,
+);
+
+#if we compress the output, the extension we store it with
+has _compressExtension => (
+  is       => 'ro',
+  lazy     => 1,
+  default  => '.tar.gz',
+  init_arg => undef,
 );
 
 has _out_fh => (
@@ -65,17 +89,50 @@ has _out_fh => (
   init_arg => undef,
   builder  => '_build_out_fh',
 );
+
+# the minimum required snp headers that we actually have
+has _snpHeader => (
+  traits  => ['Array'],
+  isa     => 'ArrayRef',
+  handles => {
+    setSnpField    => 'push',
+    allSnpFieldIdx => 'elements',
+  },
+  init_arg => undef,
+);
+
+#all the header field names that we require;
+#@ {HashRef[ArrayRef]} : file_type => [field1, field2...]
+has _reqHeaderFields => (
+  is       => 'ro',
+  isa      => 'HashRef',
+  traits   => ['Hash'],
+  lazy     => 1,
+  init_arg => undef,
+  builder  => '_build_headers',
+  handles  => { allReqFields => 'get', },
+);
+
+#API: The order here is the order of values returend for any consuming programs
+#See: $self->proc_line
+sub _build_headers {
+  return {
+    snp_1 => [qw/ Fragment Position Reference Type Minor_allele /],
+    snp_2 => [qw/ Fragment Position Reference Type Alleles Allele_Counts /],
+  };
+}
+
 # _print_annotations takes an array reference of annotations and hash
 # reference of header attributes and writes the header (if needed) to the
 # output file and flattens the hash references for each entry and writes
 # them to the output file
 sub print_annotations {
-  my ( $self, $annotations_aref, $header_aref ) = @_;
+  my ( $self, $annotations_aref ) = @_;
 
   # print header
-  if ( !$self->printed_header ) {
-    say { $self->_out_fh } join "\t", @$header_aref;
-    $self->set_printed_header;
+  if ( !$self->_flagHeaderPrinted ) {
+    $self->tee_logger( 'error', 'Header wasn\'t printed' );
+    return;
   }
 
   # cache header attributes
@@ -112,77 +169,112 @@ sub compress_output {
   my $pigz = which('pigz');
   if ($pigz) { $tar = "$tar --use-compress-program=$pigz"; } #-I $pigz
 
-  my $outcome =
-    system( "$tar -cf "
-      . $self->output_path
-      . $self->compress_extension . " "
-      . $self->output_path
-      . "*" );
+  my $baseFolderName = $self->out_file->parent->basename;
+  my $baseFileName   = $self->out_file->basename;
+  my $compressName   = $baseFileName . $self->_compressExtension;
 
-  $self->tee_logger( 'warn', "Zipping failed with $?" ) unless $outcome == 0;
+  my $outcome = system(
+    sprintf(
+      "$tar -cf %s -C %s %s --transform=s/%s/%s/ --exclude '.*' --exclude %s; mv %s %s",
+      $compressName,
+      $self->out_file->parent(2)
+        ->stringify, #change to parent of folder containing output files
+      $baseFolderName, #the name of the directory we want to compress
+      #transform and exclude
+      $baseFolderName, #inside the tarball, transform  that directory name
+      $baseFileName,   #to one named as our file basename
+      $compressName,   #and don't include our new compressed file in our tarball
+      #move our file into the original output directory
+      $compressName,
+      $self->out_file->parent->stringify,
+    )
+  );
+
+  $self->tee_logger( 'warn', "Zipping failed with $?" ) unless !$outcome;
 }
 
-sub check_header {
-  my ( $self, $header_href ) = @_;
+sub checkHeader {
+  my ( $self, $field_aref, $die_on_unknown ) = @_;
+  $die_on_unknown = defined $die_on_unknown ? $die_on_unknown : 1;
+  my $err;
 
-  my ( @req_fields, %exp_header );
-  my $req_field_count = 0;
-
-  if ( $self->file_type eq 'snp_1' ) {
-    @req_fields = qw/ Fragment Position Reference Minor_allele Type /;
-  }
-  elsif ( $self->file_type eq 'snp_2' ) {
-    @req_fields = qw/ Fragment Position Reference Alleles Allele_Counts Type /;
-  }
-  elsif ( $self->file_type eq 'vcf' ) {
-    my $msg = "Error: 'vcf' file_type is not implemented";
-    $self->tee_logger( 'error', $msg );
-  }
-
-  # make temp hash for expected attributes
-  for my $attr (@req_fields) {
-    $exp_header{$attr} = 1;
-  }
-
-  for my $obs_attr ( keys %$header_href ) {
-    if ( exists $exp_header{$obs_attr} ) {
-      $req_field_count++;
-    }
-  }
-
-  if ( $req_field_count != scalar @req_fields ) {
-    my $req_fields_str = join ",", @req_fields;
-    my $obs_fields_str = join ",", keys %$header_href;
-    my $msg = sprintf( "Error: Expected header fields: '%s'\n\tBut found fields: %s\n",
-      $req_fields_str, $obs_fields_str );
-    say $self->tee_logger( 'error', $msg );
-  }
-}
-
-sub proc_line {
-  my ( $self, $header_href, $fields_aref ) = @_;
-
-  if ( $self->file_type eq 'snp_1' ) {
-    my $chr         = $fields_aref->[ $header_href->{Fragment} ];
-    my $pos         = $fields_aref->[ $header_href->{Position} ];
-    my $ref_allele  = $fields_aref->[ $header_href->{Reference} ];
-    my $var_type    = $fields_aref->[ $header_href->{Type} ];
-    my $all_alleles = $fields_aref->[ $header_href->{Minor_allele} ];
-    return ( $chr, $pos, $ref_allele, $var_type, $all_alleles, '' );
-  }
-  elsif ( $self->file_type eq 'snp_2' ) {
-    my $chr           = $fields_aref->[ $header_href->{Fragment} ];
-    my $pos           = $fields_aref->[ $header_href->{Position} ];
-    my $ref_allele    = $fields_aref->[ $header_href->{Reference} ];
-    my $var_type      = $fields_aref->[ $header_href->{Type} ];
-    my $all_alleles   = $fields_aref->[ $header_href->{Alleles} ];
-    my $allele_counts = $fields_aref->[ $header_href->{Allele_Counts} ];
-    return ( $chr, $pos, $ref_allele, $var_type, $all_alleles, $allele_counts );
+  if ( $self->file_type ) {
+    $err = $self->_checkInvalid( $field_aref, $self->file_type );
+    $self->setHeader($field_aref);
   }
   else {
-    my $msg = sprintf( "Error: unknown file_type '%s'", $self->file_type );
-    $self->tee_logger( 'error', $msg );
+    for my $type (@$allowedTypes) {
+      $err = $self->_checkInvalid( $field_aref, $type );
+      if ( !$err ) {
+        $self->setFileType($type);
+        $self->setHeader($field_aref);
+        last;
+      }
+    }
+    $err = "Error: " . $self->file_type . "not supported. Please convert" if $err;
   }
+
+  if ($err) {
+    if   ( defined $die_on_unknown ) { $self->tee_logger( 'error', $err ); }
+    else                             { $self->tee_logger( 'warn',  $err ) }
+    return;
+  }
+  return 1;
+}
+
+# checks whether the first N fields, where N is the number of fields defined in
+# $self->allReqFields, in the input file match the reqFields values
+# order however in those first N fields doesn't matter
+sub _checkInvalid {
+  my ( $self, $aRef, $type ) = @_;
+
+  my $reqFields = $self->allReqFields($type);
+
+  my @inSlice = @$aRef[ 0 .. $#$reqFields ];
+
+  my $idx;
+  for my $reqField (@$reqFields) {
+    $idx = firstidx { $_ eq $reqField } @inSlice;
+    if ( $idx == -1 ) {
+      return
+          "Input file header misformed. Coudln't find $reqField in first "
+        . @inSlice
+        . ' fields.';
+    }
+  }
+  return;
+}
+
+sub setHeader {
+  my ( $self, $aRef ) = @_;
+
+  my $idx;
+  for my $field ( @{ $self->allReqFields( $self->file_type ) } ) {
+    $idx = firstidx { $_ eq $field } @$aRef;
+    $self->setSnpField($idx) unless $idx == -1;
+  }
+}
+
+sub getSampleNamesIdx {
+  my ( $self, $fAref ) = @_;
+  my $strt = scalar @{ $self->allReqFields( $self->file_type ) };
+
+  # every other field column name is blank, holds genotype probability
+  # for preceeding column's sample;
+  # don't just check for ne '', to avoid simple header issues
+  my %data;
+
+  for ( my $i = $strt; $i <= $#$fAref; $i += 2 ) {
+    $data{ $fAref->[$i] } = $i;
+  }
+  return %data;
+}
+
+#presumes that _file_type exists and has corresponding key in _headerFields
+sub getSnpFields {
+  my ( $self, $fAref ) = @_;
+
+  return map { $fAref->[$_] } $self->allSnpFieldIdx;
 }
 
 =head2
@@ -195,7 +287,7 @@ filepath, if directory use some sensible default
 sub _build_out_fh {
   my $self = shift;
 
-  if ( !$self->has_out_file ) {
+  if ( !$self->output_path ) {
     say "Did not find a file or directory path in Seq.pm _build_out_fh" if $self->debug;
     return \*STDOUT;
   }

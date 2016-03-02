@@ -21,7 +21,7 @@ my (
   $debug,       $genome_hasher_bin, $genome_scorer_bin, $genome_cadd_bin,
 );
 $wanted_chr = 0;
-
+$debug = 0;
 # cmd to method
 my %cmd_2_method = (
   genome        => 'build_genome_index',
@@ -46,7 +46,7 @@ GetOptions(
   'v|verbose'    => \$verbose,
   'h|help'       => \$help,
   'f|force'      => \$force,
-  'd|debug'      => \$debug,
+  'd|debug=i'      => \$debug,
   'hasher=s'     => \$bin_2_path{genome_hasher_bin},
   'scorer=s'     => \$bin_2_path{genome_scorer_bin},
   'cadd=s'       => \$bin_2_path{genome_cadd_bin},

@@ -15,6 +15,8 @@ requires 'ratioKey';
 requires 'statsKv';
 requires 'debug';
 
+my $pinf = 1e9999;
+
 has ratioFeaturesRef => (
   is      => 'ro',
   traits  => ['Hash'],
@@ -138,9 +140,10 @@ sub _recursiveCalc {
 # -9 is inf; case when no denom; actual 'Infinity' is platform-specific
 sub _calcRatio {
   my ( $numerator, $denominator ) = @_;
+  #http://search.cpan.org/dist/Perl-Critic/lib/Perl/Critic/Policy/Subroutines/ProhibitExplicitReturnUndef.pm
   if ( !( $numerator || $denominator ) ) { return; }
   #handle inf by an obviously imposs ratio; actual '+-inf' is platform dependent
-  elsif ( $numerator && !$denominator ) { return -9; }
+  elsif ( $numerator && !$denominator ) { return $pinf; }
   elsif ( !$numerator ) { return 0; }
   return $numerator / $denominator;
 }

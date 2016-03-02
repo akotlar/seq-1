@@ -31,7 +31,7 @@ has alleles => (
 #the actual allele; this is very easy to solve, see below, kept this way for perf.
 ##could check if(int($allele->minor_allele) )
 sub findGeneData {
-  my ( $self, $basePosDataAref, $abs_pos, $db ) = @_;
+  my ( $self, $abs_pos, $db ) = @_;
 
   my @data;
   my @range; #can't pass list to db_get
@@ -50,8 +50,8 @@ sub findGeneData {
         $allele,
         sub {
           my $posDataAref = shift;
-          if ( $posDataAref && defined $posDataAref->[0] ) {
 
+          if ( $posDataAref && defined $posDataAref->[0] ) {
             #appending an undefined value doesn't affect output
             #if there isn't a hash, we should crash, means we don't understand
             #the spec / programmer error
@@ -92,9 +92,12 @@ sub _annotateSugar {
     return;
   }
 
-  my %sugar;
-  my $siteType = '';
-  my $frame    = '';
+  my $sugar;
+  my $siteType  = '';
+  my $hasCoding = 0;
+  my $frame     = '';
+  # getSiteType defined in Seq::Site::Gene::Definitions Role
+  # used to determine whether to call something FrameShift, InFrame, or no frame type
   state $codingName = $self->getSiteType(0); #for API: Coding type always first
   state $allowedSitesHref = { map { $_ => 1 } $self->allSiteTypes };
 
@@ -119,33 +122,34 @@ sub _annotateSugar {
       $siteType = $transcriptHref->{site_type};
       next if !$allowedSitesHref->{$siteType};
 
-      if ( $siteType eq $codingName ) {
-        if ( defined $transcriptHref->{codon_number}
-          && $transcriptHref->{codon_number} == 1 )
-        {
-          $sugar{StartLoss} = 1;
+      if ( defined $transcriptHref->{codon_number} ) { #we're in a coding region
+        $hasCoding = 1 unless $hasCoding;
+        if ( $transcriptHref->{codon_number} == 1 ) {
+          #we do this to preserve order;hashes are pseudo-randomly sorted
+          $sugar .= 'StartLoss|';
+
+          # now check if we're in a stop, maybe we should just assume we have
+          # a ref_aa_residue / not check defined?
         }
-        if ( defined $transcriptHref->{ref_aa_residue}
+        elsif ( defined $transcriptHref->{ref_aa_residue}
           && $transcriptHref->{ref_aa_residue} eq '*' )
         {
-          $sugar{StopLoss} = 1;
+          $sugar .= 'StopLoss|';
         }
         else {
-          $sugar{$siteType} = 1;
+          $sugar .= $siteType . '|';
         }
       }
       else {
-        $sugar{$siteType} = 1;
+        $sugar .= $siteType . '|';
       }
     }
     if ($cb) { $cb->($geneRecordAref); }
   }
 
+  chop $sugar;
   #frameshift only matters for coding regions; lookup in order of frequency
-  $frame = $allele->frameType
-    if $sugar{$codingName}
-    || $sugar{StopLoss}
-    || $sugar{StartLoss};
+  $frame = $allele->frameType if $hasCoding;
 
   #the joiner is fasta's default separator; not using ; because that will split
   #when as_href called, and I don't want to have to concat Del-Frameshift
@@ -153,7 +157,7 @@ sub _annotateSugar {
   #note this will sometimes result in empty brackets. I think it makes sense
   #to keep those, becasue it makes parsing simpler, and contains information about feature absence
   $allele->set_annotation_type(
-    $allele->typeName . ( $frame && "-$frame" ) . '[' . join( '|', keys %sugar ) . ']' );
+    $allele->typeName . ( $frame && "-$frame" ) . '[' . $sugar . ']' );
 }
 
 __PACKAGE__->meta->make_immutable;

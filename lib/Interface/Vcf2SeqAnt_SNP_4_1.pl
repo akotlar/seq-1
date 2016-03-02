@@ -138,12 +138,11 @@ LOOP_FILE: while (<$fpIn>) {
   #5th row is ALT (all sample alleles)
   next LOOP_FILE unless $row[4] ne '.';
 
-  my ( $allelesAref, $ac, $type ) = _getBases( \@row );
+  my ( $pos, $ref, $allelesAref, $ac, $type ) = _getBases( \@row );
 
   my $sampleStr = _formatSampleString( \@row, $allelesAref );
 
-  say $fpOut "$row[0]\t$row[1]\t$allelesAref->[0]\t"
-    . join( ',', @$allelesAref[ 1 ... $#$allelesAref ] )
+  say $fpOut "$row[0]\t$pos\t$ref\t" . join( ',', @$allelesAref )
     . "\t$ac\t$type\t$sampleStr";
 }
 
@@ -156,54 +155,70 @@ my $alleles;
 sub _getBases {
   my ($rowAref) = @_;
 
-  my @allelesA = split( ',', $rowAref->[4] );
-  my $ref = $rowAref->[3];
+  my $pos     = $rowAref->[2];
+  my $ref     = $rowAref->[3];
+  my @alleles = split( ',', $rowAref->[4] );
 
-  # check if reference is het, to see if something strange
-  # TODO: Is this a real poss? handle?
-  unless ( index( $ref, ',' ) == -1 ) {
-    $log->error( 'Reference is het or has unexpected comma:' . join( '\t', @$rowAref ) );
-    croak;
-  }
-  my $type = 'SNP';
-
-  my $refLength = length $ref;
+  my $type = $#alleles > 1 ? 'MULTIALLELIC' : '';
 
   # TODO: implement the count check, but the Clarity vcf doesn't use AC field.
   #my $acIdx = first { $rowAref->[$_] =~ m\AC=\ } 1 .. $#$rowAref;
-  my $rc = scalar @allelesA;
+  my $rc = scalar @alleles;
 
   my $ac;
-  my @outAlleles = ($ref);
+  my @outAlleles;
   # change from dave's only call multiallelic if non-snps present...
   # TOOD: is this desirable?
-  my %newTypes;
   my $alleleLength;
-  foreach (@allelesA) {
-    $alleleLength = length $_;
-    if ( $alleleLength > $refLength ) {
-      $newTypes{INS} = 'INS';
-      $_ = 'I';
-    }
-    elsif ( $alleleLength < $refLength ) {
-      $newTypes{DEL} = 'DEL';
-      $_ = 'D';
-    }
+  my $indelType;
+  foreach (@alleles) {
+    ( $_, $ref, $pos, $indelType ) = _checkIndel( $_, $ref, $pos );
+
     $rc-- unless ( $_ eq $ref );
 
     push( @outAlleles, $_ );
   }
-  $ac = "$rc, " . scalar @allelesA - $rc;
+  $ac = "$rc, " . scalar @alleles - $rc;
   #TODO: should multiallelic be determined by sample composition instead?
-  my @newTypesKeys = keys %newTypes;
-  if ( scalar @newTypesKeys > 1 ) {
-    $type = 'MULTIALLELIC';
-  }
-  elsif ( scalar @newTypesKeys == 1 ) {
-    $type = $newTypes{ $newTypesKeys[0] };
-  }
+  $type = $indelType ? $indelType : 'SNP' unless $type;
+  return ( $pos, $ref, \@outAlleles, $ac, $type );
+}
 
-  return ( \@outAlleles, $ac, $type );
+sub _checkIndel {
+  my ( $allele, $ref, $pos ) = @_;
+
+  my $aLength   = length $allele;
+  my $refLength = length $ref;
+  my $indelType = '';
+
+  my $overlap     = $ref & $allele;
+  my $diff        = $ref ^ $allele;
+  my @diffStrings = unpack( "(Z*)*", $diff );
+  my $diffNoNull  = $diffStrings[-1];
+
+  if ( $aLength > $refLength ) {
+    $indelType = 'INS';
+
+    #check that the left most normalized ref was used
+    if ( $overlap . $diffNoNull ne $allele ) {
+      croak "reconstituted allele $overlap.$diffNoNull doesn't 
+        equal allele $allele"
+    }
+
+    $allele = "+" . $diffNoNull;
+
+  }
+  elsif ( $aLength < $refLength ) {
+    $indelType = 'DEL';
+
+    if ( $overlap . $diffNoNull ne $ref ) {
+      croak "reconstituted allele $overlap.$diffNoNull doesn't 
+        equal ref $ref"
+    }
+
+    $allele = '-' . length($diffNoNull);
+  }
+  return ( $allele, $ref, $pos, $indelType );
 }
 
 sub _formatSampleString {

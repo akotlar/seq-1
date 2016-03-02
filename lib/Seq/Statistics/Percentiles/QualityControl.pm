@@ -1,4 +1,7 @@
 package Seq::Statistics::Percentiles::QualityControl;
+use 5.10.0;
+use strict;
+use warnings;
 
 our $VERSION = '0.001';
 
@@ -6,8 +9,6 @@ our $VERSION = '0.001';
 # VERSION
 
 use Moose::Role;
-use strict;
-use warnings;
 
 requires 'allRatios';
 requires 'getPercVal';
@@ -54,7 +55,6 @@ sub qc {
   for my $ratio ( $self->allRatios ) {
     $id  = $ratio->[0];
     $val = $ratio->[1];
-
     if ( $val < $lower || $val > $upper ) {
       push @{ $self->target->{$failKey}{$id} }, "$ratioName $mesage";
     }

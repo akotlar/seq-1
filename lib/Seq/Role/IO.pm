@@ -36,61 +36,82 @@ Extended by: None
 use Moose::Role;
 
 use Carp qw/ confess /;
+use PerlIO::utf8_strict;
 use IO::File;
 use IO::Compress::Gzip qw/ $GzipError /;
-use IO::Uncompress::Gunzip qw/ $GunzipError /;
+use IO::Uncompress::AnyUncompress qw/ $AnyUncompressError /;
 use Path::Tiny;
-use File::Slurper;
-use Scalar::Util qw/ reftype /;
+use Try::Tiny;
+use DDP;
 
+with 'Seq::Role::Message';
 # tried various ways of assigning this to an attrib, with the intention that
 # one could change the taint checking characters allowed but this is the simpliest
 # one that worked; wanted it precompiled to improve the speed of checking
 my $taint_check_regex = qr{\A([\+\,\.\-\=\:\/\t\s\w\d]+)\z};
 
+my $delimiter = "\t";
+#@param {Path::Tiny} $file : the Path::Tiny object representing a single input file
+#@return file handle
+
 sub get_read_fh {
-  my ( $class, $file ) = @_;
-
+  my ( $self, $file ) = @_;
   my $fh;
-  my $reftype = reftype $file;
 
-  # TODO: should explicitly check it's a Path::Tiny object
-  if ( defined $reftype ) {
-    $file = $file->absolute->stringify;
-    if ( !-f $file ) {
-      confess sprintf( "ERROR: file does not exist for reading: %s", $file );
-    }
+  if ( ref $file ne 'Path::Tiny' ) {
+    $file = path($file)->absolute;
   }
 
-  if ( $file =~ m/\.gz\Z/ ) {
-    $fh = IO::Uncompress::Gunzip->new($file)
-      || confess "\nError: gzip failed: $GunzipError\n";
+  my $filePath = $file->stringify;
+
+  $self->tee_logger( 'error', 'file does not exist for reading: ' . $filePath )
+    if !$file->is_file;
+
+  #duck type compressed files
+  try {
+    $fh = IO::Uncompress::AnyUncompress->new($filePath);
   }
-  else {
-    $fh = IO::File->new( $file, 'r' )
-      || confess "\nError: unable to open file ($file) for reading: $!\n";
-  }
+  catch {
+    $self->tee_logger( 'debug', "$filePath probably isn't an archive" );
+  };
+
+  $fh = IO::File->new( $filePath, 'r' ) unless $fh;
+  $self->tee_logger( 'error', "Unable to open file $filePath" ) unless $fh;
+
   return $fh;
 }
 
+#version based on File::Slurper, advantage is it uses our get_read_fh to support
+#compressed files
 sub get_file_lines {
-  my ( $self, $filePath ) = @_;
-  if ( !-f $filePath ) {
-    confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
-  }
-  return path($filePath)->lines; #returns array
+  my ( $self, $filename ) = @_;
+
+  my $fh = $self->get_read_fh($filename);
+
+  my @buf = <$fh>;
+  close $fh;
+  chomp @buf;
+  return \@buf;
 }
+
+# sub get_file_lines {
+#   my ( $self, $filePath ) = @_;
+#   if ( !-f $filePath ) {
+#     confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
+#   }
+#   my @lines = path($filePath)->lines; #returns array
+# }
 
 #another version, seems slower in practice
 #if using this no need to chomp each individual line
-sub slurp_file_lines {
-  my ( $self, $filePath ) = @_;
-  if ( !-f $filePath ) {
-    confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
-  }
-  return File::Slurper::read_lines( $filePath, 'utf-8', { chomp => 1 } )
-    ; #returns array
-}
+# sub slurp_file_lines {
+#   my ( $self, $filePath ) = @_;
+#   if ( !-f $filePath ) {
+#     confess sprintf( "ERROR: file does not exist for reading: %s", $filePath );
+#   }
+#   return File::Slurper::read_lines( $filePath, 'utf-8', { chomp => 1 } )
+#     ; #returns array
+# }
 
 sub get_write_fh {
   my ( $class, $file ) = @_;
@@ -125,6 +146,15 @@ sub clean_line {
 
   if ( $line =~ m/$taint_check_regex/xm ) {
     return $1;
+  }
+  return;
+}
+
+sub get_clean_fields {
+  my ( $class, $line ) = @_;
+
+  if ( $line =~ m/$taint_check_regex/xm ) {
+    return split( $delimiter, $1 );
   }
   return;
 }

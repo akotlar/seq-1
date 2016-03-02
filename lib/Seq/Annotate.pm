@@ -225,10 +225,10 @@ sub _load_genome_sized_track {
     }
   );
 
-  my $msg = sprintf( "read genome-sized track '%s' of length %d from file: %s",
-    $gst->name, $genome_length, $idx_file );
+  my $msg =
+    sprintf( "Read genome-sized track '%s' of length %d", $gst->name, $genome_length );
   $self->tee_logger( 'info', $msg );
-  say $msg if $self->debug;
+  say $msg . " from file: $idx_file" if $self->debug;
 
   return $obj;
 }
@@ -711,17 +711,31 @@ sub BUILD {
   #  }
 }
 
+#TODO: should we uppercase alleles before returning them?
 sub _var_alleles {
   my ( $self, $alleles_str, $ref_allele ) = @_;
+
+  return if !$alleles_str || !$ref_allele;
+
   my ( @snpAlleles, @indelAlleles );
 
   for my $allele ( split /\,/, $alleles_str ) {
-    if ( $allele ne $ref_allele && $allele ne 'N' ) {
+    if ( $allele ne $ref_allele ) {
       if ( length $allele == 1 ) {
+        #skip anything that looks odd; we could also log this,
+        #but could slow us down; haven't benched coro logging
         push @snpAlleles, $allele;
       }
       else {
-        push @indelAlleles, $allele;
+        #we could also avoid this and place the indel calling function in annotate
+        #into an eval, but this may be slower, althoug here we duplicate concerns
+        my $subs = substr( $allele, 0, 1 );
+        if ( $subs eq '-' || $subs eq '+' ) {
+          push @indelAlleles, $allele;
+        }
+        else {
+          $self->tee_logger( 'warn', "Allele $allele is unknown" );
+        }
       }
     }
   }
@@ -840,9 +854,7 @@ sub annotate {
       # all kc values come as aref's of href's
       my $rec_aref = $kch->db_get($abs_pos);
 
-      if ($indelAnnotator) {
-        $indelAnnotator->findGeneData( $rec_aref, $abs_pos, $kch );
-      }
+      $indelAnnotator->findGeneData( $abs_pos, $kch ) if ($indelAnnotator);
 
       if ( defined $rec_aref ) {
         for my $rec_href (@$rec_aref) {

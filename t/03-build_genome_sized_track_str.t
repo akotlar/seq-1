@@ -95,6 +95,7 @@ sub Have_chr_files {
   for my $track ( @{ $config_href->{genome_sized_tracks} } ) {
 
     if ( $track->{type} eq "genome" ) {
+      #interestingly when the test runs $track->{local_files} is not a hash ref
       for my $file ( keys $track->{local_files} ) {
         my $pt = path( $config_href->{genome_raw_dir} )->child($file);
         $missing_files++ unless $pt->is_file;
