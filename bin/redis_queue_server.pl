@@ -28,6 +28,9 @@ use Interface;
 
 use Thread::Queue;
 use IO::Socket;
+
+# use AnyEvent;
+# use AnyEvent::PocketIO::Client;
 #use Sys::Info;
 #use Sys::Info::Constants qw( :device_cpu )
 #for choosing max connections based on available resources
@@ -38,6 +41,7 @@ my $DEBUG = 0;
 my $redisHost : shared = $ARGV[0] || 'genome.local';
 my $redisPort : shared = $ARGV[1] || '6379';
 
+#my $socketIOPort : shared = $ARGV[1] || '9001';
 #these queues are only consumed by this service
 my $submittedJobsDocument : shared = 'submittedJob';
 my $jobQueueName : shared          = 'submittedJobQueue';
@@ -51,8 +55,11 @@ my $jobStartedQueue : shared  = 'startedJobQueue';
 my $jobFinishedQueue : shared = 'finishedJobQueue';
 my $jobFailedQueue : shared   = 'failedJobQueue';
 
-# notify the client
+# notify the client of progress
 my $annotationMessageChannel : shared = 'annotationProgress';
+
+# for jobID specific pings
+# my $annotationStatusChannelBase : shared = 'annotationStatus:';
 
 # these keys should match the corresponding fields in the web server
 # mongoose schema; TODO: at startup request file from webserver with this config
@@ -72,7 +79,7 @@ $jobKeys->{inputFilePath}    = 'inputFilePath',
   $jobKeys->{log} = 'log';
   $jobKeys->{logException} = 'exceptions';
 
-  my $configPathBaseDir : shared = "config/web/";
+my $configPathBaseDir : shared = "config/web/";
 my $configFilePathHref : shared = shared_clone( {} );
 my $semSTDOUT : shared;
 
@@ -135,7 +142,7 @@ sub handleJobStart {
 sub handleJobSuccess {
   my ( $jobID, $documentKey, $submittedJob, $redis ) = @_;
 
-  print "job succeeded $jobID";
+  say "job succeeded $jobID";
   try {
     $submittedJob->{ $jobKeys->{completed} } = 1;
     my $jobJSON = encode_json($submittedJob);
@@ -147,7 +154,7 @@ sub handleJobSuccess {
     $Qdone->enqueue($jobID);
   }
   catch {
-    print "Error in handleJobSuccess: $_";
+    say "Error in handleJobSuccess: $_";
     $submittedJob->{ $jobKeys->{completed} } = 0;
     handleJobFailure( $jobID, $documentKey,
       'Error saving successful job to Redis', $submittedJob, $redis );
@@ -190,6 +197,14 @@ sub handleJob {
     reconnect => 72,
     every     => 5_000_000
   );
+
+  #this isn't ready yet.
+  # my $statusChannel = $annotationStatusChannelBase . $jobID;
+  # $redis->subscribe($statusChannel, my $statusCb = sub {
+  #   #my ($message, $topic, $subscribed_topic) = @_;
+  #   $redis->publish($statusChannel, 1);
+  # });
+
   my $documentKey = $submittedJobsDocument . ':' . $jobID;
 
   my $log_name = join '.', 'annotation', 'jobID', $jobID, 'log';
@@ -202,13 +217,13 @@ sub handleJob {
 
   my $inputHref;
 
-  my $failed = 0;
+  my $failed;
   try {
     $submittedJob = decode_json( $redis->get($documentKey) );
   }
   catch {
     $log->error($_);
-    $failed = 1;
+    $failed = $_;
     $Qdone->enqueue($jobID);
   };
 
@@ -232,7 +247,7 @@ sub handleJob {
     $annotate_instance->compress_output;
   }
   catch {
-    say $_;
+    say "CAUGHT AN ERROR: IT IS $_";
 
     $log->error($_);
     #because here we don't have automatic logging guaranteed
@@ -247,12 +262,26 @@ sub handleJob {
     #   $redis->publish( $inputHref->{messanger}{event},
     #     encode_json( $inputHref->{messanger} ) );
     # }
-
-    $failed = 1;
-
-    handleJobFailure( $jobID, $documentKey, $_, $submittedJob, $redis );
+    my $indexOfConstructor = index($_, "Seq::");
+    if(~$indexOfConstructor) {
+      $failed = substr($_, 0, $indexOfConstructor);
+    } else {
+      my $end = length($_);
+      if($end > 100) {
+        $end = 100;
+      }
+      $failed = substr($_, 0, $end);
+    }
   };
-  handleJobSuccess( $jobID, $documentKey, $submittedJob, $redis ) unless $failed;
+
+  if($failed) {
+    handleJobFailure( $jobID, $documentKey, $failed, $submittedJob, $redis );
+    #$redis->unsubscribe($statusChannel, $statusCb);
+  } else {
+    handleJobSuccess( $jobID, $documentKey, $submittedJob, $redis );
+  }
+  
+  # $redis->unsubscribe($statusChannel, $statusCb);
 }
 
 #Here we may wish to read a json or yaml file containing argument mappings

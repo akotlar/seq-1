@@ -10,7 +10,7 @@ plan tests => 2;
 
 my $annotator = Seq::Annotate->new_with_config(
   {
-    configfile => '../config/hg38_test.yml',
+    configfile => './config/hg38_test.yml',
     debug      => 1,
   }
 );
