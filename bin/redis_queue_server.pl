@@ -18,8 +18,8 @@ use warnings;
 use Try::Tiny;
 
 use lib './lib';
-use threads;
-use threads::shared;
+use forks;
+use forks::shared;
 
 use Log::Any::Adapter;
 use File::Basename;
@@ -93,8 +93,6 @@ my $Qwork : shared = new Thread::Queue;
 my $Qdone : shared = new Thread::Queue;
 my $done : shared  = 0;
 
-#my $info = Sys::Info->new;
-my $cpu = 1; #$info->device( CPU => my %options );
 
 # how many threads we allow in the pool
 # what does //= do here?
@@ -104,7 +102,9 @@ my $cpu = 1; #$info->device( CPU => my %options );
 #   : !( $cpu->count % 3 ) ? $cpu->count / 3
 #   :                        $cpu->count || 1;
 
-our $W = 1;
+#my $info = Sys::Info->new;
+#$info->device( CPU => my %options );
+our $W = 2;
 
 my $verbose : shared = 1;
 

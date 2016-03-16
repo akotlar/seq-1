@@ -16,7 +16,6 @@ use namespace::autoclean;
 with 'MooX::Role::Logger';
 use Carp 'croak';
 
-use Coro;
 use Cpanel::JSON::XS;
 use DDP;
 
