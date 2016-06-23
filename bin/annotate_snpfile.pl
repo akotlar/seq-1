@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+use lib './lib';
 
 use 5.10.0;
 use strict;
@@ -8,6 +9,9 @@ use Interface;
 use Getopt::Long;
 
 my $app = Interface->new_with_options();
+
+use DDP;
+
 $app->annotate_snpfile;
 =head1 NAME
 

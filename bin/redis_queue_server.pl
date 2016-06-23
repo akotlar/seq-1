@@ -104,7 +104,7 @@ my $done : shared  = 0;
 
 #my $info = Sys::Info->new;
 #$info->device( CPU => my %options );
-our $W = 2;
+our $W = 1;
 
 my $verbose : shared = 1;
 
